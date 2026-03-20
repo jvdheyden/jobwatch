@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.jvdh.core-crypto-job-agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/zsh</string>
+      <string>-lc</string>
+      <string><![CDATA[
+set -euo pipefail
+
+ROOT="/Users/jvdh/Documents/job-agent"
+CODEX_BIN="/opt/homebrew/bin/codex"
+DIGEST_DIR="$ROOT/tracks/core_crypto/digests"
+LOG_DIR="$ROOT/logs"
+TODAY="$(date +%F)"
+DAILY_DIGEST="$DIGEST_DIR/$TODAY.md"
+LOG_FILE="$LOG_DIR/core_crypto-$TODAY.log"
+
+mkdir -p "$DIGEST_DIR" "$LOG_DIR"
+exec >>"$LOG_FILE" 2>&1
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting core_crypto daily run"
+
+cat <<EOF | "$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write -
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+If ./tracks/core_crypto/digests/$TODAY.md does not exist, create it.
+If it already exists, read it first and append a new section named ## Update HH:MM containing only newly reportable roles from this run.
+Do not overwrite or remove earlier content in today's digest.
+If no new roles are found, leave today's digest unchanged.
+Append the reported roles to ./shared/seen_jobs.md.
+EOF
+
+GRAPH_DIR="/Users/jvdh/Documents/logseq"
+JOURNAL_DIR="$GRAPH_DIR/journals"
+PAGES_DIR="$GRAPH_DIR/pages"
+TODAY_LOGSEQ="$(date +%Y_%m_%d)"
+STAMP="$(date +%Y-%m-%d)"
+JOURNAL_FILE="$JOURNAL_DIR/$TODAY_LOGSEQ.md"
+PAGE_NAME="Job Digest $STAMP"
+PAGE_FILE="$PAGES_DIR/$PAGE_NAME.md"
+
+{
+  echo "[[job digest]]"
+  echo
+  cat "$DAILY_DIGEST"
+} > "$PAGE_FILE"
+
+if ! grep -Fqx -- "- New [[${PAGE_NAME}]]" "$JOURNAL_FILE" 2>/dev/null; then
+  {
+    echo
+    echo "- New [[${PAGE_NAME}]]"
+  } >> "$JOURNAL_FILE"
+fi
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Finished core_crypto daily run"
+      ]]></string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOME</key>
+      <string>/Users/jvdh</string>
+      <key>PATH</key>
+      <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jvdh</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+      <key>Hour</key>
+      <integer>8</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/jvdh/Documents/job-agent/logs/launchd-core-crypto.out</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/jvdh/Documents/job-agent/logs/launchd-core-crypto.err</string>
+  </dict>
+</plist>

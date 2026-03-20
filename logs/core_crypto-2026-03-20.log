@@ -1,0 +1,2551 @@
+[2026-03-20 17:57:34] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0c2e-5e3e-7ef1-960d-44f1b1881053
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+Write a digest in ./tracks/core_crypto/digests/2026-03-20.md and append the reported roles to ./shared/seen_jobs.md.
+
+mcp startup: no servers
+codex
+I’m using the job-discovery workflow for `core_crypto` and will first read the track inputs, seen-jobs file, and the relevant skill instructions so I can follow the repo’s expected format before searching.
+exec
+/bin/zsh -lc "sed -n '1,240p' .agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' .agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+ succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc "pwd && rg --files . | rg '("'^|/)(AGENTS'"\\.md|sources\\.md|prefs\\.md|prefs_global\\.md|cv\\.md|seen_jobs\\.md|SKILL\\.md|digests/)'" in /Users/jvdh/Documents/job-agent succeeded in 227ms:
+./AGENTS.md
+./profile/prefs_global.md
+./shared/seen_jobs.md
+./tracks/core_crypto/AGENTS.md
+./tracks/core_crypto/digests/2026-03-20.md
+./tracks/core_crypto/digests/latest.md
+./tracks/core_crypto/sources.md
+./tracks/core_crypto/prefs.md
+./sources.md
+./cv.md
+codex
+I’ve loaded the two job-agent skills. Next I’m reading the track inputs and existing digest/seen formats so I can keep discovery, ranking, and file updates consistent with this repo.
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+## Check every run
+
+- IACR Jobs — https://www.iacr.org/jobs/
+
+- PQShield — https://pqshield.com/careers/
+- Zama — https://jobs.zama.ai/
+- Roseman Labs — https://rosemanlabs.com/en/working-at-roseman-labs
+- Duality Technologies — https://dualitytech.com/careers/
+- QEDIT — https://qed-it.com/careers
+- Least Authority — https://leastauthority.com/careers/
+- Trail of Bits — https://trailofbits.com/careers/
+- Partisia Blockchain — https://partisiablockchain.com/career/
+ succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../profile/cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+
+If useful, also use:
+exec
+/bin/zsh -lc "sed -n '1,260p' cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/digests/latest.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 5 new roles from the allowed source set that are worth noting.
+- 3 strong matches and 2 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
+
+### 2. Cryptography Engineer — QEDIT
+- Fit score: 8.5/10
+- Location: unknown
+- Link: https://qed-it.com/careers
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' profile/prefs_global.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptograph
+- security engineering
+- privacy engineering
+- research engineering
+- MPC
+- protocol engineering
+
+
+ succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities in Europe. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+exec
+/bin/zsh -lc "sed -n '1,260p' shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/digests/2026-03-20.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 5 new roles from the allowed source set that are worth noting.
+- 3 strong matches and 2 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
+
+### 2. Cryptography Engineer — QEDIT
+- Fit score: 8.5/10
+- Location: unknown
+- Link: https://qed-it.com/careers
+codex
+I have the track criteria and current seen set. I’m checking the digest template now, then I’ll work source-by-source and keep only roles with direct evidence from the allowed pages.
+exec
+/bin/zsh -lc "sed -n '1,220p' shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+exec
+/bin/zsh -lc 'wc -l shared/seen_jobs.md && tail -n 20 shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+       6 shared/seen_jobs.md
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+[2026-03-20 17:59:55] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0c30-73ee-7520-975d-9fb1a4762ed0
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+Write a digest in ./tracks/core_crypto/digests/2026-03-20.md and append the reported roles to ./shared/seen_jobs.md.
+
+mcp startup: no servers
+codex
+I’m running the `core_crypto` job pass for March 20, 2026. First I’m loading the track sources, ranking preferences, profile context, and the two job-agent skills so I can follow the repo’s expected workflow and avoid duplicates.
+exec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptograph
+- security engineering
+- privacy engineering
+- research engineering
+- MPC
+- protocol engineering
+
+
+exec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+## Check every run
+
+- IACR Jobs — https://www.iacr.org/jobs/
+
+- PQShield — https://pqshield.com/careers/
+- Zama — https://jobs.zama.ai/
+- Roseman Labs — https://rosemanlabs.com/en/working-at-roseman-labs
+- Duality Technologies — https://dualitytech.com/careers/
+- QEDIT — https://qed-it.com/careers
+- Least Authority — https://leastauthority.com/careers/
+- Trail of Bits — https://trailofbits.com/careers/
+- Partisia Blockchain — https://partisiablockchain.com/career/
+exec
+/bin/zsh -lc "sed -n '1,220p' ./profile/prefs_global.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' ./shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities in Europe. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+ succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+exec
+/bin/zsh -lc "sed -n '1,240p' .agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' ./cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+ succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,220p' .agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc 'rg --files ./tracks/core_crypto/digests && for f in $(ls ./tracks/core_crypto/digests | tail -n 5); do echo "FILE:$f"; sed -n '"'1,220p' ./tracks/core_crypto/digests/"'$f; done' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./tracks/core_crypto/digests/2026-03-20.md
+./tracks/core_crypto/digests/latest.md
+FILE:2026-03-20.md
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 5 new roles from the allowed source set that are worth noting.
+- 3 strong matches and 2 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
+
+### 2. Cryptography Engineer — QEDIT
+codex
+I have the track inputs and the current state: today’s digest already exists and `seen_jobs.md` already contains five March 20 entries. Next I’m checking the repo for any existing job-agent helpers and the git state, then I’ll verify the allowed sources directly to see whether anything new still clears the bar.
+exec
+/bin/zsh -lc 'rg --files .' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./AGENTS.md
+./scripts/com.jvdh.core-crypto-job-agent.plist
+./scripts/run_core_crypto_daily.sh
+./scripts/sync_to_logseq.sh
+./profile/prefs_global.md
+./logs/launchd-core-crypto.err
+./logs/core_crypto-2026-03-20.log
+./logs/launchd-core-crypto.out
+./shared/seen_jobs.md
+./shared/digest_template.md
+./tracks/core_crypto/AGENTS.md
+./tracks/core_crypto/digests/2026-03-20.md
+./tracks/core_crypto/digests/latest.md
+./tracks/core_crypto/sources.md
+./tracks/core_crypto/prefs.md
+./260310_CV_Jonas.pdf
+./sources.md
+./cv.md
+exec
+/bin/zsh -lc 'rg -n "digest|seen_jobs|core_crypto|sources.md" -S .' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./AGENTS.md:12:- Keep the final digest concise and useful.
+./scripts/com.jvdh.core-crypto-job-agent.plist:17:DIGEST_DIR="$ROOT/tracks/core_crypto/digests"
+./scripts/com.jvdh.core-crypto-job-agent.plist:20:DAILY_DIGEST="$DIGEST_DIR/$TODAY.md"
+./scripts/com.jvdh.core-crypto-job-agent.plist:21:LATEST_DIGEST="$DIGEST_DIR/latest.md"
+./scripts/com.jvdh.core-crypto-job-agent.plist:22:LOG_FILE="$LOG_DIR/core_crypto-$TODAY.log"
+./scripts/com.jvdh.core-crypto-job-agent.plist:24:mkdir -p "$DIGEST_DIR" "$LOG_DIR"
+./scripts/com.jvdh.core-crypto-job-agent.plist:27:echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting core_crypto daily run"
+./scripts/com.jvdh.core-crypto-job-agent.plist:30:Run the core_crypto job agent for today.
+./scripts/com.jvdh.core-crypto-job-agent.plist:31:Use ./tracks/core_crypto/sources.md only.
+./scripts/com.jvdh.core-crypto-job-agent.plist:32:Find only new roles not in ./shared/seen_jobs.md.
+./scripts/com.jvdh.core-crypto-job-agent.plist:33:Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+./scripts/com.jvdh.core-crypto-job-agent.plist:34:Write a digest in ./tracks/core_crypto/digests/$TODAY.md and append the reported roles to ./shared/seen_jobs.md.
+./scripts/com.jvdh.core-crypto-job-agent.plist:37:cp "$DAILY_DIGEST" "$LATEST_DIGEST"
+./scripts/com.jvdh.core-crypto-job-agent.plist:45:PAGE_NAME="Job Digest $STAMP"
+./scripts/com.jvdh.core-crypto-job-agent.plist:50:  echo "[[job digest]]"
+./scripts/com.jvdh.core-crypto-job-agent.plist:53:cat "$LATEST_DIGEST" >> "$PAGE_FILE"
+./scripts/com.jvdh.core-crypto-job-agent.plist:60:echo "[$(date '+%Y-%m-%d %H:%M:%S')] Finished core_crypto daily run"
+./scripts/run_core_crypto_daily.sh:6:DIGEST_DIR="$ROOT/tracks/core_crypto/digests"
+./scripts/run_core_crypto_daily.sh:7:LATEST_DIGEST="$DIGEST_DIR/latest.md"
+./scripts/run_core_crypto_daily.sh:11:DAILY_DIGEST="$DIGEST_DIR/$TODAY.md"
+exec
+/bin/zsh -lc 'git status --short' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+?? logs/
+?? scripts/
+?? tracks/core_crypto/digests/latest.md
+codex
+I found track-specific instructions and the shared digest template in the repo. I’m reading those now so the output format and “no new roles” handling match the project’s own rules before I touch any files.
+exec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,240p' ./shared/digest_template.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '241,520p' ./shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../profile/cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+
+If useful, also use:
+ succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+ succeeded in 0ms:
+
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: 'Engineer' in https://pqshield.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.ai/
+🌐 Searching the web...
+🌐 Searched: https://partisiablockchain.com/career/
+🌐 Searching the web...
+🌐 Searched: https://www.rambus.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Krypt' in https://jobs.secunet.com/
+🌐 Searching the web...
+🌐 Searched: https://jobs.neclab.eu/
+🌐 Searching the web...
+🌐 Searched: 'Open' in https://www.qrypt.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Open' in https://dualitytech.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://short.sg/j/41153475
+🌐 Searching the web...
+🌐 Searched: 'security' in https://careers-rambus.icims.com/jobs/
+🌐 Searching the web...
+🌐 Searched: site:jobs.ashbyhq.com/sandboxaq cryptography OR security research OR privacy OR protocol
+🌐 Searching the web...
+🌐 Searched: site:jobs.ashbyhq.com/sandboxaq "Cryptography"
+🌐 Searching the web...
+🌐 Searched: https://jobs.ashbyhq.com/sandboxaq/357a6ee1-3fe1-44f3-838a-f81df8b4e044
+🌐 Searching the web...
+🌐 Searched: "Staff Software Engineer, Cryptography R&D" SandboxAQ
+🌐 Searching the web...
+🌐 Searched: site:jobs.infineon.com/ "cryptography" Infineon
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+🌐 Searching the web...
+🌐 Searched the web
+🌐 Searching the web...
+🌐 Searched: site:jobs.secunet.com "Android Engineer" secunet Verschlüsselung Security
+🌐 Searching the web...
+🌐 Searched: site:jobs.secunet.com/j3401 Android Engineer Schwerpunkt Verschlüsselung Security secunet
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/j3208
+🌐 Searching the web...
+🌐 Searched: site:apply.workable.com "Trail of Bits" cryptography
+🌐 Searching the web...
+🌐 Searched: 'Remote' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.hashgraph.com/careers/?gh_jid=8284328002
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/Software-Developer-mwd-de-j3334.html
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/ Zama MPC OR cryptography OR protocol engineer
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.org/companies/zama/jobs/web3-oracle-engineer_paris
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs "Coprocessor" Zama
+codex
+I’ve got three additional reportable roles beyond the five already in today’s seen set: Hashgraph’s applied cryptographer role, secunet’s network-security engineer role, and secunet’s EUDI Wallet role. I’m updating the March 20 digest to fold those into today’s ranked view, then I’ll append only those newly reported roles to `shared/seen_jobs.md` and sync `latest.md` to match.
+file update
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 3 additional new roles on this pass from the allowed source set.
+- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
+
+### 2. Applied Cryptographer — Hashgraph
+- Fit score: 8.5/10
+- Location: Remote
+- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
+- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
+- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
+- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+
+### 3. Cryptography Engineer — QEDIT
+- Fit score: 8.5/10
+- Location: unknown
+- Link: https://qed-it.com/careers
+- The role is explicitly for a hands-on cryptography engineer or cryptography researcher and centers on zero-knowledge proofs, elliptic-curve cryptography, and Rust.
+- Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+- Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+
+### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+- Fit score: 8/10
+- Location: Berlin or Eschborn
+- Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+- Strong topical match: post-quantum migration, ECC/PQC cryptography, PKI, Common Criteria, and smartcard-platform work.
+- Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+- Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+
+### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
+- Fit score: 7.8/10
+- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
+- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
+- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
+- Main concern: this is more OS / platform security engineering than core cryptography research.
+
+## Borderline / maybe
+
+### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+- Fit score: 7/10
+- Location: Berlin, Dresden or Eschborn
+- Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+- Relevant because it sits on a smartcard trust anchor and explicitly asks for deep ECC/PQC cryptography knowledge.
+- Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+- Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+
+### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
+- Fit score: 6.9/10
+- Location: Germany-wide
+- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
+- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
+- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
+
+### 8. Hardware Verification Engineer — PQShield
+- Fit score: 6/10
+- Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+- Link: https://pqshield.com/careers/apply/4682388101/
+- The role is clearly security-relevant and asks for background in software development, cryptography, and secure product development.
+- Geography is workable from Germany and PQShield is directly on-track as a post-quantum cryptography company.
+- Main concern: the job is fundamentally a UVM / formal hardware verification role, so it is a stretch against the shared research-engineering profile.
+
+## Notes
+
+- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+@@ -6 +6,4 @@
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/latest.md
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 3 additional new roles on this pass from the allowed source set.
+- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
+
+### 2. Applied Cryptographer — Hashgraph
+- Fit score: 8.5/10
+- Location: Remote
+- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
+- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
+- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
+- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+
+### 3. Cryptography Engineer — QEDIT
+- Fit score: 8.5/10
+- Location: unknown
+- Link: https://qed-it.com/careers
+- The role is explicitly for a hands-on cryptography engineer or cryptography researcher and centers on zero-knowledge proofs, elliptic-curve cryptography, and Rust.
+- Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+- Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+
+### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+- Fit score: 8/10
+- Location: Berlin or Eschborn
+- Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+- Strong topical match: post-quantum migration, ECC/PQC cryptography, PKI, Common Criteria, and smartcard-platform work.
+- Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+- Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+
+### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
+- Fit score: 7.8/10
+- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
+- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
+- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
+- Main concern: this is more OS / platform security engineering than core cryptography research.
+
+## Borderline / maybe
+
+### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+- Fit score: 7/10
+- Location: Berlin, Dresden or Eschborn
+- Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+- Relevant because it sits on a smartcard trust anchor and explicitly asks for deep ECC/PQC cryptography knowledge.
+- Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+- Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+
+### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
+- Fit score: 6.9/10
+- Location: Germany-wide
+- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
+- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
+- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
+
+### 8. Hardware Verification Engineer — PQShield
+- Fit score: 6/10
+- Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+- Link: https://pqshield.com/careers/apply/4682388101/
+- The role is clearly security-relevant and asks for background in software development, cryptography, and secure product development.
+- Geography is workable from Germany and PQShield is directly on-track as a post-quantum cryptography company.
+- Main concern: the job is fundamentally a UVM / formal hardware verification role, so it is a stretch against the shared research-engineering profile.
+
+## Notes
+
+- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+apply_patch(auto_approved=true) exited 0 in 62ms:
+Success. Updated the following files:
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/latest.md
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+D /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 020b3f59f527478e15b8c564db037ec7e4a31e32..049cbbeee29f532b112b3e1ea5fffe90440ad0ab
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -4,3 +4,6 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+diff --git a/tracks/core_crypto/digests/latest.md b/tracks/core_crypto/digests/latest.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/latest.md
++++ b/tracks/core_crypto/digests/latest.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 020b3f59f527478e15b8c564db037ec7e4a31e32..049cbbeee29f532b112b3e1ea5fffe90440ad0ab
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -4,3 +4,6 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+diff --git a/tracks/core_crypto/digests/latest.md b/tracks/core_crypto/digests/latest.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/latest.md
++++ b/tracks/core_crypto/digests/latest.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+
+codex
+The digest and seen-jobs update are written. I’m doing a quick verification pass on the rendered files and diff now to catch any formatting or path issues before I close this out.
+exec
+/bin/zsh -lc "sed -n '1,260p' ./shared/seen_jobs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' ./tracks/core_crypto/digests/2026-03-20.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ succeeded in 0ms:
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 3 additional new roles on this pass from the allowed source set.
+- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
+
+### 2. Applied Cryptographer — Hashgraph
+- Fit score: 8.5/10
+- Location: Remote
+- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
+exec
+/bin/zsh -lc 'git diff -- ./tracks/core_crypto/digests/2026-03-20.md ./tracks/core_crypto/digests/latest.md ./shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 020b3f5..049cbbe 100644
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -4,3 +4,6 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 6d2a46f..55aa93f 100644
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 020b3f59f527478e15b8c564db037ec7e4a31e32..049cbbeee29f532b112b3e1ea5fffe90440ad0ab
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -4,3 +4,6 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+diff --git a/tracks/core_crypto/digests/latest.md b/tracks/core_crypto/digests/latest.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/latest.md
++++ b/tracks/core_crypto/digests/latest.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+
+codex
+Updated [2026-03-20.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md), synced [latest.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/latest.md), and appended the newly reported roles to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md).
+
+This pass found 3 additional reportable roles beyond the 5 already in today’s seen set, so the digest now ranks 8 roles total: 5 strong matches and 3 borderline / maybe matches. The newly added roles were:
+- `Applied Cryptographer` at Hashgraph
+- `(Senior) Software Engineer (m/f/d) - Network Security` at secunet
+- `Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten` at secunet
+
+I excluded a few plausible-but-unsteady items, mainly Zama and SandboxAQ openings, because the live official pages were not sufficiently verifiable in this environment. No tests were run; this was a source-check and file-update pass.
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 020b3f59f527478e15b8c564db037ec7e4a31e32..049cbbeee29f532b112b3e1ea5fffe90440ad0ab
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -4,3 +4,6 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+diff --git a/tracks/core_crypto/digests/latest.md b/tracks/core_crypto/digests/latest.md
+index 6d2a46f6959f9461a19b5054c7aa941db1044033..55aa93fa817e4bdfcd1350d920f95c620119ebf8
+--- a/tracks/core_crypto/digests/latest.md
++++ b/tracks/core_crypto/digests/latest.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+-- Found 5 new roles from the allowed source set that are worth noting.
+-- 3 strong matches and 2 borderline / maybe matches.
++- Found 3 additional new roles on this pass from the allowed source set.
++- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+ 
+ ## Strong matches
+ 
+@@ -12,9 +12,17 @@
+ - Link: https://www.iacr.org/jobs/item/4060
+ - Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+ - The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+-- Startup setting and privacy-preserving data systems align well with the profile’s applied-crypto and real-world-impact preferences.
++- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
++
++### 2. Applied Cryptographer — Hashgraph
++- Fit score: 8.5/10
++- Location: Remote
++- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
++- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
++- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
++- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+ 
+-### 2. Cryptography Engineer — QEDIT
++### 3. Cryptography Engineer — QEDIT
+ - Fit score: 8.5/10
+ - Location: unknown
+ - Link: https://qed-it.com/careers
+@@ -22,7 +30,7 @@
+ - Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+ - Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+ 
+-### 3. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
++### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+ - Fit score: 8/10
+ - Location: Berlin or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+@@ -30,9 +38,17 @@
+ - Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+ - Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+ 
++### 5. (Senior) Software Engineer (m/f/d) - Network Security — secunet Security Networks AG
++- Fit score: 7.8/10
++- Location: Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München or Stuttgart
++- Link: https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++- Strong security-engineering fit: trust establishment, mTLS, IPSec, WireGuard, secure networking, and Linux-platform work.
++- The stack is technically serious and relevant to the profile: Rust, NixOS, upstream open-source work, PQC, Secure Boot, and TPM2.
++- Main concern: this is more OS / platform security engineering than core cryptography research.
++
+ ## Borderline / maybe
+ 
+-### 4. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
++### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+ - Fit score: 7/10
+ - Location: Berlin, Dresden or Eschborn
+ - Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+@@ -40,7 +56,15 @@
+ - Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+ - Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+ 
+-### 5. Hardware Verification Engineer — PQShield
++### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
++- Fit score: 6.9/10
++- Location: Germany-wide
++- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
++- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
++- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
++
++### 8. Hardware Verification Engineer — PQShield
+ - Fit score: 6/10
+ - Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+ - Link: https://pqshield.com/careers/apply/4682388101/
+@@ -50,6 +74,6 @@
+ 
+ ## Notes
+ 
+-- Zama surfaced promising indexed roles, especially `Software Engineer, MPC`, but the current job pages were not verifiable in this environment, so they were excluded conservatively.
+-- Least Authority’s careers flow currently exposed an older smart-contract security role rather than a strong current cryptography opening, so it was excluded.
+-- Roseman Labs, Duality Technologies, Partisia Blockchain, Trail of Bits, SandboxAQ, Qrypt, QuSecure, NEC Laboratories Europe, Infineon, Quantinuum, and Rambus did not surface a verifiable current role that beat the bar above from the checked source pages.
++- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
++- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
++- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+
+tokens used
+186.310
+Updated [2026-03-20.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md), synced [latest.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/latest.md), and appended the newly reported roles to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md).
+
+This pass found 3 additional reportable roles beyond the 5 already in today’s seen set, so the digest now ranks 8 roles total: 5 strong matches and 3 borderline / maybe matches. The newly added roles were:
+- `Applied Cryptographer` at Hashgraph
+- `(Senior) Software Engineer (m/f/d) - Network Security` at secunet
+- `Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten` at secunet
+
+I excluded a few plausible-but-unsteady items, mainly Zama and SandboxAQ openings, because the live official pages were not sufficiently verifiable in this environment. No tests were run; this was a source-check and file-update pass.
+cp: /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md: Operation not permitted
+[2026-03-20 18:21:58] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0c44-a667-7db2-a8d6-787051d906af
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+If ./tracks/core_crypto/digests/2026-03-20.md does not exist, create it.
+If it already exists, read it first and append a new section named ## Update HH:MM containing only newly reportable roles from this run.
+Do not overwrite or remove earlier content in today's digest.
+If no new roles are found, leave today's digest unchanged.
+Append the reported roles to ./shared/seen_jobs.md.
+
+mcp startup: no servers
+codex
+I’m running the `core_crypto` workflow against today’s sources and current seen list. First I’m reading the repo instructions, the track inputs, and the discovery/ranking skills so I can use the existing pipeline instead of improvising it.
+exec
+/bin/zsh -lc "sed -n '1,220p' ./.agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+exec
+/bin/zsh -lc "sed -n '1,220p' ./.agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc "pwd && rg --files . | rg '("'^|/)(AGENTS'"\\.md|sources\\.md|prefs\\.md|prefs_global\\.md|cv\\.md|seen_jobs\\.md|SKILL\\.md)"'$'"'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+/Users/jvdh/Documents/job-agent
+./AGENTS.md
+./profile/prefs_global.md
+./shared/seen_jobs.md
+./tracks/core_crypto/AGENTS.md
+./tracks/core_crypto/sources.md
+./tracks/core_crypto/prefs.md
+./sources.md
+./cv.md
+codex
+I’ve loaded the discovery and ranking skill instructions. Next I’m checking the track-specific rules, the allowed sources, the fit criteria, and whether today’s digest already exists so I can either create or append without disturbing earlier content.
+exec
+/bin/zsh -lc "sed -n '1,220p' ./AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job agent rules
+
+You are helping monitor job openings for Jonas.
+
+Core behavior:
+- Be conservative about fit.
+- Do not auto-apply.
+- Do not draft outreach unless explicitly asked.
+- Prefer exact evidence from postings over guesses.
+- Only report roles that are plausibly relevant to a cryptography / security / privacy / research-engineering profile.
+- Avoid duplicate reporting.
+- Keep the final digest concise and useful.
+
+Output preferences:
+- Rank by fit.
+- For each role, explain fit in 2–4 short bullets.
+- Separate "strong matches" from "borderline / maybe".
+- If nothing relevant is found, say so clearly.
+exec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../profile/cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+7. `./digests/YYYY-MM-DD.md` for today, if it already exists
+
+exec
+/bin/zsh -lc "sed -n '1,260p' ./shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+exec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' ./cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+## Check every run
+
+- IACR Jobs — https://www.iacr.org/jobs/
+
+- PQShield — https://pqshield.com/careers/
+- Zama — https://jobs.zama.ai/
+- Roseman Labs — https://rosemanlabs.com/en/working-at-roseman-labs
+- Duality Technologies — https://dualitytech.com/careers/
+- QEDIT — https://qed-it.com/careers
+- Least Authority — https://leastauthority.com/careers/
+- Trail of Bits — https://trailofbits.com/careers/
+- Partisia Blockchain — https://partisiablockchain.com/career/
+ succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,240p' ./tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,240p' ./profile/prefs_global.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "if [ -f ./tracks/core_crypto/digests/2026-03-20.md ]; then echo '__EXISTS__'; sed -n '1,260p' ./tracks/core_crypto/digests/2026-03-20.md; else echo '__MISSING__'; fi" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities in Europe. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+ succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptograph
+- security engineering
+- privacy engineering
+- research engineering
+- MPC
+- protocol engineering
+
+
+ succeeded in 0ms:
+__EXISTS__
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 3 additional new roles on this pass from the allowed source set.
+- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
+
+### 2. Applied Cryptographer — Hashgraph
+- Fit score: 8.5/10
+- Location: Remote
+codex
+I have the current digest and seen list. The next step is live discovery against only the approved source pages, then I’ll compare any plausible roles against the existing eight already reported and only write files if something genuinely new clears the fit bar.
+exec
+/bin/zsh -lc "date '+%Y-%m-%d %H:%M %Z'" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' ./shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-20 18:22 CET
+ succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+exec
+/bin/zsh -lc "find . -maxdepth 3 -type f | rg 'job|digest|source|rank|find'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./sources.md
+./tracks/core_crypto/sources.md
+./shared/digest_template.md
+./shared/seen_jobs.md
+./scripts/com.jvdh.core-crypto-job-agent.plist
+codex
+I’ve confirmed today’s digest already exists at `18:22 CET`, so this is a same-day rerun. I’m moving into live source checks now; if nothing genuinely new and reportable turns up, I will leave both the digest and seen list untouched.
+exec
+/bin/zsh -lc 'git status --short' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+ M shared/seen_jobs.md
+ M tracks/core_crypto/AGENTS.md
+ M tracks/core_crypto/digests/2026-03-20.md
+?? logs/
+?? scripts/
+?? tracks/core_crypto/digests/latest.md
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: 'apply/' in https://pqshield.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://pqshield.com/careers/apply/4766811101
+🌐 Searching the web...
+🌐 Searched the web
+🌐 Searching the web...
+🌐 Searched the web
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.ai/
+🌐 Searching the web...
+🌐 Searched: https://dualitytech.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Read more' in https://dualitytech.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://short.sg/j/41153475
+🌐 Searching the web...
+🌐 Searched: https://www.sandboxaq.com/job-openings
+🌐 Searching the web...
+🌐 Searched: 'Kryptographie' in https://jobs.secunet.com/
+🌐 Searching the web...
+🌐 Searched: https://jobs.neclab.eu/
+🌐 Searching the web...
+🌐 Searched: https://www.quantinuum.com/company/careers
+🌐 Searching the web...
+🌐 Searched: 'crypt' in https://www.quantinuum.com/company/careers
+🌐 Searching the web...
+🌐 Searched: https://www.qrypt.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Engineer' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+🌐 Searching the web...
+🌐 Searched: 'NVIDIA' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://jobs.eu.lever.co/quantinuum
+🌐 Searching the web...
+🌐 Searched: 'crypt' in https://careers-rambus.icims.com/jobs/
+🌐 Searching the web...
+🌐 Searched: https://careers-rambus.icims.com/jobs/22443/lead-mts-logic-design/job
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html
+🌐 Searching the web...
+🌐 Searched the web
+🌐 Searching the web...
+🌐 Searched: site:jobs.secunet.com Android Engineer Verschluesselung Security secunet
+🌐 Searching the web...
+🌐 Searched: site:jobs.secunet.com "Android Engineer" "Verschlüsselung" secunet
+🌐 Searching the web...
+🌐 Searched: 'Android Engineer' in https://jobs.secunet.com/
+🌐 Searching the web...
+🌐 Searched: site:apply.workable.com/trailofbits Trail of Bits cryptography
+🌐 Searching the web...
+🌐 Searched: Trail of Bits careers research engineer
+🌐 Searching the web...
+🌐 Searched: site:jobs.ashbyhq.com/sandboxaq cryptography R&D sandboxaq
+🌐 Searching the web...
+🌐 Searched: site:jobs.infineon.com Infineon cryptography engineer
+codex
+Live checking is done. I found one role that clears the bar from the approved sources and stayed conservative on several adjacent-but-weaker options that were either too stack-specific, too blockchain-heavy, too location-constrained, or not verifiable enough from the official posting.
+
+Plan:
+1. Re-read the tail of today’s digest and `shared/seen_jobs.md` so I can append without disturbing existing edits.
+2. Add a `## Update HH:MM` section with only the newly reportable role.
+3. Append the same role to `shared/seen_jobs.md` and stop there.
+exec
+/bin/zsh -lc "date '+%H:%M'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+18:27
+exec
+/bin/zsh -lc 'tail -n 60 ./tracks/core_crypto/digests/2026-03-20.md' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'tail -n 20 ./shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ succeeded in 0ms:
+- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
+- Explicit applied-cryptography role: the posting names ZKPs, MPC, homomorphic encryption, TEEs, and privacy-by-design features.
+- Strong research-to-product fit: design and optimize cryptographic primitives and protocols, benchmark them, and work closely with engineers and product.
+- Main concern: the work is tightly tied to Hedera and secure smart-contract / blockchain infrastructure.
+
+### 3. Cryptography Engineer — QEDIT
+- Fit score: 8.5/10
+- Location: unknown
+- Link: https://qed-it.com/careers
+- The role is explicitly for a hands-on cryptography engineer or cryptography researcher and centers on zero-knowledge proofs, elliptic-curve cryptography, and Rust.
+- Core work is a strong match for the research-plus-engineering profile: design protocols, implement them, and review cryptographic code.
+- Main concern: the role is blockchain-heavy and the public page does not state location or remote policy.
+
+### 4. Software Developer (m/w/d) Schwerpunkt Kryptographie — secunet Security Networks AG
+- Fit score: 8/10
+- Location: Berlin or Eschborn
+- Link: https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+- Strong topical match: post-quantum migration, ECC/PQC cryptography, PKI, Common Criteria, and smartcard-platform work.
+- Berlin is a preferred geography and the posting explicitly allows mobile office plus limited EU remote work.
+- Main concern: the stack leans toward C/C++, smartcard platform work, and possibly team leadership, which is narrower than the shared profile.
+🌐 Searching the web...
+🌐 Searched the web
+codex
+I’m appending one new digest section and one new seen-job row. I’m not touching the earlier summary or any existing entries, because this is a same-day rerun and the instructions are append-only.
+file update
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+@@ -79 +79,12 @@
+ - Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
++
++## Update 18:27
++
++### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
++- Fit score: 8/10
++- Location: Santa Clara, CA or Remote, US
++- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
++- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
++- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
++- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+@@ -9 +9,2 @@
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+apply_patch(auto_approved=true) exited 0 in 55ms:
+Success. Updated the following files:
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 049cbbeee29f532b112b3e1ea5fffe90440ad0ab..5d7e2cc1296d8532ee35f26d121fc254357c71f2
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -7,3 +7,4 @@
+ 2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 55aa93fa817e4bdfcd1350d920f95c620119ebf8..087f212e9be740fe839a8c3d593dde1edcade23a
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -77,3 +77,14 @@
+ - Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+ - SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+ - Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
++
++## Update 18:27
++
++### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
++- Fit score: 8/10
++- Location: Santa Clara, CA or Remote, US
++- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
++- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
++- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
++- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 049cbbeee29f532b112b3e1ea5fffe90440ad0ab..5d7e2cc1296d8532ee35f26d121fc254357c71f2
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -7,3 +7,4 @@
+ 2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 55aa93fa817e4bdfcd1350d920f95c620119ebf8..087f212e9be740fe839a8c3d593dde1edcade23a
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -77,3 +77,14 @@
+ - Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+ - SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+ - Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
++
++## Update 18:27
++
++### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
++- Fit score: 8/10
++- Location: Santa Clara, CA or Remote, US
++- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
++- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
++- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
++- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+
+codex
+The append is in place. I’m doing a quick verification pass on the updated tails so I can confirm the new section landed cleanly and only the reported role was added to `seen_jobs.md`.
+exec
+/bin/zsh -lc 'tail -n 5 ./shared/seen_jobs.md' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'tail -n 24 ./tracks/core_crypto/digests/2026-03-20.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+ succeeded in 0ms:
+### 8. Hardware Verification Engineer — PQShield
+- Fit score: 6/10
+- Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+- Link: https://pqshield.com/careers/apply/4682388101/
+- The role is clearly security-relevant and asks for background in software development, cryptography, and secure product development.
+- Geography is workable from Germany and PQShield is directly on-track as a post-quantum cryptography company.
+- Main concern: the job is fundamentally a UVM / formal hardware verification role, so it is a stretch against the shared research-engineering profile.
+
+## Notes
+
+- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+
+## Update 18:27
+
+### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
+- Fit score: 8/10
+- Location: Santa Clara, CA or Remote, US
+- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+exec
+/bin/zsh -lc 'git diff -- ./tracks/core_crypto/digests/2026-03-20.md ./shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 020b3f5..5d7e2cc 100644
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -4,3 +4,7 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+ 2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
++2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
++2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
++2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 6d2a46f..087f212 100644
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -1,8 +1,8 @@
+ # Daily job digest for 2026-03-20
+ 
+ Summary:
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 049cbbeee29f532b112b3e1ea5fffe90440ad0ab..5d7e2cc1296d8532ee35f26d121fc254357c71f2
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -7,3 +7,4 @@
+ 2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 55aa93fa817e4bdfcd1350d920f95c620119ebf8..087f212e9be740fe839a8c3d593dde1edcade23a
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -77,3 +77,14 @@
+ - Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+ - SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+ - Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
++
++## Update 18:27
++
++### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
++- Fit score: 8/10
++- Location: Santa Clara, CA or Remote, US
++- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
++- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
++- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
++- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+
+codex
+Verification passed. I’m pulling exact line numbers for the appended section and seen-job entry so the close-out can point to the updated locations precisely.
+exec
+/bin/zsh -lc 'nl -ba ./shared/seen_jobs.md | tail -n 6' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'nl -ba ./tracks/core_crypto/digests/2026-03-20.md | tail -n 20' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+    71	- The role is clearly security-relevant and asks for background in software development, cryptography, and secure product development.
+    72	- Geography is workable from Germany and PQShield is directly on-track as a post-quantum cryptography company.
+    73	- Main concern: the job is fundamentally a UVM / formal hardware verification role, so it is a stretch against the shared research-engineering profile.
+    74	
+    75	## Notes
+    76	
+    77	- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+    78	- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+    79	- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+    80	
+    81	## Update 18:27
+    82	
+    83	### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
+    84	- Fit score: 8/10
+    85	- Location: Santa Clara, CA or Remote, US
+    86	- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+    87	- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
+    88	- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+    89	- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+    90	- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+ succeeded in 0ms:
+     5	2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+     6	2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+     7	2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+     8	2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+     9	2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+    10	2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 049cbbeee29f532b112b3e1ea5fffe90440ad0ab..5d7e2cc1296d8532ee35f26d121fc254357c71f2
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -7,3 +7,4 @@
+ 2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 55aa93fa817e4bdfcd1350d920f95c620119ebf8..087f212e9be740fe839a8c3d593dde1edcade23a
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -77,3 +77,14 @@
+ - Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+ - SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+ - Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
++
++## Update 18:27
++
++### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
++- Fit score: 8/10
++- Location: Santa Clara, CA or Remote, US
++- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
++- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
++- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
++- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+
+codex
+Found 1 new reportable role from the allowed `core_crypto` sources: `Senior Math Libraries Engineer, Post-Quantum Cryptography` at NVIDIA. I appended it as `## Update 18:27` in [2026-03-20.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md#L81) and preserved the earlier digest content unchanged.
+
+I also appended the role to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md#L10). I stayed conservative on the rest of the source set; the other plausible roles were either too weakly aligned, too location- or stack-constrained, too blockchain/mobile/hardware-specific, or not verifiable enough from the official posting pages.
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 049cbbeee29f532b112b3e1ea5fffe90440ad0ab..5d7e2cc1296d8532ee35f26d121fc254357c71f2
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -7,3 +7,4 @@
+ 2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
++2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 55aa93fa817e4bdfcd1350d920f95c620119ebf8..087f212e9be740fe839a8c3d593dde1edcade23a
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -77,3 +77,14 @@
+ - Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+ - SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+ - Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
++
++## Update 18:27
++
++### Senior Math Libraries Engineer, Post-Quantum Cryptography — NVIDIA
++- Fit score: 8/10
++- Location: Santa Clara, CA or Remote, US
++- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
++- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
++- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
++- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+
+tokens used
+173.211
+Found 1 new reportable role from the allowed `core_crypto` sources: `Senior Math Libraries Engineer, Post-Quantum Cryptography` at NVIDIA. I appended it as `## Update 18:27` in [2026-03-20.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md#L81) and preserved the earlier digest content unchanged.
+
+I also appended the role to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md#L10). I stayed conservative on the rest of the source set; the other plausible roles were either too weakly aligned, too location- or stack-constrained, too blockchain/mobile/hardware-specific, or not verifiable enough from the official posting pages.
+zsh:38: operation not permitted: /Users/jvdh/Documents/logseq/pages/Job Digest 2026-03-20.md
+[2026-03-20 18:36:05] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0c51-90dc-7243-a6f2-54f71f029cf0
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+If ./tracks/core_crypto/digests/2026-03-20.md does not exist, create it.
+If it already exists, read it first and append a new section named ## Update HH:MM containing only newly reportable roles from this run.
+Do not overwrite or remove earlier content in today's digest.
+If no new roles are found, leave today's digest unchanged.
+Append the reported roles to ./shared/seen_jobs.md.
+
+mcp startup: no servers
+codex
+Using the `find-jobs` skill for discovery and `rank-jobs` for scoring, then I’ll update today’s digest without touching earlier content.
+exec
+/bin/zsh -lc "sed -n '1,260p' /Users/jvdh/Documents/job-agent/.agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/.agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+ succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc "pwd && rg --files . | rg '("'^|/)(AGENTS'"\\.md|sources\\.md|prefs\\.md|seen_jobs\\.md|cv\\.md|SKILL\\.md|2026-03-20\\.md)"'$'"'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+/Users/jvdh/Documents/job-agent
+./AGENTS.md
+./shared/seen_jobs.md
+./tracks/core_crypto/AGENTS.md
+./tracks/core_crypto/digests/2026-03-20.md
+./tracks/core_crypto/sources.md
+./tracks/core_crypto/prefs.md
+./sources.md
+./cv.md
+codex
+I’ve confirmed today’s digest already exists, so I need to preserve it and append only truly new reportable roles from this run. Next I’m loading the track sources, fit preferences, CV, and seen list to drive discovery and deduping.
+exec
+/bin/zsh -lc "sed -n '1,260p' /Users/jvdh/Documents/job-agent/shared/seen_jobs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' /Users/jvdh/Documents/job-agent/profile/prefs_global.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+ succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities in Europe. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+ succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../profile/cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+7. `./digests/YYYY-MM-DD.md` for today, if it already exists
+
+ succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+## Check every run
+
+- IACR Jobs — https://www.iacr.org/jobs/
+
+- PQShield — https://pqshield.com/careers/
+- Zama — https://jobs.zama.ai/
+- Roseman Labs — https://rosemanlabs.com/en/working-at-roseman-labs
+- Duality Technologies — https://dualitytech.com/careers/
+- QEDIT — https://qed-it.com/careers
+- Least Authority — https://leastauthority.com/careers/
+- Trail of Bits — https://trailofbits.com/careers/
+- Partisia Blockchain — https://partisiablockchain.com/career/
+exec
+/bin/zsh -lc "sed -n '1,240p' /Users/jvdh/Documents/job-agent/tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptograph
+- security engineering
+- privacy engineering
+- research engineering
+- MPC
+- protocol engineering
+
+
+ succeeded in 0ms:
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 3 additional new roles on this pass from the allowed source set.
+- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
+
+### 2. Applied Cryptographer — Hashgraph
+- Fit score: 8.5/10
+- Location: Remote
+- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
+exec
+/bin/zsh -lc "sed -n '1,260p' /Users/jvdh/Documents/job-agent/cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+codex
+I have the fit criteria and the current seen set. The remaining work is source-by-source verification on the official pages, with a conservative bar: if the posting body or direct role page isn’t verifiable enough, it won’t be reported.
+Plan update
+Running the core_crypto track means discovering only net-new roles from the allowed source list, ranking them against the profile, then appending the digest and seen list only if something clears the bar.
+  → Inspect allowed sources and collect plausible net-new core-crypto roles from official pages only
+  • Rank any new candidates against track/global preferences and CV
+  • Append today’s digest with a time-stamped update if there are reportable roles
+  • Append reported roles to shared/seen_jobs.md and verify the final files
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: 'Crypt' in https://pqshield.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Research Engineer' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org cryptography OR engineer OR security
+🌐 Searching the web...
+🌐 Searched: https://trailofbits.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Engineer' in https://www.qrypt.com/careers/
+🌐 Searching the web...
+🌐 Searched: Qrypt careers cryptography engineer site:qrypt.com
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org OR site:zama.org/jobs Zama careers cryptography engineer
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org Zama cryptography researcher
+🌐 Searching the web...
+🌐 Searched: https://short.sg/j/41153475
+🌐 Searching the web...
+🌐 Searched: 'crypt' in https://jobs.eu.lever.co/quantinuum
+🌐 Searching the web...
+🌐 Searched: https://careers-rambus.icims.com/jobs/
+🌐 Searching the web...
+🌐 Searched: site:partisiablockchain.com/career partisia engineer privacy
+🌐 Searching the web...
+🌐 Searched: 'Wallet' in https://jobs.secunet.com/
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/
+🌐 Searching the web...
+🌐 Searched: 'Rust' in https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+🌐 Searching the web...
+🌐 Searched: site:trailofbits.com/careers "Security Researcher" "Trail of Bits"
+🌐 Searching the web...
+🌐 Searched: https://short.sg/j/41153475
+🌐 Searching the web...
+🌐 Searched: https://www.unibw.de/pacy-en/vacancies
+🌐 Searching the web...
+🌐 Searched: 'Germany' in https://www.iacr.org/jobs/

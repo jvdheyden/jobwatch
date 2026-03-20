@@ -1,0 +1,2 @@
+shell-init: error retrieving current directory: getcwd: cannot access parent directories: Operation not permitted
+job-working-directory: error retrieving current directory: getcwd: cannot access parent directories: Operation not permitted
