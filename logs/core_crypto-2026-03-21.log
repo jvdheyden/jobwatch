@@ -1,0 +1,720 @@
+[2026-03-21 08:01:47] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0f33-4387-7772-9bfc-40eb5f2f4d3a
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+If ./tracks/core_crypto/digests/2026-03-21.md does not exist, create it.
+If it already exists, read it first and append a new section named ## Update HH:MM containing only newly reportable roles from this run.
+Do not overwrite or remove earlier content in today's digest.
+If no new roles are found, leave today's digest unchanged.
+Append the reported roles to ./shared/seen_jobs.md.
+
+mcp startup: no servers
+codex
+I’m running the `core_crypto` job workflow against today’s sources, checking the existing digest/seen lists first, then I’ll fetch candidates, rank only new roles, and update the digest plus `seen_jobs.md` without touching prior content.
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/.agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/.agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+ succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc "pwd && rg --files . | rg '("'^|/)(AGENTS'"\\.md|sources\\.md|prefs\\.md|prefs_global\\.md|cv\\.md|seen_jobs\\.md|2026-03-21\\.md|SKILL\\.md)"'$'"'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+/Users/jvdh/Documents/job-agent
+./AGENTS.md
+./profile/prefs_global.md
+./shared/seen_jobs.md
+./tracks/core_crypto/AGENTS.md
+./tracks/core_crypto/sources.md
+./tracks/core_crypto/prefs.md
+./sources.md
+./cv.md
+codex
+I’m using the `find-jobs` skill for discovery and `rank-jobs` for fit scoring. Next I’m loading the track rules, preferences, CV, seen list, and today’s digest state so I can filter and format correctly.
+exec
+/bin/zsh -lc "sed -n '1,260p' ./profile/prefs_global.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities in Europe. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+ succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+## Check every run
+
+- IACR Jobs — https://www.iacr.org/jobs/
+
+- PQShield — https://pqshield.com/careers/
+- Zama — https://jobs.zama.ai/
+- Roseman Labs — https://rosemanlabs.com/en/working-at-roseman-labs
+- Duality Technologies — https://dualitytech.com/careers/
+- QEDIT — https://qed-it.com/careers
+- Least Authority — https://leastauthority.com/careers/
+- Trail of Bits — https://trailofbits.com/careers/
+- Partisia Blockchain — https://partisiablockchain.com/career/
+ succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../profile/cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+7. `./digests/YYYY-MM-DD.md` for today, if it already exists
+
+exec
+/bin/zsh -lc "sed -n '1,260p' ./tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "test -f ./tracks/core_crypto/digests/2026-03-21.md && sed -n '1,260p' ./tracks/core_crypto/digests/2026-03-21.md || true" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptograph
+- security engineering
+- privacy engineering
+- research engineering
+- MPC
+- protocol engineering
+
+
+ succeeded in 0ms:
+
+exec
+/bin/zsh -lc "sed -n '1,260p' ./cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,260p' ./shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+codex
+I’ve confirmed there’s no digest for `2026-03-21` yet. Now I’m checking whether the repo already has job-agent scripts/templates so I can reuse the intended workflow instead of hand-rolling it.
+exec
+/bin/zsh -lc "find . -maxdepth 3 -type f | sed 's#"'^./##'"' | sort | sed -n '1,260p'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+.DS_Store
+.git/COMMIT_EDITMSG
+.git/HEAD
+.git/config
+.git/description
+.git/hooks/applypatch-msg.sample
+.git/hooks/commit-msg.sample
+.git/hooks/fsmonitor-watchman.sample
+.git/hooks/post-update.sample
+.git/hooks/pre-applypatch.sample
+.git/hooks/pre-commit.sample
+.git/hooks/pre-merge-commit.sample
+.git/hooks/pre-push.sample
+.git/hooks/pre-rebase.sample
+.git/hooks/pre-receive.sample
+.git/hooks/prepare-commit-msg.sample
+.git/hooks/push-to-checkout.sample
+.git/hooks/sendemail-validate.sample
+.git/hooks/update.sample
+.git/index
+exec
+/bin/zsh -lc "rg --files . | rg 'digest_template\\.md|scripts|bin|agent|job'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./scripts/com.jvdh.core-crypto-job-agent.plist
+./scripts/sync_to_logseq.sh
+./shared/seen_jobs.md
+./shared/digest_template.md
+exec
+/bin/zsh -lc "sed -n '1,220p' ./logs/core_crypto-2026-03-21.log" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' ./logs/core_crypto-2026-03-20.log" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+[2026-03-21 08:01:47] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0f33-4387-7772-9bfc-40eb5f2f4d3a
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+If ./tracks/core_crypto/digests/2026-03-21.md does not exist, create it.
+If it already exists, read it first and append a new section named ## Update HH:MM containing only newly reportable roles from this run.
+Do not overwrite or remove earlier content in today's digest.
+ succeeded in 0ms:
+[2026-03-20 17:57:34] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d0c2e-5e3e-7ef1-960d-44f1b1881053
+--------
+user
+Run the core_crypto job agent for today.
+Use ./tracks/core_crypto/sources.md only.
+Find only new roles not in ./shared/seen_jobs.md.
+Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
+Write a digest in ./tracks/core_crypto/digests/2026-03-20.md and append the reported roles to ./shared/seen_jobs.md.
+
+mcp startup: no servers
+exec
+/bin/zsh -lc "sed -n '1,220p' ./shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+codex
+I’ve got the output template and yesterday’s digest format. Next I’m querying only the allowed source pages to identify genuinely new roles, then I’ll score the survivors against the profile before editing any files.
+exec
+/bin/zsh -lc "sed -n '1,260p' ./tracks/core_crypto/digests/2026-03-20.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Daily job digest for 2026-03-20
+
+Summary:
+- Found 3 additional new roles on this pass from the allowed source set.
+- Today's digest now contains 8 roles worth noting: 5 strong matches and 3 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Cryptography Researcher — ClairVault
+- Fit score: 9/10
+- Location: Remote or hybrid
+- Link: https://www.iacr.org/jobs/item/4060
+- Direct fit to the profile: the posting explicitly asks for homomorphic encryption, lattice cryptography, MPC, and zero-knowledge proofs.
+- The role is research-engineering shaped rather than purely academic: design protocols, analyze security and efficiency, and work with Rust developers on production libraries.
+- Startup setting and privacy-preserving data systems align well with the profile's applied-crypto and real-world-impact preferences.
+
+### 2. Applied Cryptographer — Hashgraph
+- Fit score: 8.5/10
+- Location: Remote
+- Link: https://www.hashgraph.com/careers/?gh_jid=8284328002
+Plan update
+Context is loaded. I’m moving into source-by-source discovery, then ranking only net-new plausible roles, then updating the digest and seen list if anything survives.
+  ✓ Read track rules, preferences, CV, seen jobs, digest state, and template
+  → Search only allowed core_crypto sources for plausible new roles
+  • Rank new plausible roles against prefs and CV
+  • Create or append today’s digest without overwriting prior content
+  • Append reported roles to shared/seen_jobs.md
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: 'Crypt' in https://pqshield.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.ai/
+🌐 Searching the web...
+🌐 Searched: https://leastauthority.com/careers/
+🌐 Searching the web...
+🌐 Searched: 'Last updated:  2026' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org Zama jobs cryptography OR privacy engineer
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs Zama Rust Engineer Coprocessor
+🌐 Searching the web...
+🌐 Searched: site:apply.workable.com/trail-of-bits/ cryptography
+🌐 Searching the web...
+🌐 Searched: site:pqshield.com/careers/apply PQShield post-quantum cryptography engineer
+🌐 Searching the web...
+🌐 Searched: cryptography OR post-quantum OR privacy site:sandboxaq.com/job-openings SandboxAQ
+🌐 Searching the web...
+🌐 Searched: https://www.sandboxaq.com/job-openings
+🌐 Searching the web...
+🌐 Searched: 'Krypt' in https://jobs.secunet.com/
+🌐 Searching the web...
+🌐 Searched: site:qrypt.com/careers qrypt cryptography careers
+🌐 Searching the web...
+🌐 Searched: site:cyber.ee/careers/open-positions cryptography OR privacy OR security
+🌐 Searching the web...
+🌐 Searched: site:careers.thalesgroup.com/global/en/search-results cryptography OR post-quantum OR hardware security
+🌐 Searching the web...
+🌐 Searched: site:jobs.infineon.com cryptography OR secure element OR hardware security
+🌐 Searching the web...
+🌐 Searched: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+🌐 Searching the web...
+🌐 Searched: https://cyber.ee/careers/open-positions/
+codex
+I’ve finished the source sweep and narrowed it down to one role that clears the bar. Before I edit files, I’m going to write a new `2026-03-21` digest with that single strong match and append the same role to `shared/seen_jobs.md`; I’m excluding the rest because they were internships, location-infeasible, stale/unverifiable, or materially weaker fits.
+Plan update
+Discovery is complete. One new role is strong enough to report; the rest were filtered out for fit or practicality. I’m moving to file updates now.
+  ✓ Read track rules, preferences, CV, seen jobs, digest state, and template
+  ✓ Search only allowed core_crypto sources for plausible new roles
+  ✓ Rank new plausible roles against prefs and CV
+  → Create or append today’s digest without overwriting prior content
+  • Append reported roles to shared/seen_jobs.md
+exec
+/bin/zsh -lc "date '+%Y-%m-%d %H:%M %Z'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-21 08:34 CET
+exec
+/bin/zsh -lc 'ls -la ./tracks/core_crypto ./tracks/core_crypto/digests ./shared' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./shared:
+total 16
+drwxr-xr-x   4 jvdh  staff   128 Mar 20 16:55 .
+drwxr-xr-x  14 jvdh  staff   448 Mar 20 17:42 ..
+-rw-r--r--   1 jvdh  staff  3260 Mar 20 16:11 digest_template.md
+-rw-r--r--@  1 jvdh  staff  2230 Mar 20 18:43 seen_jobs.md
+
+./tracks/core_crypto:
+total 24
+drwxr-xr-x  6 jvdh  staff   192 Mar 21 06:46 .
+drwxr-xr-x  4 jvdh  staff   128 Mar 20 16:35 ..
+-rw-r--r--  1 jvdh  staff  2328 Mar 20 18:13 AGENTS.md
+drwxr-xr-x  4 jvdh  staff   128 Mar 20 18:08 digests
+-rw-r--r--  1 jvdh  staff   344 Mar 20 16:06 prefs.md
+-rw-r--r--  1 jvdh  staff  2579 Mar 21 06:46 sources.md
+
+./tracks/core_crypto/digests:
+total 40
+drwxr-xr-x  4 jvdh  staff   128 Mar 20 18:08 .
+drwxr-xr-x  6 jvdh  staff   192 Mar 21 06:46 ..
+codex
+I’m writing two small edits now: a new daily digest file for `2026-03-21`, and one appended line in `shared/seen_jobs.md` for the role actually reported in that digest.
+codex
+I’m writing the new daily digest in the existing repo style rather than the larger template, so it stays consistent with yesterday’s file. The edit will only add `tracks/core_crypto/digests/2026-03-21.md` and append one line to `shared/seen_jobs.md`.
+file update
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+@@ -13 +13,2 @@
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-21.md
+# Daily job digest for 2026-03-21
+
+Summary:
+- Found 1 new role from the allowed source set worth noting.
+- 1 strong match and 0 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Security / Cryptography Researcher & Engineer — Least Authority
+- Fit score: 8.7/10
+- Location: Remote-first; Berlin HQ
+- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
+- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
+- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
+- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
+
+## Borderline / maybe
+
+- No additional new roles cleared the bar on this run.
+
+## Notes
+
+- PQShield exposed a new post-quantum cryptography internship, but it is too junior for this profile.
+- Zama surfaced cryptography-adjacent engineering roles, but the most relevant opening was restricted to US / Canada Eastern time-zone candidates.
+- Other allowed sources checked on this pass did not surface a stronger new verifiable role than the one above.
+apply_patch(auto_approved=true) exited 0 in 69ms:
+Success. Updated the following files:
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-21.md
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index b242fbd3d85a3a274a4c028016fd7b898e0faf82..3b0f5b60137a9afa0abbba146e2dce411e7be39a
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -11,3 +11,4 @@
+ 2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+ 2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+diff --git a/tracks/core_crypto/digests/2026-03-21.md b/tracks/core_crypto/digests/2026-03-21.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d820a15035394d76b05f48da26138ede9068a417
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-21.md
+@@ -0,0 +1,26 @@
++# Daily job digest for 2026-03-21
++
++Summary:
++- Found 1 new role from the allowed source set worth noting.
++- 1 strong match and 0 borderline / maybe matches.
++
++## Strong matches
++
++### 1. Security / Cryptography Researcher & Engineer — Least Authority
++- Fit score: 8.7/10
++- Location: Remote-first; Berlin HQ
++- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
++- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
++- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
++- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
++- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
++
++## Borderline / maybe
++
++- No additional new roles cleared the bar on this run.
++
++## Notes
++
++- PQShield exposed a new post-quantum cryptography internship, but it is too junior for this profile.
++- Zama surfaced cryptography-adjacent engineering roles, but the most relevant opening was restricted to US / Canada Eastern time-zone candidates.
++- Other allowed sources checked on this pass did not surface a stronger new verifiable role than the one above.
+
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index b242fbd3d85a3a274a4c028016fd7b898e0faf82..3b0f5b60137a9afa0abbba146e2dce411e7be39a
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -11,3 +11,4 @@
+ 2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+ 2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+diff --git a/tracks/core_crypto/digests/2026-03-21.md b/tracks/core_crypto/digests/2026-03-21.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d820a15035394d76b05f48da26138ede9068a417
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-21.md
+@@ -0,0 +1,26 @@
++# Daily job digest for 2026-03-21
++
++Summary:
++- Found 1 new role from the allowed source set worth noting.
++- 1 strong match and 0 borderline / maybe matches.
++
++## Strong matches
++
++### 1. Security / Cryptography Researcher & Engineer — Least Authority
++- Fit score: 8.7/10
++- Location: Remote-first; Berlin HQ
++- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
++- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
++- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
++- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
++- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
++
++## Borderline / maybe
++
++- No additional new roles cleared the bar on this run.
++
++## Notes
++
++- PQShield exposed a new post-quantum cryptography internship, but it is too junior for this profile.
++- Zama surfaced cryptography-adjacent engineering roles, but the most relevant opening was restricted to US / Canada Eastern time-zone candidates.
++- Other allowed sources checked on this pass did not surface a stronger new verifiable role than the one above.
+
+codex
+The edits are in. I’m doing a quick verification pass on the new digest content and the `seen_jobs.md` append so I can confirm the run is internally consistent before I stop.
+exec
+/bin/zsh -lc 'tail -n 5 ./shared/seen_jobs.md' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' ./tracks/core_crypto/digests/2026-03-21.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+ succeeded in 0ms:
+# Daily job digest for 2026-03-21
+
+Summary:
+- Found 1 new role from the allowed source set worth noting.
+- 1 strong match and 0 borderline / maybe matches.
+
+## Strong matches
+
+### 1. Security / Cryptography Researcher & Engineer — Least Authority
+- Fit score: 8.7/10
+- Location: Remote-first; Berlin HQ
+- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
+- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
+- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
+- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
+
+## Borderline / maybe
+
+- No additional new roles cleared the bar on this run.
+exec
+/bin/zsh -lc 'git diff -- ./tracks/core_crypto/digests/2026-03-21.md ./shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc..3b0f5b6 100644
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,7 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index b242fbd3d85a3a274a4c028016fd7b898e0faf82..3b0f5b60137a9afa0abbba146e2dce411e7be39a
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -11,3 +11,4 @@
+ 2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+ 2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+diff --git a/tracks/core_crypto/digests/2026-03-21.md b/tracks/core_crypto/digests/2026-03-21.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d820a15035394d76b05f48da26138ede9068a417
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-21.md
+@@ -0,0 +1,26 @@
++# Daily job digest for 2026-03-21
++
++Summary:
++- Found 1 new role from the allowed source set worth noting.
++- 1 strong match and 0 borderline / maybe matches.
++
++## Strong matches
++
++### 1. Security / Cryptography Researcher & Engineer — Least Authority
++- Fit score: 8.7/10
++- Location: Remote-first; Berlin HQ
++- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
++- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
++- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
++- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
++- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
++
++## Borderline / maybe
++
++- No additional new roles cleared the bar on this run.
++
++## Notes
++
++- PQShield exposed a new post-quantum cryptography internship, but it is too junior for this profile.
++- Zama surfaced cryptography-adjacent engineering roles, but the most relevant opening was restricted to US / Canada Eastern time-zone candidates.
++- Other allowed sources checked on this pass did not surface a stronger new verifiable role than the one above.
+
+Plan update
+Digest and seen-jobs updates are written and verified. The run is complete.
+  ✓ Read track rules, preferences, CV, seen jobs, digest state, and template
+  ✓ Search only allowed core_crypto sources for plausible new roles
+  ✓ Rank new plausible roles against prefs and CV
+  ✓ Create or append today’s digest without overwriting prior content
+  ✓ Append reported roles to shared/seen_jobs.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index b242fbd3d85a3a274a4c028016fd7b898e0faf82..3b0f5b60137a9afa0abbba146e2dce411e7be39a
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -11,3 +11,4 @@
+ 2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+ 2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+diff --git a/tracks/core_crypto/digests/2026-03-21.md b/tracks/core_crypto/digests/2026-03-21.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d820a15035394d76b05f48da26138ede9068a417
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-21.md
+@@ -0,0 +1,26 @@
++# Daily job digest for 2026-03-21
++
++Summary:
++- Found 1 new role from the allowed source set worth noting.
++- 1 strong match and 0 borderline / maybe matches.
++
++## Strong matches
++
++### 1. Security / Cryptography Researcher & Engineer — Least Authority
++- Fit score: 8.7/10
++- Location: Remote-first; Berlin HQ
++- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
++- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
++- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
++- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
++- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
++
++## Borderline / maybe
++
++- No additional new roles cleared the bar on this run.
++
++## Notes
++
++- PQShield exposed a new post-quantum cryptography internship, but it is too junior for this profile.
++- Zama surfaced cryptography-adjacent engineering roles, but the most relevant opening was restricted to US / Canada Eastern time-zone candidates.
++- Other allowed sources checked on this pass did not surface a stronger new verifiable role than the one above.
+
+codex
+Created [2026-03-21.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-21.md) and appended the reported role to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md).
+
+This run produced one new reportable role: Least Authority’s `Security / Cryptography Researcher & Engineer`. The other roles I surfaced from the allowed sources were either already seen, too junior, location-infeasible, unverifiable, or weaker fits, so they were not added. Verification was a direct content/diff check; no earlier digest content was overwritten because today’s digest did not exist yet.
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index b242fbd3d85a3a274a4c028016fd7b898e0faf82..3b0f5b60137a9afa0abbba146e2dce411e7be39a
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -11,3 +11,4 @@
+ 2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+ 2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+diff --git a/tracks/core_crypto/digests/2026-03-21.md b/tracks/core_crypto/digests/2026-03-21.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d820a15035394d76b05f48da26138ede9068a417
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-21.md
+@@ -0,0 +1,26 @@
++# Daily job digest for 2026-03-21
++
++Summary:
++- Found 1 new role from the allowed source set worth noting.
++- 1 strong match and 0 borderline / maybe matches.
++
++## Strong matches
++
++### 1. Security / Cryptography Researcher & Engineer — Least Authority
++- Fit score: 8.7/10
++- Location: Remote-first; Berlin HQ
++- Link: https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
++- Direct topical fit: the role explicitly calls out applied and advanced cryptography, zero-knowledge proofs, privacy technologies, and distributed systems.
++- Strong research-engineering shape: the work centers on analyzing designs, specs, and codebases, then turning that into concrete technical findings and recommendations.
++- Practical fit: Least Authority describes itself as remote-first, says it can employ remotely in 150+ countries, and notes visa-processing support for relocation to Germany.
++- Main concern: the role appears consultancy-heavy and includes substantial blockchain / Web3 work, which is somewhat narrower than a pure protocol or privacy-systems R&D role.
++
++## Borderline / maybe
++
++- No additional new roles cleared the bar on this run.
++
++## Notes
++
++- PQShield exposed a new post-quantum cryptography internship, but it is too junior for this profile.
++- Zama surfaced cryptography-adjacent engineering roles, but the most relevant opening was restricted to US / Canada Eastern time-zone candidates.
++- Other allowed sources checked on this pass did not surface a stronger new verifiable role than the one above.
+
+tokens used
+208.862
+Created [2026-03-21.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-21.md) and appended the reported role to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md).
+
+This run produced one new reportable role: Least Authority’s `Security / Cryptography Researcher & Engineer`. The other roles I surfaced from the allowed sources were either already seen, too junior, location-infeasible, unverifiable, or weaker fits, so they were not added. Verification was a direct content/diff check; no earlier digest content was overwritten because today’s digest did not exist yet.
+[2026-03-21 10:21:06] Finished core_crypto daily run

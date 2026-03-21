@@ -27,14 +27,6 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting core_crypto daily run"
 
 cat <<EOF | "$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write -
 Run the core_crypto job agent for today.
-Use ./tracks/core_crypto/sources.md only.
-Find only new roles not in ./shared/seen_jobs.md.
-Rank them using ./tracks/core_crypto/prefs.md, ./profile/prefs_global.md, and ./cv.md.
-If ./tracks/core_crypto/digests/$TODAY.md does not exist, create it.
-If it already exists, read it first and append a new section named ## Update HH:MM containing only newly reportable roles from this run.
-Do not overwrite or remove earlier content in today's digest.
-If no new roles are found, leave today's digest unchanged.
-Append the reported roles to ./shared/seen_jobs.md.
 EOF
 
 GRAPH_DIR="/Users/jvdh/Documents/logseq"

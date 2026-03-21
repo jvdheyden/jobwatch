@@ -5,11 +5,12 @@ If this file conflicts with the global preferences, this file takes precedence f
 
 ## Goal
 Role types: 
-- cryptograph
+- cryptographer
+- cryptography engineer
 - security engineering
 - privacy engineering
 - research engineering
-- MPC
+- MPC engineer
 - protocol engineering
 
 

@@ -21,6 +21,18 @@ Do not waste time on broad employer pages outside this list.
 
 ## Check every 2-3 runs
 
+- Anthropic - https://www.anthropic.com/careers/jobs
+- Automattic - https://automattic.com/jobs/
+- Bosch - https://www.bosch.de/karriere/
+- Coinbase - https://www.coinbase.com/de/careers
+- Cybernetica - https://cyber.ee/careers/open-positions
+- Google - https://www.google.com/about/careers/applications/jobs/results
+- Ethereum Foundation
+- IBM - https://www.ibm.com/careers/search
+- Infineon - https://www.infineon.com/de/careers
+- Mistral AI - https://mistral.ai/careers
+- NXP - https://www.nxp.com/company/about-nxp/careers:CAREERS
+- Palantir - https://www.palantir.com/careers/
 - SandboxAQ — https://www.sandboxaq.com/job-openings
 - secunet — https://jobs.secunet.com/
 - NEC Laboratories Europe — https://jobs.neclab.eu/
@@ -29,6 +41,7 @@ Do not waste time on broad employer pages outside this list.
 - Qrypt — https://www.qrypt.com/careers/
 - QuSecure — https://www.qusecure.com/careers/
 - Rambus — https://www.rambus.com/careers/
+- Thales - https://careers.thalesgroup.com/global/en/search-results
 
 ## Keep only roles matching at least one of these
 

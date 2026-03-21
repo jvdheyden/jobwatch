@@ -2549,3 +2549,634 @@ Running the core_crypto track means discovering only net-new roles from the allo
 🌐 Searched: https://www.unibw.de/pacy-en/vacancies
 🌐 Searching the web...
 🌐 Searched: 'Germany' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched the web
+codex
+I have three net-new roles that clear the bar: two research-heavy postdoc openings from IACR-linked postings and one secunet Rust/security role. I’m writing them into today’s digest as a new time-stamped update, then I’ll append the same three entries to the seen list.
+exec
+/bin/zsh -lc 'tail -n 40 /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+### 6. Software Developer (m/w/d) Smartcard — secunet Security Networks AG
+- Fit score: 7/10
+- Location: Berlin, Dresden or Eschborn
+- Link: https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+- Relevant because it sits on a smartcard trust anchor and explicitly asks for deep ECC/PQC cryptography knowledge.
+- Germany-based locations, technical depth, and security-critical product work fit the general preference set.
+- Main concern: Java Card, embedded software, and hardware-adjacent standards are central, and those are not evidenced in the profile.
+
+### 7. Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten — secunet Security Networks AG
+- Fit score: 6.9/10
+- Location: Germany-wide
+- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
+- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
+- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
+
+### 8. Hardware Verification Engineer — PQShield
+- Fit score: 6/10
+- Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+- Link: https://pqshield.com/careers/apply/4682388101/
+exec
+/bin/zsh -lc "date '+%H:%M'" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'tail -n 20 /Users/jvdh/Documents/job-agent/shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+18:42
+ succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+codex
+I’m patching the digest and seen list now. The update will keep the earlier 18:27 section intact and add only the three new roles that cleared the fit bar on this pass.
+file update
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+@@ -90 +90,31 @@
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+@@ -10 +10,4 @@
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+apply_patch(auto_approved=true) exited 0 in 51ms:
+Success. Updated the following files:
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..0ad788d3e48a7ffc69a26d39fc2b9c4116eead11
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..0ad788d3e48a7ffc69a26d39fc2b9c4116eead11
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+🌐 Searching the web...
+🌐 Searched the web
+codex
+The file edits are in place. I’m doing a quick verification pass now to make sure the appended section is well-formed and the seen list contains only the newly reported roles from this run.
+exec
+/bin/zsh -lc 'tail -n 60 /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'tail -n 10 /Users/jvdh/Documents/job-agent/shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+- Location: Germany-wide
+- Link: https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+- Good topical overlap with the track: EUDI Wallet, digital identity, verifiable credentials, OpenID4VC, DIDComm, OAuth2, SAML, and PKI.
+- German plus English fluency and the feasible public-sector / technical-specialist pivot make it practically plausible.
+- Main concern: the role is advisory and integration-heavy rather than research-engineering heavy.
+
+### 8. Hardware Verification Engineer — PQShield
+- Fit score: 6/10
+- Location: Remote in UK, Germany, France, Belgium, Austria, Netherlands or Spain
+- Link: https://pqshield.com/careers/apply/4682388101/
+- The role is clearly security-relevant and asks for background in software development, cryptography, and secure product development.
+- Geography is workable from Germany and PQShield is directly on-track as a post-quantum cryptography company.
+- Main concern: the job is fundamentally a UVM / formal hardware verification role, so it is a stretch against the shared research-engineering profile.
+
+## Notes
+
+- Zama currently exposes relevant indexed roles, especially `Rust Engineer, Coprocessor`, but the best-matching openings carried East Coast US / Canada eligibility constraints or unstable live pages, so they were excluded conservatively.
+- SandboxAQ surfaced `Staff Software Engineer, Cryptography R&D`, but the official Ashby page remained JavaScript-only in this environment, so it was not added without a verifiable official posting body.
+- Roseman Labs, Duality Technologies, Partisia Blockchain, Least Authority, Trail of Bits, NEC Laboratories Europe, Infineon, Quantinuum, Qrypt, QuSecure, and Rambus did not surface a verifiable current role that beat the bar above from the allowed source pages.
+
+ succeeded in 0ms:
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+exec
+/bin/zsh -lc 'git status --short /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md /Users/jvdh/Documents/job-agent/shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+ M shared/seen_jobs.md
+ M tracks/core_crypto/digests/2026-03-20.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..0ad788d3e48a7ffc69a26d39fc2b9c4116eead11
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+codex
+The only issue from verification is heading depth inside the new update block. I’m normalizing that now so the appended section reads cleanly without changing any earlier content.
+file update
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+@@ -95,3 +95,3 @@
+ 
+-### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
+ - Fit score: 8.7/10
+@@ -103,3 +103,3 @@
+ 
+-### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
+ - Fit score: 8.4/10
+@@ -113,3 +113,3 @@
+ 
+-### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++#### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
+ - Fit score: 7.7/10
+apply_patch(auto_approved=true) exited 0 in 82ms:
+Success. Updated the following files:
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..220985409382055a630a78286b201a7cfade3601
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++#### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..220985409382055a630a78286b201a7cfade3601
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++#### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+codex
+The update block is now structurally clean. I’m doing one last tail check and then I’ll close with the exact files changed and the roles that were added.
+exec
+/bin/zsh -lc 'tail -n 35 /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+- Link: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+- Strong topical match: the IACR listing explicitly centers the role on post-quantum cryptography and highlights finite-field arithmetic, lattice-based cryptography, and cryptographic hash functions.
+- The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+- Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+- Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
+
+## Update 18:42
+
+### Strong matches
+
+#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
+- Fit score: 8.7/10
+- Location: Erlangen-Nuremberg, Germany
+- Link: https://roeslpa.de/application.html
+- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
+- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
+- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
+
+#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
+- Fit score: 8.4/10
+exec
+/bin/zsh -lc 'git diff -- /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md /Users/jvdh/Documents/job-agent/shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc..b242fbd 100644
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212..2209854 100644
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@ Summary:
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..220985409382055a630a78286b201a7cfade3601
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++#### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+Plan update
+Discovery, ranking, digest append, and seen-list append are complete. Only newly reportable roles from this run were added.
+  ✓ Inspect allowed sources and collect plausible net-new core-crypto roles from official pages only
+  ✓ Rank any new candidates against track/global preferences and CV
+  ✓ Append today’s digest with a time-stamped update if there are reportable roles
+  ✓ Append reported roles to shared/seen_jobs.md and verify the final files
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..220985409382055a630a78286b201a7cfade3601
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++#### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+codex
+Updated [2026-03-20.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md) by appending `## Update 18:42` and preserving all earlier content. I added 3 newly reportable roles from the allowed source set, ranked against the core-crypto prefs, global prefs, and CV:
+
+- FAU Erlangen-Nuremberg, `1 PhD + 1 Post-Doc Position` (postdoc track), `8.7/10`
+- Universität der Bundeswehr München, `Post-doctoral Researcher in Lattice-based Cryptography`, `8.4/10`
+- secunet Security Networks AG, `Software Developer (m/w/d) Rust`, `7.7/10` and placed under borderline / maybe
+
+I also appended those same 3 roles to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md). Verified the digest was only appended to, not rewritten.
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 5d7e2cc1296d8532ee35f26d121fc254357c71f2..b242fbd3d85a3a274a4c028016fd7b898e0faf82
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -8,3 +8,6 @@
+ 2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+ 2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+ 2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
++2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
++2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
++2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+diff --git a/tracks/core_crypto/digests/2026-03-20.md b/tracks/core_crypto/digests/2026-03-20.md
+index 087f212e9be740fe839a8c3d593dde1edcade23a..220985409382055a630a78286b201a7cfade3601
+--- a/tracks/core_crypto/digests/2026-03-20.md
++++ b/tracks/core_crypto/digests/2026-03-20.md
+@@ -88,3 +88,33 @@
+ - The work is research-engineering shaped rather than generic infrastructure work: design and develop cryptography software for low-latency or high-throughput environments and build broadly used math libraries.
+ - Santa Clara fits the Bay Area preference, and a US-remote option is practically attractive if sponsorship is viable.
+ - Main concern: the posting leans heavily on advanced modern C++ and ideally CUDA / GPU-computing experience, which is not evidenced in the shared profile.
++
++## Update 18:42
++
++### Strong matches
++
++#### 1. 1 PhD + 1 Post-Doc Position — FAU Erlangen-Nuremberg
++- Fit score: 8.7/10
++- Location: Erlangen-Nuremberg, Germany
++- Link: https://roeslpa.de/application.html
++- The postdoctoral track is a strong topical fit: the IACR listing explicitly centers the role on interoperable secure messaging, private and anonymous communication, and provable real-world cryptography.
++- Germany-based and research-engineering shaped: the role is full-time, funded at E13 TV-L for three years, and English is sufficient according to the posting.
++- Main concern: the title bundles both PhD and postdoc paths, and the role is academic rather than product-facing.
++
++#### 2. Post-doctoral Researcher in Lattice-based Cryptography — Universität der Bundeswehr München
++- Fit score: 8.4/10
++- Location: Munich, Germany
++- Link: https://www.unibw.de/pacy-en/vacancies
++- Strong direct crypto fit: the posting explicitly asks for lattice-based cryptography, homomorphic encryption, protocol design, and privacy-enhancing technologies in an EU PQC research project.
++- Munich is one of the preferred geographies, and the page states remote work is possible with some limitations.
++- Main concern: the role expects a strong academic publication track and is a 1.5-year postdoc contract rather than a longer-term industry position.
++
++### Borderline / maybe
++
++#### 3. Software Developer (m/w/d) Rust — secunet Security Networks AG
++- Fit score: 7.7/10
++- Location: Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München
++- Link: https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
++- Relevant security-engineering fit: the role centers on Rust development for the SINA management ecosystem and explicitly names cryptographic protocols, encryption, signing, and highly secure network environments.
++- Practical fit is solid: several workable German locations, native-level German, and secunet's mobile-office / limited EU-remote policy match the stated preferences.
++- Main concern: this is more product and platform security engineering than core cryptography or privacy-preserving research.
+
+tokens used
+163.919
+Updated [2026-03-20.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-20.md) by appending `## Update 18:42` and preserving all earlier content. I added 3 newly reportable roles from the allowed source set, ranked against the core-crypto prefs, global prefs, and CV:
+
+- FAU Erlangen-Nuremberg, `1 PhD + 1 Post-Doc Position` (postdoc track), `8.7/10`
+- Universität der Bundeswehr München, `Post-doctoral Researcher in Lattice-based Cryptography`, `8.4/10`
+- secunet Security Networks AG, `Software Developer (m/w/d) Rust`, `7.7/10` and placed under borderline / maybe
+
+I also appended those same 3 roles to [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md). Verified the digest was only appended to, not rewritten.
+[2026-03-20 18:44:02] Finished core_crypto daily run

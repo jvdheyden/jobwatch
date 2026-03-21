@@ -1,6 +1,6 @@
 # Global preferences
 
-Location: Remote jobs or reachable in less than an hour commute from Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities in Europe. Note that I need visa sponsorship outside of EU.
+Location: Remote jobs or reachable in less than an hour commute from London, Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities worldwide. Note that I need visa sponsorship outside of EU.
 
 ## Work environment preferences
 Prefer:
