@@ -112,14 +112,14 @@ Recommendation: {{apply_now | watch | skip}}
 
 ## Source notes
 
-- {{source_name}} — {{brief_note_on_results}}
-- {{source_name}} — {{brief_note_on_results}}
-- {{source_name}} — {{brief_note_on_results}}
+- {{source_name}} — mode: {{discovery_mode}}; status: {{complete | partial | failed}}; listing pages: {{count_or_unknown}}; search terms: {{terms_or_none}}; result pages: {{per_term_counts_or_none}}; direct pages opened: {{count_or_examples}}; note: {{brief_note_on_results}}
+- {{source_name}} — mode: {{discovery_mode}}; status: {{complete | partial | failed}}; listing pages: {{count_or_unknown}}; search terms: {{terms_or_none}}; result pages: {{per_term_counts_or_none}}; direct pages opened: {{count_or_examples}}; note: {{brief_note_on_results}}
+- {{source_name}} — mode: {{discovery_mode}}; status: {{complete | partial | failed}}; listing pages: {{count_or_unknown}}; search terms: {{terms_or_none}}; result pages: {{per_term_counts_or_none}}; direct pages opened: {{count_or_examples}}; note: {{brief_note_on_results}}
 
 Examples:
-- "IACR Jobs — no new industry roles today."
-- "PQShield — one new cryptography engineer opening."
-- "Trail of Bits — no relevant openings; only generic security consulting roles."
+- "IACR Jobs — mode: html; status: complete; listing pages: 3; search terms: none; result pages: none; direct pages opened: 4; note: no new industry roles today."
+- "Anthropic — mode: greenhouse_api; status: complete; listing pages: 1; search terms: privacy, security; result pages: local_filter=1; direct pages opened: 2; note: scripted discovery enumerated the full board."
+- "Trail of Bits — mode: html; status: complete; listing pages: 1; search terms: none; result pages: none; direct pages opened: 0; note: only a talent pipeline was visible."
 
 ## Seen jobs to append
 

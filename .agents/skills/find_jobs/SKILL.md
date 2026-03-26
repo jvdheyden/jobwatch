@@ -18,16 +18,109 @@ Assume the current track provides:
 
 Read those files before searching.
 
-## Procedure
+If the current track's source list includes a `last_checked` column, honor the track's cadence rules and treat `last_checked` as track-owned source state. Update only the rows for sources actually checked, and only after a successful normal run.
+
+If a scripted discovery helper exists for the repo, use it before manual browsing when it materially improves source coverage.
+For this repo, prefer `scripts/discover_jobs.py` when the active track's source file exposes `discovery_mode` values.
+Use the helper's JSON output as the primary coverage artifact for enumeration, search-term application, and direct job URL collection.
+If a fresh scheduled discovery artifact already exists for the current run, use that artifact before rerunning the helper live.
+If the track instructions name an artifact path, read that artifact directly. Do not rerun the helper during a normal scheduled pass unless the artifact is missing, stale, or clearly inconsistent with the requested source set.
+
+## Source exploration
+
+Before opening role pages, fully explore each allowed source. Do not assume the first listing page is representative.
 
 For each allowed source:
 
 1. Open the official jobs or careers page.
-2. Identify roles that might match the current track.
-3. Open the direct job page for each plausible role.
-4. Extract verified facts only.
-5. Exclude roles that are already in the seen-jobs file.
-6. Return a concise candidate list.
+2. Detect whether the source exposes:
+   - a general listing
+   - pagination
+   - site-native search
+   - filters that narrow job families or locations
+3. Exhaust the plain listing first:
+   - click through all pages if paginated
+   - stop only when there is no next page, the page URL repeats, or the visible result set repeats
+   - use a safety cap of 20 pages per source view to avoid loops
+4. If site-native search exists, run a derived term set and exhaust all result pages for each term.
+5. Build a deduplicated set of plausible direct job URLs from the listing and search passes.
+6. Open the direct job page for each plausible role.
+7. Extract verified facts only.
+8. Exclude roles that are already in the seen-jobs file.
+9. Return a concise candidate list plus structured coverage notes.
+
+If a site-native search exists but cannot be used reliably, note that and continue with the listing-only pass, but mark the source as `partial` rather than `complete`.
+
+A deterministic scripted helper can satisfy the same completeness bar as manual site-native search when it:
+- enumerates the full official source through static HTML, official query URLs, or official/public board APIs
+- applies the full relevant term set to the enumerated roles
+- records the exact coverage work in a machine-readable artifact
+
+When a scheduled artifact is used, verify that it is fresh for the current run and covers the sources you are about to treat as checked.
+Treat the artifact path from the track instructions as the discovery handoff contract between the scheduler and the agent.
+
+When that standard is met, you may mark a source `complete` even if you did not manually type into the visible UI search box.
+
+Do not broaden to external search engines unless the active track explicitly allows it.
+
+A source is only fully checked if you can show the coverage work that was actually done.
+If a source exposes native search, a listing-only pass is not enough for `complete` status.
+
+## Search terms
+
+Derive search terms from the active track inputs before searching a source.
+
+Build the term set from:
+- the track source file's role / keyword section, if present
+- the track preferences
+- the user's strong-fit profile and CV terms
+
+Normalize and deduplicate terms before searching:
+- keep both common phrases and abbreviations when both matter
+- prefer compact, high-signal terms over long natural-language queries
+- avoid terms that are obviously too broad for the track
+
+If the track inputs are sparse, use this fallback set:
+- `cryptography`
+- `cryptographer`
+- `privacy`
+- `security`
+- `protocol`
+- `post-quantum`
+- `PQC`
+- `MPC`
+- `zero-knowledge`
+- `ZK`
+- `FHE`
+- `PETs`
+- `digital identity`
+- `authentication`
+- `smart card`
+- `embedded security`
+
+Search the source with all relevant terms, not just one.
+
+## Source-family guidance
+
+Use the source's native interaction model when it is visible.
+
+- Greenhouse boards:
+  - inspect the default listing page and its pagination state
+  - run the full relevant term set in the board's search UI
+  - scan all result pages for each term
+  - if the board search cannot be executed reliably, mark the source partial
+- Lever boards:
+  - inspect the full listing
+  - use native search or filters if visible
+  - do not treat the first visible screen as complete coverage when pagination or lazy loading exists
+- Ashby boards:
+  - inspect all visible listing groups
+  - use native search or filters if visible
+  - note clearly when the board exposes only partial results or hidden tabs
+
+If a source family is unfamiliar, prefer conservative completeness checks over optimistic assumptions.
+
+When a scripted helper advertises a source-specific `discovery_mode`, prefer that over ad hoc browsing if it gives more deterministic coverage than the visible UI.
 
 ## Extract only these facts
 
@@ -52,6 +145,8 @@ Do not invent details.
 
 Include a role only if it is a plausible match for the current track based on the current track's preferences.
 
+Use titles and listing snippets only for discovery priority. Final inclusion must be based on the full direct posting.
+
 When in doubt, exclude rather than include.
 
 ## Exclude early
@@ -65,6 +160,10 @@ Exclude roles that are clearly:
 ## Deduplication
 
 Use the seen-jobs file to avoid repeats.
+
+Deduplicate twice:
+- when collecting candidate URLs from listings and search results
+- again before final output against the seen-jobs file
 
 Treat roles as duplicates if the employer and substantially the same title already appear, even if the link or posting date changed.
 
@@ -86,6 +185,25 @@ Return a candidate list in this structure:
 - Missing / uncertain: {{notes}}
 - Initial signal: {{high | medium | weak}}
 
+## Coverage notes
+
+### {{source_name}}
+- Status: {{complete | partial | failed}}
+- Listing pages scanned: {{count_or_unknown}}
+- Search terms tried: {{terms_or_none}}
+- Result pages scanned: {{per_term_counts_or_none}}
+- Direct job pages opened: {{count_or_examples}}
+- Limitations: {{brief_note}}
+
+### {{source_name}}
+- Status: {{complete | partial | failed}}
+- Listing pages scanned: {{count_or_unknown}}
+- Search terms tried: {{terms_or_none}}
+- Result pages scanned: {{per_term_counts_or_none}}
+- Direct job pages opened: {{count_or_examples}}
+- Limitations: {{brief_note}}
+```
+
 Only return plausible candidates. Keep the list short and high-signal.
 
 ## Failure handling
@@ -93,4 +211,12 @@ Only return plausible candidates. Keep the list short and high-signal.
 If a source cannot be accessed or parsed:
 
 - skip it
-- note this briefly in the output
+- note this briefly in the coverage notes
+
+If pagination exists, do not mark the source as fully checked until pagination has been exhausted or a clear stopping condition has been reached.
+
+If the required coverage fields are missing for a source, treat that source as partial rather than complete.
+
+If native search exists and was not used, or if the search terms tried cannot be shown in coverage notes, treat that source as partial rather than complete.
+
+Exception: if a scripted helper deterministically enumerated the whole source and applied the full term set, use the helper artifact as proof instead of manual search-box interaction.

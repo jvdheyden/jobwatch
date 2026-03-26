@@ -17,38 +17,78 @@ CODEX_BIN="/opt/homebrew/bin/codex"
 DIGEST_DIR="$ROOT/tracks/core_crypto/digests"
 LOG_DIR="$ROOT/logs"
 TODAY="$(date +%F)"
+DISCOVERY_DIR="$ROOT/artifacts/discovery/core_crypto"
+DISCOVERY_ARTIFACT="$DISCOVERY_DIR/$TODAY.json"
+DISCOVERY_LATEST="$DISCOVERY_DIR/latest.json"
 DAILY_DIGEST="$DIGEST_DIR/$TODAY.md"
 LOG_FILE="$LOG_DIR/core_crypto-$TODAY.log"
+PROMPT_FILE="$(mktemp "${TMPDIR:-/tmp}/core-crypto-prompt.XXXXXX")"
+TIMEOUT_SECS=2700
 
-mkdir -p "$DIGEST_DIR" "$LOG_DIR"
+mkdir -p "$DIGEST_DIR" "$DISCOVERY_DIR" "$LOG_DIR"
+trap 'rm -f "$PROMPT_FILE"' EXIT
 exec >>"$LOG_FILE" 2>&1
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting core_crypto daily run"
 
-cat <<EOF | "$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write -
-Run the core_crypto job agent for today.
+if python3 "$ROOT/scripts/discover_jobs.py" \
+  --track core_crypto \
+  --today "$TODAY" \
+  --due-only \
+  --pretty \
+  --output "$DISCOVERY_ARTIFACT" \
+  --latest-output "$DISCOVERY_LATEST"; then
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wrote discovery artifact to $DISCOVERY_ARTIFACT"
+else
+  DISCOVERY_STATUS=$?
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Discovery artifact generation failed with status $DISCOVERY_STATUS; Codex will fall back to live discovery as needed"
+fi
+
+cat >"$PROMPT_FILE" <<EOF
+Run today's core_crypto workflow from the repository root.
+Follow the repository and track AGENTS.md instructions.
+Use scripted discovery helpers when available.
+A discovery artifact for today's scheduled run has already been written to ./artifacts/discovery/core_crypto/$TODAY.json and ./artifacts/discovery/core_crypto/latest.json.
+Use those artifact files directly as the primary discovery input.
+Do not rerun ./scripts/discover_jobs.py during this scheduled pass unless the artifact is missing, stale, or inconsistent with today's due sources.
+This is a normal scheduled run, not a debugging session.
+Do not inspect ./logs or downstream publication targets such as /Users/jvdh/Documents/logseq unless explicitly asked to debug the runner.
 EOF
 
-GRAPH_DIR="/Users/jvdh/Documents/logseq"
-JOURNAL_DIR="$GRAPH_DIR/journals"
-PAGES_DIR="$GRAPH_DIR/pages"
-TODAY_LOGSEQ="$(date +%Y_%m_%d)"
-STAMP="$(date +%Y-%m-%d)"
-JOURNAL_FILE="$JOURNAL_DIR/$TODAY_LOGSEQ.md"
-PAGE_NAME="Job Digest $STAMP"
-PAGE_FILE="$PAGES_DIR/$PAGE_NAME.md"
+"$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE" &
+CODEX_PID=$!
 
-{
-  echo "[[job digest]]"
-  echo
-  cat "$DAILY_DIGEST"
-} > "$PAGE_FILE"
+(
+  sleep "$TIMEOUT_SECS"
+  if kill -0 "$CODEX_PID" 2>/dev/null; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Codex exceeded ${TIMEOUT_SECS}s; terminating"
+    kill "$CODEX_PID" 2>/dev/null || true
+    sleep 5
+    if kill -0 "$CODEX_PID" 2>/dev/null; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] Codex still running after TERM; forcing kill"
+      kill -9 "$CODEX_PID" 2>/dev/null || true
+    fi
+  fi
+) &
+WATCHDOG_PID=$!
 
-if ! grep -Fqx -- "- New [[${PAGE_NAME}]]" "$JOURNAL_FILE" 2>/dev/null; then
-  {
-    echo
-    echo "- New [[${PAGE_NAME}]]"
-  } >> "$JOURNAL_FILE"
+set +e
+wait "$CODEX_PID"
+CODEX_STATUS=$?
+set -e
+
+kill "$WATCHDOG_PID" 2>/dev/null || true
+wait "$WATCHDOG_PID" 2>/dev/null || true
+
+if [[ $CODEX_STATUS -ne 0 ]]; then
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Codex exited with status $CODEX_STATUS"
+  exit "$CODEX_STATUS"
+fi
+
+if [[ -f "$DAILY_DIGEST" ]]; then
+  /bin/bash "$ROOT/scripts/sync_to_logseq.sh"
+else
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] No digest at $DAILY_DIGEST; skipping Logseq sync"
 fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Finished core_crypto daily run"

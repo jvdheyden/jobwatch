@@ -1,0 +1,1020 @@
+[2026-03-24 08:00:00] Starting core_crypto daily run
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d1ea4-ab40-7f22-9e70-3f8988248343
+--------
+user
+Run today's core_crypto workflow from the repository root.
+Follow the repository and track AGENTS.md instructions.
+This is a normal scheduled run, not a debugging session.
+Do not inspect ./logs or downstream publication targets such as /Users/jvdh/Documents/logseq unless explicitly asked to debug the runner.
+
+mcp startup: no servers
+codex
+I’m checking the repository entrypoints and track-specific instructions first so I can run the `core_crypto` scheduled workflow from the repo root without touching `./logs` or downstream publish targets.
+exec
+/bin/zsh -lc pwd in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+/Users/jvdh/Documents/job-agent
+exec
+/bin/zsh -lc 'ls -la' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+total 272
+drwxr-xr-x@ 14 jvdh  staff     448 Mar 21 20:09 .
+drwx------@ 63 jvdh  staff    2016 Mar 20 13:49 ..
+-rw-r--r--@  1 jvdh  staff    6148 Mar 20 16:35 .DS_Store
+drwxr-xr-x   3 jvdh  staff      96 Mar 20 16:43 .agents
+drwxr-xr-x  12 jvdh  staff     384 Mar 21 21:23 .git
+-rw-r--r--@  1 jvdh  staff  117645 Mar 10 17:49 260310_CV_Jonas.pdf
+-rw-r--r--   1 jvdh  staff     618 Mar 20 13:50 AGENTS.md
+-rw-r--r--   1 jvdh  staff     822 Mar 20 15:49 cv.md
+drwxr-xr-x   9 jvdh  staff     288 Mar 24 08:00 logs
+drwxr-xr-x   3 jvdh  staff      96 Mar 21 20:00 profile
+drwxr-xr-x   4 jvdh  staff     128 Mar 21 20:11 scripts
+drwxr-xr-x   4 jvdh  staff     128 Mar 20 16:55 shared
+-rw-r--r--   1 jvdh  staff    1688 Mar 20 15:04 sources.md
+drwxr-xr-x   4 jvdh  staff     128 Mar 20 16:35 tracks
+exec
+/bin/zsh -lc "rg --files -g 'AGENTS.md' -g 'README*' -g 'Makefile' -g 'package.json' -g 'pyproject.toml' -g '*.sh' -g '*.py'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+AGENTS.md
+scripts/sync_to_logseq.sh
+tracks/core_crypto/AGENTS.md
+codex
+I found the repo and the `tracks/core_crypto` instructions. Next I’m reading the root and track `AGENTS.md` files plus the runner scripts to identify the supported scheduled entrypoint.
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job agent rules
+
+You are helping monitor job openings for Jonas.
+
+Core behavior:
+- Be conservative about fit.
+- Do not auto-apply.
+- Do not draft outreach unless explicitly asked.
+- Prefer exact evidence from postings over guesses.
+- Only report roles that are plausibly relevant to a cryptography / security / privacy / research-engineering profile.
+- Avoid duplicate reporting.
+- Keep the final digest concise and useful.
+
+Output preferences:
+- Rank by fit.
+- For each role, explain fit in 2–4 short bullets.
+- Separate "strong matches" from "borderline / maybe".
+- If nothing relevant is found, say so clearly.
+ succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+7. `./digests/YYYY-MM-DD.md` for today, if it already exists
+
+exec
+/bin/zsh -lc "sed -n '1,220p' scripts/sync_to_logseq.sh" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+#!/bin/bash
+set -euo pipefail
+
+TODAY_STAMP="$(date +%F)"
+DIGEST="/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/$TODAY_STAMP.md"
+GRAPH_DIR="/Users/jvdh/Documents/logseq"
+JOURNAL_DIR="$GRAPH_DIR/journals"
+PAGES_DIR="$GRAPH_DIR/pages"
+
+TODAY="$(date +%Y_%m_%d)"
+STAMP="$(date +%Y-%m-%d)"
+JOURNAL_FILE="$JOURNAL_DIR/$TODAY.md"
+PAGE_NAME="Job Digest $STAMP"
+PAGE_FILE="$PAGES_DIR/$PAGE_NAME.md"
+
+if [[ ! -f "$DIGEST" ]]; then
+  exit 0
+fi
+
+{
+exec
+/bin/zsh -lc "find . -maxdepth 3 \\( -name '*.sh' -o -name '*.py' -o -name 'Makefile' -o -name 'package.json' -o -name 'pyproject.toml' \\) | sort" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./scripts/sync_to_logseq.sh
+codex
+I’m switching to the track workflow now: reading the required context files in the prescribed order, plus the `find_jobs` and `rank_jobs` skill instructions because this run needs discovery and ranking.
+exec
+/bin/zsh -lc "sed -n '1,220p' cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,260p' shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+2026-03-22 | TT-logic / Nanyang Technological University | FHE Engineer | NTU, Singapore | https://syllab-ntu.github.io/syllab/2026_FHE_engineer/
+2026-03-22 | Monash University | Post-Doc on Blockchain | Melbourne, Australia | https://iacr.org/news/item/27284
+2026-03-22 | secunet Security Networks AG | Software Developer mobile (m/w/d) VPN und Security (Android/iOS) | Berlin, Essen or München | https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html
+2026-03-22 | SandboxAQ | Staff Software Engineer, Cryptography R&D | United Kingdom | https://jobs.ashbyhq.com/sandboxaq/357a6ee1-3fe1-44f3-838a-f81df8b4e044
+2026-03-22 | secunet Security Networks AG | Software Developer & Verification Expert (m/w/d) | Berlin or Dresden | https://jobs.secunet.com/Software-Developer-Verification-Expert-mwd-de-j3176.html
+2026-03-23 | Monash University | Post-Doc in Lattice-Based Cryptography and/or Privacy-Enhancing Technologies | Melbourne, Australia | https://www.iacr.org/jobs/item/4036
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+ succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptographer
+- cryptography engineer
+- security engineering
+- privacy engineering
+- research engineering
+- MPC engineer
+- protocol engineering
+
+
+exec
+/bin/zsh -lc "sed -n '1,260p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' profile/prefs_global.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+Cadence note:
+- `last_checked` is updated only on successful normal daily runs.
+- For `Check every 3 runs`, treat one scheduled day as one run.
+- Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- Manual same-day reruns do not advance cadence.
+
+## Check every run
+
+| source | url | last_checked |
+| --- | --- | --- |
+| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+ succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from London, Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities worldwide. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+exec
+/bin/zsh -lc "sed -n '1,240p' .agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc 'TODAY=$(date +%F); if [ -f "tracks/core_crypto/digests/$TODAY.md" ]; then sed -n '"'1,260p' \"tracks/core_crypto/digests/"'$TODAY.md"; else echo '"'__MISSING__'; fi" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+__MISSING__
+exec
+/bin/zsh -lc "sed -n '1,240p' .agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+codex
+I’ve got the run boundaries and today’s due set. Only the `Check every run` sources are eligible today; the `Check every 3 runs` entries last checked on `2026-03-22` or `2026-03-23` are not due on `2026-03-24`.
+
+Plan:
+1. Check the nine due official sources and extract only plausible new `core_crypto` roles.
+2. Deduplicate against `shared/seen_jobs.md`, then rank the survivors conservatively.
+3. Write today’s digest at `tracks/core_crypto/digests/2026-03-24.md`.
+4. Append only actually reported roles to `shared/seen_jobs.md`.
+5. Update `last_checked` in `tracks/core_crypto/sources.md` for the sources I actually checked.
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: 'crypt' in https://pqshield.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.org/
+🌐 Searching the web...
+🌐 Searched: https://qed-it.com/careers
+🌐 Searching the web...
+🌐 Searched: 'Engineer' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: 'Open' in https://dualitytech.com/careers/
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org Zama jobs cryptography privacy engineer
+🌐 Searching the web...
+🌐 Searched: "Least Authority" careers cryptography job
+🌐 Searching the web...
+🌐 Searched: https://short.sg/j/41153475
+🌐 Searching the web...
+🌐 Searched: site:leastauthority.softgarden.io "Least Authority" "Researcher & Engineer"
+🌐 Searching the web...
+🌐 Searched: site:apply.workable.com "Trail of Bits" security engineer
+🌐 Searching the web...
+🌐 Searched: https://pqshield.com/careers/apply/4766811101
+🌐 Searching the web...
+🌐 Searched the web
+🌐 Searching the web...
+🌐 Searched the web
+🌐 Searching the web...
+🌐 Searched: site:pqshield.com/careers/apply PQShield "Product Prototyping Expert"
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs Zama FHE engineer cryptography
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.org/companies/zama/jobs/senior-hardware-frontend-engineer_paris
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.org/companies/zama/jobs/web3-oracle-engineer_paris
+codex
+Context is loaded. Today’s normal run checks the nine `Check every run` sources; none of the `Check every 3 runs` rows are due on 2026-03-24 because their `last_checked` dates are 2026-03-22 or 2026-03-23.
+Plan update
+Running the normal scheduled core_crypto workflow within the repo rules: only due sources, no logs, no downstream publication targets.
+  → Review due sources and search official careers pages for plausible new core_crypto roles
+  • Rank any new candidates against Jonas's profile and track preferences
+  • Write today's digest, append newly reported roles to seen_jobs, and update last_checked for checked sources
+  • Verify the resulting files and summarize the run
+🌐 Searching the web...
+🌐 Searched the web
+codex
+The web source pages are partly JS-driven, so I’m testing whether the local shell can fetch official HTML directly. If it works, I can extract direct job links and details more reliably without widening scope.
+exec
+/bin/zsh -lc 'curl -Lsf https://jobs.zama.org | head -n 40' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+
+exec
+/bin/zsh -lc 'curl -I -Lsf https://jobs.zama.org' in /Users/jvdh/Documents/job-agent exited 6 in 0ms:
+
+🌐 Searching the web...
+🌐 Searched: https://jobs.zama.org/
+🌐 Searching the web...
+🌐 Searched: https://short.sg/j/41153475
+🌐 Searching the web...
+🌐 Searched: https://qed-it.com/careers
+🌐 Searching the web...
+🌐 Searched: https://dualitytech.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://pqshield.com/careers/
+🌐 Searching the web...
+🌐 Searched: https://pqshield.com/careers/apply/4766811101
+🌐 Searching the web...
+🌐 Searched: site:pqshield.com/careers/apply/4813602101 "Product Prototyping Expert" PQShield
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs/ "Rust Engineer, Coprocessor"
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs/ "Rust Engineer, Relayer"
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs/ Zama cryptography engineer FHE
+🌐 Searching the web...
+🌐 Searched: 'Privacy-enhancing Technologies' in https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://security.ucc.ie/vacancies.html
+🌐 Searching the web...
+🌐 Searched: site:partisiablockchain.com/career/ Partisia Blockchain careers engineer cryptography
+codex
+I’ve finished the source check. The only clearly reportable new match is a UCC privacy-enhancing technologies postdoc; the other new openings were either duplicates, too weakly aligned, or practically mismatched enough that they don’t clear the track’s conservative bar.
+exec
+/bin/zsh -lc "date '+%Y-%m-%d %H:%M %Z'" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'find tracks/core_crypto -maxdepth 2 -type d | sort' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-24 08:15 CET
+ succeeded in 0ms:
+tracks/core_crypto
+tracks/core_crypto/digests
+Plan update
+Source review is complete. One UCC PETs role clears the reporting bar; the rest are duplicates or below-fit for a conservative core_crypto run.
+  ✓ Review due sources and search official careers pages for plausible new core_crypto roles
+  → Rank any new candidates against Jonas's profile and track preferences
+  • Write today's digest, append newly reported roles to seen_jobs, and update last_checked for checked sources
+  • Verify the resulting files and summarize the run
+codex
+I’m moving into the write phase now: creating today’s digest, then updating `shared/seen_jobs.md` and the checked rows in `tracks/core_crypto/sources.md`.
+exec
+/bin/zsh -lc "nl -ba tracks/core_crypto/sources.md | sed -n '1,120p'" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'nl -ba shared/seen_jobs.md | tail -n 30' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+     1	# first_seen | employer | title | location | url
+     2	2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+     3	2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+     4	2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+     5	2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+     6	2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+     7	2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+     8	2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+     9	2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+    10	2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+    11	2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+    12	2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+    13	2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+    14	2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+    15	2026-03-22 | TT-logic / Nanyang Technological University | FHE Engineer | NTU, Singapore | https://syllab-ntu.github.io/syllab/2026_FHE_engineer/
+    16	2026-03-22 | Monash University | Post-Doc on Blockchain | Melbourne, Australia | https://iacr.org/news/item/27284
+    17	2026-03-22 | secunet Security Networks AG | Software Developer mobile (m/w/d) VPN und Security (Android/iOS) | Berlin, Essen or München | https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html
+    18	2026-03-22 | SandboxAQ | Staff Software Engineer, Cryptography R&D | United Kingdom | https://jobs.ashbyhq.com/sandboxaq/357a6ee1-3fe1-44f3-838a-f81df8b4e044
+    19	2026-03-22 | secunet Security Networks AG | Software Developer & Verification Expert (m/w/d) | Berlin or Dresden | https://jobs.secunet.com/Software-Developer-Verification-Expert-mwd-de-j3176.html
+    20	2026-03-23 | Monash University | Post-Doc in Lattice-Based Cryptography and/or Privacy-Enhancing Technologies | Melbourne, Australia | https://www.iacr.org/jobs/item/4036
+ succeeded in 0ms:
+     1	# Core crypto sources
+     2	
+     3	Only check the sources below for this track.
+     4	
+     5	Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+     6	
+     7	Do not waste time on broad employer pages outside this list.
+     8	
+     9	Cadence note:
+    10	- `last_checked` is updated only on successful normal daily runs.
+    11	- For `Check every 3 runs`, treat one scheduled day as one run.
+    12	- Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+    13	- Manual same-day reruns do not advance cadence.
+    14	
+    15	## Check every run
+    16	
+    17	| source | url | last_checked |
+    18	| --- | --- | --- |
+    19	| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+    20	| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+🌐 Searching the web...
+🌐 Searched: site:jobs.zama.org/companies/zama/jobs/ Zama "Paris" "Full-Time" "FHE" "Apply Now"
+🌐 Searching the web...
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+🌐 Searching the web...
+🌐 Searched: https://security.ucc.ie/vacancies.html
+🌐 Searching the web...
+🌐 Searched: https://www.iacr.org/jobs/
+codex
+The ranking phase ended with no reportable candidates. I’m writing a zero-result digest for today and marking only the nine checked every-run sources as `last_checked: 2026-03-24`; `shared/seen_jobs.md` will stay unchanged.
+file update
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-24.md
+# Job Digest — 2026-03-24
+
+Track: core_crypto
+Run timestamp: 2026-03-24 08:15 CET
+Sources checked: 9
+New roles found: 0
+High-signal matches: 0
+
+## Executive summary
+
+No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
+
+## Recommended actions
+
+- No action today.
+- Recheck the `Check every run` sources on the next scheduled run.
+- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
+
+## Strong matches
+
+None today.
+
+## Borderline / maybe
+
+None worth reporting today.
+
+## Source notes
+
+- IACR Jobs — no reportable new role; the visible UCC PETs postdoc shows a 2025-12-19 deadline and is no longer active.
+- PQShield — the hardware verification role is already seen; the other visible openings are firmware, field applications, leadership, or internship roles and do not fit closely enough.
+- Zama — active openings are mostly Rust/blockchain/protocol engineering with location or stack constraints; none cleared the conservative bar for the documented profile.
+- Roseman Labs — no current vacancies visible.
+- Duality Technologies — only sales and student automation openings plus a generic open application; no reportable crypto/security research role.
+- QEDIT — `Cryptography Engineer` remains listed but is already in `shared/seen_jobs.md`.
+- Least Authority — the visible opening is smart-contract-security focused and not a strong enough fit for this track.
+- Trail of Bits — the careers page exposed a talent pipeline but no active reportable opening.
+- Partisia Blockchain — the career page did not expose a reportable active role; only a generic application flow was visible.
+
+## Seen jobs to append
+
+None.
+
+## Notes for next run
+
+Continue normal cadence. On 2026-03-25, the `Check every 3 runs` sources last checked on 2026-03-22 become due again.
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md
+@@ -18,11 +18,11 @@
+ | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+-| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+-| Zama | https://jobs.zama.org | 2026-03-23 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-23 |
+-| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-23 |
+-| QEDIT | https://qed-it.com/careers | 2026-03-23 |
+-| Least Authority | https://leastauthority.com/careers/ | 2026-03-23 |
+-| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-23 |
+-| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-23 |
++| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
++| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
++| Zama | https://jobs.zama.org | 2026-03-24 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
++| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
++| QEDIT | https://qed-it.com/careers | 2026-03-24 |
++| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
++| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
++| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+ 
+apply_patch(auto_approved=true) exited 0 in 77ms:
+Success. Updated the following files:
+A tracks/core_crypto/digests/2026-03-24.md
+M tracks/core_crypto/sources.md
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-24.md b/tracks/core_crypto/digests/2026-03-24.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..e70954b8b8b05177fa6acf943ea0a43250a62944
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-24.md
+@@ -0,0 +1,45 @@
++# Job Digest — 2026-03-24
++
++Track: core_crypto
++Run timestamp: 2026-03-24 08:15 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
++
++## Recommended actions
++
++- No action today.
++- Recheck the `Check every run` sources on the next scheduled run.
++- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
++
++## Strong matches
++
++None today.
++
++## Borderline / maybe
++
++None worth reporting today.
++
++## Source notes
++
++- IACR Jobs — no reportable new role; the visible UCC PETs postdoc shows a 2025-12-19 deadline and is no longer active.
++- PQShield — the hardware verification role is already seen; the other visible openings are firmware, field applications, leadership, or internship roles and do not fit closely enough.
++- Zama — active openings are mostly Rust/blockchain/protocol engineering with location or stack constraints; none cleared the conservative bar for the documented profile.
++- Roseman Labs — no current vacancies visible.
++- Duality Technologies — only sales and student automation openings plus a generic open application; no reportable crypto/security research role.
++- QEDIT — `Cryptography Engineer` remains listed but is already in `shared/seen_jobs.md`.
++- Least Authority — the visible opening is smart-contract-security focused and not a strong enough fit for this track.
++- Trail of Bits — the careers page exposed a talent pipeline but no active reportable opening.
++- Partisia Blockchain — the career page did not expose a reportable active role; only a generic application flow was visible.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue normal cadence. On 2026-03-25, the `Check every 3 runs` sources last checked on 2026-03-22 become due again.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ac982068ca4d863f56f4995476cfeeda1ebab6dc..eb99c630b6ab250249bd4a6ad95c1ff876da3848
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -16,15 +16,15 @@
+ 
+ | source | url | last_checked |
+ | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+-| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+-| Zama | https://jobs.zama.org | 2026-03-23 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-23 |
+-| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-23 |
+-| QEDIT | https://qed-it.com/careers | 2026-03-23 |
+-| Least Authority | https://leastauthority.com/careers/ | 2026-03-23 |
+-| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-23 |
+-| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-23 |
++| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
++| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
++| Zama | https://jobs.zama.org | 2026-03-24 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
++| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
++| QEDIT | https://qed-it.com/careers | 2026-03-24 |
++| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
++| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
++| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+ 
+ ## Check every 3 runs
+ 
+
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-24.md b/tracks/core_crypto/digests/2026-03-24.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..e70954b8b8b05177fa6acf943ea0a43250a62944
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-24.md
+@@ -0,0 +1,45 @@
++# Job Digest — 2026-03-24
++
++Track: core_crypto
++Run timestamp: 2026-03-24 08:15 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
++
++## Recommended actions
++
++- No action today.
++- Recheck the `Check every run` sources on the next scheduled run.
++- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
++
++## Strong matches
++
++None today.
++
++## Borderline / maybe
++
++None worth reporting today.
++
++## Source notes
++
++- IACR Jobs — no reportable new role; the visible UCC PETs postdoc shows a 2025-12-19 deadline and is no longer active.
++- PQShield — the hardware verification role is already seen; the other visible openings are firmware, field applications, leadership, or internship roles and do not fit closely enough.
++- Zama — active openings are mostly Rust/blockchain/protocol engineering with location or stack constraints; none cleared the conservative bar for the documented profile.
++- Roseman Labs — no current vacancies visible.
++- Duality Technologies — only sales and student automation openings plus a generic open application; no reportable crypto/security research role.
++- QEDIT — `Cryptography Engineer` remains listed but is already in `shared/seen_jobs.md`.
++- Least Authority — the visible opening is smart-contract-security focused and not a strong enough fit for this track.
++- Trail of Bits — the careers page exposed a talent pipeline but no active reportable opening.
++- Partisia Blockchain — the career page did not expose a reportable active role; only a generic application flow was visible.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue normal cadence. On 2026-03-25, the `Check every 3 runs` sources last checked on 2026-03-22 become due again.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ac982068ca4d863f56f4995476cfeeda1ebab6dc..eb99c630b6ab250249bd4a6ad95c1ff876da3848
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -16,15 +16,15 @@
+ 
+ | source | url | last_checked |
+ | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+-| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+-| Zama | https://jobs.zama.org | 2026-03-23 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-23 |
+-| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-23 |
+-| QEDIT | https://qed-it.com/careers | 2026-03-23 |
+-| Least Authority | https://leastauthority.com/careers/ | 2026-03-23 |
+-| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-23 |
+-| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-23 |
++| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
++| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
++| Zama | https://jobs.zama.org | 2026-03-24 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
++| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
++| QEDIT | https://qed-it.com/careers | 2026-03-24 |
++| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
++| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
++| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+ 
+ ## Check every 3 runs
+ 
+
+codex
+The digest and source-state update are in place. I’m verifying the exact file contents now and confirming that `shared/seen_jobs.md` remained untouched.
+exec
+/bin/zsh -lc "sed -n '1,240p' tracks/core_crypto/digests/2026-03-24.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '15,35p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+## Check every run
+
+| source | url | last_checked |
+| --- | --- | --- |
+| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
+| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
+| Zama | https://jobs.zama.org | 2026-03-24 |
+| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
+| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
+| QEDIT | https://qed-it.com/careers | 2026-03-24 |
+| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
+| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
+| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+
+## Check every 3 runs
+
+| source | url | last_checked |
+| --- | --- | --- |
+| Anthropic | https://www.anthropic.com/careers/jobs | 2026-03-22 |
+| Automattic | https://automattic.com/work-with-us/ | 2026-03-22 |
+ succeeded in 0ms:
+# Job Digest — 2026-03-24
+
+Track: core_crypto
+Run timestamp: 2026-03-24 08:15 CET
+Sources checked: 9
+New roles found: 0
+High-signal matches: 0
+
+## Executive summary
+
+No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
+
+## Recommended actions
+
+- No action today.
+- Recheck the `Check every run` sources on the next scheduled run.
+- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
+
+## Strong matches
+
+exec
+/bin/zsh -lc 'git diff -- tracks/core_crypto/digests/2026-03-24.md tracks/core_crypto/sources.md shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index 3b0f5b6..e524e63 100644
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -12,3 +12,9 @@
+ 2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+ 2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+ 2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
++2026-03-22 | TT-logic / Nanyang Technological University | FHE Engineer | NTU, Singapore | https://syllab-ntu.github.io/syllab/2026_FHE_engineer/
++2026-03-22 | Monash University | Post-Doc on Blockchain | Melbourne, Australia | https://iacr.org/news/item/27284
++2026-03-22 | secunet Security Networks AG | Software Developer mobile (m/w/d) VPN und Security (Android/iOS) | Berlin, Essen or München | https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html
++2026-03-22 | SandboxAQ | Staff Software Engineer, Cryptography R&D | United Kingdom | https://jobs.ashbyhq.com/sandboxaq/357a6ee1-3fe1-44f3-838a-f81df8b4e044
++2026-03-22 | secunet Security Networks AG | Software Developer & Verification Expert (m/w/d) | Berlin or Dresden | https://jobs.secunet.com/Software-Developer-Verification-Expert-mwd-de-j3176.html
++2026-03-23 | Monash University | Post-Doc in Lattice-Based Cryptography and/or Privacy-Enhancing Technologies | Melbourne, Australia | https://www.iacr.org/jobs/item/4036
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index 513e816..eb99c63 100644
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -6,48 +6,57 @@ Goal: find roles that are genuinely strong matches for a PhD in applied cryptogr
+ 
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-24.md b/tracks/core_crypto/digests/2026-03-24.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..e70954b8b8b05177fa6acf943ea0a43250a62944
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-24.md
+@@ -0,0 +1,45 @@
++# Job Digest — 2026-03-24
++
++Track: core_crypto
++Run timestamp: 2026-03-24 08:15 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
++
++## Recommended actions
++
++- No action today.
++- Recheck the `Check every run` sources on the next scheduled run.
++- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
++
++## Strong matches
++
++None today.
++
++## Borderline / maybe
++
++None worth reporting today.
++
++## Source notes
++
++- IACR Jobs — no reportable new role; the visible UCC PETs postdoc shows a 2025-12-19 deadline and is no longer active.
++- PQShield — the hardware verification role is already seen; the other visible openings are firmware, field applications, leadership, or internship roles and do not fit closely enough.
++- Zama — active openings are mostly Rust/blockchain/protocol engineering with location or stack constraints; none cleared the conservative bar for the documented profile.
++- Roseman Labs — no current vacancies visible.
++- Duality Technologies — only sales and student automation openings plus a generic open application; no reportable crypto/security research role.
++- QEDIT — `Cryptography Engineer` remains listed but is already in `shared/seen_jobs.md`.
++- Least Authority — the visible opening is smart-contract-security focused and not a strong enough fit for this track.
++- Trail of Bits — the careers page exposed a talent pipeline but no active reportable opening.
++- Partisia Blockchain — the career page did not expose a reportable active role; only a generic application flow was visible.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue normal cadence. On 2026-03-25, the `Check every 3 runs` sources last checked on 2026-03-22 become due again.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ac982068ca4d863f56f4995476cfeeda1ebab6dc..eb99c630b6ab250249bd4a6ad95c1ff876da3848
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -16,15 +16,15 @@
+ 
+ | source | url | last_checked |
+ | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+-| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+-| Zama | https://jobs.zama.org | 2026-03-23 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-23 |
+-| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-23 |
+-| QEDIT | https://qed-it.com/careers | 2026-03-23 |
+-| Least Authority | https://leastauthority.com/careers/ | 2026-03-23 |
+-| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-23 |
+-| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-23 |
++| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
++| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
++| Zama | https://jobs.zama.org | 2026-03-24 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
++| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
++| QEDIT | https://qed-it.com/careers | 2026-03-24 |
++| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
++| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
++| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+ 
+ ## Check every 3 runs
+ 
+
+Plan update
+Digest written, source cadence updated for the nine checked sources, and verification completed. No new roles were reportable, so seen_jobs was intentionally left unchanged.
+  ✓ Review due sources and search official careers pages for plausible new core_crypto roles
+  ✓ Rank any new candidates against Jonas's profile and track preferences
+  ✓ Write today's digest, append newly reported roles to seen_jobs, and update last_checked for checked sources
+  ✓ Verify the resulting files and summarize the run
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-24.md b/tracks/core_crypto/digests/2026-03-24.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..e70954b8b8b05177fa6acf943ea0a43250a62944
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-24.md
+@@ -0,0 +1,45 @@
++# Job Digest — 2026-03-24
++
++Track: core_crypto
++Run timestamp: 2026-03-24 08:15 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
++
++## Recommended actions
++
++- No action today.
++- Recheck the `Check every run` sources on the next scheduled run.
++- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
++
++## Strong matches
++
++None today.
++
++## Borderline / maybe
++
++None worth reporting today.
++
++## Source notes
++
++- IACR Jobs — no reportable new role; the visible UCC PETs postdoc shows a 2025-12-19 deadline and is no longer active.
++- PQShield — the hardware verification role is already seen; the other visible openings are firmware, field applications, leadership, or internship roles and do not fit closely enough.
++- Zama — active openings are mostly Rust/blockchain/protocol engineering with location or stack constraints; none cleared the conservative bar for the documented profile.
++- Roseman Labs — no current vacancies visible.
++- Duality Technologies — only sales and student automation openings plus a generic open application; no reportable crypto/security research role.
++- QEDIT — `Cryptography Engineer` remains listed but is already in `shared/seen_jobs.md`.
++- Least Authority — the visible opening is smart-contract-security focused and not a strong enough fit for this track.
++- Trail of Bits — the careers page exposed a talent pipeline but no active reportable opening.
++- Partisia Blockchain — the career page did not expose a reportable active role; only a generic application flow was visible.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue normal cadence. On 2026-03-25, the `Check every 3 runs` sources last checked on 2026-03-22 become due again.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ac982068ca4d863f56f4995476cfeeda1ebab6dc..eb99c630b6ab250249bd4a6ad95c1ff876da3848
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -16,15 +16,15 @@
+ 
+ | source | url | last_checked |
+ | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+-| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+-| Zama | https://jobs.zama.org | 2026-03-23 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-23 |
+-| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-23 |
+-| QEDIT | https://qed-it.com/careers | 2026-03-23 |
+-| Least Authority | https://leastauthority.com/careers/ | 2026-03-23 |
+-| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-23 |
+-| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-23 |
++| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
++| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
++| Zama | https://jobs.zama.org | 2026-03-24 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
++| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
++| QEDIT | https://qed-it.com/careers | 2026-03-24 |
++| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
++| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
++| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+ 
+ ## Check every 3 runs
+ 
+
+codex
+Verification is done. One detail: `git diff` shows `shared/seen_jobs.md` already had local changes relative to `HEAD`, but this run did not add any new seen-job entry because no role was reported today.
+codex
+Ran the `2026-03-24` `core_crypto` scheduled workflow from the repo root. I created today’s digest at [2026-03-24.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-24.md) and updated the nine due `Check every run` entries to `2026-03-24` in [sources.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md).
+
+Result: no new roles were reportable today. The closest new match on IACR was excluded because its visible deadline was December 19, 2025, which is already past on March 24, 2026. [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md) was intentionally left unchanged by this run. `git diff` still shows pre-existing local changes in that file relative to `HEAD`, but I did not add to it.
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-24.md b/tracks/core_crypto/digests/2026-03-24.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..e70954b8b8b05177fa6acf943ea0a43250a62944
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-24.md
+@@ -0,0 +1,45 @@
++# Job Digest — 2026-03-24
++
++Track: core_crypto
++Run timestamp: 2026-03-24 08:15 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were found on the 2026-03-24 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already seen, clearly expired, or too weakly aligned with Jonas's documented applied-cryptography / privacy / research-engineering profile to report conservatively.
++
++## Recommended actions
++
++- No action today.
++- Recheck the `Check every run` sources on the next scheduled run.
++- If broader blockchain-heavy or embedded-security roles should be surfaced, relax the current fit bar explicitly.
++
++## Strong matches
++
++None today.
++
++## Borderline / maybe
++
++None worth reporting today.
++
++## Source notes
++
++- IACR Jobs — no reportable new role; the visible UCC PETs postdoc shows a 2025-12-19 deadline and is no longer active.
++- PQShield — the hardware verification role is already seen; the other visible openings are firmware, field applications, leadership, or internship roles and do not fit closely enough.
++- Zama — active openings are mostly Rust/blockchain/protocol engineering with location or stack constraints; none cleared the conservative bar for the documented profile.
++- Roseman Labs — no current vacancies visible.
++- Duality Technologies — only sales and student automation openings plus a generic open application; no reportable crypto/security research role.
++- QEDIT — `Cryptography Engineer` remains listed but is already in `shared/seen_jobs.md`.
++- Least Authority — the visible opening is smart-contract-security focused and not a strong enough fit for this track.
++- Trail of Bits — the careers page exposed a talent pipeline but no active reportable opening.
++- Partisia Blockchain — the career page did not expose a reportable active role; only a generic application flow was visible.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue normal cadence. On 2026-03-25, the `Check every 3 runs` sources last checked on 2026-03-22 become due again.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ac982068ca4d863f56f4995476cfeeda1ebab6dc..eb99c630b6ab250249bd4a6ad95c1ff876da3848
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -16,15 +16,15 @@
+ 
+ | source | url | last_checked |
+ | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-23 |
+-| PQShield | https://pqshield.com/careers/ | 2026-03-23 |
+-| Zama | https://jobs.zama.org | 2026-03-23 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-23 |
+-| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-23 |
+-| QEDIT | https://qed-it.com/careers | 2026-03-23 |
+-| Least Authority | https://leastauthority.com/careers/ | 2026-03-23 |
+-| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-23 |
+-| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-23 |
++| IACR Jobs | https://www.iacr.org/jobs/ | 2026-03-24 |
++| PQShield | https://pqshield.com/careers/ | 2026-03-24 |
++| Zama | https://jobs.zama.org | 2026-03-24 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | 2026-03-24 |
++| Duality Technologies | https://dualitytech.com/careers/ | 2026-03-24 |
++| QEDIT | https://qed-it.com/careers | 2026-03-24 |
++| Least Authority | https://leastauthority.com/careers/ | 2026-03-24 |
++| Trail of Bits | https://trailofbits.com/careers/ | 2026-03-24 |
++| Partisia Blockchain | https://partisiablockchain.com/career/ | 2026-03-24 |
+ 
+ ## Check every 3 runs
+ 
+
+tokens used
+166.232
+Ran the `2026-03-24` `core_crypto` scheduled workflow from the repo root. I created today’s digest at [2026-03-24.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-24.md) and updated the nine due `Check every run` entries to `2026-03-24` in [sources.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md).
+
+Result: no new roles were reportable today. The closest new match on IACR was excluded because its visible deadline was December 19, 2025, which is already past on March 24, 2026. [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md) was intentionally left unchanged by this run. `git diff` still shows pre-existing local changes in that file relative to `HEAD`, but I did not add to it.
+[2026-03-24 08:33:17] Finished core_crypto daily run
