@@ -20,18 +20,39 @@ Read those files before searching.
 
 If the current track's source list includes a `last_checked` column, honor the track's cadence rules and treat `last_checked` as track-owned source state. Update only the rows for sources actually checked, and only after a successful normal run.
 
-If a scripted discovery helper exists for the repo, use it before manual browsing when it materially improves source coverage.
-For this repo, prefer `scripts/discover_jobs.py` when the active track's source file exposes `discovery_mode` values.
-Use the helper's JSON output as the primary coverage artifact for enumeration, search-term application, and direct job URL collection.
-If a fresh scheduled discovery artifact already exists for the current run, use that artifact before rerunning the helper live.
-If the track instructions name an artifact path, read that artifact directly. Do not rerun the helper during a normal scheduled pass unless the artifact is missing, stale, or clearly inconsistent with the requested source set.
+If the track instructions name a discovery artifact path, look for that artifact first.
 
-## Source exploration
+For this repo:
+- treat the scheduled JSON artifact as the default discovery input
+- if no usable artifact exists, fall back to live source exploration by default
+- do not invoke `scripts/discover_jobs.py` yourself unless the track explicitly tells you to, or you are debugging discovery infrastructure
+- do not rerun the helper or browse source listings live for a source already covered by a fresh artifact
 
-Before opening role pages, fully explore each allowed source. Do not assume the first listing page is representative.
+Use this discovery order:
+1. Read the track-named artifact path for today, if it exists.
+2. If that is missing, read the track-named `latest` artifact, if it exists and is fresh for the current run.
+3. If a fresh artifact covers the requested source set, use it as the discovery input for enumeration, search-term application, and direct job URL collection.
+4. Only if no usable artifact exists for a source, fall back to live discovery for that source.
+
+Treat the artifact path from the track instructions as the scheduler-to-agent handoff contract.
+During a normal scheduled run, do not rerun `scripts/discover_jobs.py`. Use the artifact if present; otherwise use live source exploration for the uncovered sources.
+
+## Discovery workflow
 
 For each allowed source:
 
+1. Check whether a fresh artifact already contains coverage and candidates for that source.
+2. If yes, use the artifact for discovery and skip live source exploration for that source.
+3. If no, use the fallback live source exploration steps below.
+4. In either case, run the extraction steps on the resulting candidate set before deciding final inclusion.
+
+## Fallback live source exploration
+
+Use this only for sources not covered by a usable artifact.
+
+Before opening role pages, fully explore each allowed source. Do not assume the first listing page is representative.
+
+For each uncovered source:
 1. Open the official jobs or careers page.
 2. Detect whether the source exposes:
    - a general listing
@@ -56,8 +77,7 @@ A deterministic scripted helper can satisfy the same completeness bar as manual 
 - applies the full relevant term set to the enumerated roles
 - records the exact coverage work in a machine-readable artifact
 
-When a scheduled artifact is used, verify that it is fresh for the current run and covers the sources you are about to treat as checked.
-Treat the artifact path from the track instructions as the discovery handoff contract between the scheduler and the agent.
+When an artifact is used, verify that it is fresh for the current run and covers the sources you are about to treat as checked.
 
 When that standard is met, you may mark a source `complete` even if you did not manually type into the visible UI search box.
 
@@ -122,7 +142,11 @@ If a source family is unfamiliar, prefer conservative completeness checks over o
 
 When a scripted helper advertises a source-specific `discovery_mode`, prefer that over ad hoc browsing if it gives more deterministic coverage than the visible UI.
 
-## Extract only these facts
+## Extraction
+
+These extraction steps apply to candidates discovered from either:
+- a scheduled or live JSON artifact
+- fallback live source exploration
 
 For each plausible role, extract:
 
