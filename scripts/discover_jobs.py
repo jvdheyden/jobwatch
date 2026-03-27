@@ -14,6 +14,7 @@ import json
 import re
 import ssl
 import sys
+import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timezone
@@ -33,8 +34,45 @@ MAX_BROWSER_PAGES = 10
 GOOGLE_RESULTS_PAGE_SIZE = 20
 IBM_RESULTS_PAGE_SIZE = 100
 INFINEON_RESULTS_PAGE_SIZE = 10
+WORKDAY_RESULTS_PAGE_SIZE = 20
+THALES_RESULTS_PAGE_SIZE = 10
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 IBM_SEARCH_API_URL = "https://www-api.ibm.com/search/api/v2"
+ASHBY_JOB_BOARD_QUERY = """query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) {
+  jobBoard: jobBoardWithTeams(
+    organizationHostedJobsPageName: $organizationHostedJobsPageName
+  ) {
+    teams {
+      id
+      name
+      externalName
+      parentTeamId
+      __typename
+    }
+    jobPostings {
+      id
+      title
+      teamId
+      locationId
+      locationName
+      workplaceType
+      employmentType
+      secondaryLocations {
+        ...JobPostingSecondaryLocationParts
+        __typename
+      }
+      compensationTierSummary
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment JobPostingSecondaryLocationParts on JobPostingSecondaryLocation {
+  locationId
+  locationName
+  __typename
+}"""
 TECHNICAL_TITLE_HINTS = (
     "engineer",
     "engineering",
@@ -153,7 +191,9 @@ class BrowserStrategy:
     search_url_builder: Callable[[SourceConfig, str, int], str]
     extract_page: Callable[[Any, SourceConfig, str, list[str], int], BrowserPageResult]
     prepare_page: Callable[[Any], None] | None = None
+    advance_page: Callable[[Any, SourceConfig, str, int], bool] | None = None
     supports_pagination: bool = False
+    cumulative_results: bool = False
     page_size: int | None = None
     max_pages: int = 1
 
@@ -312,11 +352,21 @@ def normalize_terms(track_terms: list[str], source_terms: list[str]) -> list[str
 
 
 def fetch_text(url: str, timeout_seconds: int) -> str:
-    request = Request(url, headers={"User-Agent": USER_AGENT})
-    context = ssl.create_default_context()
-    with urlopen(request, timeout=timeout_seconds, context=context) as response:
-        content_type = response.headers.get_content_charset() or "utf-8"
-        return response.read().decode(content_type, errors="replace")
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            request = Request(url, headers={"User-Agent": USER_AGENT})
+            context = ssl.create_default_context()
+            with urlopen(request, timeout=timeout_seconds, context=context) as response:
+                content_type = response.headers.get_content_charset() or "utf-8"
+                return response.read().decode(content_type, errors="replace")
+        except Exception as exc:
+            last_error = exc
+            if attempt == 2:
+                break
+            time.sleep(0.5 * (attempt + 1))
+    assert last_error is not None
+    raise last_error
 
 
 def fetch_json(url: str, timeout_seconds: int) -> Any:
@@ -324,14 +374,24 @@ def fetch_json(url: str, timeout_seconds: int) -> Any:
 
 
 def post_json(url: str, payload: Any, timeout_seconds: int, headers: dict[str, str] | None = None) -> Any:
-    request_headers = {"User-Agent": USER_AGENT, "Content-Type": "application/json", "Accept": "application/json"}
-    if headers:
-        request_headers.update(headers)
-    request = Request(url, data=json.dumps(payload).encode(), headers=request_headers)
-    context = ssl.create_default_context()
-    with urlopen(request, timeout=timeout_seconds, context=context) as response:
-        content_type = response.headers.get_content_charset() or "utf-8"
-        return json.loads(response.read().decode(content_type, errors="replace"))
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            request_headers = {"User-Agent": USER_AGENT, "Content-Type": "application/json", "Accept": "application/json"}
+            if headers:
+                request_headers.update(headers)
+            request = Request(url, data=json.dumps(payload).encode(), headers=request_headers)
+            context = ssl.create_default_context()
+            with urlopen(request, timeout=timeout_seconds, context=context) as response:
+                content_type = response.headers.get_content_charset() or "utf-8"
+                return json.loads(response.read().decode(content_type, errors="replace"))
+        except Exception as exc:
+            last_error = exc
+            if attempt == 2:
+                break
+            time.sleep(0.5 * (attempt + 1))
+    assert last_error is not None
+    raise last_error
 
 
 def match_terms(text: str, terms: list[str]) -> list[str]:
@@ -345,6 +405,38 @@ def generated_at() -> str:
 
 def strip_html_fragment(value: str) -> str:
     return re.sub(r"\s+", " ", unescape(HTML_TAG_RE.sub(" ", value or ""))).strip()
+
+
+def extract_json_object_after_marker(text: str, marker: str) -> dict[str, Any] | None:
+    marker_index = text.find(marker)
+    if marker_index == -1:
+        return None
+    start = text.find("{", marker_index + len(marker))
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(text[start : index + 1])
+    return None
 
 
 def join_text(value: Any) -> str:
@@ -411,6 +503,18 @@ def merge_candidate(candidates_by_url: dict[str, Candidate], candidate: Candidat
         existing.notes = "; ".join(part for part in [existing.notes, candidate.notes] if part)
 
 
+def collect_job_links(html: str, base_url: str, path_fragment: str) -> dict[str, str]:
+    parser = LinkCollector()
+    parser.feed(html)
+    links: dict[str, str] = {}
+    for link in parser.links:
+        absolute_url = urljoin(base_url, link["href"])
+        if path_fragment not in absolute_url:
+            continue
+        links[absolute_url] = link["text"]
+    return links
+
+
 def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     html = fetch_text(source.url, timeout_seconds)
     parser = LinkCollector()
@@ -465,7 +569,14 @@ def discover_lever_json(source: SourceConfig, terms: list[str], timeout_seconds:
     if not path_bits:
         raise ValueError(f"Could not derive Lever board token from {source.url}")
     token = path_bits[0]
-    url = f"https://api.lever.co/v0/postings/{token}?mode=json"
+    parsed = urlparse(source.url)
+    if parsed.netloc == "jobs.lever.co":
+        api_host = "api.lever.co"
+    elif parsed.netloc.startswith("jobs.") and parsed.netloc.endswith(".lever.co"):
+        api_host = "api." + parsed.netloc[len("jobs.") :]
+    else:
+        api_host = "api.lever.co"
+    url = f"{parsed.scheme or 'https'}://{api_host}/v0/postings/{token}?mode=json"
     postings = fetch_json(url, timeout_seconds)
     candidates: list[Candidate] = []
     for posting in postings:
@@ -806,12 +917,299 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
     )
 
 
-def discover_ashby_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
-    coverage = discover_html(source, terms, timeout_seconds)
-    coverage.discovery_mode = source.discovery_mode
-    coverage.status = "partial"
-    coverage.limitations.append("Ashby native search/API support is not implemented yet; static HTML enumeration only")
-    return coverage
+def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    parsed_source = urlparse(source.url)
+    if "myworkdayjobs.com" not in parsed_source.netloc:
+        raise ValueError(f"Workday discovery requires a Workday board URL, got {source.url}")
+    path_bits = [bit for bit in parsed_source.path.split("/") if bit]
+    if not path_bits:
+        raise ValueError(f"Could not derive Workday site token from {source.url}")
+    tenant = parsed_source.netloc.split(".")[0]
+    site = path_bits[0]
+    endpoint = f"{parsed_source.scheme}://{parsed_source.netloc}/wday/cxs/{tenant}/{site}/jobs"
+    base_url = f"{parsed_source.scheme}://{parsed_source.netloc}"
+
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    limitations: list[str] = []
+    term_summaries: list[str] = []
+    errored_terms: list[str] = []
+    total_pages_scanned = 0
+
+    for term in terms:
+        term_pages_scanned = 0
+        term_total = 0
+        offset = 0
+        page_signatures: set[str] = set()
+        while True:
+            payload = {"limit": WORKDAY_RESULTS_PAGE_SIZE, "offset": offset, "searchText": term}
+            try:
+                response = post_json(endpoint, payload, timeout_seconds, headers={"Referer": source.url})
+            except Exception:
+                errored_terms.append(term)
+                break
+
+            postings = response.get("jobPostings", [])
+            if term_total == 0:
+                term_total = int(response.get("total", 0) or 0)
+            if not postings:
+                break
+
+            page_signature = ",".join(str(posting.get("externalPath") or posting.get("title") or "") for posting in postings[:10])
+            if not page_signature or page_signature in page_signatures:
+                break
+            page_signatures.add(page_signature)
+
+            term_pages_scanned += 1
+            total_pages_scanned += 1
+            for posting in postings:
+                external_path = posting.get("externalPath") or ""
+                title = posting.get("title") or "unknown"
+                absolute_url = urljoin(base_url, external_path) if external_path else source.url
+                raw_id = external_path or title
+                raw_seen_ids.add(raw_id)
+                location = posting.get("locationsText") or "unknown"
+                searchable_text = " ".join(
+                    part
+                    for part in [
+                        title,
+                        location,
+                        posting.get("postedOn") or "",
+                        join_text(posting.get("bulletFields")),
+                    ]
+                    if part
+                )
+                matched_terms = sorted(set(match_terms(searchable_text, terms)))
+                if not should_keep_candidate(title, matched_terms, searchable_text):
+                    continue
+                merge_candidate(
+                    candidates_by_url,
+                    Candidate(
+                        employer=source.source,
+                        title=title,
+                        url=absolute_url,
+                        source_url=source.url,
+                        location=location,
+                        matched_terms=matched_terms,
+                        notes=f"Enumerated through Workday jobs API for '{term}'",
+                    ),
+                )
+
+            offset += len(postings)
+            if len(postings) < WORKDAY_RESULTS_PAGE_SIZE:
+                break
+            if term_total and offset >= term_total:
+                break
+
+        term_summaries.append(f"{term}={term_pages_scanned}p/{term_total}")
+
+    if errored_terms:
+        limitations.append("Errored terms: " + ", ".join(sorted(set(errored_terms))))
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial" if limitations else "complete",
+        listing_pages_scanned=total_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=", ".join(term_summaries) if term_summaries else "none",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_ashby_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    path_bits = [bit for bit in urlparse(source.url).path.split("/") if bit]
+    if not path_bits:
+        raise ValueError(f"Could not derive Ashby board slug from {source.url}")
+    board_slug = path_bits[0]
+    endpoint = "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
+    payload = {
+        "operationName": "ApiJobBoardWithTeams",
+        "variables": {"organizationHostedJobsPageName": board_slug},
+        "query": ASHBY_JOB_BOARD_QUERY,
+    }
+    response = post_json(endpoint, payload, timeout_seconds, headers={"Referer": source.url})
+    job_board = response.get("data", {}).get("jobBoard", {})
+    postings = job_board.get("jobPostings", [])
+    teams = {
+        team.get("id"): team.get("externalName") or team.get("name") or ""
+        for team in job_board.get("teams", [])
+        if team.get("id")
+    }
+    candidates: list[Candidate] = []
+    for posting in postings:
+        title = posting.get("title") or "unknown"
+        primary_location = posting.get("locationName") or "unknown"
+        secondary_locations = [item.get("locationName") or "" for item in posting.get("secondaryLocations") or []]
+        location = "; ".join(part for part in [primary_location, *secondary_locations] if part) or "unknown"
+        team_name = teams.get(posting.get("teamId"), "")
+        searchable_text = " ".join(
+            part
+            for part in [
+                title,
+                team_name,
+                location,
+                posting.get("workplaceType") or "",
+                posting.get("employmentType") or "",
+                posting.get("compensationTierSummary") or "",
+            ]
+            if part
+        )
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+        candidates.append(
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=f"{source.url.rstrip('/')}/{posting.get('id')}",
+                source_url=source.url,
+                location=location,
+                remote=posting.get("workplaceType") or "unknown",
+                matched_terms=matched_terms,
+                notes="Enumerated through Ashby non-user GraphQL API",
+            )
+        )
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="local_filter=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(postings),
+        matched_jobs=len(candidates),
+        limitations=[],
+        candidates=candidates,
+    )
+
+
+def discover_thales_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    limitations: list[str] = []
+    term_summaries: list[str] = []
+    errored_terms: list[str] = []
+    total_pages_scanned = 0
+
+    for term in terms:
+        term_pages_scanned = 0
+        term_total = 0
+        term_visible_total = 0
+        offset = 0
+        page_signatures: set[str] = set()
+        while True:
+            params = {"keywords": term}
+            if offset:
+                params["from"] = str(offset)
+                params["s"] = "1"
+            search_url = f"{source.url}?{urlencode(params)}"
+            try:
+                html = fetch_text(search_url, timeout_seconds)
+            except Exception:
+                errored_terms.append(term)
+                break
+
+            payload = extract_json_object_after_marker(html, '"eagerLoadRefineSearch":')
+            if not payload:
+                errored_terms.append(term)
+                break
+
+            jobs = payload.get("data", {}).get("jobs", [])
+            hits = int(payload.get("hits", 0) or 0)
+            if term_total == 0:
+                term_total = int(payload.get("totalHits", 0) or 0)
+            if not jobs:
+                break
+
+            page_signature = ",".join(str(job.get("jobSeqNo") or job.get("reqId") or "") for job in jobs[:10])
+            if not page_signature or page_signature in page_signatures:
+                break
+            page_signatures.add(page_signature)
+
+            term_pages_scanned += 1
+            total_pages_scanned += 1
+            term_visible_total += hits or len(jobs)
+            link_map = collect_job_links(html, source.url, "/global/en/job/")
+            for job in jobs:
+                req_id = job.get("reqId") or job.get("jobId") or ""
+                job_url = next((url for url in link_map if f"/job/{req_id}/" in url), None)
+                if not job_url:
+                    title_slug = re.sub(r"-{2,}", "-", re.sub(r"[^A-Za-z0-9]+", "-", job.get("title") or "")).strip("-")
+                    job_url = f"{urlparse(source.url).scheme}://{urlparse(source.url).netloc}/global/en/job/{req_id}/{title_slug}" if req_id else source.url
+                raw_id = job.get("jobSeqNo") or req_id or job_url
+                raw_seen_ids.add(str(raw_id))
+                title = job.get("title") or "unknown"
+                location = job.get("cityStateCountry") or job.get("location") or job.get("workLocation") or "unknown"
+                searchable_text = " ".join(
+                    part
+                    for part in [
+                        title,
+                        job.get("descriptionTeaser") or "",
+                        join_text(job.get("ml_skills")),
+                        job.get("category") or "",
+                        location,
+                        job.get("workLocation") or "",
+                    ]
+                    if part
+                )
+                matched_terms = sorted(set(match_terms(searchable_text, terms)))
+                if not should_keep_candidate(title, matched_terms, searchable_text):
+                    continue
+                merge_candidate(
+                    candidates_by_url,
+                    Candidate(
+                        employer=source.source,
+                        title=title,
+                        url=job_url,
+                        source_url=source.url,
+                        location=location,
+                        matched_terms=matched_terms,
+                        notes=f"Enumerated through Thales search-results HTML for '{term}'",
+                    ),
+                )
+
+            offset += hits or len(jobs)
+            if (hits or len(jobs)) < THALES_RESULTS_PAGE_SIZE:
+                break
+            if term_total and offset >= term_total:
+                break
+
+        term_summaries.append(f"{term}={term_pages_scanned}p/{term_visible_total}of{term_total}")
+
+    if errored_terms:
+        limitations.append("Errored terms: " + ", ".join(sorted(set(errored_terms))))
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial" if limitations else "complete",
+        listing_pages_scanned=total_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=", ".join(term_summaries) if term_summaries else "none",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
 
 
 def discover_bosch_autocomplete(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
@@ -944,6 +1342,49 @@ def accept_bosch_cookies(page: Any) -> None:
 """
     )
     page.wait_for_timeout(500)
+    page.locator("dock-privacy-settings").evaluate_all(
+        """
+(elements) => {
+  for (const element of elements) {
+    element.remove();
+  }
+}
+"""
+    )
+    page.wait_for_timeout(250)
+
+
+def advance_bosch_results(page: Any, source: SourceConfig, term: str, page_num: int) -> bool:
+    del source, term, page_num
+    button = page.locator('button:has-text("Weitere Ergebnisse laden"), button:has-text("Load more results")').first
+    if not button.count():
+        return False
+    before_count = page.locator('a[href*="/job/"][href*="searchTerm="]').count()
+    button.scroll_into_view_if_needed(timeout=5000)
+    button.evaluate("(element) => element.click()")
+    for _ in range(12):
+        page.wait_for_timeout(500)
+        after_count = page.locator('a[href*="/job/"][href*="searchTerm="]').count()
+        if after_count > before_count:
+            return True
+    return False
+
+
+def accept_thales_cookies(page: Any) -> None:
+    accept = page.get_by_role("button", name="Accept").first
+    if accept.count():
+        accept.click(timeout=5000)
+        page.wait_for_timeout(500)
+    page.locator('[ph-module="gdpr"]').evaluate_all(
+        """
+(elements) => {
+  for (const element of elements) {
+    element.remove();
+  }
+}
+"""
+    )
+    page.wait_for_timeout(250)
 
 
 def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[str], page_num: int) -> BrowserPageResult:
@@ -1029,7 +1470,7 @@ def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[s
     body_text = page.locator("body").inner_text()
     count_match = re.search(r"(\d+)\s+passende Jobs gefunden", body_text)
     declared_total = int(count_match.group(1)) if count_match else None
-    links = page.locator('a[href*="/job/"]')
+    links = page.locator('a[href*="/job/"][href*="searchTerm="]')
     visible_count = links.count()
     raw_ids: list[str] = []
     candidates: list[Candidate] = []
@@ -1062,7 +1503,7 @@ def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[s
             )
         )
 
-    page_signature = ",".join(raw_ids[:10]) if raw_ids else f"{term}:empty"
+    page_signature = f"{len(raw_ids)}:{','.join(raw_ids[-10:])}" if raw_ids else f"{term}:empty"
     return BrowserPageResult(
         candidates=candidates,
         raw_ids=raw_ids,
@@ -1072,13 +1513,169 @@ def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[s
     )
 
 
+def discover_thales_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Playwright is not installed; Thales browser discovery is unavailable"],
+            candidates=[],
+        )
+
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    limitations: list[str] = []
+    term_summaries: list[str] = []
+    total_pages_scanned = 0
+
+    def extract_page(page: Any, term: str) -> BrowserPageResult:
+        body_text = page.locator("body").inner_text()
+        count_match = re.search(r"Showing\s+\d+\s*-\s*\d+\s+of\s+(\d+)\s+results?", body_text)
+        declared_total = int(count_match.group(1)) if count_match else None
+        links = page.locator('a[href*="/global/en/job/"]')
+        visible_count = links.count()
+        raw_ids: list[str] = []
+        candidates: list[Candidate] = []
+        seen_urls: set[str] = set()
+
+        for index in range(visible_count):
+            element = links.nth(index)
+            href = element.get_attribute("href") or ""
+            absolute_url = urljoin(source.url, href)
+            if absolute_url in seen_urls:
+                continue
+            seen_urls.add(absolute_url)
+            raw_ids.append(absolute_url)
+            title = element.inner_text().strip() or "unknown"
+            card_text = element.evaluate(
+                """
+(el) => {
+  let node = el;
+  while (node && node.parentElement && (!node.innerText || node.innerText.length < 220)) {
+    node = node.parentElement;
+  }
+  return (node && node.innerText) ? node.innerText : (el.innerText || '');
+}
+"""
+            )
+            matched_terms = sorted(set(match_terms(card_text, terms)))
+            if not should_keep_candidate(title, matched_terms, card_text):
+                continue
+            location_match = re.search(r"Work Location\\s+(.+?)(?:\\s+Join our team|\\s+Save|$)", card_text, flags=re.DOTALL)
+            location = re.sub(r"\\s+", " ", location_match.group(1)).strip() if location_match else "unknown"
+            candidates.append(
+                Candidate(
+                    employer=source.source,
+                    title=title,
+                    url=absolute_url,
+                    source_url=source.url,
+                    location=location,
+                    matched_terms=matched_terms,
+                    notes=f"Enumerated through Thales browser pagination for '{term}'",
+                )
+            )
+
+        page_signature = ",".join(raw_ids[:10]) if raw_ids else f"{term}:empty"
+        return BrowserPageResult(
+            candidates=candidates,
+            raw_ids=raw_ids,
+            visible_results=len(raw_ids),
+            declared_total=declared_total,
+            page_signature=page_signature,
+        )
+
+    timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1440, "height": 2200})
+        for term in terms:
+            search_url = f"{source.url}?{urlencode({'keywords': term})}"
+            page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
+            accept_thales_cookies(page)
+            page.wait_for_timeout(1000)
+
+            term_pages_scanned = 0
+            term_visible_total = 0
+            term_declared_total: int | None = None
+            term_page_signatures: set[str] = set()
+
+            while True:
+                result = extract_page(page, term)
+                if not result.page_signature or result.page_signature in term_page_signatures:
+                    break
+                term_page_signatures.add(result.page_signature)
+                total_pages_scanned += 1
+                term_pages_scanned += 1
+                term_visible_total += result.visible_results
+                if term_declared_total is None and result.declared_total is not None:
+                    term_declared_total = result.declared_total
+                for raw_id in result.raw_ids:
+                    raw_seen_ids.add(raw_id)
+                for candidate in result.candidates:
+                    merge_candidate(candidates_by_url, candidate)
+                if result.visible_results == 0:
+                    break
+                if term_declared_total is not None and term_visible_total >= term_declared_total:
+                    break
+                next_link = page.locator('a[data-ph-at-id="pagination-next-link"]').first
+                if not next_link.count():
+                    break
+                next_href = next_link.get_attribute("href")
+                if not next_href:
+                    break
+                page.goto(next_href, wait_until="domcontentloaded", timeout=timeout_ms)
+                accept_thales_cookies(page)
+                page.wait_for_timeout(1000)
+
+            term_summaries.append(f"{term}={term_pages_scanned}p/{term_visible_total}of{term_declared_total or 0}")
+            if term_declared_total is not None and term_visible_total < term_declared_total:
+                limitations.append(
+                    f"Thales browser search for '{term}' surfaced {term_visible_total} of {term_declared_total} results"
+                )
+
+        browser.close()
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial" if limitations else "complete",
+        listing_pages_scanned=total_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=", ".join(term_summaries) if term_summaries else "none",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
 BROWSER_STRATEGIES = {
     "Bosch": BrowserStrategy(
         search_url_builder=bosch_search_url,
         extract_page=extract_bosch_jobs,
         prepare_page=accept_bosch_cookies,
-        supports_pagination=False,
-        max_pages=1,
+        advance_page=advance_bosch_results,
+        supports_pagination=True,
+        cumulative_results=True,
+        max_pages=30,
     ),
     "Google": BrowserStrategy(
         search_url_builder=google_search_url,
@@ -1144,23 +1741,27 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
             page = browser.new_page(viewport={"width": 1440, "height": 2200})
             timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
             for term in terms:
+                search_url = strategy.search_url_builder(source, term, 1)
+                page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
+                if strategy.prepare_page:
+                    strategy.prepare_page(page)
+                page.wait_for_timeout(1000)
                 term_page_signatures: set[str] = set()
                 term_pages_scanned = 0
                 term_visible_total = 0
                 term_declared_total: int | None = None
                 term_hit_page_cap = False
-                for page_num in range(1, strategy.max_pages + 1):
-                    search_url = strategy.search_url_builder(source, term, page_num)
-                    page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
-                    if strategy.prepare_page:
-                        strategy.prepare_page(page)
-                    page.wait_for_timeout(1000)
+                page_num = 1
+                while page_num <= strategy.max_pages:
                     result = strategy.extract_page(page, source, term, terms, page_num)
                     if not result.page_signature or result.page_signature in term_page_signatures:
                         break
                     term_pages_scanned += 1
                     pages_scanned += 1
-                    term_visible_total += result.visible_results
+                    if strategy.cumulative_results:
+                        term_visible_total = max(term_visible_total, result.visible_results)
+                    else:
+                        term_visible_total += result.visible_results
                     if term_declared_total is None and result.declared_total is not None:
                         term_declared_total = result.declared_total
                     limitations.extend(result.limitations)
@@ -1171,14 +1772,26 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                     term_page_signatures.add(result.page_signature)
                     if result.visible_results == 0:
                         break
+                    if term_declared_total is not None and term_visible_total >= term_declared_total:
+                        break
                     if not strategy.supports_pagination:
                         break
-                    if result.declared_total is not None and term_visible_total >= result.declared_total:
+                    if strategy.page_size is not None and not strategy.cumulative_results and result.visible_results < strategy.page_size:
                         break
-                    if strategy.page_size is not None and result.visible_results < strategy.page_size:
-                        break
-                    if page_num == strategy.max_pages:
+                    next_page_num = page_num + 1
+                    if next_page_num > strategy.max_pages:
                         term_hit_page_cap = True
+                        break
+                    if strategy.advance_page:
+                        if not strategy.advance_page(page, source, term, next_page_num):
+                            break
+                    else:
+                        next_url = strategy.search_url_builder(source, term, next_page_num)
+                        page.goto(next_url, wait_until="domcontentloaded", timeout=timeout_ms)
+                        if strategy.prepare_page:
+                            strategy.prepare_page(page)
+                        page.wait_for_timeout(1000)
+                    page_num = next_page_num
                 if term_declared_total is not None:
                     result_summaries.append(f"{term}={term_pages_scanned}p/{term_visible_total}of{term_declared_total}")
                     if term_visible_total < term_declared_total:
@@ -1188,7 +1801,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                         )
                 else:
                     result_summaries.append(f"{term}={term_pages_scanned}p/{term_visible_total}")
-                if term_hit_page_cap:
+                if term_hit_page_cap and (term_declared_total is None or term_visible_total < term_declared_total):
                     status = "partial"
                     limitations.append(
                         f"{source.source} browser search for '{term}' hit the page cap ({strategy.max_pages})"
@@ -1234,6 +1847,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
 
 
 DISCOVERY_HANDLERS = {
+    "ashby_api": discover_ashby_api,
     "bosch_autocomplete": discover_bosch_autocomplete,
     "html": discover_html,
     "ibm_api": discover_ibm_api,
@@ -1241,7 +1855,9 @@ DISCOVERY_HANDLERS = {
     "icims_html": discover_html,
     "lever_json": discover_lever_json,
     "greenhouse_api": discover_greenhouse_api,
-    "ashby_html": discover_ashby_html,
+    "ashby_html": discover_ashby_api,
+    "thales_browser": discover_thales_browser,
+    "workday_api": discover_workday_api,
     "browser": discover_browser,
 }
 

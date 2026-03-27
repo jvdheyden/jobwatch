@@ -17,14 +17,14 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
-| Zama | https://jobs.zama.org | html | 2026-03-26 |
-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
+| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+| Zama | https://jobs.zama.org | html | 2026-03-27 |
+| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
+| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
+| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
 | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
 
 ## Check every 3 runs
@@ -41,16 +41,16 @@ Cadence note:
 | IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
 | Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
 | Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
-| NXP | https://www.nxp.com/company/about-nxp/careers:CAREERS | browser | 2026-03-25 |
+| NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
 | Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_html | 2026-03-25 |
+| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
 | secunet | https://jobs.secunet.com/ | html | 2026-03-25 |
 | NEC Laboratories Europe | https://jobs.neclab.eu/ | html | 2026-03-25 |
-| Quantinuum | https://www.quantinuum.com/company/careers | lever_json | 2026-03-25 |
+| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
 | Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
 | QuSecure | https://www.qusecure.com/careers/ | html | 2026-03-25 |
 | Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
-| Thales | https://careers.thalesgroup.com/global/en/search-results | browser | 2026-03-25 |
+| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_browser | 2026-03-25 |
 
 ## Keep only roles matching at least one of these
 

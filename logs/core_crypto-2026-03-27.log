@@ -1,0 +1,1338 @@
+[2026-03-27 08:05:05] Starting core_crypto daily run
+[2026-03-27 08:05:15] Wrote discovery artifact to /Users/jvdh/Documents/job-agent/artifacts/discovery/core_crypto/2026-03-27.json
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d2e1c-8dd4-76a1-bc14-5057bff9961d
+--------
+user
+Run today's core_crypto workflow from the repository root.
+Follow the repository and track AGENTS.md instructions.
+Use scripted discovery helpers when available.
+A discovery artifact for today's scheduled run has already been written to ./artifacts/discovery/core_crypto/2026-03-27.json and ./artifacts/discovery/core_crypto/latest.json.
+Use those artifact files directly as the primary discovery input.
+Do not rerun ./scripts/discover_jobs.py during this scheduled pass unless the artifact is missing, stale, or inconsistent with today's due sources.
+This is a normal scheduled run, not a debugging session.
+Do not inspect ./logs or downstream publication targets such as /Users/jvdh/Documents/logseq unless explicitly asked to debug the runner.
+
+mcp startup: no servers
+codex
+Running the scheduled `core_crypto` pass from the repo root. I’ll inspect the repository workflow and track instructions first, then use today’s discovery artifact as the primary input and avoid rerunning discovery unless the repo logic shows the artifact is unusable.
+exec
+/bin/zsh -lc pwd in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+/Users/jvdh/Documents/job-agent
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/.agents/skills/find_jobs/SKILL.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' /Users/jvdh/Documents/job-agent/.agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+ succeeded in 0ms:
+---
+name: find-jobs
+description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+---
+
+# Skill: Find Jobs
+
+Use this skill to search sources and extract plausible candidate roles.
+
+This skill is for discovery and extraction, not final ranking.
+
+## Input
+
+Assume the current track provides:
+- a set of allowed sources
+- preferences for what counts as a match
+- a seen-jobs file for deduplication
+
+Read those files before searching.
+
+exec
+/bin/zsh -lc "rg --files -g 'AGENTS.md' -g 'README*' -g 'scripts/**' -g 'artifacts/**' -g '.agents/**'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+AGENTS.md
+scripts/com.jvdh.core-crypto-job-agent.plist
+scripts/__pycache__/discover_jobs.cpython-314.pyc
+scripts/discover_jobs.py
+scripts/sync_to_logseq.sh
+tracks/core_crypto/AGENTS.md
+artifacts/discovery/core_crypto/2026-03-26.json
+artifacts/discovery/core_crypto/2026-03-27.json
+artifacts/discovery/core_crypto/latest.json
+codex
+I’m using the `find-jobs` and `rank-jobs` skills because this scheduled pass is artifact-driven discovery plus fit ranking. Next I’m reading the repo and `core_crypto` track files to find the expected runner path and output contract before I execute anything.
+exec
+/bin/zsh -lc "sed -n '1,240p' tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job agent rules
+
+You are helping monitor job openings for Jonas.
+
+Core behavior:
+- Be conservative about fit.
+- Do not auto-apply.
+- Do not draft outreach unless explicitly asked.
+- Prefer exact evidence from postings over guesses.
+- Only report roles that are plausibly relevant to a cryptography / security / privacy / research-engineering profile.
+- Avoid duplicate reporting.
+- Keep the final digest concise and useful.
+
+Output preferences:
+- Rank by fit.
+- For each role, explain fit in 2–4 short bullets.
+- Separate "strong matches" from "borderline / maybe".
+- If nothing relevant is found, say so clearly.
+ succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+7. `../../artifacts/discovery/core_crypto/YYYY-MM-DD.json`, if it exists for today
+8. `../../artifacts/discovery/core_crypto/latest.json`, if it exists and was generated today
+exec
+/bin/zsh -lc 'find tracks/core_crypto -maxdepth 3 -type f | sort' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+tracks/core_crypto/AGENTS.md
+tracks/core_crypto/digests/2026-03-20.md
+tracks/core_crypto/digests/2026-03-21.md
+tracks/core_crypto/digests/2026-03-22.md
+tracks/core_crypto/digests/2026-03-23.md
+tracks/core_crypto/digests/2026-03-24.md
+tracks/core_crypto/digests/2026-03-25.md
+tracks/core_crypto/digests/2026-03-26.md
+tracks/core_crypto/digests/latest.md
+tracks/core_crypto/prefs.md
+tracks/core_crypto/sources.md
+exec
+/bin/zsh -lc "find . -maxdepth 3 -type f | sort | sed -n '1,240p'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./.DS_Store
+./.git/COMMIT_EDITMSG
+./.git/HEAD
+./.git/config
+./.git/description
+./.git/hooks/applypatch-msg.sample
+./.git/hooks/commit-msg.sample
+./.git/hooks/fsmonitor-watchman.sample
+./.git/hooks/post-update.sample
+./.git/hooks/pre-applypatch.sample
+./.git/hooks/pre-commit.sample
+./.git/hooks/pre-merge-commit.sample
+./.git/hooks/pre-push.sample
+./.git/hooks/pre-rebase.sample
+./.git/hooks/pre-receive.sample
+./.git/hooks/prepare-commit-msg.sample
+./.git/hooks/push-to-checkout.sample
+./.git/hooks/sendemail-validate.sample
+./.git/hooks/update.sample
+./.git/index
+codex
+I have the run boundaries and the track’s file order. Next I’m loading the candidate profile, source cadence state, digest template, the fresh artifact, and today’s digest if it already exists so I can determine due sources and whether this is a first run or append.
+exec
+/bin/zsh -lc "sed -n '1,220p' cv.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,240p' tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptographer
+- cryptography engineer
+- security engineering
+- privacy engineering
+- research engineering
+- MPC engineer
+- protocol engineering
+
+
+exec
+/bin/zsh -lc "sed -n '1,220p' shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+exec
+/bin/zsh -lc "sed -n '1,220p' profile/prefs_global.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from London, Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities worldwide. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+exec
+/bin/zsh -lc "sed -n '1,260p' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "if [ -f tracks/core_crypto/digests/2026-03-27.md ]; then sed -n '1,260p' tracks/core_crypto/digests/2026-03-27.md; fi" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+
+ succeeded in 0ms:
+{
+  "schema_version": 1,
+  "track": "core_crypto",
+  "today": "2026-03-27",
+  "generated_at": "2026-03-27T07:05:15Z",
+  "mode": "discover",
+  "sources": [
+    {
+      "source": "IACR Jobs",
+      "source_url": "https://www.iacr.org/jobs/",
+      "discovery_mode": "html",
+      "cadence_group": "every_run",
+      "last_checked": "2026-03-26",
+      "due_today": true,
+      "status": "complete",
+      "listing_pages_scanned": 1,
+      "search_terms_tried": [
+        "cryptography",
+        "cryptographer",
+        "applied cryptography",
+exec
+/bin/zsh -lc "sed -n '1,260p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+Cadence note:
+- `last_checked` is updated only on successful normal daily runs.
+- For `Check every 3 runs`, treat one scheduled day as one run.
+- Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- Manual same-day reruns do not advance cadence.
+- `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
+
+## Check every run
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+exec
+/bin/zsh -lc "sed -n '1,220p' shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+2026-03-22 | TT-logic / Nanyang Technological University | FHE Engineer | NTU, Singapore | https://syllab-ntu.github.io/syllab/2026_FHE_engineer/
+2026-03-22 | Monash University | Post-Doc on Blockchain | Melbourne, Australia | https://iacr.org/news/item/27284
+2026-03-22 | secunet Security Networks AG | Software Developer mobile (m/w/d) VPN und Security (Android/iOS) | Berlin, Essen or München | https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html
+2026-03-22 | SandboxAQ | Staff Software Engineer, Cryptography R&D | United Kingdom | https://jobs.ashbyhq.com/sandboxaq/357a6ee1-3fe1-44f3-838a-f81df8b4e044
+2026-03-22 | secunet Security Networks AG | Software Developer & Verification Expert (m/w/d) | Berlin or Dresden | https://jobs.secunet.com/Software-Developer-Verification-Expert-mwd-de-j3176.html
+2026-03-23 | Monash University | Post-Doc in Lattice-Based Cryptography and/or Privacy-Enhancing Technologies | Melbourne, Australia | https://www.iacr.org/jobs/item/4036
+codex
+The track inputs are loaded. Today’s digest does not exist yet, so this is a first run for `2026-03-27`; now I’m validating the artifact against the actual due-source set and extracting the candidate pool from it rather than touching discovery.
+exec
+/bin/zsh -lc "sed -n '1,240p' tracks/core_crypto/digests/2026-03-26.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Daily job digest for 2026-03-26
+
+Track: core_crypto
+Run timestamp: 2026-03-26 08:26 CET
+Sources checked: 10
+New roles found: 0
+High-signal matches: 0
+
+## Executive summary
+
+No relevant new roles were found on the 2026-03-26 scheduled `core_crypto` run. The due sources were checked, but the visible changes were either already in `shared/seen_jobs.md`, clearly expired, no-opening or talent-pipeline pages, or too far from Jonas's applied-cryptography / privacy / research-engineering profile to report conservatively.
+
+## Recommended actions
+
+- No apply-now or watch-level role from today's due sources.
+- Continue normal cadence on the `Check every run` sources.
+- Recheck the remaining `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was checked today and is next due on 2026-03-29.
+
+## Strong matches
+
+exec
+/bin/zsh -lc "jq -r '.today, .generated_at, (.sources | length)' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '.sources[] | [.source, .cadence_group, .last_checked, .due_today, .status, .discovery_mode, (.candidates|length)] | @tsv' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-27
+2026-03-27T07:05:15Z
+9
+ succeeded in 0ms:
+IACR Jobs	every_run	2026-03-26	true	complete	html	54
+PQShield	every_run	2026-03-26	true	complete	html	20
+Zama	every_run	2026-03-26	true	complete	html	2
+Roseman Labs	every_run	2026-03-26	true	complete	html	0
+Duality Technologies	every_run	2026-03-26	true	complete	html	10
+QEDIT	every_run	2026-03-26	true	complete	html	1
+Least Authority	every_run	2026-03-26	true	complete	html	5
+Trail of Bits	every_run	2026-03-26	true	complete	html	6
+Partisia Blockchain	every_run	2026-03-26	true	failed	html	0
+exec
+/bin/zsh -lc 'git status --short' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+ M artifacts/discovery/core_crypto/2026-03-26.json
+ M artifacts/discovery/core_crypto/latest.json
+ M scripts/__pycache__/discover_jobs.cpython-314.pyc
+ M scripts/discover_jobs.py
+ M tracks/core_crypto/sources.md
+?? artifacts/discovery/core_crypto/2026-03-27.json
+?? logs/core_crypto-2026-03-27.log
+codex
+The artifact is fresh and consistent with today’s due set: it covers exactly the nine `Check every run` sources, which is correct because the `Check every 3 runs` rows last checked on `2026-03-25` are not yet 3 calendar days old. I’m now reducing the artifact to unseen, plausibly relevant roles and checking whether the JSON already contains enough direct-posting evidence to write the digest conservatively.
+exec
+/bin/zsh -lc "jq -r '.sources[] | select(.candidates|length>0) | \"SOURCE\\t\" + .source, (.candidates[0] | keys_unsorted | join(\",\"))' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+SOURCE	IACR Jobs
+employer,title,url,source_url,location,remote,matched_terms,notes
+SOURCE	PQShield
+employer,title,url,source_url,location,remote,matched_terms,notes
+SOURCE	Zama
+employer,title,url,source_url,location,remote,matched_terms,notes
+SOURCE	Duality Technologies
+employer,title,url,source_url,location,remote,matched_terms,notes
+SOURCE	QEDIT
+employer,title,url,source_url,location,remote,matched_terms,notes
+SOURCE	Least Authority
+employer,title,url,source_url,location,remote,matched_terms,notes
+SOURCE	Trail of Bits
+employer,title,url,source_url,location,remote,matched_terms,notes
+exec
+/bin/zsh -lc "jq -r '.sources[] | select(.source==\"Trail of Bits\") | .candidates[]' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "employer": "Trail of Bits",
+  "title": "Cryptography",
+  "url": "https://trailofbits.com/services/software-assurance/cryptography/",
+  "source_url": "https://trailofbits.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [
+    "cryptography"
+  ],
+  "notes": "Static HTML enumeration"
+}
+{
+  "employer": "Trail of Bits",
+  "title": "Security Engineering",
+  "url": "https://trailofbits.com/services/security-engineering/",
+  "source_url": "https://trailofbits.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [
+exec
+/bin/zsh -lc "jq -r '.sources[] | select(.source==\"PQShield\") | .candidates[]' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "employer": "PQShield",
+  "title": "PQCryptoLib-Core",
+  "url": "https://pqshield.com/products/pqc-cor/",
+  "source_url": "https://pqshield.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [
+    "PQC"
+  ],
+  "notes": "Static HTML enumeration"
+}
+{
+  "employer": "PQShield",
+  "title": "PQCryptoLib-SDK",
+  "url": "https://pqshield.com/products/pqc-sdk/",
+  "source_url": "https://pqshield.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [
+exec
+/bin/zsh -lc "jq -r '.sources[] | select(.source==\"Least Authority\") | .candidates[]' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "employer": "Least Authority",
+  "title": "Skip to content",
+  "url": "https://leastauthority.com/careers/#content",
+  "source_url": "https://leastauthority.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [],
+  "notes": "Static HTML enumeration"
+}
+{
+  "employer": "Least Authority",
+  "title": "Careers",
+  "url": "https://leastauthority.com/careers/",
+  "source_url": "https://leastauthority.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [],
+  "notes": "Static HTML enumeration"
+}
+codex
+The artifact is structurally usable for coverage, but its candidate lists are noisy HTML matches rather than already-ranked roles. I’m filtering out navigation/product pages and comparing the remaining direct job URLs against `shared/seen_jobs.md` before I decide whether today’s scheduled run should report anything or record a no-new-roles digest.
+exec
+/bin/zsh -lc "jq -r '.sources[] | select(.source==\"Zama\") | .candidates[]' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '.sources[] | select(.source==\"Duality Technologies\") | .candidates[]' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "employer": "Zama",
+  "title": "unknown",
+  "url": "https://jobs.zama.org/",
+  "source_url": "https://jobs.zama.org",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [],
+  "notes": "Static HTML enumeration"
+}
+{
+  "employer": "Zama",
+  "title": "Spontaneous Application",
+  "url": "https://jobs.zama.org/jobs/candidatures-spontanees",
+  "source_url": "https://jobs.zama.org",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [],
+  "notes": "Static HTML enumeration"
+}
+ succeeded in 0ms:
+{
+  "employer": "Duality Technologies",
+  "title": "Platform",
+  "url": "https://dualitytech.com/careers/#",
+  "source_url": "https://dualitytech.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [],
+  "notes": "Static HTML enumeration"
+}
+{
+  "employer": "Duality Technologies",
+  "title": "Fully Homomorphic Encryption",
+  "url": "https://dualitytech.com/platform/technology-fully-homomorphic-encryption/",
+  "source_url": "https://dualitytech.com/careers/",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [
+    "homomorphic encryption"
+  ],
+exec
+/bin/zsh -lc "jq -r '.sources[] | select(.source==\"QEDIT\") | .candidates[]' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '.sources[] | [.source, .status, .listing_pages_scanned, (.search_terms_tried|length), .result_pages_scanned, .direct_job_pages_opened, .enumerated_jobs, .matched_jobs, ((.limitations // [])|join(\"; \"))] | @tsv' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "employer": "QEDIT",
+  "title": "Careers",
+  "url": "https://qed-it.com/careers",
+  "source_url": "https://qed-it.com/careers",
+  "location": "unknown",
+  "remote": "unknown",
+  "matched_terms": [],
+  "notes": "Static HTML enumeration"
+}
+ succeeded in 0ms:
+IACR Jobs	complete	1	28	local_filter=1	0	173	54	
+PQShield	complete	1	28	local_filter=1	0	132	20	
+Zama	complete	1	28	local_filter=1	0	5	2	
+Roseman Labs	complete	1	28	local_filter=1	0	76	0	
+Duality Technologies	complete	1	28	local_filter=1	0	121	10	
+QEDIT	complete	1	28	local_filter=1	0	25	1	
+Least Authority	complete	1	28	local_filter=1	0	104	5	
+Trail of Bits	complete	1	28	local_filter=1	0	39	6	
+Partisia Blockchain	failed	unknown	28	unknown	0	0	0	HTTPError: HTTP Error 404: Not Found
+codex
+I’ve confirmed the artifact itself is the only discovery input I need for this scheduled pass. The remaining question is repo-side workflow support: whether there is an existing script or pattern for turning this artifact into the daily digest and state updates, or whether this repository expects the agent to do that assembly directly.
+exec
+/bin/zsh -lc "sed -n '1,260p' scripts/discover_jobs.py" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '521,860p' scripts/discover_jobs.py" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '261,520p' scripts/discover_jobs.py" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+#!/usr/bin/env python3
+"""Deterministic discovery helper for track job sources.
+
+This script turns the track source list into a machine-readable discovery plan
+and, where possible, enumerates jobs through static HTML or stable board APIs.
+It is intended to give the agent auditable coverage records for sources that
+are brittle in prompt-only browsing.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import ssl
+import sys
+import time
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from datetime import date, datetime, timezone
+ succeeded in 0ms:
+
+def parse_markdown_table(section: str, cadence_group: str) -> list[SourceConfig]:
+    lines = [line.rstrip() for line in section.splitlines() if line.strip()]
+    if len(lines) < 3:
+        return []
+    headers = [part.strip() for part in lines[0].strip("|").split("|")]
+    sources: list[SourceConfig] = []
+    for line in lines[2:]:
+        if not line.startswith("|"):
+            continue
+        values = [part.strip() for part in line.strip("|").split("|")]
+        row = dict(zip(headers, values))
+        sources.append(
+            SourceConfig(
+                source=row["source"],
+                url=row["url"],
+                discovery_mode=row.get("discovery_mode", "html"),
+                last_checked=row.get("last_checked") or None,
+                cadence_group=cadence_group,
+            )
+ succeeded in 0ms:
+    parser.feed(html)
+    candidates: list[Candidate] = []
+    seen_urls: set[str] = set()
+    for link in parser.links:
+        href = link["href"]
+        text = link["text"]
+        absolute_url = urljoin(source.url, href)
+        if absolute_url in seen_urls:
+            continue
+        if urlparse(absolute_url).scheme not in {"http", "https"}:
+            continue
+        matched_terms = match_terms(f"{text} {absolute_url}", terms)
+        if not matched_terms and not looks_like_job_link(text, absolute_url):
+            continue
+        if matched_terms and not should_keep_candidate(text or "unknown", matched_terms, f"{text} {absolute_url}"):
+            continue
+        seen_urls.add(absolute_url)
+        candidates.append(
+            Candidate(
+                employer=source.source,
+exec
+/bin/zsh -lc 'rg -n "Daily job digest|Strong matches|Borderline / maybe|Seen jobs to append|Source notes|Run timestamp" -S .' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./logs/core_crypto-2026-03-24.log:168:Run timestamp: {{timestamp}}
+./logs/core_crypto-2026-03-24.log:457:Run timestamp: 2026-03-24 08:15 CET
+./logs/core_crypto-2026-03-24.log:472:## Strong matches
+./logs/core_crypto-2026-03-24.log:476:## Borderline / maybe
+./logs/core_crypto-2026-03-24.log:480:## Source notes
+./logs/core_crypto-2026-03-24.log:492:## Seen jobs to append
+./logs/core_crypto-2026-03-24.log:535:+Run timestamp: 2026-03-24 08:15 CET
+./logs/core_crypto-2026-03-24.log:550:+## Strong matches
+./logs/core_crypto-2026-03-24.log:554:+## Borderline / maybe
+./logs/core_crypto-2026-03-24.log:558:+## Source notes
+./logs/core_crypto-2026-03-24.log:570:+## Seen jobs to append
+./logs/core_crypto-2026-03-24.log:617:+Run timestamp: 2026-03-24 08:15 CET
+./logs/core_crypto-2026-03-24.log:632:+## Strong matches
+./logs/core_crypto-2026-03-24.log:636:+## Borderline / maybe
+./logs/core_crypto-2026-03-24.log:640:+## Source notes
+./logs/core_crypto-2026-03-24.log:652:+## Seen jobs to append
+./logs/core_crypto-2026-03-24.log:718:Run timestamp: 2026-03-24 08:15 CET
+./logs/core_crypto-2026-03-24.log:733:## Strong matches
+./logs/core_crypto-2026-03-24.log:767:+Run timestamp: 2026-03-24 08:15 CET
+./logs/core_crypto-2026-03-24.log:782:+## Strong matches
+codex
+I’m at the filtering stage now. The artifact shows mostly structural noise for today’s every-run sources, so I’m reducing it with conservative heuristics: keep only direct role-looking links, then drop anything already seen, academic/student-level, speculative, talent-pipeline, or product/navigation content.
+exec
+/bin/zsh -lc "jq -r '.sources[] | .source as "'$s | .candidates[] | select(.url|contains("item/")) | [$s,.title,.url] | @tsv'"' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '.sources[] | .source as "'$s | .candidates[] | [$s,.title,.url] | @tsv'"' artifacts/discovery/core_crypto/2026-03-27.json | sed -n '1,220p'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+IACR Jobs	Post-Doc	https://www.iacr.org/jobs/item/4187
+IACR Jobs	postdoc, or senior research fellow	https://www.iacr.org/jobs/item/4186
+IACR Jobs	PhD Studentship in Cryptography (UK Home fee-status students only)	https://www.iacr.org/jobs/item/4182
+IACR Jobs	Post-Doc/Research Fellow	https://www.iacr.org/jobs/item/4180
+IACR Jobs	PhD Scholarship in Homomorphic Encryption	https://www.iacr.org/jobs/item/4169
+IACR Jobs	PhD and Postdoctoral Researchers in post-quantum cryptography, MPC, and quantum algorithms.	https://www.iacr.org/jobs/item/4168
+IACR Jobs	PhD scholarship	https://www.iacr.org/jobs/item/4165
+IACR Jobs	Funded Ph.D. Student	https://www.iacr.org/jobs/item/4159
+IACR Jobs	Postdoc in isogeny-based cryptography	https://www.iacr.org/jobs/item/4158
+IACR Jobs	Faculty and Post-doc Positions in Cryptography Implementation	https://www.iacr.org/jobs/item/4118
+IACR Jobs	Post-Doc on Blockchain	https://www.iacr.org/jobs/item/4117
+IACR Jobs	Ph.D. Scholarships in Post-quantum Cryptography	https://www.iacr.org/jobs/item/4093
+IACR Jobs	Ph.D. Position in Applied Cryptography	https://www.iacr.org/jobs/item/4074
+IACR Jobs	Multiple postdoc positions	https://www.iacr.org/jobs/item/4070
+ succeeded in 0ms:
+IACR Jobs	Asiacrypt	https://www.iacr.org/meetings/asiacrypt/
+IACR Jobs	Crypto	https://www.iacr.org/meetings/crypto/
+IACR Jobs	Eurocrypt	https://www.iacr.org/meetings/eurocrypt/
+IACR Jobs	Cryptology Schools	https://www.iacr.org/schools/
+IACR Jobs	Journal of Cryptology	https://www.iacr.org/jofc/
+IACR Jobs	Transactions on Symmetric Cryptology	https://www.iacr.org/transactions/tosc/
+IACR Jobs	Communications in Cryptology	https://cic.iacr.org/
+IACR Jobs	Cryptology ePrint Archive	https://eprint.iacr.org
+IACR Jobs	Publication Statistics	https://www.iacr.org/cryptodb/data/acceptance.php
+IACR Jobs	Jobs	https://www.iacr.org/jobs/
+IACR Jobs	CryptoDB	https://www.iacr.org/cryptodb/
+IACR Jobs	Videos	https://www.iacr.org/cryptodb/data/videos.php
+IACR Jobs	Submit a job	https://www.iacr.org/jobs/edit.php
+IACR Jobs	Cryptographer	https://layerzero.network/zero
+IACR Jobs	Post-Doc	https://www.iacr.org/jobs/item/4187
+IACR Jobs	postdoc, or senior research fellow	https://www.iacr.org/jobs/item/4186
+IACR Jobs	Ph.D. Position in Post-Quantum Cryptographic Engineering	https://crypto.cs.ut.ee/Main/PQCPosition2026
+IACR Jobs	Cryptographer	https://www.forsvarsmakten.se/varnplikt-och-karriar/jobba-i-forsvarsmakten/lediga-jobb/47930/kryptolog-till-avdelningen-for-krypto-och-it-/
+IACR Jobs	Assistant Professor position (Maître de conférences)	https://odyssee.enseignementsup-recherche.gouv.fr/procedures/recrutement-ec/offres-poste/fiche-offre-poste/261715
+IACR Jobs	PhD Studentship in Cryptography (UK Home fee-status students only)	https://www.iacr.org/jobs/item/4182
+exec
+/bin/zsh -lc "jq -r '.sources[] | .source as "'$s | .candidates[] | select((.url|test("/(jobs|job|careers/apply|positions?|item/)")) or (.title|test("engineer|research|researcher|developer|crypt|privacy|security|scientist|fellow|postdoc|post-doc|phd|position"; "i"))) | [$s,.title,.url] | @tsv'"' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+IACR Jobs	Asiacrypt	https://www.iacr.org/meetings/asiacrypt/
+IACR Jobs	Crypto	https://www.iacr.org/meetings/crypto/
+IACR Jobs	Eurocrypt	https://www.iacr.org/meetings/eurocrypt/
+IACR Jobs	Cryptology Schools	https://www.iacr.org/schools/
+IACR Jobs	Journal of Cryptology	https://www.iacr.org/jofc/
+IACR Jobs	Transactions on Symmetric Cryptology	https://www.iacr.org/transactions/tosc/
+IACR Jobs	Communications in Cryptology	https://cic.iacr.org/
+IACR Jobs	Cryptology ePrint Archive	https://eprint.iacr.org
+IACR Jobs	Jobs	https://www.iacr.org/jobs/
+IACR Jobs	CryptoDB	https://www.iacr.org/cryptodb/
+IACR Jobs	Submit a job	https://www.iacr.org/jobs/edit.php
+IACR Jobs	Cryptographer	https://layerzero.network/zero
+IACR Jobs	Post-Doc	https://www.iacr.org/jobs/item/4187
+IACR Jobs	postdoc, or senior research fellow	https://www.iacr.org/jobs/item/4186
+IACR Jobs	Ph.D. Position in Post-Quantum Cryptographic Engineering	https://crypto.cs.ut.ee/Main/PQCPosition2026
+IACR Jobs	Cryptographer	https://www.forsvarsmakten.se/varnplikt-och-karriar/jobba-i-forsvarsmakten/lediga-jobb/47930/kryptolog-till-avdelningen-for-krypto-och-it-/
+IACR Jobs	Assistant Professor position (Maître de conférences)	https://odyssee.enseignementsup-recherche.gouv.fr/procedures/recrutement-ec/offres-poste/fiche-offre-poste/261715
+IACR Jobs	PhD Studentship in Cryptography (UK Home fee-status students only)	https://www.iacr.org/jobs/item/4182
+IACR Jobs	Post-Doc/Research Fellow	https://www.iacr.org/jobs/item/4180
+IACR Jobs	PhD Position in Lattice-Based Cryptography	https://sites.google.com/view/maiarabollauf/research/phd-in-lattice-based-cryptography
+exec
+/bin/zsh -lc "jq -r '.sources[] | .source as "'$s | .candidates[] | [.title,.url] | @tsv'"' artifacts/discovery/core_crypto/2026-03-27.json | while IFS="'$'"'\\t' read -r title url; do if rg -Fq \""'$url" shared/seen_jobs.md; then printf '"'SEEN\\t%s\\t%s\\n' \""'$title" "$url"; fi; done' in /Users/jvdh/Documents/job-agent succeeded in 190ms:
+SEEN	FHE Engineer	https://syllab-ntu.github.io/syllab/2026_FHE_engineer/
+SEEN	International Association for Cryptologic Research (IACR)	https://www.iacr.org/
+SEEN	Careers	https://pqshield.com/careers/
+SEEN	Hardware Verification Engineer Location: Remote;  UK, Germany, France, Belgium, Austria, Netherlands, Spain. Some travel to our offices (Oxford/London/Paris) will be required from time-to-time Department: Engineering	https://pqshield.com/careers/apply/4682388101
+SEEN	Careers	https://qed-it.com/careers
+Plan update
+Artifact validation is complete. I’m finishing candidate filtering from the fresh discovery JSON, then I’ll write the scheduled digest and update cadence state only for the sources with complete coverage.
+  ✓ Load track context, determine due sources, and validate today's discovery artifact against the due set
+  → Filter artifact candidates conservatively against fit rules and seen-jobs state
+  • Write today's core_crypto digest and append any newly reported seen jobs
+  • Update last_checked in tracks/core_crypto/sources.md only for due sources with complete coverage
+  • Verify resulting file changes for the scheduled run
+codex
+I’ve narrowed the candidate set to a small number of role-like URLs, but the fresh artifact still does not include direct-posting detail. Before I write the digest, I’m checking whether the repository has any non-log, non-publication helper artifacts for richer extraction; if not, I’ll keep the run conservative and treat unverified title-only hits as filtered out rather than reportable.
+exec
+/bin/zsh -lc "date '+%Y-%m-%d %H:%M %Z'" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'find artifacts -maxdepth 4 -type f | sort' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-27 08:08 CET
+ succeeded in 0ms:
+artifacts/discovery/core_crypto/2026-03-26.json
+artifacts/discovery/core_crypto/2026-03-27.json
+artifacts/discovery/core_crypto/latest.json
+exec
+/bin/zsh -lc "sed -n '1,220p' tracks/core_crypto/digests/2026-03-25.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job Digest — 2026-03-25
+
+Track: core_crypto
+Run timestamp: 2026-03-25 08:38 CET
+Sources checked: 29
+New roles found: 0
+High-signal matches: 0
+
+## Executive summary
+
+No relevant new roles were found on the 2026-03-25 scheduled `core_crypto` run. The due sources were checked, but visible changes were either already in `shared/seen_jobs.md`, expired, too mobile/full-stack/blockchain-heavy for Jonas's documented applied-cryptography profile, or not verifiable enough from the official source pages to report conservatively.
+
+## Recommended actions
+
+- Recheck the `Check every run` sources on the next scheduled run.
+- Recheck the `Check every 3 runs` sources on or after 2026-03-28.
+- Leave `shared/seen_jobs.md` unchanged for this run.
+
+## Strong matches
+
+exec
+/bin/zsh -lc "jq -r '.sources[] | .source as "'$s | .candidates[] | select((.url|test("apply.workable.com|linkedin.com/jobs|layerzero.network|quantova.org|sandboxaq.com/careers-list|forsvarsmakten.se|fortanix|skeeled.com")) or (.title|test("Senior Cryptographic Researcher|Senior Engineer in Cryptography and Embedded Security|Cryptography Engineer|Cryptographer|Staff Software Engineer, Cryptography R&D"; "i"))) | [$s,.title,.url] | @tsv'"' artifacts/discovery/core_crypto/2026-03-27.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+IACR Jobs	Cryptographer	https://layerzero.network/zero
+IACR Jobs	Cryptographer	https://www.forsvarsmakten.se/varnplikt-och-karriar/jobba-i-forsvarsmakten/lediga-jobb/47930/kryptolog-till-avdelningen-for-krypto-och-it-/
+IACR Jobs	Senior Cryptographic Researcher	https://quantova.org/
+IACR Jobs	Senior Engineer in Cryptography and Embedded Security	https://www.linkedin.com/jobs/view/4359537260/
+IACR Jobs	RESEARCHER IN ADVERSARIAL MACHINE LEARNING IN CYBERSECURITY	https://app.skeeled.com/offer/c/691c3d2e6442c61b9ca4dd22?lang=en&show_description=true
+IACR Jobs	Cryptography Engineer	https://apply.workable.com/fortanix/j/A122E95976/
+IACR Jobs	Staff Software Engineer, Cryptography R&D	https://www.sandboxaq.com/careers-list?ashby_jid=357a6ee1-3fe1-44f3-838a-f81df8b4e044
+Trail of Bits	talent pipeline	https://apply.workable.com/trailofbits/j/6F76E8612E/
+codex
+I have enough to write the scheduled result conservatively. I’m creating today’s digest with an explicit “no reportable new roles” outcome, including per-source coverage records from the artifact, and then I’ll advance `last_checked` only for the eight due sources that had complete coverage.
+file update
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md
+@@ -19,10 +19,10 @@
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
++| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
++| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
++| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
+ | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-27.md
+# Job Digest — 2026-03-27
+
+Track: core_crypto
+Run timestamp: 2026-03-27 08:08 CET
+Sources checked: 9
+New roles found: 0
+High-signal matches: 0
+
+## Executive summary
+
+No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
+
+## Recommended actions
+
+- Recheck the `Check every run` sources on the next scheduled run.
+- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
+- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
+
+## Strong matches
+
+No strong matches today.
+
+## Borderline / maybe
+
+No borderline roles were strong enough to report conservatively.
+
+## Roles filtered out
+
+- Fortanix — `Cryptography Engineer` surfaced as an outbound IACR link, but today's artifact preserved only the title and URL, not enough direct-posting facts to verify scope, location, or requirements conservatively.
+- Quantova — `Senior Cryptographic Researcher` surfaced via IACR aggregation, but the artifact did not capture direct-page details beyond the title and outbound URL.
+- PQShield — `Software Prototype Intern – Post-Quantum Cryptography` was internship-level.
+- PQShield — `I'd love to work at PQShield - Speculative Application` was not a concrete opening.
+- Duality Technologies — `Student Automation Developer` was student-level and outside the track's core cryptography / privacy focus.
+
+## Source notes
+
+- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact enumerated 173 links and 54 local matches, but today's reportable-looking hits were academic/student roles, duplicates, or title-only outbound links without enough direct-page evidence.
+- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: visible matches were a previously seen hardware-verification role plus internship, speculative-application, sales, and product-oriented pages.
+- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: only the main jobs page and a spontaneous-application link were captured.
+- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no relevant candidate survived local filtering.
+- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: matches were product, case-study, sales, or student-oriented pages rather than a new reportable crypto role.
+- QEDIT — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact captured only the careers page, and the known `Cryptography Engineer` posting is already in `shared/seen_jobs.md`.
+- Least Authority — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no concrete opening was captured from the careers page on this run.
+- Trail of Bits — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the only role-like hit was a talent-pipeline link, alongside service pages rather than a concrete opening.
+- Partisia Blockchain — mode: `html`; status: `failed`; listing pages: `unknown`; search terms: `28 track-wide terms`; result pages: `unknown`; direct pages opened: `0`; note: today's artifact recorded `HTTP Error 404: Not Found`, so coverage was incomplete and `last_checked` was not advanced.
+
+## Seen jobs to append
+
+None.
+
+## Notes for next run
+
+Continue checking the every-run sources daily. The slower-cadence sources last checked on 2026-03-25 become due again on 2026-03-28, while Ethereum Foundation next becomes due on 2026-03-29. Partisia Blockchain should be retried on the next scheduled run because this run did not achieve complete coverage there.
+apply_patch(auto_approved=true) exited 0 in 79ms:
+Success. Updated the following files:
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-27.md
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-27.md b/tracks/core_crypto/digests/2026-03-27.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9341e5b8517c29cf793de87f530d680260ac04c6
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-27.md
+@@ -0,0 +1,53 @@
++# Job Digest — 2026-03-27
++
++Track: core_crypto
++Run timestamp: 2026-03-27 08:08 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
++
++## Recommended actions
++
++- Recheck the `Check every run` sources on the next scheduled run.
++- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
++- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
++
++## Strong matches
++
++No strong matches today.
++
++## Borderline / maybe
++
++No borderline roles were strong enough to report conservatively.
++
++## Roles filtered out
++
++- Fortanix — `Cryptography Engineer` surfaced as an outbound IACR link, but today's artifact preserved only the title and URL, not enough direct-posting facts to verify scope, location, or requirements conservatively.
++- Quantova — `Senior Cryptographic Researcher` surfaced via IACR aggregation, but the artifact did not capture direct-page details beyond the title and outbound URL.
++- PQShield — `Software Prototype Intern – Post-Quantum Cryptography` was internship-level.
++- PQShield — `I'd love to work at PQShield - Speculative Application` was not a concrete opening.
++- Duality Technologies — `Student Automation Developer` was student-level and outside the track's core cryptography / privacy focus.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact enumerated 173 links and 54 local matches, but today's reportable-looking hits were academic/student roles, duplicates, or title-only outbound links without enough direct-page evidence.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: visible matches were a previously seen hardware-verification role plus internship, speculative-application, sales, and product-oriented pages.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: only the main jobs page and a spontaneous-application link were captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no relevant candidate survived local filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: matches were product, case-study, sales, or student-oriented pages rather than a new reportable crypto role.
++- QEDIT — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact captured only the careers page, and the known `Cryptography Engineer` posting is already in `shared/seen_jobs.md`.
++- Least Authority — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no concrete opening was captured from the careers page on this run.
++- Trail of Bits — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the only role-like hit was a talent-pipeline link, alongside service pages rather than a concrete opening.
++- Partisia Blockchain — mode: `html`; status: `failed`; listing pages: `unknown`; search terms: `28 track-wide terms`; result pages: `unknown`; direct pages opened: `0`; note: today's artifact recorded `HTTP Error 404: Not Found`, so coverage was incomplete and `last_checked` was not advanced.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue checking the every-run sources daily. The slower-cadence sources last checked on 2026-03-25 become due again on 2026-03-28, while Ethereum Foundation next becomes due on 2026-03-29. Partisia Blockchain should be retried on the next scheduled run because this run did not achieve complete coverage there.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ce3731341251e30245a190274708d226d7057ac3..c033615d6ebea5c6d703b8cdca1fae26d2048df4
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,14 +17,14 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
++| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
++| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
++| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
+ | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
+ 
+ ## Check every 3 runs
+
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-27.md b/tracks/core_crypto/digests/2026-03-27.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9341e5b8517c29cf793de87f530d680260ac04c6
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-27.md
+@@ -0,0 +1,53 @@
++# Job Digest — 2026-03-27
++
++Track: core_crypto
++Run timestamp: 2026-03-27 08:08 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
++
++## Recommended actions
++
++- Recheck the `Check every run` sources on the next scheduled run.
++- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
++- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
++
++## Strong matches
++
++No strong matches today.
++
++## Borderline / maybe
++
++No borderline roles were strong enough to report conservatively.
++
++## Roles filtered out
++
++- Fortanix — `Cryptography Engineer` surfaced as an outbound IACR link, but today's artifact preserved only the title and URL, not enough direct-posting facts to verify scope, location, or requirements conservatively.
++- Quantova — `Senior Cryptographic Researcher` surfaced via IACR aggregation, but the artifact did not capture direct-page details beyond the title and outbound URL.
++- PQShield — `Software Prototype Intern – Post-Quantum Cryptography` was internship-level.
++- PQShield — `I'd love to work at PQShield - Speculative Application` was not a concrete opening.
++- Duality Technologies — `Student Automation Developer` was student-level and outside the track's core cryptography / privacy focus.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact enumerated 173 links and 54 local matches, but today's reportable-looking hits were academic/student roles, duplicates, or title-only outbound links without enough direct-page evidence.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: visible matches were a previously seen hardware-verification role plus internship, speculative-application, sales, and product-oriented pages.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: only the main jobs page and a spontaneous-application link were captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no relevant candidate survived local filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: matches were product, case-study, sales, or student-oriented pages rather than a new reportable crypto role.
++- QEDIT — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact captured only the careers page, and the known `Cryptography Engineer` posting is already in `shared/seen_jobs.md`.
++- Least Authority — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no concrete opening was captured from the careers page on this run.
++- Trail of Bits — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the only role-like hit was a talent-pipeline link, alongside service pages rather than a concrete opening.
++- Partisia Blockchain — mode: `html`; status: `failed`; listing pages: `unknown`; search terms: `28 track-wide terms`; result pages: `unknown`; direct pages opened: `0`; note: today's artifact recorded `HTTP Error 404: Not Found`, so coverage was incomplete and `last_checked` was not advanced.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue checking the every-run sources daily. The slower-cadence sources last checked on 2026-03-25 become due again on 2026-03-28, while Ethereum Foundation next becomes due on 2026-03-29. Partisia Blockchain should be retried on the next scheduled run because this run did not achieve complete coverage there.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ce3731341251e30245a190274708d226d7057ac3..c033615d6ebea5c6d703b8cdca1fae26d2048df4
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,14 +17,14 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
++| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
++| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
++| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
+ | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
+ 
+ ## Check every 3 runs
+
+codex
+The digest and cadence-state edits are in place. I’m doing a final verification pass now to confirm the new file contents and make sure only the intended `last_checked` rows moved forward, with `shared/seen_jobs.md` still unchanged.
+exec
+/bin/zsh -lc "sed -n '1,240p' tracks/core_crypto/digests/2026-03-27.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job Digest — 2026-03-27
+
+Track: core_crypto
+Run timestamp: 2026-03-27 08:08 CET
+Sources checked: 9
+New roles found: 0
+High-signal matches: 0
+
+## Executive summary
+
+No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
+
+## Recommended actions
+
+- Recheck the `Check every run` sources on the next scheduled run.
+- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
+- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
+
+## Strong matches
+
+exec
+/bin/zsh -lc "sed -n '1,120p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+Cadence note:
+- `last_checked` is updated only on successful normal daily runs.
+- For `Check every 3 runs`, treat one scheduled day as one run.
+- Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- Manual same-day reruns do not advance cadence.
+- `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
+
+## Check every run
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+exec
+/bin/zsh -lc 'git status --short tracks/core_crypto/digests/2026-03-27.md tracks/core_crypto/sources.md shared/seen_jobs.md' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc 'git diff -- tracks/core_crypto/digests/2026-03-27.md tracks/core_crypto/sources.md shared/seen_jobs.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+ M tracks/core_crypto/sources.md
+?? tracks/core_crypto/digests/2026-03-27.md
+ succeeded in 0ms:
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index 4eb1906..c033615 100644
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,14 +17,14 @@ Cadence note:
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-27.md b/tracks/core_crypto/digests/2026-03-27.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9341e5b8517c29cf793de87f530d680260ac04c6
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-27.md
+@@ -0,0 +1,53 @@
++# Job Digest — 2026-03-27
++
++Track: core_crypto
++Run timestamp: 2026-03-27 08:08 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
++
++## Recommended actions
++
++- Recheck the `Check every run` sources on the next scheduled run.
++- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
++- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
++
++## Strong matches
++
++No strong matches today.
++
++## Borderline / maybe
++
++No borderline roles were strong enough to report conservatively.
++
++## Roles filtered out
++
++- Fortanix — `Cryptography Engineer` surfaced as an outbound IACR link, but today's artifact preserved only the title and URL, not enough direct-posting facts to verify scope, location, or requirements conservatively.
++- Quantova — `Senior Cryptographic Researcher` surfaced via IACR aggregation, but the artifact did not capture direct-page details beyond the title and outbound URL.
++- PQShield — `Software Prototype Intern – Post-Quantum Cryptography` was internship-level.
++- PQShield — `I'd love to work at PQShield - Speculative Application` was not a concrete opening.
++- Duality Technologies — `Student Automation Developer` was student-level and outside the track's core cryptography / privacy focus.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact enumerated 173 links and 54 local matches, but today's reportable-looking hits were academic/student roles, duplicates, or title-only outbound links without enough direct-page evidence.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: visible matches were a previously seen hardware-verification role plus internship, speculative-application, sales, and product-oriented pages.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: only the main jobs page and a spontaneous-application link were captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no relevant candidate survived local filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: matches were product, case-study, sales, or student-oriented pages rather than a new reportable crypto role.
++- QEDIT — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact captured only the careers page, and the known `Cryptography Engineer` posting is already in `shared/seen_jobs.md`.
++- Least Authority — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no concrete opening was captured from the careers page on this run.
++- Trail of Bits — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the only role-like hit was a talent-pipeline link, alongside service pages rather than a concrete opening.
++- Partisia Blockchain — mode: `html`; status: `failed`; listing pages: `unknown`; search terms: `28 track-wide terms`; result pages: `unknown`; direct pages opened: `0`; note: today's artifact recorded `HTTP Error 404: Not Found`, so coverage was incomplete and `last_checked` was not advanced.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue checking the every-run sources daily. The slower-cadence sources last checked on 2026-03-25 become due again on 2026-03-28, while Ethereum Foundation next becomes due on 2026-03-29. Partisia Blockchain should be retried on the next scheduled run because this run did not achieve complete coverage there.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ce3731341251e30245a190274708d226d7057ac3..c033615d6ebea5c6d703b8cdca1fae26d2048df4
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,14 +17,14 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
++| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
++| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
++| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
+ | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
+ 
+ ## Check every 3 runs
+
+Plan update
+The scheduled pass is complete. I wrote the daily digest from today's artifact, left seen-jobs unchanged, and advanced cadence state only for the due sources with complete coverage.
+  ✓ Load track context, determine due sources, and validate today's discovery artifact against the due set
+  ✓ Filter artifact candidates conservatively against fit rules and seen-jobs state
+  ✓ Write today's core_crypto digest and append any newly reported seen jobs
+  ✓ Update last_checked in tracks/core_crypto/sources.md only for due sources with complete coverage
+  ✓ Verify resulting file changes for the scheduled run
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-27.md b/tracks/core_crypto/digests/2026-03-27.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9341e5b8517c29cf793de87f530d680260ac04c6
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-27.md
+@@ -0,0 +1,53 @@
++# Job Digest — 2026-03-27
++
++Track: core_crypto
++Run timestamp: 2026-03-27 08:08 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
++
++## Recommended actions
++
++- Recheck the `Check every run` sources on the next scheduled run.
++- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
++- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
++
++## Strong matches
++
++No strong matches today.
++
++## Borderline / maybe
++
++No borderline roles were strong enough to report conservatively.
++
++## Roles filtered out
++
++- Fortanix — `Cryptography Engineer` surfaced as an outbound IACR link, but today's artifact preserved only the title and URL, not enough direct-posting facts to verify scope, location, or requirements conservatively.
++- Quantova — `Senior Cryptographic Researcher` surfaced via IACR aggregation, but the artifact did not capture direct-page details beyond the title and outbound URL.
++- PQShield — `Software Prototype Intern – Post-Quantum Cryptography` was internship-level.
++- PQShield — `I'd love to work at PQShield - Speculative Application` was not a concrete opening.
++- Duality Technologies — `Student Automation Developer` was student-level and outside the track's core cryptography / privacy focus.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact enumerated 173 links and 54 local matches, but today's reportable-looking hits were academic/student roles, duplicates, or title-only outbound links without enough direct-page evidence.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: visible matches were a previously seen hardware-verification role plus internship, speculative-application, sales, and product-oriented pages.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: only the main jobs page and a spontaneous-application link were captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no relevant candidate survived local filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: matches were product, case-study, sales, or student-oriented pages rather than a new reportable crypto role.
++- QEDIT — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact captured only the careers page, and the known `Cryptography Engineer` posting is already in `shared/seen_jobs.md`.
++- Least Authority — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no concrete opening was captured from the careers page on this run.
++- Trail of Bits — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the only role-like hit was a talent-pipeline link, alongside service pages rather than a concrete opening.
++- Partisia Blockchain — mode: `html`; status: `failed`; listing pages: `unknown`; search terms: `28 track-wide terms`; result pages: `unknown`; direct pages opened: `0`; note: today's artifact recorded `HTTP Error 404: Not Found`, so coverage was incomplete and `last_checked` was not advanced.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue checking the every-run sources daily. The slower-cadence sources last checked on 2026-03-25 become due again on 2026-03-28, while Ethereum Foundation next becomes due on 2026-03-29. Partisia Blockchain should be retried on the next scheduled run because this run did not achieve complete coverage there.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ce3731341251e30245a190274708d226d7057ac3..c033615d6ebea5c6d703b8cdca1fae26d2048df4
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,14 +17,14 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
++| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
++| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
++| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
+ | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
+ 
+ ## Check every 3 runs
+
+codex
+Completed the scheduled `core_crypto` pass using the existing discovery artifact, without rerunning `scripts/discover_jobs.py`.
+
+The run result is in [2026-03-27.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-27.md): 0 new reportable roles, 0 high-signal matches. I kept the digest conservative because today’s artifact mostly contained duplicates, academic/student roles, non-concrete pages, or title-only outbound links without enough direct-posting detail. Partisia Blockchain was recorded as failed coverage from the artifact (`HTTP Error 404: Not Found`), so it stayed due.
+
+I updated `last_checked` only for the eight every-run sources with complete coverage in [sources.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md). [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md) was left unchanged. I preserved unrelated pre-existing edits already present in `sources.md` and elsewhere in the worktree.
+file update:
+diff --git a/tracks/core_crypto/digests/2026-03-27.md b/tracks/core_crypto/digests/2026-03-27.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9341e5b8517c29cf793de87f530d680260ac04c6
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-27.md
+@@ -0,0 +1,53 @@
++# Job Digest — 2026-03-27
++
++Track: core_crypto
++Run timestamp: 2026-03-27 08:08 CET
++Sources checked: 9
++New roles found: 0
++High-signal matches: 0
++
++## Executive summary
++
++No relevant new roles were reportable on the 2026-03-27 scheduled `core_crypto` run. Today's fresh discovery artifact covered the nine every-run sources and was usable as the primary discovery input, but the resulting candidates were duplicates, academic/student roles, speculative or non-concrete pages, or title-only outbound links without enough direct-posting evidence to report conservatively.
++
++## Recommended actions
++
++- Recheck the `Check every run` sources on the next scheduled run.
++- Recheck the `Check every 3 runs` sources on or after 2026-03-28. Ethereum Foundation was last checked on 2026-03-26 and next becomes due on 2026-03-29.
++- Keep `shared/seen_jobs.md` unchanged for this run. Partisia Blockchain should remain due because today's artifact recorded failed coverage for that source.
++
++## Strong matches
++
++No strong matches today.
++
++## Borderline / maybe
++
++No borderline roles were strong enough to report conservatively.
++
++## Roles filtered out
++
++- Fortanix — `Cryptography Engineer` surfaced as an outbound IACR link, but today's artifact preserved only the title and URL, not enough direct-posting facts to verify scope, location, or requirements conservatively.
++- Quantova — `Senior Cryptographic Researcher` surfaced via IACR aggregation, but the artifact did not capture direct-page details beyond the title and outbound URL.
++- PQShield — `Software Prototype Intern – Post-Quantum Cryptography` was internship-level.
++- PQShield — `I'd love to work at PQShield - Speculative Application` was not a concrete opening.
++- Duality Technologies — `Student Automation Developer` was student-level and outside the track's core cryptography / privacy focus.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact enumerated 173 links and 54 local matches, but today's reportable-looking hits were academic/student roles, duplicates, or title-only outbound links without enough direct-page evidence.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: visible matches were a previously seen hardware-verification role plus internship, speculative-application, sales, and product-oriented pages.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: only the main jobs page and a spontaneous-application link were captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no relevant candidate survived local filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: matches were product, case-study, sales, or student-oriented pages rather than a new reportable crypto role.
++- QEDIT — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the artifact captured only the careers page, and the known `Cryptography Engineer` posting is already in `shared/seen_jobs.md`.
++- Least Authority — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: no concrete opening was captured from the careers page on this run.
++- Trail of Bits — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; note: the only role-like hit was a talent-pipeline link, alongside service pages rather than a concrete opening.
++- Partisia Blockchain — mode: `html`; status: `failed`; listing pages: `unknown`; search terms: `28 track-wide terms`; result pages: `unknown`; direct pages opened: `0`; note: today's artifact recorded `HTTP Error 404: Not Found`, so coverage was incomplete and `last_checked` was not advanced.
++
++## Seen jobs to append
++
++None.
++
++## Notes for next run
++
++Continue checking the every-run sources daily. The slower-cadence sources last checked on 2026-03-25 become due again on 2026-03-28, while Ethereum Foundation next becomes due on 2026-03-29. Partisia Blockchain should be retried on the next scheduled run because this run did not achieve complete coverage there.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index ce3731341251e30245a190274708d226d7057ac3..c033615d6ebea5c6d703b8cdca1fae26d2048df4
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,14 +17,14 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-26 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-26 |
+-| Zama | https://jobs.zama.org | html | 2026-03-26 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-26 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-26 |
+-| QEDIT | https://qed-it.com/careers | html | 2026-03-26 |
+-| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-26 |
+-| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
++| Zama | https://jobs.zama.org | html | 2026-03-27 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
++| QEDIT | https://qed-it.com/careers | html | 2026-03-27 |
++| Least Authority | https://leastauthority.com/careers/ | html | 2026-03-27 |
++| Trail of Bits | https://trailofbits.com/careers/ | html | 2026-03-27 |
+ | Partisia Blockchain | https://partisiablockchain.com/career/ | html | 2026-03-26 |
+ 
+ ## Check every 3 runs
+
+tokens used
+61.453
+Completed the scheduled `core_crypto` pass using the existing discovery artifact, without rerunning `scripts/discover_jobs.py`.
+
+The run result is in [2026-03-27.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-27.md): 0 new reportable roles, 0 high-signal matches. I kept the digest conservative because today’s artifact mostly contained duplicates, academic/student roles, non-concrete pages, or title-only outbound links without enough direct-posting detail. Partisia Blockchain was recorded as failed coverage from the artifact (`HTTP Error 404: Not Found`), so it stayed due.
+
+I updated `last_checked` only for the eight every-run sources with complete coverage in [sources.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md). [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md) was left unchanged. I preserved unrelated pre-existing edits already present in `sources.md` and elsewhere in the worktree.
+[2026-03-27 08:10:12] Finished core_crypto daily run

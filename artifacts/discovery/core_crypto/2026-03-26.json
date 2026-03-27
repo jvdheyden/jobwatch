@@ -2,7 +2,7 @@
   "schema_version": 1,
   "track": "core_crypto",
   "today": "2026-03-26",
-  "generated_at": "2026-03-26T15:59:32Z",
+  "generated_at": "2026-03-26T22:33:09Z",
   "mode": "discover",
   "sources": [
     {
@@ -703,8 +703,8 @@
       ],
       "result_pages_scanned": "local_filter=1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 130,
-      "matched_jobs": 19,
+      "enumerated_jobs": 132,
+      "matched_jobs": 20,
       "limitations": [],
       "candidates": [
         {
@@ -907,6 +907,16 @@
           "employer": "PQShield",
           "title": "Quantum resistant encryption essentials",
           "url": "https://pqshield.com/quantum-resistant-encryption/",
+          "source_url": "https://pqshield.com/careers/",
+          "location": "unknown",
+          "remote": "unknown",
+          "matched_terms": [],
+          "notes": "Static HTML enumeration"
+        },
+        {
+          "employer": "PQShield",
+          "title": "Why quantum safe encryption matters",
+          "url": "https://pqshield.com/quantum-safe-encryption/",
           "source_url": "https://pqshield.com/careers/",
           "location": "unknown",
           "remote": "unknown",
