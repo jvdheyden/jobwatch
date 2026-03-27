@@ -27,3 +27,5 @@
 2026-03-27 | Anthropic | Security Labs Engineer | San Francisco, CA | https://job-boards.greenhouse.io/anthropic/jobs/5153564008
 2026-03-27 | Anthropic | Staff+ Software Engineer, Privacy | San Francisco, CA; New York City, NY; Seattle, WA | https://job-boards.greenhouse.io/anthropic/jobs/5159146008
 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems

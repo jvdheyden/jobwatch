@@ -2,7 +2,7 @@
   "schema_version": 1,
   "track": "core_crypto",
   "today": "2026-03-27",
-  "generated_at": "2026-03-27T15:26:26Z",
+  "generated_at": "2026-03-27T18:33:47Z",
   "mode": "discover",
   "sources": [
     {
@@ -55,6 +55,7 @@
           "title": "Asiacrypt",
           "url": "https://www.iacr.org/meetings/asiacrypt",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -65,6 +66,7 @@
           "title": "Crypto",
           "url": "https://www.iacr.org/meetings/crypto",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -75,6 +77,7 @@
           "title": "Eurocrypt",
           "url": "https://www.iacr.org/meetings/eurocrypt",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -85,6 +88,7 @@
           "title": "Cryptology Schools",
           "url": "https://www.iacr.org/schools",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -95,6 +99,7 @@
           "title": "Journal of Cryptology",
           "url": "https://www.iacr.org/jofc",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -105,6 +110,7 @@
           "title": "Transactions on Symmetric Cryptology",
           "url": "https://www.iacr.org/transactions/tosc",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -115,6 +121,7 @@
           "title": "Communications in Cryptology",
           "url": "https://cic.iacr.org/",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -125,6 +132,7 @@
           "title": "Cryptology ePrint Archive",
           "url": "https://eprint.iacr.org/",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -135,6 +143,7 @@
           "title": "Publication Statistics",
           "url": "https://www.iacr.org/cryptodb/data/acceptance.php",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -145,6 +154,7 @@
           "title": "CryptoDB",
           "url": "https://www.iacr.org/cryptodb",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -155,6 +165,7 @@
           "title": "Videos",
           "url": "https://www.iacr.org/cryptodb/data/videos.php",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -165,6 +176,7 @@
           "title": "Submit a job",
           "url": "https://www.iacr.org/jobs/edit.php",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -175,6 +187,7 @@
           "title": "Cryptographer",
           "url": "https://layerzero.network/zero",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -187,6 +200,7 @@
           "title": "Post-Doc",
           "url": "https://www.iacr.org/jobs/item/4187",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -197,6 +211,7 @@
           "title": "postdoc, or senior research fellow",
           "url": "https://www.iacr.org/jobs/item/4186",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -207,6 +222,7 @@
           "title": "Ph.D. Position in Post-Quantum Cryptographic Engineering",
           "url": "https://crypto.cs.ut.ee/Main/PQCPosition2026",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -220,6 +236,7 @@
           "title": "Cryptographer",
           "url": "https://www.forsvarsmakten.se/varnplikt-och-karriar/jobba-i-forsvarsmakten/lediga-jobb/47930/kryptolog-till-avdelningen-for-krypto-och-it-",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -232,6 +249,7 @@
           "title": "Assistant Professor position (Ma\u00eetre de conf\u00e9rences)",
           "url": "https://odyssee.enseignementsup-recherche.gouv.fr/procedures/recrutement-ec/offres-poste/fiche-offre-poste/261715",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -242,6 +260,7 @@
           "title": "PhD Studentship in Cryptography (UK Home fee-status students only)",
           "url": "https://www.iacr.org/jobs/item/4182",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -254,6 +273,7 @@
           "title": "Post-Doc/Research Fellow",
           "url": "https://www.iacr.org/jobs/item/4180",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -264,6 +284,7 @@
           "title": "PhD Position in Lattice-Based Cryptography",
           "url": "https://sites.google.com/view/maiarabollauf/research/phd-in-lattice-based-cryptography",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -276,6 +297,7 @@
           "title": "3 PhD (Graduate Teaching Assistant) positions for UK candidates",
           "url": "https://www.kent.ac.uk/scholarships/search/FN15COMPGR01",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -286,6 +308,7 @@
           "title": "Ph.D. students",
           "url": "https://hsc-research.org/",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -296,6 +319,7 @@
           "title": "PhD-Position in Algebraic Cryptanalysis",
           "url": "https://www.jobbnorge.no/en/available-jobs/job/296272/phd-research-fellow-in-cryptography",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -308,6 +332,7 @@
           "title": "Senior Cryptographic Researcher",
           "url": "https://quantova.org/",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -318,6 +343,7 @@
           "title": "PhD Scholarship in Homomorphic Encryption",
           "url": "https://www.iacr.org/jobs/item/4169",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -330,6 +356,7 @@
           "title": "PhD and Postdoctoral Researchers in post-quantum cryptography, MPC, and quantum algorithms.",
           "url": "https://www.iacr.org/jobs/item/4168",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -345,6 +372,7 @@
           "title": "PhD scholarship",
           "url": "https://www.iacr.org/jobs/item/4165",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -355,6 +383,7 @@
           "title": "Industrial Ph.D. Student on Trustworthy and Verifiable AI",
           "url": "https://www.ri.se/en/about-rise/work-with-us/open-job-positions/phd-student-in-trustworthy-and-verifiable-ai",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -365,6 +394,7 @@
           "title": "PhD position in Practical Implementations of Fully Homomorphic Encryption",
           "url": "https://www.esat.kuleuven.be/cosic/vacancies/ ",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -377,6 +407,7 @@
           "title": "Funded Ph.D. Student",
           "url": "https://www.iacr.org/jobs/item/4159",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -387,6 +418,7 @@
           "title": "Postdoc in isogeny-based cryptography",
           "url": "https://www.iacr.org/jobs/item/4158",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -399,6 +431,7 @@
           "title": "Post-doc position in cryptography",
           "url": "http://www.crypto-uni.lu/vacancies.html",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -411,6 +444,7 @@
           "title": "Senior Engineer in Cryptography and Embedded Security",
           "url": "https://www.linkedin.com/jobs/view/4359537260",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -425,6 +459,7 @@
           "title": "RESEARCHER IN ADVERSARIAL MACHINE LEARNING IN CYBERSECURITY",
           "url": "https://app.skeeled.com/offer/c/691c3d2e6442c61b9ca4dd22?lang=en&show_description=true",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -437,6 +472,7 @@
           "title": "Cryptography Engineer",
           "url": "https://apply.workable.com/fortanix/j/A122E95976",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -449,6 +485,7 @@
           "title": "Postdoctoral Research Fellow in Quantum Computing - Cryptography - Number Theory",
           "url": "https://onlinerecruitment.exelsyslive.com/?c=6e7274a2-8eba-4bea-905b-06f790eeb566&v=2026/0384",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -461,6 +498,7 @@
           "title": "Staff Software Engineer, Cryptography R&D",
           "url": "https://www.sandboxaq.com/careers-list?ashby_jid=357a6ee1-3fe1-44f3-838a-f81df8b4e044",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -473,6 +511,7 @@
           "title": "PhD Position in Applied Cryptography and Privacy-Preserving Computation",
           "url": "https://jobs.unisg.ch/offene-stellen/phd-position-in-applied-cryptography-and-privacy-preserving-computation-m-w-d/6c682dbd-b33c-4956-b130-7dc7e3890574",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -488,6 +527,7 @@
           "title": "Clinical Assistant or Associate Professor",
           "url": "https://apply.interfolio.com/172168",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -498,6 +538,7 @@
           "title": "Canada Impact+ Research Chairs \u2013 Associate Professor / Professor",
           "url": "https://uwaterloo.ca/research/sites/default/files/uploads/documents/canadaimpactchairs_job-ad_final.pdf",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -508,6 +549,7 @@
           "title": "Faculty and Post-doc Positions in Cryptography Implementation",
           "url": "https://www.iacr.org/jobs/item/4118",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -520,6 +562,7 @@
           "title": "Post-Doc on Blockchain",
           "url": "https://www.iacr.org/jobs/item/4117",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -530,6 +573,7 @@
           "title": "Research Intern - Cryptography",
           "url": "https://apply.careers.microsoft.com/careers/job/1970393556640165",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -542,6 +586,7 @@
           "title": "Fully Funded Ph.D. Scholarships - Post-Quantum Cryptography",
           "url": "https://docs.google.com/forms/d/e/1FAIpQLSetFZLvDNug5SzzE-iH97P9TGzFGkZB-ly_EBGOrAYe3zUYBw/viewform?usp=sf_link",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -556,6 +601,7 @@
           "title": "FHE Engineer",
           "url": "https://syllab-ntu.github.io/syllab/2026_FHE_engineer",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -568,6 +614,7 @@
           "title": "Ph.D. Scholarships in Post-quantum Cryptography",
           "url": "https://www.iacr.org/jobs/item/4093",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -582,6 +629,7 @@
           "title": "Ph.D. Position in Applied Cryptography",
           "url": "https://www.iacr.org/jobs/item/4074",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -595,6 +643,7 @@
           "title": "Multiple postdoc positions",
           "url": "https://www.iacr.org/jobs/item/4070",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -605,6 +654,7 @@
           "title": "International Association for Cryptologic Research (IACR)",
           "url": "https://www.iacr.org/",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -615,6 +665,7 @@
           "title": "Real World Crypto",
           "url": "https://rwc.iacr.org/",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -625,6 +676,7 @@
           "title": "Copyright \u00a9 document.getElementById(\"thisYear\").innerHTML = new Date().getFullYear(); by the IACR International Association for Cryptologic Research",
           "url": "https://www.iacr.org/copyright.html",
           "source_url": "https://www.iacr.org/jobs/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -682,6 +734,7 @@
           "title": "PQCryptoLib-Core",
           "url": "https://pqshield.com/products/pqc-cor",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -694,6 +747,7 @@
           "title": "PQCryptoLib-SDK",
           "url": "https://pqshield.com/products/pqc-sdk",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -706,6 +760,7 @@
           "title": "Field Applications Engineer (FAE) Location: Remote (within the USA); Some travel to our offices will be required from time-to-time Department: Sales & Business Development",
           "url": "https://pqshield.com/careers/apply/4742961101",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -716,6 +771,7 @@
           "title": "Hardware Verification Engineer Location: Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain. Some travel to our offices (Oxford/London/Paris) will be required from time-to-time Department: Engineering",
           "url": "https://pqshield.com/careers/apply/4682388101",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -726,6 +782,7 @@
           "title": "I'd love to work at PQShield - Speculative Application Location: Remote); within Belgium, France, Netherlands, UK, Germany. Some travel to our offices will be required from time-to-time Department: Engineering",
           "url": "https://pqshield.com/careers/apply/4570269101",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -736,6 +793,7 @@
           "title": "Product Prototyping Expert Location: Remote (within the countries we operate in); Belgium, Netherlands, Spain, France, Germany, UK. Some travel to our offices will be required from time-to-time Department: Product",
           "url": "https://pqshield.com/careers/apply/4813602101",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -746,6 +804,7 @@
           "title": "Software Prototype Intern \u2013 Post-Quantum Cryptography Location: Remote (within France/United Kingdom); London, Oxford or Paris preferred. Some travel to our offices will be required from time-to-time Department: Product",
           "url": "https://pqshield.com/careers/apply/4766811101",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -760,6 +819,7 @@
           "title": "Post-quantum encryption for modern security",
           "url": "https://pqshield.com/post-quantum-cryptography",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -774,6 +834,7 @@
           "title": "Post-quantum cryptography: secure the enterprise for the quantum era",
           "url": "https://pqshield.com/post-quantum-cryptography-companies",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -788,6 +849,7 @@
           "title": "Quantum resistant encryption essentials",
           "url": "https://pqshield.com/quantum-resistant-encryption",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -798,6 +860,7 @@
           "title": "Why quantum safe encryption matters",
           "url": "https://pqshield.com/quantum-safe-encryption",
           "source_url": "https://pqshield.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -855,6 +918,7 @@
           "title": "Spontaneous Application",
           "url": "https://jobs.zama.org/jobs/candidatures-spontanees",
           "source_url": "https://jobs.zama.org",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -958,6 +1022,7 @@
           "title": "Fully Homomorphic Encryption",
           "url": "https://dualitytech.com/platform/technology-fully-homomorphic-encryption",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -970,6 +1035,7 @@
           "title": "Healthcare Overview Fuel research, discovery, and better patient outcomes Learn More",
           "url": "https://dualitytech.com/use-cases/healthcare-industry",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -980,6 +1046,7 @@
           "title": "Oncology Research",
           "url": "https://dualitytech.com/use-cases/healthcare-industry/collaborative-ai-for-oncology-research",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -990,6 +1057,7 @@
           "title": "News UK Government Highlights Duality in Landmark Cross-Border Health Study Case Study: NHS England, NCI and DSIT \u2013 Enabling International Cancer Research Collaboration Using Privacy-Enhancing Technologies",
           "url": "https://dualitytech.com/resource-hub/case-study/nhs-england-nci-and-dsit-enabling-international-cancer-research-collaboration-using-privacy-enhancing-technologies",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1003,6 +1071,7 @@
           "title": "Head of Business Development and Strategic Alliances Sales US Read more",
           "url": "https://dualitytech.com/careers/head-of-business-development-and-strategic-alliances",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -1013,6 +1082,7 @@
           "title": "Head of Defense Sales Sales US Read more",
           "url": "https://dualitytech.com/careers/head-of-defense-sales",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -1023,6 +1093,7 @@
           "title": "Student Automation Developer Engineering Tel Aviv-Yafo Read more",
           "url": "https://dualitytech.com/careers/student-automation-developer",
           "source_url": "https://dualitytech.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -1082,6 +1153,7 @@
           "title": "Cryptography Engineer",
           "url": "https://qed-it.com/careers",
           "source_url": "https://qed-it.com/careers",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1166,6 +1238,7 @@
           "title": "Engineering Director, Application Security",
           "url": "https://apply.workable.com/j/4A48CBB705",
           "source_url": "https://trailofbits.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1178,6 +1251,7 @@
           "title": "Security Engineer, Application Security",
           "url": "https://apply.workable.com/j/8CCA1C640A",
           "source_url": "https://trailofbits.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1190,6 +1264,7 @@
           "title": "Security Engineer, Blockchain",
           "url": "https://apply.workable.com/j/EA1603FD18",
           "source_url": "https://trailofbits.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1202,6 +1277,7 @@
           "title": "Senior Security Engineer, Agentic AI",
           "url": "https://apply.workable.com/j/81C6C95E4E",
           "source_url": "https://trailofbits.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1271,7 +1347,7 @@
       ],
       "result_pages_scanned": "local_filter=1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 452,
+      "enumerated_jobs": 453,
       "matched_jobs": 30,
       "limitations": [],
       "candidates": [
@@ -1280,6 +1356,7 @@
           "title": "Application Security Engineer",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4502508008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Remote-Friendly (Travel-Required) | San Francisco, CA | Seattle, WA | New York City, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -1292,6 +1369,7 @@
           "title": "ML Infrastructure Engineer, Safeguards",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4778843008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1306,6 +1384,7 @@
           "title": "Offensive Security Research Engineer, Safeguards",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5123011008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1319,6 +1398,7 @@
           "title": "Platform Hardware Security",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4929689008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "New York City, NY | Seattle, WA; San Francisco, CA | New York City, NY | Seattle, WA; Washington, DC",
           "remote": "unknown",
           "matched_terms": [
@@ -1332,6 +1412,7 @@
           "title": "Privacy Research Engineer, Safeguards",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4949108008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1346,6 +1427,7 @@
           "title": "Research Economist, Economic Research",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5018472008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1359,6 +1441,7 @@
           "title": "Research Engineer, Cybersecurity Reinforcement Learning",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5025624008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -1372,6 +1455,7 @@
           "title": "Research Engineer, Economic Research",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5071132008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1386,6 +1470,7 @@
           "title": "Research Engineer, Interpretability",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4980430008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1398,6 +1483,7 @@
           "title": "Research Engineer / Scientist, Frontier Red Team (Cyber)",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5076477008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1411,6 +1497,7 @@
           "title": "Research Engineer / Scientist, Societal Impacts",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5076606008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1424,6 +1511,7 @@
           "title": "Research Scientist, Societal Impacts",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5076616008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1437,6 +1525,7 @@
           "title": "Security Architect, Applied AI ",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5101433008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "New York City, NY; New York City, NY | Seattle, WA; San Francisco, CA | New York City, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -1450,6 +1539,7 @@
           "title": "Security Engineer, Detection & Response",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4982193008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY | Seattle, WA; Washington, DC",
           "remote": "unknown",
           "matched_terms": [
@@ -1462,6 +1552,7 @@
           "title": "Security Engineer Lead, Corporate Security",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5135098008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -1474,6 +1565,7 @@
           "title": "Security Engineer, Offensive Security",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5105509008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Remote-Friendly (Travel-Required) | San Francisco, CA | Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -1486,6 +1578,7 @@
           "title": "Security Labs Engineer",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5153564008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1503,6 +1596,7 @@
           "title": "Security Software Engineer, Detection & Response Platform",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4595463008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY | Seattle, WA; Washington, DC",
           "remote": "unknown",
           "matched_terms": [
@@ -1515,6 +1609,7 @@
           "title": "Security Technology Deployment Specialist ",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5123587008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Remote-Friendly (Travel-Required) | San Francisco, CA | Seattle, WA | New York City, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -1528,6 +1623,7 @@
           "title": "Senior Security Engineer, Detection & Response",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5068288008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Z\u00fcrich, CH",
           "remote": "unknown",
           "matched_terms": [
@@ -1540,7 +1636,21 @@
           "title": "Senior Security Software Engineer, eBPF & Security Sensors",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5108521008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Z\u00fcrich, CH",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Greenhouse board API"
+        },
+        {
+          "employer": "Anthropic",
+          "title": "Senior Software Security Engineer",
+          "url": "https://job-boards.greenhouse.io/anthropic/jobs/5022845008",
+          "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
+          "location": "London, UK",
           "remote": "unknown",
           "matched_terms": [
             "security"
@@ -1552,6 +1662,7 @@
           "title": "Senior Software Security Engineer",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4887959008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY | Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -1563,21 +1674,10 @@
         },
         {
           "employer": "Anthropic",
-          "title": "Senior Software Security Engineer",
-          "url": "https://job-boards.greenhouse.io/anthropic/jobs/5022845008",
-          "source_url": "https://job-boards.greenhouse.io/anthropic/",
-          "location": "London, UK",
-          "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through Greenhouse board API"
-        },
-        {
-          "employer": "Anthropic",
           "title": "Software Engineer, Cybersecurity Products",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5063007008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY | Seattle, WA; Washington, DC",
           "remote": "unknown",
           "matched_terms": [
@@ -1590,6 +1690,7 @@
           "title": "Software Engineer, Enterprise Foundations",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/4667572008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -1604,6 +1705,7 @@
           "title": "Solutions Architect, Applied AI (National Security)",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5079511008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Washington, DC",
           "remote": "unknown",
           "matched_terms": [
@@ -1616,6 +1718,7 @@
           "title": "Solutions Architect, National Security",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5126080008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "Washington, DC",
           "remote": "unknown",
           "matched_terms": [
@@ -1628,6 +1731,7 @@
           "title": "Staff+ Software Engineer, Privacy",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5159146008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY | Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -1646,6 +1750,7 @@
           "title": "Staff+ Software Security Engineer",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5120512008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA | New York City, NY | Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -1659,6 +1764,7 @@
           "title": "Transformative AI Research Economist, Economic Research\u00a0",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5149802008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
           "location": "San Francisco, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -1759,12 +1865,12 @@
         "Authentifizierung",
         "Smartcard"
       ],
-      "result_pages_scanned": "cryptography=1p/0of0, cryptographer=1p/0of0, applied cryptography=1p/0of0, privacy=1p/0of0, privacy engineering=1p/0of0, privacy-preserving=1p/0of0, privacy-enhancing technologies=1p/0of0, PETs=1p/12of12, security=1p/16of16, security research=1p/4of4, protocol=1p/0of0, protocol security=1p/0of0, authentication=1p/2of2, digital identity=3p/44of45, key management=1p/16of16, post-quantum=1p/0of0, post-quantum cryptography=1p/0of0, PQC=1p/0of0, MPC=1p/1, multi-party computation=1p/0of0, zero-knowledge=1p/0of0, ZK=1p/0of0, FHE=1p/0of0, homomorphic encryption=1p/0of0, smart card=1p/5of5, embedded security=1p/3of3, secure hardware=1p/2of2, HSM=1p/0of0, Kryptographie=1p/0of0, IT-Sicherheit=1p/8of8, Identit\u00e4t=28p/551of542, Authentifizierung=1p/1, Smartcard=1p/0of0",
+      "result_pages_scanned": "cryptography=1p/0of0, cryptographer=1p/0of0, applied cryptography=1p/0of0, privacy=1p/0of0, privacy engineering=1p/0of0, privacy-preserving=1p/0of0, privacy-enhancing technologies=1p/0of0, PETs=1p/12of12, security=1p/16of16, security research=1p/4of4, protocol=1p/0of0, protocol security=1p/0of0, authentication=1p/2of2, digital identity=3p/43of44, key management=1p/16of16, post-quantum=1p/0of0, post-quantum cryptography=1p/0of0, PQC=1p/0of0, MPC=1p/1, multi-party computation=1p/0of0, zero-knowledge=1p/0of0, ZK=1p/0of0, FHE=1p/0of0, homomorphic encryption=1p/0of0, smart card=1p/5of5, embedded security=1p/3of3, secure hardware=1p/2of2, HSM=1p/0of0, Kryptographie=1p/0of0, IT-Sicherheit=1p/8of8, Identit\u00e4t=28p/549of543, Authentifizierung=1p/1, Smartcard=1p/0of0",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 665,
+      "enumerated_jobs": 662,
       "matched_jobs": 7,
       "limitations": [
-        "Bosch browser search for 'digital identity' surfaced 44 of 45 results"
+        "Bosch browser search for 'digital identity' surfaced 43 of 44 results"
       ],
       "candidates": [
         {
@@ -1772,6 +1878,7 @@
           "title": "IT Product Security Specialist (m/w/div.)",
           "url": "https://jobs.bosch.de/job/IT-Product-Security-Specialist-m_w_div.-Berlin-Charlottenburg?id=744000116372487&searchTerm=security",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Berlin-Charlottenburg, Berlin",
           "remote": "unknown",
           "matched_terms": [
@@ -1784,6 +1891,7 @@
           "title": "Praktikum in Build- & Test-Automatisierung f\u00fcr Security Basic Software (BSW)",
           "url": "https://jobs.bosch.de/job/Praktikum-in-Build-Test-Automatisierung-fuer-Security-Basic-Software-BSW-Elchingen-bei-Ulm?id=744000109712428&searchTerm=security",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Elchingen bei Ulm, Bayern",
           "remote": "unknown",
           "matched_terms": [
@@ -1796,6 +1904,7 @@
           "title": "IT Product Security Specialist (m/w/div.)",
           "url": "https://jobs.bosch.de/job/IT-Product-Security-Specialist-m_w_div.-Berlin-Charlottenburg?id=744000116372487&searchTerm=security%20research",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Berlin-Charlottenburg, Berlin",
           "remote": "unknown",
           "matched_terms": [
@@ -1808,6 +1917,7 @@
           "title": "Praktikum in Build- & Test-Automatisierung f\u00fcr Security Basic Software (BSW)",
           "url": "https://jobs.bosch.de/job/Praktikum-in-Build-Test-Automatisierung-fuer-Security-Basic-Software-BSW-Elchingen-bei-Ulm?id=744000109712428&searchTerm=security%20research",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Elchingen bei Ulm, Bayern",
           "remote": "unknown",
           "matched_terms": [
@@ -1820,6 +1930,7 @@
           "title": "IT Product Security Specialist (m/w/div.)",
           "url": "https://jobs.bosch.de/job/IT-Product-Security-Specialist-m_w_div.-Berlin-Charlottenburg?id=744000116372487&searchTerm=IT-Sicherheit",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Berlin-Charlottenburg, Berlin",
           "remote": "unknown",
           "matched_terms": [
@@ -1832,6 +1943,7 @@
           "title": "Praktikum in Build- & Test-Automatisierung f\u00fcr Security Basic Software (BSW)",
           "url": "https://jobs.bosch.de/job/Praktikum-in-Build-Test-Automatisierung-fuer-Security-Basic-Software-BSW-Elchingen-bei-Ulm?id=744000109712428&searchTerm=Identit%C3%A4t",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Elchingen bei Ulm, Bayern",
           "remote": "unknown",
           "matched_terms": [
@@ -1844,6 +1956,7 @@
           "title": "IT Product Security Specialist (m/w/div.)",
           "url": "https://jobs.bosch.de/job/IT-Product-Security-Specialist-m_w_div.-Berlin-Charlottenburg?id=744000116372487&searchTerm=Authentifizierung",
           "source_url": "https://jobs.bosch.de/",
+          "alternate_url": "",
           "location": "Berlin-Charlottenburg, Berlin",
           "remote": "unknown",
           "matched_terms": [
@@ -1954,6 +2067,7 @@
           "title": "AI Researcher for Information Security Research Institute Tallinn or Tartu",
           "url": "https://cyber.teamdash.com/p/job/ewYJcrjF/ai-researcher-for-information-security-research-institute",
           "source_url": "https://cyber.ee/careers/open-positions",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1967,6 +2081,7 @@
           "title": "Security Engineer for Cybersecurity R&D Projects Tallinn or Tartu",
           "url": "https://cyber.teamdash.com/p/job/BQfQIYuz/security-engineer",
           "source_url": "https://cyber.ee/careers/open-positions",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1979,6 +2094,7 @@
           "title": "DevOps Engineer for Digital Identity Technologies Tallinn or Tartu",
           "url": "https://cyber.teamdash.com/p/job/te62GHub/devops-engineer-for-digital-identity-technologies",
           "source_url": "https://cyber.ee/careers/open-positions",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -1991,6 +2107,7 @@
           "title": "Go Developer for Digital Identity Technologies Tallinn or Tartu",
           "url": "https://cyber.teamdash.com/p/job/JZWN2mul/go-developer-for-digital-identity-technologies",
           "source_url": "https://cyber.ee/careers/open-positions",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -2012,9 +2129,9 @@
       "search_terms_tried": [
         "cryptography"
       ],
-      "result_pages_scanned": "cryptography=7p/135",
+      "result_pages_scanned": "cryptography=7p/134",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 135,
+      "enumerated_jobs": 134,
       "matched_jobs": 4,
       "limitations": [],
       "candidates": [
@@ -2130,7 +2247,7 @@
       "cadence_group": "every_3_runs",
       "last_checked": "2026-03-25",
       "due_today": false,
-      "status": "partial",
+      "status": "complete",
       "listing_pages_scanned": 2,
       "search_terms_tried": [
         "cryptography",
@@ -2162,19 +2279,18 @@
         "secure hardware",
         "HSM"
       ],
-      "result_pages_scanned": "full_index=2p/195of197",
+      "result_pages_scanned": "full_index=2p/194of194",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 195,
-      "matched_jobs": 94,
-      "limitations": [
-        "IBM API reported 197 hits but only 195 unique records were observed across paged results"
-      ],
+      "enumerated_jobs": 194,
+      "matched_jobs": 95,
+      "limitations": [],
       "candidates": [
         {
           "employer": "IBM",
           "title": "Backend Engineer (Cryptography Team) - Hashicorp Vault",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=85519",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2187,6 +2303,7 @@
           "title": "Security Specialist - Email Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=86816",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bogota, CO",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2199,6 +2316,7 @@
           "title": "Security Specialist - Email Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=86814",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bogota, CO",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2211,6 +2329,7 @@
           "title": "Security Specialist - Email Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=87000",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Lima, PE",
           "remote": "unknown",
           "matched_terms": [
@@ -2223,6 +2342,7 @@
           "title": "Software Developer for S3 protocol",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=102841",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bangalore, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2236,6 +2356,7 @@
           "title": "Security Architect",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=73259",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2248,7 +2369,21 @@
           "title": "Security Architect",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=103087",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "MELBOURNE, AU",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Linux Security Engineer",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=102627",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2260,6 +2395,20 @@
           "title": "SAP Security Architect",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=97913",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Multiple Cities",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "OpenJDK Security Developer",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88486",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2272,19 +2421,8 @@
           "title": "Security Engineer - Sentinel",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=94810",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "BUDAPEST, HU",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Linux Security Engineer",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=102627",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2296,6 +2434,7 @@
           "title": "Security & Compliance  Engineer",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=95510",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bangalore, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2308,6 +2447,7 @@
           "title": "Cyber Security Architect",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=99527",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Jakarta, ID",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2320,20 +2460,9 @@
           "title": "Security Focal Specialist",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=86996",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Lima, PE",
           "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Azure Security Engineer",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=104301",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Multiple Cities",
-          "remote": "Hybrid",
           "matched_terms": [
             "security"
           ],
@@ -2344,6 +2473,7 @@
           "title": "Security & Compliance Engineer",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=104930",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2356,19 +2486,8 @@
           "title": "Security Cloud Specialist",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=87637",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bogota, CO",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "OpenJDK Security Developer",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88486",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2380,8 +2499,22 @@
           "title": "Security Specialist - TDR - MDR",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=86965",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Lima, PE",
           "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Senior Security & Compliance Engineer",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=97791",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
           "matched_terms": [
             "security"
           ],
@@ -2392,6 +2525,7 @@
           "title": "Software Developer - Security & Compliance",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=104255",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bangalore, IN",
           "remote": "unknown",
           "matched_terms": [
@@ -2404,19 +2538,8 @@
           "title": "Security Scanning Automation Engineer",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=105415",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Security Specialist - TDR - MDR",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=86802",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bogota, CO",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2428,6 +2551,7 @@
           "title": "Associate Security Specialist - 2026",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=87017",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2437,10 +2561,11 @@
         },
         {
           "employer": "IBM",
-          "title": "Senior Security & Compliance Engineer",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=97791",
+          "title": "Security Specialist - TDR - MDR",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=86802",
           "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
+          "alternate_url": "",
+          "location": "Bogota, CO",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2452,6 +2577,7 @@
           "title": "Supply Chain Security Specialist",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=105450",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Essex Junction, US",
           "remote": "unknown",
           "matched_terms": [
@@ -2464,6 +2590,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=93964",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2476,6 +2603,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100607",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2488,6 +2616,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100769",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2498,9 +2627,36 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100642",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95015",
           "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kochi, IN",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100620",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Coimbatore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100608",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2512,6 +2668,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100616",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2522,32 +2679,9 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100645",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100642",
           "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100792",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Coimbatore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100766",
-          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2560,7 +2694,47 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100780",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bhubaneswar, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100766",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100645",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100792",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2572,6 +2746,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100785",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2584,6 +2759,20 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100624",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Coimbatore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100789",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2596,163 +2785,8 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100611",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100789",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Coimbatore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94989",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100795",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95015",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100608",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100620",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Coimbatore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Security Consultant \u2013 PKI & Crypto (German)",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93640",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Multiple Cities",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100632",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93552",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93544",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100777",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100612",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95030",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2764,6 +2798,7 @@
           "title": "Z/os Security Software Developer",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=56560",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Leiden, NL",
           "remote": "unknown",
           "matched_terms": [
@@ -2776,6 +2811,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=94992",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2788,6 +2824,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100628",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2798,8 +2835,9 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95018",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94991",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2810,8 +2848,35 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100770",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94989",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Security Consultant \u2013 PKI & Crypto (German)",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93640",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Multiple Cities",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100632",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2822,8 +2887,35 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100783",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93552",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93544",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100612",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2834,9 +2926,10 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100765",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100777",
           "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kochi, IN",
+          "alternate_url": "",
+          "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2846,45 +2939,23 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100796",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95030",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100795",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=105711",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93541",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100622",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2896,6 +2967,20 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100782",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bhubaneswar, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100776",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2908,19 +2993,8 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100773",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100776",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2932,6 +3006,7 @@
           "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=95073",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -2942,9 +3017,127 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94991",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100651",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94990",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95018",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100783",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bhubaneswar, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100770",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100765",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100796",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=105711",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93541",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100622",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2956,42 +3149,7 @@
           "title": "Package Specialist-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=90812",
           "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74730",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87946",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=90816",
-          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3004,6 +3162,7 @@
           "title": "Package Specialist-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=98220",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kolkata, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3016,7 +3175,34 @@
           "title": "Package Specialist-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=99942",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87946",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=90816",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3028,139 +3214,8 @@
           "title": "Package Specialist-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=99946",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74729",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Gurgaon, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87797",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99908",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=106655",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=90813",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Security Specialist-Industrial Operation Technology Services",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=106285",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Seoul, KR",
-          "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88189",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Intern 2026: Quantum Network  / Security Engineer",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=60905",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Multiple Cities",
-          "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74731",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87795",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93827",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Bangalore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3172,90 +3227,7 @@
           "title": "Application Architect-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=88183",
           "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "2026 IBM Consulting Associates-Security Specialist",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=84454",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Seoul, KR",
-          "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88014",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Hyderabad, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99641",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74728",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Noida, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99768",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99766",
-          "source_url": "https://www.ibm.com/careers/search",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88182",
-          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Kolkata, IN",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3268,7 +3240,255 @@
           "title": "Application Architect-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=87382",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Security Specialist-Industrial Operation Technology Services",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=106285",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Seoul, KR",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88189",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74730",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Intern 2026: Quantum Network  / Security Engineer",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=60905",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Multiple Cities",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74731",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87795",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93827",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=90813",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99766",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88182",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74729",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Gurgaon, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87797",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99908",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=106655",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99641",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88014",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Hyderabad, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "2026 IBM Consulting Associates-Security Specialist",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=84454",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Seoul, KR",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74728",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Noida, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99768",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3280,6 +3500,7 @@
           "title": "Software Engineer (Application Networking Security, Skupper project)",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=82829",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "LOWELL, US",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3292,6 +3513,7 @@
           "title": "[2026 IBM Consulting Associates] Security Specialist-SOC \ubcf4\uc548\uad00\uc81c",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=65430",
           "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
           "location": "Seoul, KR",
           "remote": "unknown",
           "matched_terms": [
@@ -3340,7 +3562,7 @@
         "secure hardware",
         "HSM"
       ],
-      "result_pages_scanned": "cryptography=1p/6, cryptographer=0p/0, applied cryptography=0p/0, privacy=13p/121, privacy engineering=11p/107, privacy-preserving=0p/0, privacy-enhancing technologies=15p/146, PETs=1p/5, security=12p/115, security research=3p/25, protocol=2p/20, protocol security=1p/2, authentication=1p/7, digital identity=5p/43, key management=54p/538, post-quantum=1p/1, post-quantum cryptography=1p/1, PQC=7p/65, MPC=20p/198, multi-party computation=1p/4, zero-knowledge=2p/18, ZK=2p/20, FHE=14p/136, homomorphic encryption=0p/0, smart card=3p/29, embedded security=2p/20, secure hardware=21p/204, HSM=4p/33",
+      "result_pages_scanned": "cryptography=1p/6, cryptographer=0p/0, applied cryptography=0p/0, privacy=13p/123, privacy engineering=11p/109, privacy-preserving=0p/0, privacy-enhancing technologies=15p/148, PETs=1p/5, security=12p/115, security research=3p/25, protocol=2p/20, protocol security=1p/2, authentication=1p/7, digital identity=5p/43, key management=54p/539, post-quantum=1p/1, post-quantum cryptography=1p/1, PQC=7p/65, MPC=20p/197, multi-party computation=1p/4, zero-knowledge=2p/18, ZK=2p/20, FHE=14p/136, homomorphic encryption=0p/0, smart card=3p/30, embedded security=2p/20, secure hardware=21p/203, HSM=4p/33",
       "direct_job_pages_opened": 0,
       "enumerated_jobs": 961,
       "matched_jobs": 7,
@@ -3351,6 +3573,7 @@
           "title": "Network Security Engineer - Operational Technology & Manufacturing (f/m/div)",
           "url": "https://jobs.infineon.com/careers/job/563808969780496",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Porto (Maia) (Portugal)",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3363,6 +3586,7 @@
           "title": "Cybersecurity Domain Architect (f/m/div)",
           "url": "https://jobs.infineon.com/careers/job/563808969188654",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Porto (Maia) (Portugal)",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3375,6 +3599,7 @@
           "title": "Senior Specialist Facility Management & Site Security Management (w/m/div)",
           "url": "https://jobs.infineon.com/careers/job/563808970089789",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Graz (Austria)",
           "remote": "onsite",
           "matched_terms": [
@@ -3387,6 +3612,7 @@
           "title": "Cyber Security & Functional Safety Engineer Automotive Microcontroller",
           "url": "https://jobs.infineon.com/careers/job/563808969340696",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Bangalore (India)",
           "remote": "onsite",
           "matched_terms": [
@@ -3399,6 +3625,7 @@
           "title": "Specialist Facility Security \u2013 Real Estate (f/m/div) ",
           "url": "https://jobs.infineon.com/careers/job/563808968829708",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Porto (Maia) (Portugal)",
           "remote": "Hybrid",
           "matched_terms": [
@@ -3411,6 +3638,7 @@
           "title": "Staff Specialist Security Management",
           "url": "https://jobs.infineon.com/careers/job/563808968078382",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Melaka (Malaysia)",
           "remote": "onsite",
           "matched_terms": [
@@ -3423,6 +3651,7 @@
           "title": "Senior Specialist Security",
           "url": "https://jobs.infineon.com/careers/job/563808961567603",
           "source_url": "https://jobs.infineon.com/careers",
+          "alternate_url": "",
           "location": "Melaka (Malaysia)",
           "remote": "onsite",
           "matched_terms": [
@@ -3482,6 +3711,7 @@
           "title": "CyberSecurity Engineer, DevSecOps",
           "url": "https://jobs.lever.co/mistral/94a331c8-0ddf-4e88-a6ad-7a70c212e0fa",
           "source_url": "https://jobs.lever.co/mistral",
+          "alternate_url": "",
           "location": "Paris",
           "remote": "unknown",
           "matched_terms": [
@@ -3494,6 +3724,7 @@
           "title": "Cybersecurity Engineer, SIEM",
           "url": "https://jobs.lever.co/mistral/6f7f6e7a-3dc4-430b-8957-a64450a10066",
           "source_url": "https://jobs.lever.co/mistral",
+          "alternate_url": "",
           "location": "Paris",
           "remote": "unknown",
           "matched_terms": [
@@ -3506,6 +3737,7 @@
           "title": "CyberSecurity Engineer, SOC Analyst",
           "url": "https://jobs.lever.co/mistral/f9782b09-ca3c-4bfc-ba7a-349551ef9a82",
           "source_url": "https://jobs.lever.co/mistral",
+          "alternate_url": "",
           "location": "Paris",
           "remote": "unknown",
           "matched_terms": [
@@ -3523,7 +3755,7 @@
       "last_checked": "2026-03-25",
       "due_today": false,
       "status": "complete",
-      "listing_pages_scanned": 55,
+      "listing_pages_scanned": 56,
       "search_terms_tried": [
         "cryptography",
         "cryptographer",
@@ -3554,10 +3786,10 @@
         "secure hardware",
         "HSM"
       ],
-      "result_pages_scanned": "cryptography=2p/26, cryptographer=2p/26, applied cryptography=2p/26, privacy=2p/33, privacy engineering=2p/29, privacy-preserving=1p/7, privacy-enhancing technologies=1p/8, PETs=0p/0, security=8p/157, security research=5p/85, protocol=3p/47, protocol security=2p/21, authentication=1p/7, digital identity=2p/40, key management=8p/153, post-quantum=0p/0, post-quantum cryptography=0p/0, PQC=0p/0, MPC=0p/0, multi-party computation=2p/29, zero-knowledge=1p/13, ZK=0p/0, FHE=0p/0, homomorphic encryption=0p/0, smart card=2p/27, embedded security=4p/77, secure hardware=4p/70, HSM=1p/1",
+      "result_pages_scanned": "cryptography=2p/27, cryptographer=2p/27, applied cryptography=2p/27, privacy=2p/34, privacy engineering=2p/30, privacy-preserving=1p/8, privacy-enhancing technologies=1p/8, PETs=0p/0, security=8p/158, security research=5p/86, protocol=3p/47, protocol security=2p/21, authentication=1p/7, digital identity=3p/41, key management=8p/154, post-quantum=0p/0, post-quantum cryptography=0p/0, PQC=0p/0, MPC=0p/0, multi-party computation=2p/29, zero-knowledge=1p/13, ZK=0p/0, FHE=0p/0, homomorphic encryption=0p/0, smart card=2p/27, embedded security=4p/78, secure hardware=4p/70, HSM=1p/1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 326,
-      "matched_jobs": 18,
+      "enumerated_jobs": 328,
+      "matched_jobs": 19,
       "limitations": [],
       "candidates": [
         {
@@ -3565,6 +3797,7 @@
           "title": "Senior Embedded AI Platform Security Engineer (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Embedded-AI-Platform-Security-Engineer_R-10060434",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Gratkorn",
           "remote": "unknown",
           "matched_terms": [
@@ -3577,6 +3810,7 @@
           "title": "Software Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Software-Security-Architect--m-f-d-_R-10060547",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "4 Locations",
           "remote": "unknown",
           "matched_terms": [
@@ -3589,6 +3823,7 @@
           "title": "Software Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Software-Security-Architect--m-f-d-_R-10062003",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "3 Locations",
           "remote": "unknown",
           "matched_terms": [
@@ -3601,6 +3836,7 @@
           "title": "Software Internship \u2013 Automotive Security Firmware",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Bucharest/Software-Internship---Automotive-Security-Firmware_R-10054983-1",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Bucharest",
           "remote": "unknown",
           "matched_terms": [
@@ -3610,9 +3846,23 @@
         },
         {
           "employer": "NXP",
+          "title": "Senior Embedded AI Platform Security Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10061316-1",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Gratkorn",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
           "title": "Senior Embedded AI Platform Security Engineer (m/w/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/Senior-Embedded-AI-Platform-Security-Engineer--m-w-d-_R-10061315",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Leuven",
           "remote": "unknown",
           "matched_terms": [
@@ -3625,6 +3875,7 @@
           "title": "Junior Embedded AI Platform Security Engineer (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062144",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Leuven",
           "remote": "unknown",
           "matched_terms": [
@@ -3637,6 +3888,7 @@
           "title": "ML Security Tools & Threat Modeling Engineer (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062047",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Leuven",
           "remote": "unknown",
           "matched_terms": [
@@ -3649,18 +3901,20 @@
           "title": "Senior ML Security Tools & Threat Modeling Engineer (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Senior-ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062142",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Glasgow",
           "remote": "unknown",
           "matched_terms": [
             "security"
           ],
-          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
         },
         {
           "employer": "NXP",
           "title": "Junior Embedded AI Platform Security Engineer (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062145",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Gratkorn",
           "remote": "unknown",
           "matched_terms": [
@@ -3673,6 +3927,7 @@
           "title": "Senior ML Security Tools & Threat Modeling Engineer (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10060438",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Glasgow",
           "remote": "unknown",
           "matched_terms": [
@@ -3685,6 +3940,7 @@
           "title": "Senior AI/ML System Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Experienced-AI-ML-System-Security-Architect--m-f-d-_R-10060511",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "4 Locations",
           "remote": "unknown",
           "matched_terms": [
@@ -3697,6 +3953,7 @@
           "title": "Crypto & Security Engineers",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Crypto---Security-Engineers_R-10062277-1",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "2 Locations",
           "remote": "unknown",
           "matched_terms": [
@@ -3709,6 +3966,7 @@
           "title": "Senior Security Experts (m/f/d) in our global Innovation Center Crypto & Security",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Security-Experts--f-m-d--in-our-Innovation-Center-Crypto---Security_R-10014526",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "2 Locations",
           "remote": "unknown",
           "matched_terms": [
@@ -3721,6 +3979,7 @@
           "title": "Software Security Analyst (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Software-Security-Analyst--m-f-d-_R-10062087",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Gratkorn",
           "remote": "unknown",
           "matched_terms": [
@@ -3733,6 +3992,7 @@
           "title": "Senior System Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Experienced-System-Security-Architect--m-f-d-_R-10060123",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Gratkorn",
           "remote": "unknown",
           "matched_terms": [
@@ -3745,6 +4005,7 @@
           "title": "Senior System Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/Senior-System-Security-Architect--m-f-d-_R-10062221",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Leuven",
           "remote": "unknown",
           "matched_terms": [
@@ -3757,6 +4018,7 @@
           "title": "Senior System Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Barcelona/Senior-System-Security-Architect--m-f-d-_R-10062222",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Barcelona",
           "remote": "unknown",
           "matched_terms": [
@@ -3769,6 +4031,7 @@
           "title": "Senior System Security Architect (m/f/d)",
           "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Senior-System-Security-Architect--m-f-d-_R-10062220",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
           "location": "Glasgow",
           "remote": "unknown",
           "matched_terms": [
@@ -3828,6 +4091,7 @@
           "title": "Application Security Engineer",
           "url": "https://jobs.lever.co/palantir/205c3184-4272-41a9-a1e2-5352d4d00910",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "London, United Kingdom",
           "remote": "unknown",
           "matched_terms": [
@@ -3840,6 +4104,7 @@
           "title": "Application Security Engineer",
           "url": "https://jobs.lever.co/palantir/7e3ec54c-b73a-4014-8ef3-cdce8a4953c4",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "New York, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -3852,6 +4117,7 @@
           "title": "Application Security Engineer",
           "url": "https://jobs.lever.co/palantir/86641a6e-5abb-40c5-8cc3-d481f70350d7",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Palo Alto, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -3864,6 +4130,7 @@
           "title": "Application Security Engineer",
           "url": "https://jobs.lever.co/palantir/a5fdd5ec-d1f3-4837-83af-161b003931dd",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Washington, D.C.",
           "remote": "unknown",
           "matched_terms": [
@@ -3876,6 +4143,7 @@
           "title": "Application Security Engineer",
           "url": "https://jobs.lever.co/palantir/ce813413-de04-4a7b-a796-43735f55bf0c",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Remote: United States",
           "remote": "unknown",
           "matched_terms": [
@@ -3888,6 +4156,7 @@
           "title": "Application Security Engineer",
           "url": "https://jobs.lever.co/palantir/f8df815c-6a38-4d57-b75f-c4262b9311b4",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -3900,6 +4169,7 @@
           "title": "Forward Deployed Security Engineer - US Government",
           "url": "https://jobs.lever.co/palantir/22053072-4c22-49c4-8299-28e107ceeb98",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Washington, D.C.",
           "remote": "unknown",
           "matched_terms": [
@@ -3912,6 +4182,7 @@
           "title": "Industrial Security Specialist",
           "url": "https://jobs.lever.co/palantir/12d13a31-5764-4678-8835-809f0deae49b",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "New York, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -3924,6 +4195,7 @@
           "title": "Industrial Security Specialist",
           "url": "https://jobs.lever.co/palantir/320bc538-d707-4976-9ad1-44568c0a8ab9",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Washington, D.C.",
           "remote": "unknown",
           "matched_terms": [
@@ -3936,6 +4208,7 @@
           "title": "Information Security Engineer",
           "url": "https://jobs.lever.co/palantir/1124402c-2088-40c6-b6aa-b9ef7777519b",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -3948,6 +4221,7 @@
           "title": "Information Security Engineer",
           "url": "https://jobs.lever.co/palantir/36703f67-6fae-445c-9277-f946121faaa0",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Washington, D.C.",
           "remote": "unknown",
           "matched_terms": [
@@ -3960,6 +4234,7 @@
           "title": "Information Security Engineer",
           "url": "https://jobs.lever.co/palantir/e2a8360a-710a-4185-b2a9-3b7d9fe590b1",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "New York, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -3972,6 +4247,7 @@
           "title": "Product Infrastructure Security Engineer",
           "url": "https://jobs.lever.co/palantir/0f077970-31ad-45b4-ae76-458a134b705f",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Remote: US - East",
           "remote": "unknown",
           "matched_terms": [
@@ -3984,6 +4260,7 @@
           "title": "Product Infrastructure Security Engineer",
           "url": "https://jobs.lever.co/palantir/15f01f3a-922d-4cff-b093-888333d88628",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Washington, D.C.",
           "remote": "unknown",
           "matched_terms": [
@@ -3996,6 +4273,7 @@
           "title": "Product Infrastructure Security Engineer",
           "url": "https://jobs.lever.co/palantir/346ff0e0-94dd-4d6c-916a-23ecdd74bbc6",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Palo Alto, CA",
           "remote": "unknown",
           "matched_terms": [
@@ -4008,6 +4286,7 @@
           "title": "Product Infrastructure Security Engineer",
           "url": "https://jobs.lever.co/palantir/47bf61f0-853c-43f9-ad30-873784da9c59",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
@@ -4020,6 +4299,7 @@
           "title": "Product Infrastructure Security Engineer",
           "url": "https://jobs.lever.co/palantir/d617af53-e943-4122-8993-4f5853c667bf",
           "source_url": "https://jobs.lever.co/palantir",
+          "alternate_url": "",
           "location": "New York, NY",
           "remote": "unknown",
           "matched_terms": [
@@ -4129,6 +4409,7 @@
           "title": "(Senior) Backend Engineer (m/w/d) - Security Applications",
           "url": "https://jobs.secunet.com/Senior-Backend-Engineer-mwd-Security-Applications-de-j3381.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4141,6 +4422,7 @@
           "title": "(Senior) Frontend Engineer (m/w/d) - Security Applications",
           "url": "https://jobs.secunet.com/Senior-Frontend-Engineer-mwd-Security-Applications-de-j3380.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4153,6 +4435,7 @@
           "title": "(Senior) Software Engineer (m/f/d) - Network Security",
           "url": "https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4165,6 +4448,7 @@
           "title": "Android Engineer (m/w/d) mit Schwerpunkt Verschl\u00fcsselung & Security",
           "url": "https://jobs.secunet.com/Android-Engineer-mwd-mit-Schwerpunkt-Verschluesselung-Secu-de-j3401.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4177,6 +4461,7 @@
           "title": "Cloud Security Architect (m/w/d)",
           "url": "https://jobs.secunet.com/Cloud-Security-Architect-mwd-de-j3349.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4189,6 +4474,7 @@
           "title": "Field Service Engineer Network Security (m/w/d)",
           "url": "https://jobs.secunet.com/Field-Service-Engineer-Network-Security-mwd-de-j3170.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4201,6 +4487,7 @@
           "title": "Senior Software Developer (m/w/d) - Mobile Security (Android/iOS)",
           "url": "https://jobs.secunet.com/Senior-Software-Developer-mwd-Mobile-Security-AndroidiOS-de-j3368.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4213,6 +4500,7 @@
           "title": "Senior Software Tester (m/w/d) - Mobile Security",
           "url": "https://jobs.secunet.com/Senior-Software-Tester-mwd-Mobile-Security-de-j3369.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4225,6 +4513,7 @@
           "title": "Smart Card Developer (m/w/d) - Testing & Automation",
           "url": "https://jobs.secunet.com/Smart-Card-Developer-mwd-Testing-Automation-de-j3154.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4237,6 +4526,7 @@
           "title": "Software Developer (m/w/d) Rust",
           "url": "https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4249,6 +4539,7 @@
           "title": "Software Developer (m/w/d) Schwerpunkt Kryptographie",
           "url": "https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4261,6 +4552,7 @@
           "title": "Software Developer (m/w/d) Smartcard",
           "url": "https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4273,6 +4565,7 @@
           "title": "Software Developer mobile (m/w/d) VPN und Security (Android/iOS)",
           "url": "https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html",
           "source_url": "https://jobs.secunet.com/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4378,6 +4671,7 @@
           "title": "\u30b7\u30cb\u30a2\u30fb\u30d5\u30a3\u30b8\u30ab\u30eb\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u30fb\u30b9\u30da\u30b7\u30e3\u30ea\u30b9\u30c8 / Senior, Physical Security Specialist - 639",
           "url": "https://jobs.eu.lever.co/quantinuum/c49ff6b4-c3ec-456a-a1a3-ddca543075b5",
           "source_url": "https://jobs.eu.lever.co/quantinuum",
+          "alternate_url": "",
           "location": "Japan Tokyo",
           "remote": "unknown",
           "matched_terms": [
@@ -4505,6 +4799,7 @@
           "title": "Quantum Safe Cryptography",
           "url": "https://www.rambus.com/security/quantum-safe-cryptography",
           "source_url": "https://www.rambus.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4519,6 +4814,7 @@
           "title": "Security Software & Toolkits",
           "url": "https://www.rambus.com/security/software-protocols",
           "source_url": "https://www.rambus.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [
@@ -4532,6 +4828,7 @@
           "title": "Explore Careers",
           "url": "https://careers-rambus.icims.com/jobs",
           "source_url": "https://www.rambus.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -4542,6 +4839,7 @@
           "title": "Internships & New Grads",
           "url": "https://www.rambus.com/careers/internships-and-new-grads",
           "source_url": "https://www.rambus.com/careers/",
+          "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",
           "matched_terms": [],
@@ -4552,50 +4850,102 @@
     {
       "source": "Thales",
       "source_url": "https://careers.thalesgroup.com/global/en/search-results",
-      "discovery_mode": "thales_browser",
+      "discovery_mode": "thales_html",
       "cadence_group": "every_3_runs",
       "last_checked": "2026-03-25",
       "due_today": false,
-      "status": "failed",
-      "listing_pages_scanned": "unknown",
+      "status": "complete",
+      "listing_pages_scanned": 12,
       "search_terms_tried": [
         "cryptography",
-        "cryptographer",
-        "applied cryptography",
-        "privacy",
-        "privacy engineering",
-        "privacy-preserving",
-        "privacy-enhancing technologies",
-        "PETs",
-        "security",
-        "security research",
-        "protocol",
-        "protocol security",
-        "authentication",
-        "digital identity",
-        "key management",
-        "post-quantum",
-        "post-quantum cryptography",
-        "PQC",
-        "MPC",
         "multi-party computation",
-        "zero-knowledge",
-        "ZK",
-        "FHE",
-        "homomorphic encryption",
-        "smart card",
-        "embedded security",
-        "secure hardware",
-        "HSM"
+        "homomorphic encryption"
       ],
-      "result_pages_scanned": "unknown",
+      "result_pages_scanned": "cryptography=6p/60of57, multi-party computation=1p/1of1, homomorphic encryption=5p/50of47",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 0,
-      "matched_jobs": 0,
-      "limitations": [
-        "Per-source discovery subprocess timed out after 150 seconds."
-      ],
-      "candidates": []
+      "enumerated_jobs": 70,
+      "matched_jobs": 6,
+      "limitations": [],
+      "candidates": [
+        {
+          "employer": "Thales",
+          "title": "Senior Software Engineer (Embedded Application)",
+          "url": "https://careers.thalesgroup.com/global/en/job/R0319338/Senior-Software-Engineer-Embedded-Application",
+          "source_url": "https://careers.thalesgroup.com/global/en/search-results",
+          "alternate_url": "",
+          "location": "Singapore, Singapore",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'"
+        },
+        {
+          "employer": "Thales",
+          "title": "COOP Software Developer *Summer/Fall 2026 (8 months term)",
+          "url": "https://careers.thalesgroup.com/global/en/job/R0318614/COOP-Software-Developer-Summer-Fall-2026-8-months-term",
+          "source_url": "https://careers.thalesgroup.com/global/en/search-results",
+          "alternate_url": "",
+          "location": "Ottawa, Ontario, Canada",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'"
+        },
+        {
+          "employer": "Thales",
+          "title": "V&V Engineer",
+          "url": "https://careers.thalesgroup.com/global/en/job/R0310895/V-V-Engineer",
+          "source_url": "https://careers.thalesgroup.com/global/en/search-results",
+          "alternate_url": "",
+          "location": "Tubize, Belgium",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'"
+        },
+        {
+          "employer": "Thales",
+          "title": "Medior/Senior V&V Engineer (Test)",
+          "url": "https://careers.thalesgroup.com/global/en/job/R0315154/Medior-Senior-V-V-Engineer-Test",
+          "source_url": "https://careers.thalesgroup.com/global/en/search-results",
+          "alternate_url": "",
+          "location": "Tubize, Belgium",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'"
+        },
+        {
+          "employer": "Thales",
+          "title": "System Engineer - Cryptographic systems",
+          "url": "https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems",
+          "source_url": "https://careers.thalesgroup.com/global/en/search-results",
+          "alternate_url": "",
+          "location": "Tubize, Belgium",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'"
+        },
+        {
+          "employer": "Thales",
+          "title": "AdvSec Software Development Engineer \u2013 STL /",
+          "url": "https://careers.thalesgroup.com/global/en/job/R0270564/AdvSec-Software-Development-Engineer-STL",
+          "source_url": "https://careers.thalesgroup.com/global/en/search-results",
+          "alternate_url": "",
+          "location": "Noida, India",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'; Enumerated through Thales search-results HTML for 'homomorphic encryption'"
+        }
+      ]
     }
   ]
 }

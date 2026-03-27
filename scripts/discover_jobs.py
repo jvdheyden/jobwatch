@@ -141,6 +141,23 @@ SPECIALIZED_SIGNAL_TERMS = {
     "secure hardware",
     "hsm",
 }
+THALES_PAYLOAD_TERM_ALIASES = {
+    "cryptography": (
+        "kryptographie",
+        "kryptografie",
+    ),
+    "multi-party computation": (
+        "mehrparteienberechnung",
+        "mehrparteien-berechnung",
+        "sichere mehrparteienberechnung",
+    ),
+    "homomorphic encryption": (
+        "homomorphe verschlüsselung",
+        "homomorphe verschluesselung",
+        "homomorpher verschlüsselung",
+        "homomorpher verschluesselung",
+    ),
+}
 
 
 @dataclass
@@ -424,8 +441,28 @@ def post_json(url: str, payload: Any, timeout_seconds: int, headers: dict[str, s
 
 
 def match_terms(text: str, terms: list[str]) -> list[str]:
-    haystack = text.lower()
-    return [term for term in terms if term.lower() in haystack]
+    haystack = normalize_for_matching(text)
+    return [term for term in terms if normalize_for_matching(term) in haystack]
+
+
+def normalize_for_matching(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_text.lower()
+
+
+def match_terms_with_aliases(
+    text: str,
+    terms: list[str],
+    aliases: dict[str, tuple[str, ...]],
+) -> list[str]:
+    haystack = normalize_for_matching(text)
+    matched: list[str] = []
+    for term in terms:
+        candidates = (term, *aliases.get(term.lower(), ()))
+        if any(normalize_for_matching(candidate) in haystack for candidate in candidates):
+            matched.append(term)
+    return matched
 
 
 def generated_at() -> str:
@@ -1241,7 +1278,9 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
                     for part in [title, location, remote, department, position.get("displayJobId") or ""]
                     if part
                 )
-                matched_terms = sorted(set(match_terms(searchable_text, terms)))
+                matched_terms = sorted(
+                    set(match_terms_with_aliases(searchable_text, terms, THALES_PAYLOAD_TERM_ALIASES))
+                )
                 if not should_keep_candidate(title, matched_terms, searchable_text):
                     continue
                 merge_candidate(
