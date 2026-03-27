@@ -24,3 +24,5 @@
 2026-03-26 | Anthropic | Privacy Research Engineer, Safeguards | San Francisco, CA | https://job-boards.greenhouse.io/anthropic/jobs/4949108008
 2026-03-26 | Anthropic | Senior Software Engineer, Privacy | San Francisco, CA; New York City, NY; Seattle, WA | https://job-boards.greenhouse.io/anthropic/jobs/5159152008
 2026-03-26 | Coinbase | Blockchain Security Engineer | Remote - USA | https://www.coinbase.com/careers/positions/7701657
+2026-03-27 | Anthropic | Security Labs Engineer | San Francisco, CA | https://job-boards.greenhouse.io/anthropic/jobs/5153564008
+2026-03-27 | Anthropic | Staff+ Software Engineer, Privacy | San Francisco, CA; New York City, NY; Seattle, WA | https://job-boards.greenhouse.io/anthropic/jobs/5159146008

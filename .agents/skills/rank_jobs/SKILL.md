@@ -56,6 +56,18 @@ Limited inference is allowed, but label it clearly with words like `likely` or `
 
 Do not overrate a role just because the employer is prestigious.
 
+Treat official first-party API evidence as valid posting evidence when that is the best accessible source.
+
+For IBM in this repo:
+- use the IBM careers API fields directly when ranking roles
+- do not down-rank or discard an IBM role solely because the website job-detail page is blocked by WAF or bot protection
+- score the role from the API-visible evidence: title, location, remote/hybrid status, description snippet, seniority/professional level when present, and any matched terms or notes captured in the discovery artifact
+- note missing details as uncertainty, but do not turn missing website access itself into a separate concern unless it prevents meaningful evaluation
+
+General rule:
+- missing website HTML is only a ranking concern when it leaves the role too vague to assess
+- if the official API evidence is sufficient to judge fit, rank the role normally
+
 ## Output format
 
 Use this structure:

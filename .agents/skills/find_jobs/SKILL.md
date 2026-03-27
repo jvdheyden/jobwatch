@@ -165,11 +165,38 @@ If a fact is not visible, write `unknown`.
 
 Do not invent details.
 
+## Official API evidence
+
+When an official first-party careers API or official board API is the source of the candidate data, treat that API response as posting evidence.
+
+This matters most when:
+- the source's job-detail website is blocked by bot protection or WAF
+- the helper artifact already captured source-native API fields
+- the API is first-party and clearly tied to the official careers source
+
+For IBM in this repo:
+- the IBM careers search API is an acceptable evidence source even when the website job-detail page returns an AWS WAF challenge or empty body
+- do not exclude an IBM role solely because the direct website page cannot be fetched
+- use the IBM API fields that are available, such as title, location, remote/hybrid status, seniority/professional level when present, description snippet, source URL, and matched terms
+- mark missing fields as `unknown`
+- note clearly that the website detail page was inaccessible, but do not treat that alone as a reason to drop the role
+
+More generally:
+- if an official API provides enough information to judge track relevance, practical viability, and uniqueness, you may keep the role in the candidate set even without direct-page HTML
+- if the official API evidence is too thin to evaluate the role at all, exclude it and say why
+
 ## Inclusion rule
 
 Include a role only if it is a plausible match for the current track based on the current track's preferences.
 
-Use titles and listing snippets only for discovery priority. Final inclusion must be based on the full direct posting.
+Use titles and listing snippets only for discovery priority.
+
+Preferred rule:
+- final inclusion should normally be based on the full direct posting
+
+Exception:
+- if the source's official API is the best available first-party evidence and the direct posting is inaccessible due to bot protection, you may base inclusion on the official API evidence instead
+- for IBM, do this by default rather than filtering the role out for missing website access
 
 When in doubt, exclude rather than include.
 
@@ -236,6 +263,12 @@ If a source cannot be accessed or parsed:
 
 - skip it
 - note this briefly in the coverage notes
+
+If the listing or API is accessible but the direct job page is blocked:
+
+- keep candidates that are still evaluable from official API evidence
+- record the website-access limitation in the coverage notes
+- do not collapse those candidates into `failed` discovery just because the detail page could not be opened
 
 If pagination exists, do not mark the source as fully checked until pagination has been exhausted or a clear stopping condition has been reached.
 
