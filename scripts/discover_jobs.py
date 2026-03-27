@@ -15,6 +15,7 @@ import re
 import ssl
 import sys
 import time
+import unicodedata
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timezone
@@ -157,6 +158,7 @@ class Candidate:
     title: str
     url: str
     source_url: str
+    alternate_url: str = ""
     location: str = "unknown"
     remote: str = "unknown"
     matched_terms: list[str] = field(default_factory=list)
@@ -416,6 +418,12 @@ def strip_html_fragment(value: str) -> str:
 
 def normalize_whitespace(value: str) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
+
+
+def slugify_title(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"-{2,}", "-", re.sub(r"[^A-Za-z0-9]+", "-", ascii_text)).strip("-").lower()
 
 
 def normalize_url_without_fragment(value: str) -> str:
@@ -1665,6 +1673,16 @@ def google_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     return f"{source.url}?{urlencode(params)}"
 
 
+def google_public_job_url(source: SourceConfig, job_id: str, title: str) -> str:
+    base = source.url.rstrip("/")
+    if not job_id or job_id == "unknown":
+        return base
+    slug = slugify_title(title)
+    if slug:
+        return f"{base}/{job_id}-{slug}"
+    return f"{base}/{job_id}"
+
+
 def bosch_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     del page_num
     return f"{source.url.rstrip('/')}/?{urlencode({'search': term})}"
@@ -1763,7 +1781,8 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
             continue
         job_id = join_text(job[0]) or join_text(job[2]) or "unknown"
         title = join_text(job[1]) or "unknown"
-        url = join_text(job[2]) or source.url
+        apply_url = join_text(job[2]) or ""
+        url = google_public_job_url(source, job_id, title) or apply_url or source.url
         responsibilities = strip_html_fragment(
             join_text(job[3][1] if len(job) > 3 and isinstance(job[3], list) and len(job[3]) > 1 else "")
         )
@@ -1794,9 +1813,13 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
                 title=title,
                 url=url,
                 source_url=source.url,
+                alternate_url=apply_url if apply_url and apply_url != url else "",
                 location=location,
                 matched_terms=matched_terms,
-                notes=f"Google browser search q='{term}' locations={', '.join(GOOGLE_LOCATION_FILTERS)} page={page_num}",
+                notes=(
+                    f"Google browser search q='{term}' locations={', '.join(GOOGLE_LOCATION_FILTERS)} "
+                    f"page={page_num}; public overview URL synthesized from Google ds:1 payload"
+                ),
             )
         )
     page_signature = ",".join(raw_ids[:10]) if raw_ids else f"{term}:{page_num}:empty"

@@ -26,3 +26,4 @@
 2026-03-26 | Coinbase | Blockchain Security Engineer | Remote - USA | https://www.coinbase.com/careers/positions/7701657
 2026-03-27 | Anthropic | Security Labs Engineer | San Francisco, CA | https://job-boards.greenhouse.io/anthropic/jobs/5153564008
 2026-03-27 | Anthropic | Staff+ Software Engineer, Privacy | San Francisco, CA; New York City, NY; Seattle, WA | https://job-boards.greenhouse.io/anthropic/jobs/5159146008
+2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519

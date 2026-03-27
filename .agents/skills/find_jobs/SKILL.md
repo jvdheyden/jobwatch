@@ -181,6 +181,13 @@ For IBM in this repo:
 - mark missing fields as `unknown`
 - note clearly that the website detail page was inaccessible, but do not treat that alone as a reason to drop the role
 
+For Google in this repo:
+- the official Google careers search payload (`ds:1`) is acceptable evidence for discovery and extraction
+- the helper may synthesize a public overview URL from the Google job id and the title slug because the payload's primary URL field points to the apply/sign-in flow
+- do not exclude a Google role solely because the synthesized overview URL might be imperfect or might fail to resolve
+- if a fallback apply/sign-in URL is present in the artifact, treat it as supporting evidence, not as a reason to drop the listing
+- note URL uncertainty clearly when it exists, but keep the role if the payload still provides enough title, location, summary, responsibilities, and requirements evidence to evaluate it
+
 More generally:
 - if an official API provides enough information to judge track relevance, practical viability, and uniqueness, you may keep the role in the candidate set even without direct-page HTML
 - if the official API evidence is too thin to evaluate the role at all, exclude it and say why
