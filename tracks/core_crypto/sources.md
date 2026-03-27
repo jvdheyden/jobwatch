@@ -50,7 +50,7 @@ Cadence note:
 | Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
 | QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
 | Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_browser | 2026-03-25 |
+| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
 
 ## Keep only roles matching at least one of these
 
@@ -119,13 +119,15 @@ Use these terms on searchable sources unless a source-specific search-term overr
 
 Use these in addition to the track-wide terms when the source has native search and these terms are a better fit for that source's vocabulary.
 
+Add `[override]` after the source name to replace the track-wide terms for that source.
+
 - Anthropic — privacy, privacy engineering, privacy-preserving, security
 - Bosch — Kryptographie, IT-Sicherheit, Embedded Security, Identität, Authentifizierung, Smartcard
 - Google — cryptography
 - Coinbase — blockchain, blockchain security, crypto-security, MPC, zero-knowledge, security
 - secunet — Kryptographie, Smartcard, Security, Rust, Identität
 - Rambus — cryptography, quantum safe, root of trust, security IP
-- Thales — cryptography, digital identity, smart card, key management
+- Thales [override] — cryptography, multi-party computation, homomorphic encryption
 
 ## Output discipline
 

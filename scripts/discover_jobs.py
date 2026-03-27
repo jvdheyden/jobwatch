@@ -153,6 +153,12 @@ class SourceConfig:
 
 
 @dataclass
+class SourceTermRule:
+    terms: list[str]
+    mode: str = "append"
+
+
+@dataclass
 class Candidate:
     employer: str
     title: str
@@ -308,9 +314,9 @@ def parse_track_terms(text: str) -> list[str]:
     return parse_bullets(match.group(1))
 
 
-def parse_source_specific_terms(text: str) -> dict[str, list[str]]:
+def parse_source_specific_terms(text: str) -> dict[str, SourceTermRule]:
     section = extract_section(text, "Source-specific search terms")
-    mapping: dict[str, list[str]] = {}
+    mapping: dict[str, SourceTermRule] = {}
     for line in section.splitlines():
         stripped = line.strip()
         if not stripped.startswith("- "):
@@ -322,11 +328,19 @@ def parse_source_specific_terms(text: str) -> dict[str, list[str]]:
             source, terms = content.split(" - ", 1)
         else:
             continue
-        mapping[source.strip()] = [term.strip() for term in terms.split(",") if term.strip()]
+        source_name = source.strip()
+        mode = "append"
+        if source_name.endswith("[override]"):
+            source_name = source_name[: -len("[override]")].strip()
+            mode = "override"
+        mapping[source_name] = SourceTermRule(
+            terms=[term.strip() for term in terms.split(",") if term.strip()],
+            mode=mode,
+        )
     return mapping
 
 
-def load_track_config(track: str) -> tuple[list[SourceConfig], list[str], dict[str, list[str]]]:
+def load_track_config(track: str) -> tuple[list[SourceConfig], list[str], dict[str, SourceTermRule]]:
     path = ROOT / "tracks" / track / "sources.md"
     text = path.read_text()
     every_run = parse_markdown_table(extract_section(text, "Check every run"), "every_run")
@@ -348,10 +362,16 @@ def source_due_today(source: SourceConfig, today: date) -> bool:
     return (today - last_checked).days >= 3
 
 
-def normalize_terms(track_terms: list[str], source_terms: list[str]) -> list[str]:
+def normalize_terms(track_terms: list[str], source_rule: SourceTermRule | None) -> list[str]:
     seen: set[str] = set()
     normalized: list[str] = []
-    for term in track_terms + source_terms:
+    if source_rule and source_rule.mode == "override":
+        combined_terms = list(source_rule.terms)
+    else:
+        combined_terms = list(track_terms)
+        if source_rule:
+            combined_terms.extend(source_rule.terms)
+    for term in combined_terms:
         lowered = term.strip().lower()
         if not lowered or lowered in seen:
             continue
@@ -2465,6 +2485,7 @@ DISCOVERY_HANDLERS = {
     "qusecure_careers": discover_qusecure_careers,
     "secunet_jobboard": discover_secunet_jobboard,
     "thales_browser": discover_thales_browser,
+    "thales_html": discover_thales_html,
     "trailofbits_browser": discover_trailofbits_browser,
     "workday_api": discover_workday_api,
     "browser": discover_browser,
@@ -2513,8 +2534,8 @@ def discover_source(source: SourceConfig, terms: list[str], timeout_seconds: int
         )
 
 
-def source_to_dict(source: SourceConfig, today: date, track_terms: list[str], source_term_map: dict[str, list[str]]) -> dict[str, Any]:
-    terms = normalize_terms(track_terms, source_term_map.get(source.source, []))
+def source_to_dict(source: SourceConfig, today: date, track_terms: list[str], source_term_map: dict[str, SourceTermRule]) -> dict[str, Any]:
+    terms = normalize_terms(track_terms, source_term_map.get(source.source))
     return {
         "source": source.source,
         "url": source.url,
@@ -2578,7 +2599,7 @@ def main() -> int:
     else:
         coverages: list[Coverage] = []
         for source in sources:
-            terms = normalize_terms(track_terms, source_term_map.get(source.source, []))
+            terms = normalize_terms(track_terms, source_term_map.get(source.source))
             coverage = discover_source(source, terms, args.timeout_seconds)
             coverage.due_today = source_due_today(source, today)
             coverages.append(coverage)
