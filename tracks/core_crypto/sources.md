@@ -121,7 +121,7 @@ Use these in addition to the track-wide terms when the source has native search 
 
 - Anthropic — privacy, privacy engineering, privacy-preserving, security
 - Bosch — Kryptographie, IT-Sicherheit, Embedded Security, Identität, Authentifizierung, Smartcard
-- Google — privacy, cryptography, security, protocol, authentication
+- Google — cryptography
 - Coinbase — blockchain, blockchain security, crypto-security, MPC, zero-knowledge, security
 - secunet — Kryptographie, Smartcard, Security, Rust, Identität
 - Rambus — cryptography, quantum safe, root of trust, security IP

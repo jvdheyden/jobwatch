@@ -32,6 +32,12 @@ DEFAULT_TIMEOUT_SECONDS = 20
 DEFAULT_BROWSER_TIMEOUT_MS = 60_000
 MAX_BROWSER_PAGES = 10
 GOOGLE_RESULTS_PAGE_SIZE = 20
+GOOGLE_LOCATION_FILTERS = (
+    "Munich, Germany",
+    "Zurich, Switzerland",
+    "London, UK",
+    "New York, NY, USA",
+)
 IBM_RESULTS_PAGE_SIZE = 100
 INFINEON_RESULTS_PAGE_SIZE = 10
 WORKDAY_RESULTS_PAGE_SIZE = 20
@@ -192,6 +198,7 @@ class BrowserStrategy:
     extract_page: Callable[[Any, SourceConfig, str, list[str], int], BrowserPageResult]
     prepare_page: Callable[[Any], None] | None = None
     advance_page: Callable[[Any, SourceConfig, str, int], bool] | None = None
+    override_terms: tuple[str, ...] | None = None
     supports_pagination: bool = False
     cumulative_results: bool = False
     page_size: int | None = None
@@ -1315,9 +1322,10 @@ def discover_bosch_autocomplete(source: SourceConfig, terms: list[str], timeout_
 
 
 def google_search_url(source: SourceConfig, term: str, page_num: int) -> str:
-    params = {"q": term}
+    params: list[tuple[str, str | int]] = [("q", term)]
+    params.extend(("location", location) for location in GOOGLE_LOCATION_FILTERS)
     if page_num > 1:
-        params["page"] = page_num
+        params.append(("page", page_num))
     return f"{source.url}?{urlencode(params)}"
 
 
@@ -1452,7 +1460,7 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
                 source_url=source.url,
                 location=location,
                 matched_terms=matched_terms,
-                notes=f"Google browser search q='{term}' page={page_num}",
+                notes=f"Google browser search q='{term}' locations={', '.join(GOOGLE_LOCATION_FILTERS)} page={page_num}",
             )
         )
     page_signature = ",".join(raw_ids[:10]) if raw_ids else f"{term}:{page_num}:empty"
@@ -1680,6 +1688,7 @@ BROWSER_STRATEGIES = {
     "Google": BrowserStrategy(
         search_url_builder=google_search_url,
         extract_page=extract_google_jobs,
+        override_terms=("cryptography",),
         supports_pagination=True,
         page_size=GOOGLE_RESULTS_PAGE_SIZE,
         max_pages=MAX_BROWSER_PAGES,
@@ -1734,13 +1743,14 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
     result_summaries: list[str] = []
     pages_scanned = 0
     status = "complete"
+    effective_terms = list(strategy.override_terms) if strategy.override_terms else terms
 
     try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page(viewport={"width": 1440, "height": 2200})
             timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
-            for term in terms:
+            for term in effective_terms:
                 search_url = strategy.search_url_builder(source, term, 1)
                 page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
                 if strategy.prepare_page:
@@ -1817,7 +1827,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
             due_today=False,
             status="partial",
             listing_pages_scanned="unknown",
-            search_terms_tried=terms,
+            search_terms_tried=effective_terms,
             result_pages_scanned="unknown",
             direct_job_pages_opened=0,
             enumerated_jobs=0,
@@ -1836,7 +1846,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
         due_today=False,
         status=status,
         listing_pages_scanned=pages_scanned,
-        search_terms_tried=terms,
+        search_terms_tried=effective_terms,
         result_pages_scanned=", ".join(result_summaries) if result_summaries else "none",
         direct_job_pages_opened=0,
         enumerated_jobs=len(raw_seen_ids),

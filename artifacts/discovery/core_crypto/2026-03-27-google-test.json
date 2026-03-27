@@ -2,8 +2,8 @@
   "schema_version": 1,
   "track": "core_crypto",
   "today": "2026-03-27",
-  "generated_at": "2026-03-27T07:41:49Z",
-  "mode": "discover",
+  "generated_at": "2026-03-27T07:46:07.525327Z",
+  "mode": "discover_test",
   "sources": [
     {
       "source": "IACR Jobs",
@@ -1492,6 +1492,79 @@
         "HTTPError: HTTP Error 404: Not Found"
       ],
       "candidates": []
+    },
+    {
+      "source": "Google",
+      "source_url": "https://www.google.com/about/careers/applications/jobs/results",
+      "discovery_mode": "browser",
+      "cadence_group": "every_3_runs",
+      "last_checked": "2026-03-25",
+      "due_today": false,
+      "status": "complete",
+      "listing_pages_scanned": 7,
+      "search_terms_tried": [
+        "cryptography"
+      ],
+      "result_pages_scanned": "cryptography=7p/138",
+      "direct_job_pages_opened": 0,
+      "enumerated_jobs": 138,
+      "matched_jobs": 4,
+      "limitations": [],
+      "candidates": [
+        {
+          "employer": "Google",
+          "title": "Research Scientist, Security and Privacy, Google Research",
+          "url": "https://www.google.com/about/careers/applications/signin?jobId=CiUAL2FckZtrgbHkA97OYq8BW1YZAI4NF9SAxzXOUbXHR4k2lrclEjsAvkGZm-eQKuKObe-5vDwwNBNNt5cqtiHLIO8TyXHB0TkqY7WtfCwUVkkMjj3GVx8vJvAOdMR0MeKhqg%3D%3D_V2&loc=US&title=Research+Scientist",
+          "source_url": "https://www.google.com/about/careers/applications/jobs/results",
+          "location": "New York, NY, USA; Seattle, WA, USA",
+          "remote": "unknown",
+          "matched_terms": [
+            "privacy",
+            "privacy-preserving",
+            "security"
+          ],
+          "notes": "Google browser search q='cryptography' locations=Munich, Germany, Zurich, Switzerland, London, UK, New York, NY, USA page=1"
+        },
+        {
+          "employer": "Google",
+          "title": "Senior Software Engineer, Google Cloud Security",
+          "url": "https://www.google.com/about/careers/applications/signin?jobId=CiUAL2FckVd_XUTQ25pGe7K4ni3b9XFOD5Gfh41GlNtvV1O8LsdpEjsACxwdTNtfYOjn6wMaFzulcMXNO8i-mHwzI-wRYNea9lc_7SPgfymT5oxJSRw_sAyKH65YcY0Zmjck5A%3D%3D_V2&loc=US&title=Senior+Software+Engineer",
+          "source_url": "https://www.google.com/about/careers/applications/jobs/results",
+          "location": "Reston, VA, USA; New York, NY, USA; Sunnyvale, CA, USA",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Google browser search q='cryptography' locations=Munich, Germany, Zurich, Switzerland, London, UK, New York, NY, USA page=2"
+        },
+        {
+          "employer": "DeepMind",
+          "title": "Software Engineer, Privacy, DeepMind (Fixed-Term Contract)",
+          "url": "https://www.google.com/about/careers/applications/signin?jobId=CiUAL2FckZUmzzZMEdldoRZR7Ge5yLmUQMHg5QBfL_qJWlvRnmFTEjsACxwdTKDButHi8Q9eEf1cqvyMIgS3X7D-H9VlR-Qh9T5qVGRxOo1A5Nd7DmSADJbeCJShEACGM-qvog%3D%3D_V2&loc=US&title=Software+Engineer",
+          "source_url": "https://www.google.com/about/careers/applications/jobs/results",
+          "location": "Mountain View, CA, USA; New York, NY, USA",
+          "remote": "unknown",
+          "matched_terms": [
+            "privacy",
+            "security"
+          ],
+          "notes": "Google browser search q='cryptography' locations=Munich, Germany, Zurich, Switzerland, London, UK, New York, NY, USA page=3"
+        },
+        {
+          "employer": "Google",
+          "title": "Software Engineer III, Agent Observability, Security and Privacy",
+          "url": "https://www.google.com/about/careers/applications/signin?jobId=CiUAL2FckfKQjo3G1h0GuipTygAs2V4wsI9rtsfQUr6I9zYW0MloEjsACxwdTObKuEyF9Nczg2bcSdhO0jRPVXuK8OLZyQna2i--yb3mYvahmLlbUNoHiNSQ8obE9LcFdX9HQw%3D%3D_V2&loc=CH&title=Software+Engineer+III",
+          "source_url": "https://www.google.com/about/careers/applications/jobs/results",
+          "location": "Z\u00fcrich, Switzerland",
+          "remote": "unknown",
+          "matched_terms": [
+            "privacy",
+            "protocol",
+            "security"
+          ],
+          "notes": "Google browser search q='cryptography' locations=Munich, Germany, Zurich, Switzerland, London, UK, New York, NY, USA page=6"
+        }
+      ]
     }
   ]
 }
