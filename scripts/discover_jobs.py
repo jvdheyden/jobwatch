@@ -414,6 +414,61 @@ def strip_html_fragment(value: str) -> str:
     return re.sub(r"\s+", " ", unescape(HTML_TAG_RE.sub(" ", value or ""))).strip()
 
 
+def normalize_whitespace(value: str) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+def normalize_url_without_fragment(value: str) -> str:
+    parsed = urlparse(value)
+    path = parsed.path.rstrip("/") or "/"
+    return parsed._replace(path=path, fragment="").geturl()
+
+
+def is_same_page_link(source_url: str, candidate_url: str) -> bool:
+    return normalize_url_without_fragment(source_url) == normalize_url_without_fragment(candidate_url)
+
+
+def split_visible_lines(value: str) -> list[str]:
+    return [normalize_whitespace(part) for part in value.splitlines() if normalize_whitespace(part)]
+
+
+def looks_like_non_job_link(text: str, href: str) -> bool:
+    text_lower = normalize_whitespace(text).lower()
+    href_lower = href.lower()
+    if text_lower in {
+        "",
+        "skip to content",
+        "jump to main content.",
+        "top of this page",
+        "top of page",
+        "privacy",
+        "privacy policy",
+        "impressum",
+        "report this content",
+        "collapse this bar",
+        "customize",
+        "accept all",
+        "accept selection",
+        "decline non-essential cookies",
+        "subscribe",
+        "subscribed",
+    }:
+        return True
+    return any(
+        marker in href_lower
+        for marker in (
+            "/privacy",
+            "/cookie",
+            "/impressum",
+            "/learn/",
+            "/resources/",
+            "/resource/",
+            "/services/",
+            "/abuse/",
+        )
+    )
+
+
 def extract_json_object_after_marker(text: str, marker: str) -> dict[str, Any] | None:
     marker_index = text.find(marker)
     if marker_index == -1:
@@ -530,11 +585,17 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
     seen_urls: set[str] = set()
     for link in parser.links:
         href = link["href"]
-        text = link["text"]
-        absolute_url = urljoin(source.url, href)
+        text = normalize_whitespace(link["text"])
+        if href.startswith("#"):
+            continue
+        absolute_url = normalize_url_without_fragment(urljoin(source.url, href))
         if absolute_url in seen_urls:
             continue
         if urlparse(absolute_url).scheme not in {"http", "https"}:
+            continue
+        if looks_like_non_job_link(text, absolute_url):
+            continue
+        if is_same_page_link(source.url, absolute_url):
             continue
         matched_terms = match_terms(f"{text} {absolute_url}", terms)
         if not matched_terms and not looks_like_job_link(text, absolute_url):
@@ -568,6 +629,261 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
         matched_jobs=len(candidates),
         limitations=[],
         candidates=candidates,
+    )
+
+
+def discover_filtered_html_links(
+    source: SourceConfig,
+    terms: list[str],
+    timeout_seconds: int,
+    url_filter: Callable[[str], bool],
+    notes: str,
+    limitation_if_empty: str | None = None,
+) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    parser = LinkCollector()
+    parser.feed(html)
+    raw_urls: set[str] = set()
+    candidates_by_url: dict[str, Candidate] = {}
+
+    for link in parser.links:
+        absolute_url = normalize_url_without_fragment(urljoin(source.url, link["href"]))
+        if urlparse(absolute_url).scheme not in {"http", "https"}:
+            continue
+        if not url_filter(absolute_url):
+            continue
+        raw_urls.add(absolute_url)
+        text = normalize_whitespace(link["text"]) or "unknown"
+        title = split_visible_lines(link["text"])[0] if split_visible_lines(link["text"]) else text
+        searchable_text = f"{title} {text} {absolute_url}"
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                matched_terms=matched_terms,
+                notes=notes,
+            ),
+        )
+
+    limitations = [limitation_if_empty] if not raw_urls and limitation_if_empty else []
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="filtered_links=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_qedit_inline(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    body = strip_html_fragment(html)
+    title = "Cryptography Engineer"
+    candidates: list[Candidate] = []
+    limitations: list[str] = []
+    enumerated_jobs = 0
+
+    match = re.search(r"Open Positions\s+Cryptography Engineer\s+\+\s+(.*?)(?:Please contact|QEDIT Office Life|$)", body)
+    if match:
+        enumerated_jobs = 1
+        snippet = normalize_whitespace(f"{title} {match.group(1)}")
+        matched_terms = sorted(set(match_terms(snippet, terms)))
+        if should_keep_candidate(title, matched_terms, snippet):
+            candidates.append(
+                Candidate(
+                    employer=source.source,
+                    title=title,
+                    url=source.url,
+                    source_url=source.url,
+                    matched_terms=matched_terms,
+                    notes="Inline careers page posting",
+                )
+            )
+    else:
+        limitations.append("Expected inline 'Cryptography Engineer' role was not found on the careers page.")
+
+    if "Cryptography Interns" in body:
+        limitations.append("Page mentions biannual cryptography interns, but not as a direct current opening.")
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete" if enumerated_jobs else "partial",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="inline_roles=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=enumerated_jobs,
+        matched_jobs=len(candidates),
+        limitations=limitations,
+        candidates=candidates,
+    )
+
+
+def discover_leastauthority_careers(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    del terms
+    html = fetch_text(source.url, timeout_seconds)
+    parser = LinkCollector()
+    parser.feed(html)
+    raw_urls: set[str] = set()
+    for link in parser.links:
+        absolute_url = normalize_url_without_fragment(urljoin(source.url, link["href"]))
+        if any(host in absolute_url for host in ("boards.greenhouse.io", "jobs.lever.co", "apply.workable.com", "ashbyhq.com")):
+            raw_urls.add(absolute_url)
+    limitations = []
+    if not raw_urls:
+        limitations.append("Careers page exposes category filters and company sections, but no direct current job links.")
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=[],
+        result_pages_scanned="career_page=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=0,
+        limitations=limitations,
+        candidates=[],
+    )
+
+
+def discover_cybernetica_teamdash(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    return discover_filtered_html_links(
+        source,
+        terms,
+        timeout_seconds,
+        lambda url: "cyber.teamdash.com/p/job/" in url,
+        notes="Enumerated through Teamdash links on the Cybernetica careers page",
+        limitation_if_empty="No Teamdash job links were visible on the Cybernetica careers page.",
+    )
+
+
+def discover_secunet_jobboard(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    pattern = re.compile(r"^https://jobs\.secunet\.com/.+-j\d+\.html$")
+    return discover_filtered_html_links(
+        source,
+        terms,
+        timeout_seconds,
+        lambda url: bool(pattern.match(url)),
+        notes="Enumerated through direct secunet job-detail links",
+        limitation_if_empty="No secunet job-detail links matching the standard job pattern were visible.",
+    )
+
+
+def discover_neclab_jobs(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    return discover_filtered_html_links(
+        source,
+        terms,
+        timeout_seconds,
+        lambda url: "jobs.neclab.eu/jobs/get" in url and "jid=" in url,
+        notes="Enumerated through NEC Laboratories Europe job-detail links",
+        limitation_if_empty="No NEC Laboratories Europe job-detail links were visible on the jobs page.",
+    )
+
+
+def discover_qusecure_careers(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    del terms
+    html = fetch_text(source.url, timeout_seconds)
+    parser = LinkCollector()
+    parser.feed(html)
+    body = strip_html_fragment(html)
+    raw_urls: set[str] = set()
+    for link in parser.links:
+        absolute_url = normalize_url_without_fragment(urljoin(source.url, link["href"]))
+        if any(host in absolute_url for host in ("boards.greenhouse.io", "jobs.lever.co", "apply.workable.com", "ashbyhq.com")):
+            raw_urls.add(absolute_url)
+    limitations = []
+    if "Please send cover letter and resume to Careers@qusecure.com." in body:
+        limitations.append("Career page requests email applications and exposes no direct job listings.")
+    elif not raw_urls:
+        limitations.append("No direct job listings were visible on the QuSecure careers page.")
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=[],
+        result_pages_scanned="career_page=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=0,
+        limitations=limitations,
+        candidates=[],
+    )
+
+
+def discover_partisia_site(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    del terms
+    checked_urls = [source.url]
+    if source.url != "https://partisiafoundation.com/":
+        checked_urls.append("https://partisiafoundation.com/")
+
+    found_jobish_links: set[str] = set()
+    limitations: list[str] = []
+    pages_scanned = 0
+    for url in checked_urls:
+        pages_scanned += 1
+        try:
+            html = fetch_text(url, timeout_seconds)
+        except Exception as exc:
+            limitations.append(f"Could not read {url}: {type(exc).__name__}: {exc}")
+            continue
+        parser = LinkCollector()
+        parser.feed(html)
+        for link in parser.links:
+            absolute_url = normalize_url_without_fragment(urljoin(url, link["href"]))
+            combined = f"{link['text']} {absolute_url}".lower()
+            if any(token in combined for token in ("career", "careers", "jobs", "join us", "work with us")):
+                found_jobish_links.add(absolute_url)
+
+    if not found_jobish_links:
+        limitations.append("Official Partisia sites exposed no careers page or direct job listings.")
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=pages_scanned,
+        search_terms_tried=[],
+        result_pages_scanned="homepage_scan=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(found_jobish_links),
+        matched_jobs=0,
+        limitations=limitations,
+        candidates=[],
     )
 
 
@@ -680,11 +996,30 @@ def discover_greenhouse_api(source: SourceConfig, terms: list[str], timeout_seco
     )
 
 
-def build_ibm_search_payload(offset: int, size: int) -> dict[str, Any]:
+def build_ibm_title_query(terms: list[str]) -> str:
+    query_terms: list[str] = []
+    for term in terms:
+        normalized = term.strip()
+        if not normalized:
+            continue
+        escaped = normalized.replace("\\", "\\\\").replace('"', '\\"')
+        if " " in normalized or "-" in normalized:
+            query_terms.append(f'"{escaped}"')
+        else:
+            query_terms.append(escaped)
+    if not query_terms:
+        return ""
+    return "title:(" + " OR ".join(query_terms) + ")"
+
+
+def build_ibm_search_payload(offset: int, size: int, title_query: str | None = None) -> dict[str, Any]:
+    must_clauses: list[dict[str, Any]] = []
+    if title_query:
+        must_clauses.append({"query_string": {"query": title_query}})
     return {
         "appId": "careers",
         "scopes": ["careers2"],
-        "query": {"bool": {"must": []}},
+        "query": {"bool": {"must": must_clauses}},
         "aggs": {
             "field_keyword_172": {
                 "filter": {"match_all": {}},
@@ -742,9 +1077,10 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
     pages_scanned = 0
     total_hits = 0
     offset = 0
+    title_query = build_ibm_title_query(terms)
 
     while True:
-        payload = build_ibm_search_payload(offset, IBM_RESULTS_PAGE_SIZE)
+        payload = build_ibm_search_payload(offset, IBM_RESULTS_PAGE_SIZE, title_query=title_query)
         response = post_json(
             IBM_SEARCH_API_URL,
             payload,
@@ -785,7 +1121,7 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
                     location=location,
                     remote=remote,
                     matched_terms=matched_terms,
-                    notes="Enumerated through IBM careers search API with local term filtering",
+                    notes="Enumerated through IBM careers search API with title-scoped server-side filtering",
                 ),
             )
 
@@ -1521,6 +1857,236 @@ def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[s
     )
 
 
+def discover_trailofbits_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Playwright is not installed; Trail of Bits browser discovery is unavailable"],
+            candidates=[],
+        )
+
+    timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
+    raw_urls: set[str] = set()
+    candidates_by_url: dict[str, Candidate] = {}
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1440, "height": 2200})
+        page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(2000)
+        links = page.locator('a[href*="apply.workable.com"]')
+        count = links.count()
+        for index in range(count):
+            element = links.nth(index)
+            href = normalize_url_without_fragment(element.get_attribute("href") or "")
+            if not href or href in raw_urls:
+                continue
+            raw_urls.add(href)
+            lines = split_visible_lines(element.inner_text())
+            title = lines[0] if lines else "unknown"
+            searchable_text = " ".join(lines) or title
+            matched_terms = sorted(set(match_terms(searchable_text, terms)))
+            if not should_keep_candidate(title, matched_terms, searchable_text):
+                continue
+            merge_candidate(
+                candidates_by_url,
+                Candidate(
+                    employer=source.source,
+                    title=title,
+                    url=href,
+                    source_url=source.url,
+                    matched_terms=matched_terms,
+                    notes="Enumerated through Trail of Bits career-page Workable links",
+                ),
+            )
+        browser.close()
+
+    limitations = []
+    if not raw_urls:
+        limitations.append("No Workable job links were visible on the Trail of Bits careers page.")
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete" if raw_urls else "partial",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="career_page=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_automattic_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Playwright is not installed; Automattic browser discovery is unavailable"],
+            candidates=[],
+        )
+
+    timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
+    raw_urls: set[str] = set()
+    candidates_by_url: dict[str, Candidate] = {}
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1440, "height": 2200})
+        page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(2000)
+        links = page.locator('a[href*="/work-with-us/job/"]')
+        count = links.count()
+        for index in range(count):
+            element = links.nth(index)
+            href = normalize_url_without_fragment(element.get_attribute("href") or "")
+            if not href or href in raw_urls:
+                continue
+            raw_urls.add(href)
+            lines = split_visible_lines(element.inner_text())
+            title = lines[0] if lines else "unknown"
+            searchable_text = " ".join(lines) or title
+            matched_terms = sorted(set(match_terms(searchable_text, terms)))
+            if not should_keep_candidate(title, matched_terms, searchable_text):
+                continue
+            merge_candidate(
+                candidates_by_url,
+                Candidate(
+                    employer=source.source,
+                    title=title,
+                    url=href,
+                    source_url=source.url,
+                    matched_terms=matched_terms,
+                    notes="Enumerated through Automattic jobs-page cards",
+                ),
+            )
+        browser.close()
+
+    limitations = []
+    if not raw_urls:
+        limitations.append("No Automattic job-detail links were visible on the jobs page.")
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete" if raw_urls else "partial",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="jobs_page=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_coinbase_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Playwright is not installed; Coinbase browser discovery is unavailable"],
+            candidates=[],
+        )
+
+    timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1440, "height": 2200})
+        page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(10000)
+        title = page.title()
+        body_text = normalize_whitespace(page.locator("body").inner_text())
+        browser.close()
+
+    if "performing security verification" in body_text.lower() or title.lower() == "just a moment...":
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned=1,
+            search_terms_tried=terms,
+            result_pages_scanned="challenge_page=1",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Cloudflare challenge blocked automated access to Coinbase careers listings."],
+            candidates=[],
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="browser_probe=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=0,
+        matched_jobs=0,
+        limitations=["Coinbase careers loaded, but no deterministic job-listing extraction path is implemented yet."],
+        candidates=[],
+    )
+
+
 def discover_thales_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
@@ -1858,15 +2424,25 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
 
 DISCOVERY_HANDLERS = {
     "ashby_api": discover_ashby_api,
+    "automattic_browser": discover_automattic_browser,
     "bosch_autocomplete": discover_bosch_autocomplete,
+    "coinbase_browser": discover_coinbase_browser,
+    "cybernetica_teamdash": discover_cybernetica_teamdash,
     "html": discover_html,
     "ibm_api": discover_ibm_api,
     "infineon_api": discover_infineon_api,
     "icims_html": discover_html,
+    "leastauthority_careers": discover_leastauthority_careers,
     "lever_json": discover_lever_json,
     "greenhouse_api": discover_greenhouse_api,
     "ashby_html": discover_ashby_api,
+    "neclab_jobs": discover_neclab_jobs,
+    "partisia_site": discover_partisia_site,
+    "qedit_inline": discover_qedit_inline,
+    "qusecure_careers": discover_qusecure_careers,
+    "secunet_jobboard": discover_secunet_jobboard,
     "thales_browser": discover_thales_browser,
+    "trailofbits_browser": discover_trailofbits_browser,
     "workday_api": discover_workday_api,
     "browser": discover_browser,
 }
