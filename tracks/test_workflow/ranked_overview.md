@@ -1,0 +1,10 @@
+# Ranked Overview — Test Workflow
+
+Generated: 2026-03-28T13:24:05Z
+Source of truth: `shared/ranked_jobs/test_workflow.json`
+Total jobs: 1
+Tags: [[job digest test_workflow]]
+
+| Fit score | Company | Title | Listing URL | Date seen |
+| --- | --- | --- | --- | --- |
+| 8.4 | Local Test Board | Cryptography Advisor | [link](http://127.0.0.1:18765/jobs/cryptography-advisor.html) | [[Test Workflow Job Digest 2026-03-28]] |

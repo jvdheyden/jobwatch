@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "track": "test_workflow",
+  "today": "2026-03-28",
+  "generated_at": "2026-03-28T13:24:05Z",
+  "mode": "discover",
+  "sources": [
+    {
+      "source": "Local Test Board",
+      "source_url": "http://127.0.0.1:18765/test_workflow_board.html",
+      "discovery_mode": "html",
+      "cadence_group": "every_run",
+      "last_checked": null,
+      "due_today": true,
+      "status": "complete",
+      "listing_pages_scanned": 1,
+      "search_terms_tried": [
+        "cryptography"
+      ],
+      "result_pages_scanned": "local_filter=1",
+      "direct_job_pages_opened": 0,
+      "enumerated_jobs": 2,
+      "matched_jobs": 1,
+      "limitations": [],
+      "candidates": [
+        {
+          "employer": "Local Test Board",
+          "title": "Cryptography Advisor",
+          "url": "http://127.0.0.1:18765/jobs/cryptography-advisor.html",
+          "source_url": "http://127.0.0.1:18765/test_workflow_board.html",
+          "alternate_url": "",
+          "location": "unknown",
+          "remote": "unknown",
+          "matched_terms": [
+            "cryptography"
+          ],
+          "notes": "Static HTML enumeration"
+        }
+      ]
+    }
+  ]
+}

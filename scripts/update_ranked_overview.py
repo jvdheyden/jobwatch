@@ -46,6 +46,10 @@ def normalize_text(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", lowered).strip()
 
 
+def track_display_name(track: str) -> str:
+    return " ".join(part.capitalize() for part in re.split(r"[_-]+", track) if part)
+
+
 def normalize_url(url: str) -> str:
     return url.rstrip("/")
 
@@ -60,8 +64,10 @@ def make_job_key(company: str, title: str, location: str) -> str:
     )
 
 
-def digest_page_name(stamp: str) -> str:
-    return f"Job Digest {stamp}"
+def digest_page_name(track: str, stamp: str) -> str:
+    if track == "core_crypto":
+        return f"Job Digest {stamp}"
+    return f"{track_display_name(track)} Job Digest {stamp}"
 
 
 def parse_role_blocks(text: str) -> list[tuple[str, str]]:
@@ -151,7 +157,7 @@ def role_sort_key(role: RankedJob) -> tuple[float, str, str, str]:
 
 def render_markdown(track: str, jobs: list[RankedJob], state_path: Path) -> str:
     lines = [
-        f"# Ranked Overview — {track}",
+        f"# Ranked Overview — {track_display_name(track)}",
         "",
         f"Generated: {datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')}",
         f"Source of truth: `{state_path.relative_to(ROOT)}`",
@@ -194,7 +200,7 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
                     "url": role["url"],
                     "fit_score": role["fit_score"],
                     "date_seen": digest_date,
-                    "date_seen_page": digest_page_name(digest_date),
+                    "date_seen_page": digest_page_name(track, digest_date),
                     "last_seen": digest_date,
                     "seen_dates": {digest_date},
                 }
@@ -211,32 +217,35 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
             if not record["url"] and role["url"]:
                 record["url"] = role["url"]
 
-    for seen in parse_seen_jobs(seen_jobs_path):
-        job_key = make_job_key(seen["company"], seen["title"], seen["location"])
-        record = records.get(job_key)
-        if record is None:
-            records[job_key] = {
-                "job_key": job_key,
-                "company": seen["company"],
-                "title": seen["title"],
-                "url": seen["url"],
-                "fit_score": None,
-                "date_seen": seen["date_seen"],
-                "date_seen_page": digest_page_name(seen["date_seen"]),
-                "last_seen": seen["date_seen"],
-                "seen_dates": {seen["date_seen"]},
-            }
-            continue
+    # `shared/seen_jobs.md` is a legacy global file with no track metadata.
+    # Backfilling it into non-core tracks pollutes their ranked overviews.
+    if track == "core_crypto":
+        for seen in parse_seen_jobs(seen_jobs_path):
+            job_key = make_job_key(seen["company"], seen["title"], seen["location"])
+            record = records.get(job_key)
+            if record is None:
+                records[job_key] = {
+                    "job_key": job_key,
+                    "company": seen["company"],
+                    "title": seen["title"],
+                    "url": seen["url"],
+                    "fit_score": None,
+                    "date_seen": seen["date_seen"],
+                    "date_seen_page": digest_page_name(track, seen["date_seen"]),
+                    "last_seen": seen["date_seen"],
+                    "seen_dates": {seen["date_seen"]},
+                }
+                continue
 
-        seen_dates = record["seen_dates"]
-        assert isinstance(seen_dates, set)
-        seen_dates.add(seen["date_seen"])
-        if seen["date_seen"] < str(record["date_seen"]):
-            record["date_seen"] = seen["date_seen"]
-            record["date_seen_page"] = digest_page_name(seen["date_seen"])
-        record["last_seen"] = max(str(record["last_seen"]), seen["date_seen"])
-        if not record["url"] and seen["url"]:
-            record["url"] = seen["url"]
+            seen_dates = record["seen_dates"]
+            assert isinstance(seen_dates, set)
+            seen_dates.add(seen["date_seen"])
+            if seen["date_seen"] < str(record["date_seen"]):
+                record["date_seen"] = seen["date_seen"]
+                record["date_seen_page"] = digest_page_name(track, seen["date_seen"])
+            record["last_seen"] = max(str(record["last_seen"]), seen["date_seen"])
+            if not record["url"] and seen["url"]:
+                record["url"] = seen["url"]
 
     jobs: list[RankedJob] = []
     for record in records.values():
