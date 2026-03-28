@@ -1,8 +1,9 @@
 # Ranked Overview — core_crypto
 
-Generated: 2026-03-28T10:26:45Z
+Generated: 2026-03-28T11:13:22Z
 Source of truth: `shared/ranked_jobs/core_crypto.json`
 Total jobs: 31
+Tags: [[job digest]]
 
 | Fit score | Company | Title | Listing URL | Date seen |
 | --- | --- | --- | --- | --- |

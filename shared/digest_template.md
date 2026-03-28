@@ -1,4 +1,5 @@
 # Job Digest — {{date}}
+Tags: [[job digest {{track_name}}]] [[{{track_name}} Ranked Overview]]
 
 Track: {{track_name}}
 Run timestamp: {{timestamp}}
