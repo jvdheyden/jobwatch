@@ -489,6 +489,15 @@ def normalize_url_without_fragment(value: str) -> str:
     return parsed._replace(path=path, fragment="").geturl()
 
 
+def build_workday_job_url(source_url: str, external_path: str) -> str:
+    if not external_path:
+        return source_url
+    parsed = urlparse(external_path)
+    if parsed.scheme and parsed.netloc:
+        return normalize_url_without_fragment(external_path)
+    return normalize_url_without_fragment(source_url.rstrip("/") + "/" + external_path.lstrip("/"))
+
+
 def is_same_page_link(source_url: str, candidate_url: str) -> bool:
     return normalize_url_without_fragment(source_url) == normalize_url_without_fragment(candidate_url)
 
@@ -1337,8 +1346,6 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
     tenant = parsed_source.netloc.split(".")[0]
     site = path_bits[0]
     endpoint = f"{parsed_source.scheme}://{parsed_source.netloc}/wday/cxs/{tenant}/{site}/jobs"
-    base_url = f"{parsed_source.scheme}://{parsed_source.netloc}"
-
     candidates_by_url: dict[str, Candidate] = {}
     raw_seen_ids: set[str] = set()
     limitations: list[str] = []
@@ -1375,7 +1382,7 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
             for posting in postings:
                 external_path = posting.get("externalPath") or ""
                 title = posting.get("title") or "unknown"
-                absolute_url = urljoin(base_url, external_path) if external_path else source.url
+                absolute_url = build_workday_job_url(source.url, external_path)
                 raw_id = external_path or title
                 raw_seen_ids.add(raw_id)
                 location = posting.get("locationsText") or "unknown"

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "track": "core_crypto",
   "today": "2026-03-27",
-  "generated_at": "2026-03-27T18:33:47Z",
+  "generated_at": "2026-03-27T21:40:41Z",
   "mode": "discover",
   "sources": [
     {
@@ -1347,8 +1347,8 @@
       ],
       "result_pages_scanned": "local_filter=1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 453,
-      "matched_jobs": 30,
+      "enumerated_jobs": 454,
+      "matched_jobs": 31,
       "limitations": [],
       "candidates": [
         {
@@ -1647,6 +1647,21 @@
         {
           "employer": "Anthropic",
           "title": "Senior Software Security Engineer",
+          "url": "https://job-boards.greenhouse.io/anthropic/jobs/4887959008",
+          "source_url": "https://job-boards.greenhouse.io/anthropic/",
+          "alternate_url": "",
+          "location": "San Francisco, CA | New York City, NY | Seattle, WA",
+          "remote": "unknown",
+          "matched_terms": [
+            "security",
+            "protocol",
+            "authentication"
+          ],
+          "notes": "Enumerated through Greenhouse board API"
+        },
+        {
+          "employer": "Anthropic",
+          "title": "Senior Software Security Engineer",
           "url": "https://job-boards.greenhouse.io/anthropic/jobs/5022845008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
           "alternate_url": "",
@@ -1659,16 +1674,15 @@
         },
         {
           "employer": "Anthropic",
-          "title": "Senior Software Security Engineer",
-          "url": "https://job-boards.greenhouse.io/anthropic/jobs/4887959008",
+          "title": "Software Engineer, Cloud Inference Safeguards",
+          "url": "https://job-boards.greenhouse.io/anthropic/jobs/5168829008",
           "source_url": "https://job-boards.greenhouse.io/anthropic/",
           "alternate_url": "",
-          "location": "San Francisco, CA | New York City, NY | Seattle, WA",
+          "location": "San Francisco, CA | Seattle, WA",
           "remote": "unknown",
           "matched_terms": [
-            "security",
-            "protocol",
-            "authentication"
+            "privacy",
+            "privacy engineering"
           ],
           "notes": "Enumerated through Greenhouse board API"
         },
@@ -1828,8 +1842,8 @@
       "cadence_group": "every_3_runs",
       "last_checked": "2026-03-25",
       "due_today": false,
-      "status": "partial",
-      "listing_pages_scanned": 62,
+      "status": "complete",
+      "listing_pages_scanned": 58,
       "search_terms_tried": [
         "cryptography",
         "cryptographer",
@@ -1865,13 +1879,11 @@
         "Authentifizierung",
         "Smartcard"
       ],
-      "result_pages_scanned": "cryptography=1p/0of0, cryptographer=1p/0of0, applied cryptography=1p/0of0, privacy=1p/0of0, privacy engineering=1p/0of0, privacy-preserving=1p/0of0, privacy-enhancing technologies=1p/0of0, PETs=1p/12of12, security=1p/16of16, security research=1p/4of4, protocol=1p/0of0, protocol security=1p/0of0, authentication=1p/2of2, digital identity=3p/43of44, key management=1p/16of16, post-quantum=1p/0of0, post-quantum cryptography=1p/0of0, PQC=1p/0of0, MPC=1p/1, multi-party computation=1p/0of0, zero-knowledge=1p/0of0, ZK=1p/0of0, FHE=1p/0of0, homomorphic encryption=1p/0of0, smart card=1p/5of5, embedded security=1p/3of3, secure hardware=1p/2of2, HSM=1p/0of0, Kryptographie=1p/0of0, IT-Sicherheit=1p/8of8, Identit\u00e4t=28p/549of543, Authentifizierung=1p/1, Smartcard=1p/0of0",
+      "result_pages_scanned": "cryptography=1p/0of0, cryptographer=1p/0of0, applied cryptography=1p/0of0, privacy=1p/0of0, privacy engineering=1p/0of0, privacy-preserving=1p/0of0, privacy-enhancing technologies=1p/0of0, PETs=1p/12of11, security=1p/16of15, security research=1p/4of4, protocol=1p/0of0, protocol security=1p/0of0, authentication=1p/2of2, digital identity=2p/40of35, key management=1p/16of15, post-quantum=1p/0of0, post-quantum cryptography=1p/0of0, PQC=1p/0of0, MPC=1p/1, multi-party computation=1p/0of0, zero-knowledge=1p/0of0, ZK=1p/0of0, FHE=1p/0of0, homomorphic encryption=1p/0of0, smart card=1p/5of5, embedded security=1p/3of2, secure hardware=1p/2of2, HSM=1p/0of0, Kryptographie=1p/0of0, IT-Sicherheit=1p/8of7, Identit\u00e4t=25p/500of499, Authentifizierung=1p/1, Smartcard=1p/0of0",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 662,
+      "enumerated_jobs": 610,
       "matched_jobs": 7,
-      "limitations": [
-        "Bosch browser search for 'digital identity' surfaced 43 of 44 results"
-      ],
+      "limitations": [],
       "candidates": [
         {
           "employer": "Bosch",
@@ -2129,9 +2141,9 @@
       "search_terms_tried": [
         "cryptography"
       ],
-      "result_pages_scanned": "cryptography=7p/134",
+      "result_pages_scanned": "cryptography=7p/135",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 134,
+      "enumerated_jobs": 135,
       "matched_jobs": 4,
       "limitations": [],
       "candidates": [
@@ -2161,7 +2173,7 @@
           "matched_terms": [
             "security"
           ],
-          "notes": "Google browser search q='cryptography' locations=Munich, Germany, Zurich, Switzerland, London, UK, New York, NY, USA page=2; public overview URL synthesized from Google ds:1 payload"
+          "notes": "Google browser search q='cryptography' locations=Munich, Germany, Zurich, Switzerland, London, UK, New York, NY, USA page=3; public overview URL synthesized from Google ds:1 payload"
         },
         {
           "employer": "DeepMind",
@@ -2279,9 +2291,9 @@
         "secure hardware",
         "HSM"
       ],
-      "result_pages_scanned": "full_index=2p/194of194",
+      "result_pages_scanned": "full_index=2p/195of195",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 194,
+      "enumerated_jobs": 195,
       "matched_jobs": 95,
       "limitations": [],
       "candidates": [
@@ -2379,19 +2391,6 @@
         },
         {
           "employer": "IBM",
-          "title": "Linux Security Engineer",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=102627",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Multiple Cities",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
           "title": "SAP Security Architect",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=97913",
           "source_url": "https://www.ibm.com/careers/search",
@@ -2423,6 +2422,19 @@
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "BUDAPEST, HU",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Linux Security Engineer",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=102627",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2548,11 +2560,11 @@
         },
         {
           "employer": "IBM",
-          "title": "Associate Security Specialist - 2026",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87017",
+          "title": "Security Specialist - TDR - MDR",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=86802",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
-          "location": "Multiple Cities",
+          "location": "Bogota, CO",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2561,11 +2573,11 @@
         },
         {
           "employer": "IBM",
-          "title": "Security Specialist - TDR - MDR",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=86802",
+          "title": "Associate Security Specialist - 2026",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87017",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
-          "location": "Bogota, CO",
+          "location": "Multiple Cities",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2601,19 +2613,6 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100607",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100769",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
@@ -2627,49 +2626,10 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95015",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100620",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Coimbatore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100608",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100607",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100616",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2692,10 +2652,10 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100780",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100616",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
-          "location": "Bhubaneswar, IN",
+          "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2705,10 +2665,10 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100766",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100780",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
-          "location": "Kochi, IN",
+          "location": "Bhubaneswar, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2735,6 +2695,19 @@
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Coimbatore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100766",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2795,6 +2768,19 @@
         },
         {
           "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100628",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
           "title": "Z/os Security Software Developer",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=56560",
           "source_url": "https://www.ibm.com/careers/search",
@@ -2813,19 +2799,6 @@
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100628",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2860,6 +2833,58 @@
         },
         {
           "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100608",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bhubaneswar, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100620",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Coimbatore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95015",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100795",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
           "title": "Security Consultant \u2013 PKI & Crypto (German)",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=93640",
           "source_url": "https://www.ibm.com/careers/search",
@@ -2878,6 +2903,19 @@
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95030",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -2939,32 +2977,6 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=95030",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100795",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=100782",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
@@ -3004,7 +3016,46 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93541",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100622",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Coimbatore, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=95073",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94990",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Pune, IN",
@@ -3030,10 +3081,49 @@
         {
           "employer": "IBM",
           "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=94990",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100796",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100765",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=105711",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Pune, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100770",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3060,84 +3150,6 @@
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Bhubaneswar, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100770",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100765",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Kochi, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100796",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=105711",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=93541",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=100622",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Coimbatore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3177,6 +3189,19 @@
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74730",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Bangalore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3250,38 +3275,25 @@
         },
         {
           "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=90813",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kochi, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
           "title": "Security Specialist-Industrial Operation Technology Services",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=106285",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Seoul, KR",
           "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88189",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74730",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Bangalore, IN",
-          "remote": "Hybrid",
           "matched_terms": [
             "security"
           ],
@@ -3302,8 +3314,8 @@
         },
         {
           "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74731",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87795",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Bangalore, IN",
@@ -3315,8 +3327,8 @@
         },
         {
           "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=87795",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74731",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Bangalore, IN",
@@ -3341,11 +3353,11 @@
         },
         {
           "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=90813",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=88189",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
-          "location": "Kochi, IN",
+          "location": "Bangalore, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3367,11 +3379,50 @@
         },
         {
           "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99768",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Application Architect-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74728",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Noida, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
           "title": "Application Architect-SAP HANA Application Security",
           "url": "https://careers.ibm.com/careers/JobDetail?jobId=88182",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Kolkata, IN",
+          "remote": "Hybrid",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
+        },
+        {
+          "employer": "IBM",
+          "title": "Package Specialist-SAP HANA Application Security",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=106655",
+          "source_url": "https://www.ibm.com/careers/search",
+          "alternate_url": "",
+          "location": "Pune, IN",
           "remote": "Hybrid",
           "matched_terms": [
             "security"
@@ -3419,25 +3470,12 @@
         },
         {
           "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=106655",
+          "title": "2026 IBM Consulting Associates-Security Specialist",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=84454",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
-          "location": "Pune, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99641",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Kolkata, IN",
-          "remote": "Hybrid",
+          "location": "Seoul, KR",
+          "remote": "unknown",
           "matched_terms": [
             "security"
           ],
@@ -3458,34 +3496,8 @@
         },
         {
           "employer": "IBM",
-          "title": "2026 IBM Consulting Associates-Security Specialist",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=84454",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Seoul, KR",
-          "remote": "unknown",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
-          "title": "Application Architect-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=74728",
-          "source_url": "https://www.ibm.com/careers/search",
-          "alternate_url": "",
-          "location": "Noida, IN",
-          "remote": "Hybrid",
-          "matched_terms": [
-            "security"
-          ],
-          "notes": "Enumerated through IBM careers search API with title-scoped server-side filtering"
-        },
-        {
-          "employer": "IBM",
           "title": "Package Specialist-SAP HANA Application Security",
-          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99768",
+          "url": "https://careers.ibm.com/careers/JobDetail?jobId=99641",
           "source_url": "https://www.ibm.com/careers/search",
           "alternate_url": "",
           "location": "Kolkata, IN",
@@ -3562,9 +3574,9 @@
         "secure hardware",
         "HSM"
       ],
-      "result_pages_scanned": "cryptography=1p/6, cryptographer=0p/0, applied cryptography=0p/0, privacy=13p/123, privacy engineering=11p/109, privacy-preserving=0p/0, privacy-enhancing technologies=15p/148, PETs=1p/5, security=12p/115, security research=3p/25, protocol=2p/20, protocol security=1p/2, authentication=1p/7, digital identity=5p/43, key management=54p/539, post-quantum=1p/1, post-quantum cryptography=1p/1, PQC=7p/65, MPC=20p/197, multi-party computation=1p/4, zero-knowledge=2p/18, ZK=2p/20, FHE=14p/136, homomorphic encryption=0p/0, smart card=3p/30, embedded security=2p/20, secure hardware=21p/203, HSM=4p/33",
+      "result_pages_scanned": "cryptography=1p/6, cryptographer=0p/0, applied cryptography=0p/0, privacy=13p/123, privacy engineering=11p/109, privacy-preserving=0p/0, privacy-enhancing technologies=15p/148, PETs=1p/5, security=12p/114, security research=3p/25, protocol=2p/20, protocol security=1p/2, authentication=1p/7, digital identity=5p/44, key management=54p/539, post-quantum=1p/1, post-quantum cryptography=1p/1, PQC=7p/65, MPC=20p/196, multi-party computation=1p/4, zero-knowledge=2p/18, ZK=2p/20, FHE=14p/136, homomorphic encryption=0p/0, smart card=3p/29, embedded security=2p/20, secure hardware=21p/203, HSM=4p/32",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 961,
+      "enumerated_jobs": 960,
       "matched_jobs": 7,
       "limitations": [],
       "candidates": [
@@ -3755,7 +3767,7 @@
       "last_checked": "2026-03-25",
       "due_today": false,
       "status": "complete",
-      "listing_pages_scanned": 56,
+      "listing_pages_scanned": 55,
       "search_terms_tried": [
         "cryptography",
         "cryptographer",
@@ -3786,16 +3798,16 @@
         "secure hardware",
         "HSM"
       ],
-      "result_pages_scanned": "cryptography=2p/27, cryptographer=2p/27, applied cryptography=2p/27, privacy=2p/34, privacy engineering=2p/30, privacy-preserving=1p/8, privacy-enhancing technologies=1p/8, PETs=0p/0, security=8p/158, security research=5p/86, protocol=3p/47, protocol security=2p/21, authentication=1p/7, digital identity=3p/41, key management=8p/154, post-quantum=0p/0, post-quantum cryptography=0p/0, PQC=0p/0, MPC=0p/0, multi-party computation=2p/29, zero-knowledge=1p/13, ZK=0p/0, FHE=0p/0, homomorphic encryption=0p/0, smart card=2p/27, embedded security=4p/78, secure hardware=4p/70, HSM=1p/1",
+      "result_pages_scanned": "cryptography=2p/27, cryptographer=2p/27, applied cryptography=2p/27, privacy=2p/34, privacy engineering=2p/30, privacy-preserving=1p/8, privacy-enhancing technologies=1p/8, PETs=0p/0, security=8p/159, security research=5p/86, protocol=3p/48, protocol security=2p/21, authentication=1p/7, digital identity=2p/41, key management=8p/156, post-quantum=0p/0, post-quantum cryptography=0p/0, PQC=0p/0, MPC=0p/0, multi-party computation=2p/29, zero-knowledge=1p/13, ZK=0p/0, FHE=0p/0, homomorphic encryption=0p/0, smart card=2p/27, embedded security=4p/78, secure hardware=4p/70, HSM=1p/1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 328,
+      "enumerated_jobs": 327,
       "matched_jobs": 19,
       "limitations": [],
       "candidates": [
         {
           "employer": "NXP",
           "title": "Senior Embedded AI Platform Security Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Embedded-AI-Platform-Security-Engineer_R-10060434",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Embedded-AI-Platform-Security-Engineer_R-10060434",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Gratkorn",
@@ -3808,7 +3820,7 @@
         {
           "employer": "NXP",
           "title": "Software Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Software-Security-Architect--m-f-d-_R-10060547",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Software-Security-Architect--m-f-d-_R-10060547",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "4 Locations",
@@ -3816,12 +3828,12 @@
           "matched_terms": [
             "security"
           ],
-          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'key management'; Enumerated through Workday jobs API for 'embedded security'"
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'key management'"
         },
         {
           "employer": "NXP",
           "title": "Software Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Software-Security-Architect--m-f-d-_R-10062003",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Software-Security-Architect--m-f-d-_R-10062003",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "3 Locations",
@@ -3834,7 +3846,7 @@
         {
           "employer": "NXP",
           "title": "Software Internship \u2013 Automotive Security Firmware",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Bucharest/Software-Internship---Automotive-Security-Firmware_R-10054983-1",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Bucharest/Software-Internship---Automotive-Security-Firmware_R-10054983-1",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Bucharest",
@@ -3847,7 +3859,7 @@
         {
           "employer": "NXP",
           "title": "Senior Embedded AI Platform Security Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10061316-1",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10061316-1",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Gratkorn",
@@ -3860,7 +3872,7 @@
         {
           "employer": "NXP",
           "title": "Senior Embedded AI Platform Security Engineer (m/w/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/Senior-Embedded-AI-Platform-Security-Engineer--m-w-d-_R-10061315",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/Senior-Embedded-AI-Platform-Security-Engineer--m-w-d-_R-10061315",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Leuven",
@@ -3873,7 +3885,7 @@
         {
           "employer": "NXP",
           "title": "Junior Embedded AI Platform Security Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062144",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062144",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Leuven",
@@ -3886,7 +3898,7 @@
         {
           "employer": "NXP",
           "title": "ML Security Tools & Threat Modeling Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062047",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062047",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Leuven",
@@ -3899,7 +3911,7 @@
         {
           "employer": "NXP",
           "title": "Senior ML Security Tools & Threat Modeling Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Senior-ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062142",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Senior-ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062142",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Glasgow",
@@ -3912,7 +3924,7 @@
         {
           "employer": "NXP",
           "title": "Junior Embedded AI Platform Security Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062145",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062145",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Gratkorn",
@@ -3925,7 +3937,7 @@
         {
           "employer": "NXP",
           "title": "Senior ML Security Tools & Threat Modeling Engineer (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10060438",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10060438",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Glasgow",
@@ -3938,7 +3950,7 @@
         {
           "employer": "NXP",
           "title": "Senior AI/ML System Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Experienced-AI-ML-System-Security-Architect--m-f-d-_R-10060511",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Experienced-AI-ML-System-Security-Architect--m-f-d-_R-10060511",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "4 Locations",
@@ -3946,12 +3958,12 @@
           "matched_terms": [
             "security"
           ],
-          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
         },
         {
           "employer": "NXP",
           "title": "Crypto & Security Engineers",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Crypto---Security-Engineers_R-10062277-1",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Crypto---Security-Engineers_R-10062277-1",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "2 Locations",
@@ -3964,7 +3976,7 @@
         {
           "employer": "NXP",
           "title": "Senior Security Experts (m/f/d) in our global Innovation Center Crypto & Security",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Security-Experts--f-m-d--in-our-Innovation-Center-Crypto---Security_R-10014526",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Security-Experts--f-m-d--in-our-Innovation-Center-Crypto---Security_R-10014526",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "2 Locations",
@@ -3977,7 +3989,7 @@
         {
           "employer": "NXP",
           "title": "Software Security Analyst (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Software-Security-Analyst--m-f-d-_R-10062087",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Software-Security-Analyst--m-f-d-_R-10062087",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Gratkorn",
@@ -3990,7 +4002,7 @@
         {
           "employer": "NXP",
           "title": "Senior System Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Gratkorn/Experienced-System-Security-Architect--m-f-d-_R-10060123",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Experienced-System-Security-Architect--m-f-d-_R-10060123",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Gratkorn",
@@ -4003,7 +4015,7 @@
         {
           "employer": "NXP",
           "title": "Senior System Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Leuven/Senior-System-Security-Architect--m-f-d-_R-10062221",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/Senior-System-Security-Architect--m-f-d-_R-10062221",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Leuven",
@@ -4016,7 +4028,7 @@
         {
           "employer": "NXP",
           "title": "Senior System Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Barcelona/Senior-System-Security-Architect--m-f-d-_R-10062222",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Barcelona/Senior-System-Security-Architect--m-f-d-_R-10062222",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Barcelona",
@@ -4029,7 +4041,7 @@
         {
           "employer": "NXP",
           "title": "Senior System Security Architect (m/f/d)",
-          "url": "https://nxp.wd3.myworkdayjobs.com/job/Glasgow/Senior-System-Security-Architect--m-f-d-_R-10062220",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Senior-System-Security-Architect--m-f-d-_R-10062220",
           "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
           "alternate_url": "",
           "location": "Glasgow",
@@ -4350,7 +4362,7 @@
       ],
       "result_pages_scanned": "local_filter=1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 14,
+      "enumerated_jobs": 15,
       "matched_jobs": 0,
       "limitations": [],
       "candidates": []
@@ -4863,7 +4875,7 @@
       ],
       "result_pages_scanned": "cryptography=6p/60of57, multi-party computation=1p/1of1, homomorphic encryption=5p/50of47",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 70,
+      "enumerated_jobs": 90,
       "matched_jobs": 6,
       "limitations": [],
       "candidates": [
@@ -4943,7 +4955,7 @@
           "matched_terms": [
             "cryptography"
           ],
-          "notes": "Enumerated through Thales search-results HTML for 'cryptography'; Enumerated through Thales search-results HTML for 'homomorphic encryption'"
+          "notes": "Enumerated through Thales search-results HTML for 'cryptography'"
         }
       ]
     }

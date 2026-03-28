@@ -1,0 +1,707 @@
+[2026-03-28 08:00:00] Starting core_crypto daily run
+[2026-03-28 08:05:34] Wrote discovery artifact to /Users/jvdh/Documents/job-agent/artifacts/discovery/core_crypto/2026-03-28.json
+OpenAI Codex v0.116.0 (research preview)
+--------
+workdir: /Users/jvdh/Documents/job-agent
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/jvdh/.codex/memories]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d3343-3183-7072-a532-d96e9383ffb3
+--------
+user
+Run today's core_crypto workflow from the repository root.
+Follow the repository and track AGENTS.md instructions.
+Use scripted discovery helpers when available.
+A discovery artifact for today's scheduled run has already been written to ./artifacts/discovery/core_crypto/2026-03-28.json and ./artifacts/discovery/core_crypto/latest.json.
+Use those artifact files directly as the primary discovery input.
+Do not rerun ./scripts/discover_jobs.py during this scheduled pass unless the artifact is missing, stale, or inconsistent with today's due sources.
+This is a normal scheduled run, not a debugging session.
+Do not inspect ./logs or downstream publication targets such as /Users/jvdh/Documents/logseq unless explicitly asked to debug the runner.
+
+mcp startup: no servers
+codex
+Running the scheduled `core_crypto` pass from the repo root. I’m checking the repository workflow entrypoints and track instructions first so I can use the existing discovery artifact instead of re-running discovery.
+exec
+/bin/zsh -lc pwd in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+/Users/jvdh/Documents/job-agent
+exec
+/bin/zsh -lc "sed -n '1,220p' AGENTS.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Job agent rules
+
+You are helping monitor job openings for Jonas.
+
+Core behavior:
+- Be conservative about fit.
+- Do not auto-apply.
+- Do not draft outreach unless explicitly asked.
+- Prefer exact evidence from postings over guesses.
+- Only report roles that are plausibly relevant to a cryptography / security / privacy / research-engineering profile.
+- Avoid duplicate reporting.
+- Keep the final digest concise and useful.
+
+Output preferences:
+- Rank by fit.
+- For each role, explain fit in 2–4 short bullets.
+- Separate "strong matches" from "borderline / maybe".
+- If nothing relevant is found, say so clearly.
+exec
+/bin/zsh -lc "rg --files -g 'AGENTS.md' -g 'README*' -g 'scripts/**' -g 'artifacts/discovery/core_crypto/**' -g '*core_crypto*'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+AGENTS.md
+scripts/com.jvdh.core-crypto-job-agent.plist
+scripts/__pycache__/discover_jobs.cpython-314.pyc
+scripts/discover_jobs.py
+scripts/sync_to_logseq.sh
+logs/core_crypto-2026-03-28.log
+logs/core_crypto-2026-03-24.log
+logs/core_crypto-2026-03-25.log
+logs/core_crypto-2026-03-27.log
+logs/core_crypto-2026-03-26.log
+logs/core_crypto-2026-03-22.log
+logs/core_crypto-2026-03-23.log
+logs/core_crypto-2026-03-21.log
+logs/core_crypto-2026-03-20.log
+tracks/core_crypto/AGENTS.md
+artifacts/discovery/core_crypto/2026-03-28.json
+artifacts/discovery/core_crypto/2026-03-27-google-test.json
+artifacts/discovery/core_crypto/2026-03-26.json
+artifacts/discovery/core_crypto/2026-03-27.json
+artifacts/discovery/core_crypto/latest.json
+codex
+I’ve confirmed the repo root and top-level agent rules. Next I’m reading the track-specific instructions and the scheduled workflow scripts to find the supported entrypoint that consumes today’s discovery artifact.
+exec
+/bin/zsh -lc "sed -n '1,260p' README.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' tracks/core_crypto/AGENTS.md" in /Users/jvdh/Documents/job-agent exited 1 in 0ms:
+sed: README.md: No such file or directory
+ succeeded in 0ms:
+# Core Crypto Agent
+
+You are responsible for the `core_crypto` track.
+
+Your goal is to find new job postings that are strong matches for Jonas in applied cryptography and closely related areas.
+
+Optimize for precision over recall. A short list of strong matches is better than a long noisy list.
+
+## Read first
+
+Read these files in order before starting:
+
+1. `../../cv.md`
+2. `../../profile/prefs_global.md`
+3. `./prefs.md`
+4. `./sources.md`
+5. `../../shared/seen_jobs.md`
+6. `../../shared/digest_template.md`
+7. `../../artifacts/discovery/core_crypto/YYYY-MM-DD.json`, if it exists for today
+8. `../../artifacts/discovery/core_crypto/latest.json`, if it exists and was generated today
+exec
+/bin/zsh -lc 'rg -n "core_crypto|latest.json|discovery artifact|discover_jobs|sync_to_logseq|scheduled run|artifact" .' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+./scripts/com.jvdh.core-crypto-job-agent.plist:17:DIGEST_DIR="$ROOT/tracks/core_crypto/digests"
+./scripts/com.jvdh.core-crypto-job-agent.plist:20:DISCOVERY_DIR="$ROOT/artifacts/discovery/core_crypto"
+./scripts/com.jvdh.core-crypto-job-agent.plist:22:DISCOVERY_LATEST="$DISCOVERY_DIR/latest.json"
+./scripts/com.jvdh.core-crypto-job-agent.plist:24:LOG_FILE="$LOG_DIR/core_crypto-$TODAY.log"
+./scripts/com.jvdh.core-crypto-job-agent.plist:32:echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting core_crypto daily run"
+./scripts/com.jvdh.core-crypto-job-agent.plist:34:if python3 "$ROOT/scripts/discover_jobs.py" \
+./scripts/com.jvdh.core-crypto-job-agent.plist:35:  --track core_crypto \
+./scripts/com.jvdh.core-crypto-job-agent.plist:41:  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wrote discovery artifact to $DISCOVERY_ARTIFACT"
+./scripts/com.jvdh.core-crypto-job-agent.plist:44:  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Discovery artifact generation failed with status $DISCOVERY_STATUS; Codex will fall back to live discovery as needed"
+./scripts/com.jvdh.core-crypto-job-agent.plist:48:Run today's core_crypto workflow from the repository root.
+./scripts/com.jvdh.core-crypto-job-agent.plist:51:A discovery artifact for today's scheduled run has already been written to ./artifacts/discovery/core_crypto/$TODAY.json and ./artifacts/discovery/core_crypto/latest.json.
+./scripts/com.jvdh.core-crypto-job-agent.plist:52:Use those artifact files directly as the primary discovery input.
+./scripts/com.jvdh.core-crypto-job-agent.plist:53:Do not rerun ./scripts/discover_jobs.py during this scheduled pass unless the artifact is missing, stale, or inconsistent with today's due sources.
+./scripts/com.jvdh.core-crypto-job-agent.plist:54:This is a normal scheduled run, not a debugging session.
+./scripts/com.jvdh.core-crypto-job-agent.plist:89:  /bin/bash "$ROOT/scripts/sync_to_logseq.sh"
+./scripts/com.jvdh.core-crypto-job-agent.plist:94:echo "[$(date '+%Y-%m-%d %H:%M:%S')] Finished core_crypto daily run"
+./scripts/discover_jobs.py:266:    parser.add_argument("--track", default="core_crypto", help="Track directory name under tracks/")
+./scripts/discover_jobs.py:279:    parser.add_argument("--latest-output", help="Also write the same JSON to a stable latest-artifact path")
+./scripts/sync_to_logseq.sh:5:DIGEST="/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/$TODAY_STAMP.md"
+./logs/core_crypto-2026-03-28.log:1:[2026-03-28 08:00:00] Starting core_crypto daily run
+codex
+The runner appears to be a prompt-driven scheduled pass, not a separate end-to-end script. I’m moving into the track inputs now: profile, preferences, source cadence, today’s artifact, the seen list, and any existing digest for 2026-03-28.
+Plan update
+Normal scheduled core_crypto run using today’s existing discovery artifact as the primary input, with no log or downstream inspection.
+  → Read the required track context and determine which sources are due today from sources.md
+  • Validate that today’s discovery artifact is fresh and consistent with the due-source set, then identify plausible net-new candidates
+  • Rank reportable roles conservatively, update today’s digest and seen_jobs if needed, and advance last_checked only for fully covered due sources
+  • Verify the changed files and summarize the run outcome
+exec
+/bin/zsh -lc "sed -n '1,220p' cv.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' profile/prefs_global.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Global preferences
+
+Location: Remote jobs or reachable in less than an hour commute from London, Berlin, Wuppertal, Zürich, Munich, San Francisco Bay Area. Also open to other strong opportunities worldwide. Note that I need visa sponsorship outside of EU.
+
+## Work environment preferences
+Prefer:
+- strong learning potential
+- intellectually serious colleagues
+- real technical substance
+- room for ownership and initiative
+- low unnecessary bureaucracy
+- reasonable work-life balance
+- good management and healthy team culture
+- interdisciplinary exposure
+- meaningful real-world impact
+
+ succeeded in 0ms:
+# CV summary
+
+## Background
+- PhD in cryptography
+- Strong background in MPC, advanced cryptographic protocols, privacy-preserving systems, and applied cryptography
+- Research + engineering orientation
+- Comfortable with technical writing, systems thinking, and interdisciplinary work
+- job experience in data analysis and online advertising
+- Open to both research and applied roles
+- Native-level German and English
+
+## Strong fits
+- applied cryptography
+- MPC and privacy-preserving computation
+- cryptographic protocol design
+- research engineering
+- security engineering with strong technical depth
+- technical analysis and synthesis
+
+## Feasible pivots
+exec
+/bin/zsh -lc "sed -n '1,260p' tracks/core_crypto/prefs.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' shared/seen_jobs.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto track preferences
+
+Interpret this file as a specialization of `profile/prefs_global.md`.
+If this file conflicts with the global preferences, this file takes precedence for the core crypto track.
+
+## Goal
+Role types: 
+- cryptographer
+- cryptography engineer
+- security engineering
+- privacy engineering
+- research engineering
+- MPC engineer
+- protocol engineering
+
+
+ succeeded in 0ms:
+# first_seen | employer | title | location | url
+2026-03-20 | ClairVault | Cryptography Researcher | Remote or hybrid | https://www.iacr.org/jobs/item/4060
+2026-03-20 | QEDIT | Cryptography Engineer | unknown | https://qed-it.com/careers
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Schwerpunkt Kryptographie | Berlin or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Schwerpunkt-Kryptographie-de-j3332.html
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Smartcard | Berlin, Dresden or Eschborn | https://jobs.secunet.com/Software-Developer-mwd-Smartcard-de-j3333.html
+2026-03-20 | PQShield | Hardware Verification Engineer | Remote; UK, Germany, France, Belgium, Austria, Netherlands, Spain | https://pqshield.com/careers/apply/4682388101/
+2026-03-20 | Hashgraph | Applied Cryptographer | Remote | https://www.hashgraph.com/careers/?gh_jid=8284328002
+2026-03-20 | secunet Security Networks AG | (Senior) Software Engineer (m/f/d) - Network Security | Berlin, Bonn, Dresden, Eschborn, Essen, Hamburg, Hannover, Ilmenau, München, Stuttgart | https://jobs.secunet.com/Senior-Software-Engineer-mfd-Network-Security-de-j3322.html
+2026-03-20 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | Germany-wide | https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html
+2026-03-20 | NVIDIA | Senior Math Libraries Engineer, Post-Quantum Cryptography | Santa Clara, CA or Remote, US | https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Senior-Math-Libraries-Engineer--Post-Quantum-Cryptography_JR2002083
+2026-03-20 | FAU Erlangen-Nuremberg | 1 PhD + 1 Post-Doc Position | Erlangen-Nuremberg, Germany | https://roeslpa.de/application.html
+2026-03-20 | Universität der Bundeswehr München | Post-doctoral Researcher in Lattice-based Cryptography | Munich, Germany | https://www.unibw.de/pacy-en/vacancies
+2026-03-20 | secunet Security Networks AG | Software Developer (m/w/d) Rust | Multiple Germany locations including Berlin, Bonn, Borchen, Dresden, Eschborn, Essen, Hamburg, Ilmenau and München | https://jobs.secunet.com/Software-Developer-mwd-Rust-de-j3346.html
+2026-03-21 | Least Authority | Security / Cryptography Researcher & Engineer | Remote-first; Berlin HQ | https://leastauthority.com/blog/jobs/security-cryptography-researcher-engineer/
+2026-03-22 | TT-logic / Nanyang Technological University | FHE Engineer | NTU, Singapore | https://syllab-ntu.github.io/syllab/2026_FHE_engineer/
+2026-03-22 | Monash University | Post-Doc on Blockchain | Melbourne, Australia | https://iacr.org/news/item/27284
+2026-03-22 | secunet Security Networks AG | Software Developer mobile (m/w/d) VPN und Security (Android/iOS) | Berlin, Essen or München | https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html
+2026-03-22 | SandboxAQ | Staff Software Engineer, Cryptography R&D | United Kingdom | https://jobs.ashbyhq.com/sandboxaq/357a6ee1-3fe1-44f3-838a-f81df8b4e044
+2026-03-22 | secunet Security Networks AG | Software Developer & Verification Expert (m/w/d) | Berlin or Dresden | https://jobs.secunet.com/Software-Developer-Verification-Expert-mwd-de-j3176.html
+2026-03-23 | Monash University | Post-Doc in Lattice-Based Cryptography and/or Privacy-Enhancing Technologies | Melbourne, Australia | https://www.iacr.org/jobs/item/4036
+exec
+/bin/zsh -lc "sed -n '1,320p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,220p' shared/digest_template.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+# Core crypto sources
+
+Only check the sources below for this track.
+
+Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+
+Do not waste time on broad employer pages outside this list.
+
+Cadence note:
+- `last_checked` is updated only on successful normal daily runs.
+- For `Check every 3 runs`, treat one scheduled day as one run.
+- Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- Manual same-day reruns do not advance cadence.
+- `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
+
+## Check every run
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+ succeeded in 0ms:
+# Job Digest — {{date}}
+
+Track: {{track_name}}
+Run timestamp: {{timestamp}}
+Sources checked: {{num_sources_checked}}
+New roles found: {{num_new_roles}}
+High-signal matches: {{num_high_signal_matches}}
+
+## Executive summary
+
+{{one_short_paragraph_summarizing_the_run}}
+
+Examples:
+- "Found 4 new roles, of which 2 look like strong matches for Jonas's applied cryptography profile."
+- "No strong new matches today. Two roles were new but too generic and were filtered out."
+- "One exceptional match found at a priority employer; recommend applying soon."
+
+## Recommended actions
+
+{{action_1}}
+exec
+/bin/zsh -lc "sed -n '1,260p' artifacts/discovery/core_crypto/2026-03-28.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "schema_version": 1,
+  "track": "core_crypto",
+  "today": "2026-03-28",
+  "generated_at": "2026-03-28T07:05:33Z",
+  "mode": "discover",
+  "sources": [
+    {
+      "source": "IACR Jobs",
+      "source_url": "https://www.iacr.org/jobs/",
+      "discovery_mode": "html",
+      "cadence_group": "every_run",
+      "last_checked": "2026-03-27",
+      "due_today": true,
+      "status": "complete",
+      "listing_pages_scanned": 1,
+      "search_terms_tried": [
+        "cryptography",
+        "cryptographer",
+        "applied cryptography",
+exec
+/bin/zsh -lc "sed -n '1,260p' artifacts/discovery/core_crypto/latest.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "if [ -f tracks/core_crypto/digests/2026-03-28.md ]; then echo '__EXISTS__'; sed -n '1,260p' tracks/core_crypto/digests/2026-03-28.md; else echo '__MISSING__'; fi" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+{
+  "schema_version": 1,
+  "track": "core_crypto",
+  "today": "2026-03-28",
+  "generated_at": "2026-03-28T07:05:33Z",
+  "mode": "discover",
+  "sources": [
+    {
+      "source": "IACR Jobs",
+      "source_url": "https://www.iacr.org/jobs/",
+      "discovery_mode": "html",
+      "cadence_group": "every_run",
+      "last_checked": "2026-03-27",
+      "due_today": true,
+      "status": "complete",
+      "listing_pages_scanned": 1,
+      "search_terms_tried": [
+        "cryptography",
+        "cryptographer",
+        "applied cryptography",
+ succeeded in 0ms:
+__MISSING__
+codex
+I have the profile and cadence state. The due set should be all nine every-run sources plus the three-run sources last checked on 2026-03-25; next I’m summarizing the artifact structurally so I can confirm it covers exactly that set before ranking candidates.
+exec
+/bin/zsh -lc "jq -r '[.sources[] | {source, due_today, status}] | map(select(.due_today==true)) | length' artifacts/discovery/core_crypto/2026-03-28.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '[.sources[] | {source, due_today, status, candidate_count:(.candidates|length), limitations}]' artifacts/discovery/core_crypto/2026-03-28.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '[.sources[] | select(.due_today==true) | .source] | .[]' artifacts/discovery/core_crypto/2026-03-28.json" in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "jq -r '.sources[] | [.source, .cadence_group, (.due_today|tostring), .status, (.listing_pages_scanned|tostring), (.direct_job_pages_opened|tostring)] | @tsv' artifacts/discovery/core_crypto/2026-03-28.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+28
+ succeeded in 0ms:
+[
+  {
+    "source": "IACR Jobs",
+    "due_today": true,
+    "status": "complete",
+    "candidate_count": 52,
+    "limitations": []
+  },
+  {
+    "source": "PQShield",
+    "due_today": true,
+    "status": "complete",
+    "candidate_count": 11,
+    "limitations": []
+  },
+  {
+    "source": "Zama",
+    "due_today": true,
+    "status": "complete",
+    "candidate_count": 1,
+ succeeded in 0ms:
+IACR Jobs
+PQShield
+Zama
+Roseman Labs
+Duality Technologies
+QEDIT
+Least Authority
+Trail of Bits
+Partisia Blockchain
+Anthropic
+Automattic
+Bosch
+Coinbase
+Cybernetica
+Google
+IBM
+Infineon
+Mistral AI
+NXP
+Palantir
+ succeeded in 0ms:
+IACR Jobs	every_run	true	complete	1	0
+PQShield	every_run	true	complete	1	0
+Zama	every_run	true	complete	1	0
+Roseman Labs	every_run	true	complete	1	0
+Duality Technologies	every_run	true	complete	1	0
+QEDIT	every_run	true	complete	1	0
+Least Authority	every_run	true	complete	1	0
+Trail of Bits	every_run	true	complete	1	0
+Partisia Blockchain	every_run	true	complete	2	0
+Anthropic	every_3_runs	true	complete	1	0
+Automattic	every_3_runs	true	complete	1	0
+Bosch	every_3_runs	true	complete	61	0
+Coinbase	every_3_runs	true	partial	1	0
+Cybernetica	every_3_runs	true	complete	1	0
+Google	every_3_runs	true	complete	7	0
+IBM	every_3_runs	true	complete	2	0
+Infineon	every_3_runs	true	complete	197	0
+Mistral AI	every_3_runs	true	complete	1	0
+NXP	every_3_runs	true	partial	0	0
+Palantir	every_3_runs	true	complete	1	0
+codex
+I’m using the `rank-jobs` skill for the ranking stage because today’s artifact already handled discovery and the remaining work is conservative scoring and prioritization of net-new candidates.
+exec
+/bin/zsh -lc "sed -n '1,260p' .agents/skills/rank_jobs/SKILL.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+---
+name: rank-jobs
+description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
+---
+
+# Skill: Rank Jobs
+
+Use this skill to score and order candidate roles.
+
+This skill is for evaluation and prioritization, not search.
+
+## Input
+
+Assume the current track provides:
+- the candidate roles
+- the user's CV
+- global preferences
+- track-specific preferences
+
+Use those files as the source of truth for fit.
+codex
+The artifact is fresh and the due-source set matches the cadence rules. I’m narrowing the candidate list now, first by schema and deduplication against `shared/seen_jobs.md`, then by conservative fit so only evidence-backed roles survive.
+exec
+/bin/zsh -lc "jq -r '[.sources[].candidates[]? | keys[]] | unique | .[]' artifacts/discovery/core_crypto/2026-03-28.json" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+alternate_url
+employer
+location
+matched_terms
+notes
+remote
+source_url
+title
+url
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib, collections
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+for src in artifact['sources']:
+    if not src.get('due_today'):
+        continue
+    counts = collections.Counter()
+    for c in src.get('candidates', []):
+        counts['total'] += 1
+        if c.get('matched_terms'):
+            counts['matched'] += 1
+    if counts['total']:
+        print(f\"{src['source']}\\t{counts['total']}\\t{counts['matched']}\")
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+IACR Jobs	52	23
+PQShield	11	5
+Zama	1	0
+Duality Technologies	7	2
+QEDIT	1	1
+Trail of Bits	4	4
+Anthropic	31	31
+Bosch	7	7
+Cybernetica	4	4
+Google	4	4
+IBM	96	96
+Infineon	7	7
+Mistral AI	3	3
+Palantir	17	17
+secunet	13	13
+Quantinuum	1	1
+Rambus	4	2
+Thales	6	6
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+seen_urls = set()
+seen_titles = set()
+for line in pathlib.Path('shared/seen_jobs.md').read_text().splitlines():
+    if not line or line.startswith('#'):
+        continue
+    parts = [p.strip() for p in line.split(' | ')]
+    if len(parts) >= 5:
+        _, employer, title, location, url = parts[:5]
+        seen_urls.add(url)
+        seen_titles.add((employer.lower(), title.lower(), location.lower()))
+rows = []
+for src in artifact['sources']:
+    if not src.get('due_today'):
+        continue
+    for c in src.get('candidates', []):
+        employer = c.get('employer','unknown')
+        title = c.get('title','unknown')
+        location = c.get('location','unknown')
+        url = c.get('url','')
+        dup_url = url in seen_urls if url else False
+        dup_triplet = (employer.lower(), title.lower(), location.lower()) in seen_titles
+        rows.append({
+            'source': src['source'],
+            'employer': employer,
+            'title': title,
+            'location': location,
+            'url': url,
+            'dup_url': dup_url,
+            'dup_triplet': dup_triplet,
+            'matched_terms': c.get('matched_terms', []),
+            'notes': c.get('notes','')
+        })
+print('TOTAL', len(rows))
+print('NON_DUP_URL', sum(not r['dup_url'] for r in rows))
+print('NON_DUP_BOTH', sum((not r['dup_url']) and (not r['dup_triplet']) for r in rows))
+for r in rows:
+    if r['dup_url'] or r['dup_triplet']:
+        continue
+    print('\\t'.join([
+        r['source'], r['employer'], r['title'], r['location'], ','.join(r['matched_terms']) or '-', r['url'], r['notes']
+    ]))
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+TOTAL 269
+NON_DUP_URL 256
+NON_DUP_BOTH 256
+IACR Jobs	IACR Jobs	Asiacrypt	unknown	-	https://www.iacr.org/meetings/asiacrypt	Static HTML enumeration
+IACR Jobs	IACR Jobs	Crypto	unknown	-	https://www.iacr.org/meetings/crypto	Static HTML enumeration
+IACR Jobs	IACR Jobs	Eurocrypt	unknown	-	https://www.iacr.org/meetings/eurocrypt	Static HTML enumeration
+IACR Jobs	IACR Jobs	Cryptology Schools	unknown	-	https://www.iacr.org/schools	Static HTML enumeration
+IACR Jobs	IACR Jobs	Journal of Cryptology	unknown	-	https://www.iacr.org/jofc	Static HTML enumeration
+IACR Jobs	IACR Jobs	Transactions on Symmetric Cryptology	unknown	-	https://www.iacr.org/transactions/tosc	Static HTML enumeration
+IACR Jobs	IACR Jobs	Communications in Cryptology	unknown	-	https://cic.iacr.org/	Static HTML enumeration
+IACR Jobs	IACR Jobs	Cryptology ePrint Archive	unknown	-	https://eprint.iacr.org/	Static HTML enumeration
+IACR Jobs	IACR Jobs	Publication Statistics	unknown	-	https://www.iacr.org/cryptodb/data/acceptance.php	Static HTML enumeration
+IACR Jobs	IACR Jobs	CryptoDB	unknown	-	https://www.iacr.org/cryptodb	Static HTML enumeration
+IACR Jobs	IACR Jobs	Videos	unknown	-	https://www.iacr.org/cryptodb/data/videos.php	Static HTML enumeration
+IACR Jobs	IACR Jobs	Submit a job	unknown	-	https://www.iacr.org/jobs/edit.php	Static HTML enumeration
+IACR Jobs	IACR Jobs	Cryptographer	unknown	cryptographer	https://layerzero.network/zero	Static HTML enumeration
+IACR Jobs	IACR Jobs	Post-Doc	unknown	-	https://www.iacr.org/jobs/item/4187	Static HTML enumeration
+IACR Jobs	IACR Jobs	postdoc, or senior research fellow	unknown	-	https://www.iacr.org/jobs/item/4186	Static HTML enumeration
+IACR Jobs	IACR Jobs	Ph.D. Position in Post-Quantum Cryptographic Engineering	unknown	post-quantum,PQC	https://crypto.cs.ut.ee/Main/PQCPosition2026	Static HTML enumeration
+IACR Jobs	IACR Jobs	Cryptographer	unknown	cryptographer	https://www.forsvarsmakten.se/varnplikt-och-karriar/jobba-i-forsvarsmakten/lediga-jobb/47930/kryptolog-till-avdelningen-for-krypto-och-it-	Static HTML enumeration
+codex
+The raw artifact has a lot of title noise and search-term duplicates, especially from IACR, Bosch, and IBM. I’m collapsing to unique URLs and pulling the small set with explicit crypto/privacy/identity/encryption signals for manual review.
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+for src_name in ['Google','IBM','secunet','Cybernetica','Trail of Bits','Thales']:
+    src = next(s for s in artifact['sources'] if s['source']==src_name)
+    print(f'## {src_name}')
+    seen = set()
+    for c in src.get('candidates', []):
+        url = c.get('url','')
+        if url in seen:
+            continue
+        seen.add(url)
+        print('\\t'.join([c.get('title',''), c.get('location','unknown'), ','.join(c.get('matched_terms', [])) or '-', url]))
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+## Google
+Research Scientist, Security and Privacy, Google Research	New York, NY, USA; Seattle, WA, USA	privacy,privacy-preserving,security	https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+Senior Software Engineer, Google Cloud Security	Reston, VA, USA; New York, NY, USA; Sunnyvale, CA, USA	security	https://www.google.com/about/careers/applications/jobs/results/101444147851731654-senior-software-engineer-google-cloud-security
+Software Engineer, Privacy, DeepMind (Fixed-Term Contract)	Mountain View, CA, USA; New York, NY, USA	privacy,security	https://www.google.com/about/careers/applications/jobs/results/114131833431433926-software-engineer-privacy-deepmind-fixed-term-contract
+Software Engineer III, Agent Observability, Security and Privacy	Zürich, Switzerland	privacy,protocol,security	https://www.google.com/about/careers/applications/jobs/results/123559724732818118-software-engineer-iii-agent-observability-security-and-privacy
+## IBM
+Backend Engineer (Cryptography Team) - Hashicorp Vault	Multiple Cities	cryptography	https://careers.ibm.com/careers/JobDetail?jobId=85519
+Security Specialist - Email Security	Bogota, CO	security	https://careers.ibm.com/careers/JobDetail?jobId=86816
+Security Specialist - Email Security	Bogota, CO	security	https://careers.ibm.com/careers/JobDetail?jobId=86814
+Security Specialist - Email Security	Lima, PE	security	https://careers.ibm.com/careers/JobDetail?jobId=87000
+Software Developer for S3 protocol	Bangalore, IN	protocol,security	https://careers.ibm.com/careers/JobDetail?jobId=102841
+Security Architect	MELBOURNE, AU	security	https://careers.ibm.com/careers/JobDetail?jobId=103087
+Security Architect	Multiple Cities	security	https://careers.ibm.com/careers/JobDetail?jobId=73259
+SAP Security Architect	Multiple Cities	security	https://careers.ibm.com/careers/JobDetail?jobId=97913
+Security Engineer - Sentinel	BUDAPEST, HU	security	https://careers.ibm.com/careers/JobDetail?jobId=94810
+Linux Security Engineer	Multiple Cities	security	https://careers.ibm.com/careers/JobDetail?jobId=102627
+Security Solutions Architect	Heredia, CR	security	https://careers.ibm.com/careers/JobDetail?jobId=106257
+Security & Compliance  Engineer	Bangalore, IN	security	https://careers.ibm.com/careers/JobDetail?jobId=95510
+Cyber Security Architect	Jakarta, ID	security	https://careers.ibm.com/careers/JobDetail?jobId=99527
+Security Focal Specialist	Lima, PE	security	https://careers.ibm.com/careers/JobDetail?jobId=86996
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib, re
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+seen_urls = {line.split(' | ')[4].strip() for line in pathlib.Path('shared/seen_jobs.md').read_text().splitlines() if line and not line.startswith('#') and len(line.split(' | ')) >= 5}
+interesting = re.compile(r'crypt|privacy|identity|auth|encrypt|quantum|pqc|mpc|homomorphic|fhe|zero-knowledge|zk|smart ?card|wallet|embedded security|security research|protocol', re.I)
+rows = {}
+for src in artifact['sources']:
+    if not src.get('due_today'):
+        continue
+    for c in src.get('candidates', []):
+        url = c.get('url') or ''
+        if not url or url in seen_urls:
+            continue
+        title = c.get('title','')
+        terms = ' '.join(c.get('matched_terms', []))
+        text = f\"{title} {terms}\"
+        if not interesting.search(text):
+            continue
+        rows[url] = {
+            'source': src['source'],
+            'employer': c.get('employer','unknown'),
+            'title': title,
+            'location': c.get('location','unknown'),
+            'matched_terms': ','.join(c.get('matched_terms', [])) or '-',
+            'url': url,
+            'notes': c.get('notes','')
+        }
+for r in sorted(rows.values(), key=lambda x: (x['source'], x['title'].lower())):
+    print('\\t'.join([r['source'], r['employer'], r['title'], r['location'], r['matched_terms'], r['url'], r['notes']]))
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+Anthropic	Anthropic	ML Infrastructure Engineer, Safeguards	San Francisco, CA	privacy,privacy-preserving,security	https://job-boards.greenhouse.io/anthropic/jobs/4778843008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Offensive Security Research Engineer, Safeguards	San Francisco, CA	security,security research	https://job-boards.greenhouse.io/anthropic/jobs/5123011008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Platform Hardware Security	New York City, NY | Seattle, WA; San Francisco, CA | New York City, NY | Seattle, WA; Washington, DC	security,protocol	https://job-boards.greenhouse.io/anthropic/jobs/4929689008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Economist, Economic Research	San Francisco, CA	privacy,privacy-preserving	https://job-boards.greenhouse.io/anthropic/jobs/5018472008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Engineer / Scientist, Frontier Red Team (Cyber)	San Francisco, CA	security,security research	https://job-boards.greenhouse.io/anthropic/jobs/5076477008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Engineer / Scientist, Societal Impacts	San Francisco, CA	privacy,privacy-preserving	https://job-boards.greenhouse.io/anthropic/jobs/5076606008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Engineer, Cybersecurity Reinforcement Learning	San Francisco, CA | New York City, NY	security,security research	https://job-boards.greenhouse.io/anthropic/jobs/5025624008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Engineer, Economic Research	San Francisco, CA	privacy,privacy-preserving,security	https://job-boards.greenhouse.io/anthropic/jobs/5071132008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Engineer, Interpretability	San Francisco, CA	PQC	https://job-boards.greenhouse.io/anthropic/jobs/4980430008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Research Scientist, Societal Impacts	San Francisco, CA	privacy,privacy-preserving	https://job-boards.greenhouse.io/anthropic/jobs/5076616008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Security Architect, Applied AI 	New York City, NY; New York City, NY | Seattle, WA; San Francisco, CA | New York City, NY	security,authentication	https://job-boards.greenhouse.io/anthropic/jobs/5101433008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Security Technology Deployment Specialist 	Remote-Friendly (Travel-Required) | San Francisco, CA | Seattle, WA | New York City, NY	security,protocol	https://job-boards.greenhouse.io/anthropic/jobs/5123587008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Senior Software Security Engineer	San Francisco, CA | New York City, NY | Seattle, WA	security,protocol,authentication	https://job-boards.greenhouse.io/anthropic/jobs/4887959008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Software Engineer, Cloud Inference Safeguards	San Francisco, CA | Seattle, WA	privacy,privacy engineering	https://job-boards.greenhouse.io/anthropic/jobs/5168829008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Software Engineer, Enterprise Foundations	San Francisco, CA | New York City, NY	privacy,privacy-preserving,security	https://job-boards.greenhouse.io/anthropic/jobs/4667572008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Staff+ Software Security Engineer	San Francisco, CA | New York City, NY | Seattle, WA	security,authentication	https://job-boards.greenhouse.io/anthropic/jobs/5120512008	Enumerated through Greenhouse board API
+Anthropic	Anthropic	Transformative AI Research Economist, Economic Research 	San Francisco, CA	privacy,privacy-preserving	https://job-boards.greenhouse.io/anthropic/jobs/5149802008	Enumerated through Greenhouse board API
+Cybernetica	Cybernetica	AI Researcher for Information Security Research Institute Tallinn or Tartu	unknown	security,security research	https://cyber.teamdash.com/p/job/ewYJcrjF/ai-researcher-for-information-security-research-institute	Enumerated through Teamdash links on the Cybernetica careers page
+Cybernetica	Cybernetica	DevOps Engineer for Digital Identity Technologies Tallinn or Tartu	unknown	digital identity	https://cyber.teamdash.com/p/job/te62GHub/devops-engineer-for-digital-identity-technologies	Enumerated through Teamdash links on the Cybernetica careers page
+Cybernetica	Cybernetica	Go Developer for Digital Identity Technologies Tallinn or Tartu	unknown	digital identity	https://cyber.teamdash.com/p/job/JZWN2mul/go-developer-for-digital-identity-technologies	Enumerated through Teamdash links on the Cybernetica careers page
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/Android-Engineer-mwd-mit-Schwerpunkt-Verschluesselung-Secu-de-j3401.html
+🌐 Searching the web...
+🌐 Searched: site:careers.ibm.com "Security Consultant" "PKI & Crypto" IBM
+🌐 Searching the web...
+🌐 Searched: "Security Consultant – PKI & Crypto (German)"
+🌐 Searching the web...
+🌐 Searched: Fortanix Cryptography Engineer site:fortanix.com/careers
+🌐 Searching the web...
+🌐 Searched: "Security Consultant – PKI & Crypto (German)" IBM careers
+🌐 Searching the web...
+🌐 Searched: https://www.google.com/about/careers/applications/jobs/results/123559724732818118-software-engineer-iii-agent-observability-security-and-privacy
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/Senior-Software-Developer-mwd-Mobile-Security-AndroidiOS-de-j3368.html
+🌐 Searching the web...
+🌐 Searched: 'Cryptography Engineer' in https://www.fortanix.com/company/careers
+🌐 Searching the web...
+🌐 Searched: https://www.fortanix.com/company/careers
+codex
+The ranking pass is converging on a single clearly reportable role. I’m generating digest-ready coverage notes from the artifact now and then I’ll write the digest, append only the truly reportable role to `seen_jobs.md`, and advance `last_checked` everywhere the artifact shows complete coverage.
+exec
+/bin/zsh -lc "nl -ba tracks/core_crypto/sources.md | sed -n '1,120p'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+     1	# Core crypto sources
+     2	
+     3	Only check the sources below for this track.
+     4	
+     5	Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
+     6	
+     7	Do not waste time on broad employer pages outside this list.
+     8	
+     9	Cadence note:
+    10	- `last_checked` is updated only on successful normal daily runs.
+    11	- For `Check every 3 runs`, treat one scheduled day as one run.
+    12	- Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+    13	- Manual same-day reruns do not advance cadence.
+    14	- `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
+    15	
+    16	## Check every run
+    17	
+    18	| source | url | discovery_mode | last_checked |
+    19	| --- | --- | --- | --- |
+    20	| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+exec
+/bin/zsh -lc 'git status --short' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+ M artifacts/discovery/core_crypto/2026-03-27.json
+ M artifacts/discovery/core_crypto/latest.json
+ M scripts/discover_jobs.py
+?? artifacts/discovery/core_crypto/2026-03-28.json
+?? logs/core_crypto-2026-03-28.log
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+for src in artifact['sources']:
+    if not src.get('due_today'):
+        continue
+    terms = src.get('search_terms_tried', [])
+    terms_desc = 'none' if not terms else (f\"{len(terms)} terms\" if len(terms) > 6 else ', '.join(terms))
+    print('\\t'.join([
+        src['source'],
+        src['discovery_mode'],
+        src['status'],
+        str(src.get('listing_pages_scanned','unknown')),
+        terms_desc,
+        str(src.get('result_pages_scanned','unknown')),
+        str(src.get('direct_job_pages_opened','unknown')),
+        '; '.join(src.get('limitations', [])) or '-'
+    ]))
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+IACR Jobs	html	complete	1	28 terms	local_filter=1	0	-
+PQShield	html	complete	1	28 terms	local_filter=1	0	-
+Zama	html	complete	1	28 terms	local_filter=1	0	-
+Roseman Labs	html	complete	1	28 terms	local_filter=1	0	-
+Duality Technologies	html	complete	1	28 terms	local_filter=1	0	-
+QEDIT	qedit_inline	complete	1	28 terms	inline_roles=1	0	Page mentions biannual cryptography interns, but not as a direct current opening.
+Least Authority	leastauthority_careers	complete	1	none	career_page=1	0	Careers page exposes category filters and company sections, but no direct current job links.
+Trail of Bits	trailofbits_browser	complete	1	28 terms	career_page=1	0	-
+Partisia Blockchain	partisia_site	complete	2	none	homepage_scan=1	0	Official Partisia sites exposed no careers page or direct job listings.
+Anthropic	greenhouse_api	complete	1	28 terms	local_filter=1	0	-
+Automattic	automattic_browser	complete	1	28 terms	jobs_page=1	0	-
+Bosch	browser	complete	61	33 terms	cryptography=1p/0of0, cryptographer=1p/0of0, applied cryptography=1p/0of0, privacy=1p/0of0, privacy engineering=1p/0of0, privacy-preserving=1p/0of0, privacy-enhancing technologies=1p/0of0, PETs=1p/12of11, security=1p/16of15, security research=1p/4of4, protocol=1p/0of0, protocol security=1p/0of0, authentication=1p/2of2, digital identity=3p/43of43, key management=1p/16of13, post-quantum=1p/0of0, post-quantum cryptography=1p/0of0, PQC=1p/0of0, MPC=1p/1, multi-party computation=1p/0of0, zero-knowledge=1p/0of0, ZK=1p/0of0, FHE=1p/0of0, homomorphic encryption=1p/0of0, smart card=1p/5of5, embedded security=1p/3of3, secure hardware=1p/2of2, HSM=1p/0of0, Kryptographie=1p/0of0, IT-Sicherheit=1p/8of8, Identität=27p/540of526, Authentifizierung=1p/1, Smartcard=1p/0of0	0	-
+Coinbase	coinbase_browser	partial	1	31 terms	challenge_page=1	0	Cloudflare challenge blocked automated access to Coinbase careers listings.
+Cybernetica	cybernetica_teamdash	complete	1	28 terms	filtered_links=1	0	-
+Google	browser	complete	7	cryptography	cryptography=7p/136	0	-
+IBM	ibm_api	complete	2	28 terms	full_index=2p/197of197	0	-
+Infineon	infineon_api	complete	197	28 terms	cryptography=1p/6, cryptographer=0p/0, applied cryptography=0p/0, privacy=13p/123, privacy engineering=11p/109, privacy-preserving=0p/0, privacy-enhancing technologies=15p/148, PETs=1p/5, security=12p/114, security research=3p/25, protocol=2p/20, protocol security=1p/2, authentication=1p/7, digital identity=5p/44, key management=54p/540, post-quantum=1p/1, post-quantum cryptography=1p/1, PQC=7p/65, MPC=20p/196, multi-party computation=1p/4, zero-knowledge=2p/18, ZK=2p/20, FHE=14p/136, homomorphic encryption=0p/0, smart card=3p/29, embedded security=2p/20, secure hardware=21p/203, HSM=4p/32	0	-
+Mistral AI	lever_json	complete	1	28 terms	local_filter=1	0	-
+NXP	workday_api	partial	0	28 terms	cryptography=0p/0, cryptographer=0p/0, applied cryptography=0p/0, privacy=0p/0, privacy engineering=0p/0, privacy-preserving=0p/0, privacy-enhancing technologies=0p/0, PETs=0p/0, security=0p/0, security research=0p/0, protocol=0p/0, protocol security=0p/0, authentication=0p/0, digital identity=0p/0, key management=0p/0, post-quantum=0p/0, post-quantum cryptography=0p/0, PQC=0p/0, MPC=0p/0, multi-party computation=0p/0, zero-knowledge=0p/0, ZK=0p/0, FHE=0p/0, homomorphic encryption=0p/0, smart card=0p/0, embedded security=0p/0, secure hardware=0p/0, HSM=0p/0	0	Errored terms: FHE, HSM, MPC, PETs, PQC, ZK, applied cryptography, authentication, cryptographer, cryptography, digital identity, embedded security, homomorphic encryption, key management, multi-party computation, post-quantum, post-quantum cryptography, privacy, privacy engineering, privacy-enhancing technologies, privacy-preserving, protocol, protocol security, secure hardware, security, security research, smart card, zero-knowledge
+Palantir	lever_json	complete	1	28 terms	local_filter=1	0	-
+🌐 Searching the web...
+🌐 Searched: "Cryptography Engineer" Fortanix Netherlands job
+🌐 Searching the web...
+🌐 Searched: "Security Consultant" "PKI" "Crypto" "IBM"
+🌐 Searching the web...
+🌐 Searched: https://www.google.com/about/careers/applications/jobs/results/123559724732818118-software-engineer-iii-agent-observability-security-and-privacy
+🌐 Searching the web...
+🌐 Searched: https://jobs.secunet.com/Android-Engineer-mwd-mit-Schwerpunkt-Verschluesselung-Secu-de-j3401.html
+codex
+I’m at the write phase now. I’m grabbing the local run timestamp, then I’ll patch three files: today’s digest, the single new seen-job entry for Fortanix, and the `last_checked` dates for the 26 sources that achieved complete coverage.
+exec
+/bin/zsh -lc "TZ=Europe/Berlin date '+%Y-%m-%d %H:%M:%S %Z'" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-28 08:12:44 CET
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+complete = [s['source'] for s in artifact['sources'] if s.get('due_today') and s['status']=='complete']
+partial = [s['source'] for s in artifact['sources'] if s.get('due_today') and s['status']"'!='"'complete']
+print('COMPLETE', len(complete), complete)
+print('PARTIAL', len(partial), partial)
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+COMPLETE 26 ['IACR Jobs', 'PQShield', 'Zama', 'Roseman Labs', 'Duality Technologies', 'QEDIT', 'Least Authority', 'Trail of Bits', 'Partisia Blockchain', 'Anthropic', 'Automattic', 'Bosch', 'Cybernetica', 'Google', 'IBM', 'Infineon', 'Mistral AI', 'Palantir', 'SandboxAQ', 'secunet', 'NEC Laboratories Europe', 'Quantinuum', 'Qrypt', 'QuSecure', 'Rambus', 'Thales']
+PARTIAL 2 ['Coinbase', 'NXP']
