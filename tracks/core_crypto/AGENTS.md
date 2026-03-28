@@ -43,7 +43,7 @@ Use `./prefs.md` and `../../profile/prefs_global.md` as the source of truth for 
 During a normal scheduled run:
 
 - read only the track inputs above plus today's digest, if it already exists
-- write only today's digest in `./digests/`, `../../shared/seen_jobs.md`, and the `last_checked` column in `./sources.md`
+- write only today's digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/core_crypto.json`, `./ranked_overview.md`, and the `last_checked` column in `./sources.md`
 - do not inspect `./logs` or downstream publication targets such as `/Users/jvdh/Documents/logseq`
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
 - if today's discovery artifact exists in `../../artifacts/discovery/core_crypto/`, consume it directly instead of rerunning `../../scripts/discover_jobs.py`
@@ -75,7 +75,8 @@ For each run:
 11. Use `rank_jobs` to score and prioritize them.
 12. Create or update a digest in `./digests/` using `../../shared/digest_template.md`.
 13. Add newly reported roles to `../../shared/seen_jobs.md`.
-14. After the run succeeds, update `last_checked` in `./sources.md` only for the sources actually checked with complete coverage.
+14. Rebuild the persistent ranked overview by running `../../scripts/update_ranked_overview.py --track core_crypto`.
+15. After the run succeeds, update `last_checked` in `./sources.md` only for the sources actually checked with complete coverage.
 
 ## Same-day reruns
 
