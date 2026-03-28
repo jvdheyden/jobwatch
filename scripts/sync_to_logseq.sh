@@ -24,8 +24,6 @@ if [[ ! -f "$DIGEST" ]]; then
 fi
 
 {
-  echo "[[job digest]]"
-  echo
   cat "$DIGEST"
 } > "$PAGE_FILE"
 

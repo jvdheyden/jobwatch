@@ -156,6 +156,7 @@ def render_markdown(track: str, jobs: list[RankedJob], state_path: Path) -> str:
         f"Generated: {datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')}",
         f"Source of truth: `{state_path.relative_to(ROOT)}`",
         f"Total jobs: {len(jobs)}",
+        f"Tags: [[job digest]]".
         "",
         "| Fit score | Company | Title | Listing URL | Date seen |",
         "| --- | --- | --- | --- | --- |",
