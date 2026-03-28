@@ -705,3 +705,1320 @@ print('PARTIAL', len(partial), partial)
 PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
 COMPLETE 26 ['IACR Jobs', 'PQShield', 'Zama', 'Roseman Labs', 'Duality Technologies', 'QEDIT', 'Least Authority', 'Trail of Bits', 'Partisia Blockchain', 'Anthropic', 'Automattic', 'Bosch', 'Cybernetica', 'Google', 'IBM', 'Infineon', 'Mistral AI', 'Palantir', 'SandboxAQ', 'secunet', 'NEC Laboratories Europe', 'Quantinuum', 'Qrypt', 'QuSecure', 'Rambus', 'Thales']
 PARTIAL 2 ['Coinbase', 'NXP']
+file update
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+@@ -31 +31,2 @@
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md
+@@ -19,11 +19,11 @@
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+@@ -33,22 +33,22 @@
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-28.md
+# Job Digest — 2026-03-28
+
+Track: core_crypto
+Run timestamp: 2026-03-28 08:12:44 CET
+Sources checked: 28
+New roles found: 1
+High-signal matches: 1
+
+## Executive summary
+
+Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
+
+## Recommended actions
+
+- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
+- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
+- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
+
+## Strong matches
+
+### 1. Cryptography Engineer — Fortanix
+Link: https://apply.workable.com/fortanix/j/A122E95976
+Location: Netherlands
+Remote: unknown
+Team / domain: cryptography / confidential computing / data security
+Posted: unknown
+Source: IACR Jobs
+
+Why it matches:
+- The title is an exact track fit: `Cryptography Engineer`.
+- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
+- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
+
+Possible concerns:
+- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
+- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
+
+Fit score: 8/10
+Recommendation: watch
+
+## Borderline / maybe
+
+No additional roles cleared the reporting bar.
+
+## Source notes
+
+- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
+- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
+- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
+- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
+- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
+- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
+- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
+- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
+- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
+- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
+- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
+- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
+- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
+- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
+- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
+- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
+- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
+- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
+- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
+- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
+- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
+- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
+- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
+- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
+- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
+- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
+- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
+- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
+
+## Seen jobs to append
+
+- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+
+## Notes for next run
+
+- Recheck the every-run sources on 2026-03-29.
+- Ethereum Foundation becomes due again on 2026-03-29.
+- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+apply_patch(auto_approved=true) exited 0 in 100ms:
+Success. Updated the following files:
+A /Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-28.md
+M /Users/jvdh/Documents/job-agent/shared/seen_jobs.md
+M /Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffccf9feea16b329368cff67cb3fb8c6bcf4..e76e3d4337e36d35d11927911860964d876ba689
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/digests/2026-03-28.md b/tracks/core_crypto/digests/2026-03-28.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4863ddd72fd90b243188c9c0b643032c1e5d5355
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-28.md
+@@ -0,0 +1,84 @@
++# Job Digest — 2026-03-28
++
++Track: core_crypto
++Run timestamp: 2026-03-28 08:12:44 CET
++Sources checked: 28
++New roles found: 1
++High-signal matches: 1
++
++## Executive summary
++
++Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
++
++## Recommended actions
++
++- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
++- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
++- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
++
++## Strong matches
++
++### 1. Cryptography Engineer — Fortanix
++Link: https://apply.workable.com/fortanix/j/A122E95976
++Location: Netherlands
++Remote: unknown
++Team / domain: cryptography / confidential computing / data security
++Posted: unknown
++Source: IACR Jobs
++
++Why it matches:
++- The title is an exact track fit: `Cryptography Engineer`.
++- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
++- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
++
++Possible concerns:
++- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
++- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
++
++Fit score: 8/10
++Recommendation: watch
++
++## Borderline / maybe
++
++No additional roles cleared the reporting bar.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
++- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
++- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
++- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
++- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
++- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
++- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
++- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
++- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
++- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
++- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
++- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
++- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
++- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
++- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
++- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
++- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
++- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
++- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
++- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
++- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
++
++## Seen jobs to append
++
++- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
++
++## Notes for next run
++
++- Recheck the every-run sources on 2026-03-29.
++- Ethereum Foundation becomes due again on 2026-03-29.
++- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d14b69568258ffe89d0c6713b6b7a3f12de..bd1b7288290807a7c89e661ac5121f1aa70fba2e
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+ ## Check every 3 runs
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+ ## Keep only roles matching at least one of these
+ 
+
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffccf9feea16b329368cff67cb3fb8c6bcf4..e76e3d4337e36d35d11927911860964d876ba689
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/digests/2026-03-28.md b/tracks/core_crypto/digests/2026-03-28.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4863ddd72fd90b243188c9c0b643032c1e5d5355
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-28.md
+@@ -0,0 +1,84 @@
++# Job Digest — 2026-03-28
++
++Track: core_crypto
++Run timestamp: 2026-03-28 08:12:44 CET
++Sources checked: 28
++New roles found: 1
++High-signal matches: 1
++
++## Executive summary
++
++Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
++
++## Recommended actions
++
++- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
++- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
++- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
++
++## Strong matches
++
++### 1. Cryptography Engineer — Fortanix
++Link: https://apply.workable.com/fortanix/j/A122E95976
++Location: Netherlands
++Remote: unknown
++Team / domain: cryptography / confidential computing / data security
++Posted: unknown
++Source: IACR Jobs
++
++Why it matches:
++- The title is an exact track fit: `Cryptography Engineer`.
++- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
++- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
++
++Possible concerns:
++- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
++- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
++
++Fit score: 8/10
++Recommendation: watch
++
++## Borderline / maybe
++
++No additional roles cleared the reporting bar.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
++- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
++- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
++- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
++- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
++- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
++- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
++- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
++- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
++- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
++- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
++- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
++- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
++- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
++- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
++- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
++- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
++- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
++- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
++- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
++- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
++
++## Seen jobs to append
++
++- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
++
++## Notes for next run
++
++- Recheck the every-run sources on 2026-03-29.
++- Ethereum Foundation becomes due again on 2026-03-29.
++- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d14b69568258ffe89d0c6713b6b7a3f12de..bd1b7288290807a7c89e661ac5121f1aa70fba2e
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+ ## Check every 3 runs
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+ ## Keep only roles matching at least one of these
+ 
+
+codex
+The digest and state updates are written. I’m doing a verification pass now to confirm the new digest content, the single seen-job append, and that only Coinbase and NXP remained unchanged in `last_checked`.
+exec
+/bin/zsh -lc 'tail -n 8 shared/seen_jobs.md' in /Users/jvdh/Documents/job-agentexec
+/bin/zsh -lc "sed -n '1,260p' tracks/core_crypto/digests/2026-03-28.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+2026-03-26 | Anthropic | Senior Software Engineer, Privacy | San Francisco, CA; New York City, NY; Seattle, WA | https://job-boards.greenhouse.io/anthropic/jobs/5159152008
+2026-03-26 | Coinbase | Blockchain Security Engineer | Remote - USA | https://www.coinbase.com/careers/positions/7701657
+2026-03-27 | Anthropic | Security Labs Engineer | San Francisco, CA | https://job-boards.greenhouse.io/anthropic/jobs/5153564008
+2026-03-27 | Anthropic | Staff+ Software Engineer, Privacy | San Francisco, CA; New York City, NY; Seattle, WA | https://job-boards.greenhouse.io/anthropic/jobs/5159146008
+2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
+2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+ succeeded in 0ms:
+# Job Digest — 2026-03-28
+
+Track: core_crypto
+Run timestamp: 2026-03-28 08:12:44 CET
+Sources checked: 28
+New roles found: 1
+High-signal matches: 1
+
+## Executive summary
+
+Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
+
+## Recommended actions
+
+- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
+- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
+- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
+
+## Strong matches
+
+exec
+/bin/zsh -lc "sed -n '18,55p' tracks/core_crypto/sources.md" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
+| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
+| Zama | https://jobs.zama.org | html | 2026-03-28 |
+| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
+| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
+| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
+| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
+| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
+| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+
+## Check every 3 runs
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
+| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
+| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+| Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+exec
+/bin/zsh -lc 'git diff -- tracks/core_crypto/digests/2026-03-28.md shared/seen_jobs.md tracks/core_crypto/sources.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffc..e76e3d4 100644
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d1..bd1b728 100644
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@ Cadence note:
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffccf9feea16b329368cff67cb3fb8c6bcf4..e76e3d4337e36d35d11927911860964d876ba689
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/digests/2026-03-28.md b/tracks/core_crypto/digests/2026-03-28.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4863ddd72fd90b243188c9c0b643032c1e5d5355
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-28.md
+@@ -0,0 +1,84 @@
++# Job Digest — 2026-03-28
++
++Track: core_crypto
++Run timestamp: 2026-03-28 08:12:44 CET
++Sources checked: 28
++New roles found: 1
++High-signal matches: 1
++
++## Executive summary
++
++Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
++
++## Recommended actions
++
++- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
++- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
++- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
++
++## Strong matches
++
++### 1. Cryptography Engineer — Fortanix
++Link: https://apply.workable.com/fortanix/j/A122E95976
++Location: Netherlands
++Remote: unknown
++Team / domain: cryptography / confidential computing / data security
++Posted: unknown
++Source: IACR Jobs
++
++Why it matches:
++- The title is an exact track fit: `Cryptography Engineer`.
++- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
++- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
++
++Possible concerns:
++- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
++- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
++
++Fit score: 8/10
++Recommendation: watch
++
++## Borderline / maybe
++
++No additional roles cleared the reporting bar.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
++- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
++- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
++- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
++- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
++- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
++- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
++- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
++- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
++- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
++- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
++- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
++- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
++- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
++- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
++- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
++- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
++- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
++- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
++- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
++- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
++
++## Seen jobs to append
++
++- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
++
++## Notes for next run
++
++- Recheck the every-run sources on 2026-03-29.
++- Ethereum Foundation becomes due again on 2026-03-29.
++- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d14b69568258ffe89d0c6713b6b7a3f12de..bd1b7288290807a7c89e661ac5121f1aa70fba2e
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+ ## Check every 3 runs
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+ ## Keep only roles matching at least one of these
+ 
+
+codex
+The file checks look clean. I’m doing one last mechanical check against the artifact so the cadence state matches the 26 complete sources exactly, then I’ll close the run out.
+exec
+/bin/zsh -lc 'git status --short tracks/core_crypto/digests/2026-03-28.md shared/seen_jobs.md tracks/core_crypto/sources.md' in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+ M shared/seen_jobs.md
+ M tracks/core_crypto/sources.md
+?? tracks/core_crypto/digests/2026-03-28.md
+exec
+/bin/zsh -lc "python3 - <<'PY'
+import json, pathlib, re
+artifact = json.loads(pathlib.Path('artifacts/discovery/core_crypto/2026-03-28.json').read_text())
+text = pathlib.Path('tracks/core_crypto/sources.md').read_text()
+rows = []
+for line in text.splitlines():
+    if line.startswith('| ') and not line.startswith('| ---') and 'source | url' not in line:
+        parts = [p.strip() for p in line.strip('|').split('|')]
+        if len(parts) == 4:
+            rows.append((parts[0], parts[3]))
+lookup = dict(rows)
+errors = []
+for src in artifact['sources']:
+    if not src.get('due_today'):
+        continue
+    expected = '2026-03-28' if src['status'] == 'complete' else src['last_checked']
+    actual = lookup.get(src['source'])
+    if actual "'!= expected:
+        errors.append((src['"'source'], src['status'], expected, actual))
+print('OK' if not errors else errors)
+PY" in /Users/jvdh/Documents/job-agent succeeded in 0ms:
+OK
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffccf9feea16b329368cff67cb3fb8c6bcf4..e76e3d4337e36d35d11927911860964d876ba689
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/digests/2026-03-28.md b/tracks/core_crypto/digests/2026-03-28.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4863ddd72fd90b243188c9c0b643032c1e5d5355
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-28.md
+@@ -0,0 +1,84 @@
++# Job Digest — 2026-03-28
++
++Track: core_crypto
++Run timestamp: 2026-03-28 08:12:44 CET
++Sources checked: 28
++New roles found: 1
++High-signal matches: 1
++
++## Executive summary
++
++Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
++
++## Recommended actions
++
++- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
++- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
++- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
++
++## Strong matches
++
++### 1. Cryptography Engineer — Fortanix
++Link: https://apply.workable.com/fortanix/j/A122E95976
++Location: Netherlands
++Remote: unknown
++Team / domain: cryptography / confidential computing / data security
++Posted: unknown
++Source: IACR Jobs
++
++Why it matches:
++- The title is an exact track fit: `Cryptography Engineer`.
++- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
++- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
++
++Possible concerns:
++- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
++- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
++
++Fit score: 8/10
++Recommendation: watch
++
++## Borderline / maybe
++
++No additional roles cleared the reporting bar.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
++- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
++- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
++- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
++- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
++- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
++- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
++- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
++- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
++- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
++- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
++- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
++- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
++- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
++- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
++- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
++- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
++- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
++- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
++- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
++- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
++
++## Seen jobs to append
++
++- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
++
++## Notes for next run
++
++- Recheck the every-run sources on 2026-03-29.
++- Ethereum Foundation becomes due again on 2026-03-29.
++- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d14b69568258ffe89d0c6713b6b7a3f12de..bd1b7288290807a7c89e661ac5121f1aa70fba2e
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+ ## Check every 3 runs
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+ ## Keep only roles matching at least one of these
+ 
+
+Plan update
+The scheduled core_crypto run used the fresh 2026-03-28 artifact directly, produced one reportable role, updated the digest and seen list, and advanced cadence state only for the 26 fully covered sources.
+  ✓ Read the required track context and determine which sources are due today from sources.md
+  ✓ Validate that today’s discovery artifact is fresh and consistent with the due-source set, then identify plausible net-new candidates
+  ✓ Rank reportable roles conservatively, update today’s digest and seen_jobs if needed, and advance last_checked only for fully covered due sources
+  ✓ Verify the changed files and summarize the run outcome
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffccf9feea16b329368cff67cb3fb8c6bcf4..e76e3d4337e36d35d11927911860964d876ba689
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/digests/2026-03-28.md b/tracks/core_crypto/digests/2026-03-28.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4863ddd72fd90b243188c9c0b643032c1e5d5355
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-28.md
+@@ -0,0 +1,84 @@
++# Job Digest — 2026-03-28
++
++Track: core_crypto
++Run timestamp: 2026-03-28 08:12:44 CET
++Sources checked: 28
++New roles found: 1
++High-signal matches: 1
++
++## Executive summary
++
++Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
++
++## Recommended actions
++
++- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
++- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
++- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
++
++## Strong matches
++
++### 1. Cryptography Engineer — Fortanix
++Link: https://apply.workable.com/fortanix/j/A122E95976
++Location: Netherlands
++Remote: unknown
++Team / domain: cryptography / confidential computing / data security
++Posted: unknown
++Source: IACR Jobs
++
++Why it matches:
++- The title is an exact track fit: `Cryptography Engineer`.
++- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
++- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
++
++Possible concerns:
++- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
++- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
++
++Fit score: 8/10
++Recommendation: watch
++
++## Borderline / maybe
++
++No additional roles cleared the reporting bar.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
++- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
++- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
++- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
++- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
++- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
++- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
++- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
++- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
++- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
++- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
++- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
++- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
++- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
++- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
++- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
++- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
++- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
++- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
++- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
++- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
++
++## Seen jobs to append
++
++- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
++
++## Notes for next run
++
++- Recheck the every-run sources on 2026-03-29.
++- Ethereum Foundation becomes due again on 2026-03-29.
++- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d14b69568258ffe89d0c6713b6b7a3f12de..bd1b7288290807a7c89e661ac5121f1aa70fba2e
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+ ## Check every 3 runs
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+ ## Keep only roles matching at least one of these
+ 
+
+codex
+Scheduled `core_crypto` run completed from the repo root using today’s existing discovery artifact directly; `scripts/discover_jobs.py` was not rerun.
+
+I created [2026-03-28.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-28.md), appended one new seen role in [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md), and updated `last_checked` in [sources.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md) for the 26 sources that had complete coverage.
+
+The run produced one reportable role: Fortanix `Cryptography Engineer` in the Netherlands, ranked as a strong match but still a `watch` because of the backend Rust/C/C++/Go emphasis. Coinbase and NXP remained partial, so they were left unchanged in cadence state and called out to retry on the next scheduled run.
+file update:
+diff --git a/shared/seen_jobs.md b/shared/seen_jobs.md
+index cb2bffccf9feea16b329368cff67cb3fb8c6bcf4..e76e3d4337e36d35d11927911860964d876ba689
+--- a/shared/seen_jobs.md
++++ b/shared/seen_jobs.md
+@@ -29,3 +29,4 @@
+ 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
+ 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
+ 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
++2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
+diff --git a/tracks/core_crypto/digests/2026-03-28.md b/tracks/core_crypto/digests/2026-03-28.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4863ddd72fd90b243188c9c0b643032c1e5d5355
+--- /dev/null
++++ b/tracks/core_crypto/digests/2026-03-28.md
+@@ -0,0 +1,84 @@
++# Job Digest — 2026-03-28
++
++Track: core_crypto
++Run timestamp: 2026-03-28 08:12:44 CET
++Sources checked: 28
++New roles found: 1
++High-signal matches: 1
++
++## Executive summary
++
++Today's fresh discovery artifact covered all 28 due `core_crypto` sources and was consistent with the track cadence rules. One new role clearly cleared the bar: `Cryptography Engineer` at Fortanix. The remaining new candidates were either academic or student posts, generic security roles, heavy mobile-product roles, or pages with too little direct job detail to report conservatively.
++
++## Recommended actions
++
++- Review Fortanix soon if EU work authorization and hands-on Rust/C/C++/Go systems work are realistic today.
++- Skip the current secunet mobile-security openings unless a role that is mostly Android/iOS product engineering is in scope.
++- Recheck Coinbase and NXP on the next scheduled run because today's artifact recorded only partial coverage for both.
++
++## Strong matches
++
++### 1. Cryptography Engineer — Fortanix
++Link: https://apply.workable.com/fortanix/j/A122E95976
++Location: Netherlands
++Remote: unknown
++Team / domain: cryptography / confidential computing / data security
++Posted: unknown
++Source: IACR Jobs
++
++Why it matches:
++- The title is an exact track fit: `Cryptography Engineer`.
++- Mirrored copies of the same Workable posting describe production cryptography work, algorithm integration, secure cryptography APIs, and side-channel mitigations.
++- The posting asks for a PhD or equivalent plus cryptography, key-management, or PKI experience, which aligns closely with Jonas's documented background.
++
++Possible concerns:
++- The role expects at least 3 years of backend engineering and strong Rust, C/C++, and/or Go.
++- Accessible copies of the posting say applicants must already live in the EU and hold valid EU work authorization.
++
++Fit score: 8/10
++Recommendation: watch
++
++## Borderline / maybe
++
++No additional roles cleared the reporting bar.
++
++## Source notes
++
++- IACR Jobs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact enumerated 173 links and 52 local matches, but most were academic, student, or non-job pages. Fortanix was the only new industry role worth surfacing.
++- PQShield — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact mostly surfaced product pages, a speculative application, a previously seen hardware role, and a PQC intern role.
++- Zama — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: only a spontaneous-application page was captured.
++- Roseman Labs — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived artifact filtering.
++- Duality Technologies — mode: `html`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced technology pages plus sales and student openings, not reportable crypto roles.
++- QEDIT — mode: `qedit_inline`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `inline_roles=1`; direct pages opened: `0`; limitations: `page mentions biannual cryptography interns, but not as a direct current opening`; note: no current direct role was visible.
++- Least Authority — mode: `leastauthority_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `careers page exposes category filters and company sections, but no direct current job links`; note: no reportable role today.
++- Trail of Bits — mode: `trailofbits_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `none`; note: the visible openings were application, blockchain, or AI security roles rather than core cryptography or protocol engineering.
++- Partisia Blockchain — mode: `partisia_site`; status: `complete`; listing pages: `2`; search terms: `none`; result pages: `homepage_scan=1`; direct pages opened: `0`; limitations: `official Partisia sites exposed no careers page or direct job listings`; note: coverage was complete again, but there was nothing to report.
++- Anthropic — mode: `greenhouse_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the new hits were centered on AI privacy, safeguards, and general security rather than cryptography or privacy-preserving systems engineering.
++- Automattic — mode: `automattic_browser`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `jobs_page=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Bosch — mode: `browser`; status: `complete`; listing pages: `61`; search terms: `33 track-wide plus source-specific terms`; result pages: `multi-term native search across 61 listing pages`; direct pages opened: `0`; limitations: `none`; note: the hits were generic product-security or internship roles, not strong crypto-track matches.
++- Coinbase — mode: `coinbase_browser`; status: `partial`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `challenge_page=1`; direct pages opened: `0`; limitations: `Cloudflare challenge blocked automated access to Coinbase careers listings`; note: keep this source due on the next scheduled run.
++- Cybernetica — mode: `cybernetica_teamdash`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles leaned toward general security R&D and digital-identity engineering, but none were strong enough to report.
++- Google — mode: `browser`; status: `complete`; listing pages: `7`; search terms: `cryptography`; result pages: `7 native-search pages / 136 results`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced privacy and security roles, but the best exact security-and-privacy research hit was already in `shared/seen_jobs.md` and the new roles were too general.
++- IBM — mode: `ibm_api`; status: `complete`; listing pages: `2`; search terms: `28 track-wide terms`; result pages: `full_index=2p/197of197`; direct pages opened: `0`; limitations: `none`; note: the official API mostly surfaced generic security roles. The one PKI-and-crypto consultant title was interesting, but today's artifact detail stayed too thin and consulting-oriented to report conservatively.
++- Infineon — mode: `infineon_api`; status: `complete`; listing pages: `197`; search terms: `28 track-wide terms`; result pages: `multi-term PCSx search across 197 listing pages`; direct pages opened: `0`; limitations: `none`; note: the matches were mostly OT, manufacturing, facility, or broad cybersecurity roles.
++- Mistral AI — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the current openings were cybersecurity operations and DevSecOps roles rather than crypto or privacy engineering.
++- NXP — mode: `workday_api`; status: `partial`; listing pages: `0`; search terms: `28 track-wide terms`; result pages: `28 errored term queries`; direct pages opened: `0`; limitations: `all tracked search terms errored in the Workday API`; note: keep this source due on the next scheduled run.
++- Palantir — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the visible roles were application, product, or information security positions, not core crypto roles.
++- SandboxAQ — mode: `ashby_api`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no new matching role survived filtering today.
++- secunet — mode: `secunet_jobboard`; status: `complete`; listing pages: `1`; search terms: `32 track-wide plus source-specific terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: several Germany-based security and mobile roles were visible. The strongest new hit had explicit end-to-end encryption and keystore work, but the role was still primarily Android product development and required deep native Android experience.
++- NEC Laboratories Europe — mode: `neclab_jobs`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `filtered_links=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- Quantinuum — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the only hit was a physical-security specialist role in Tokyo, outside the core crypto target.
++- Qrypt — mode: `lever_json`; status: `complete`; listing pages: `1`; search terms: `28 track-wide terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: no matching roles survived filtering.
++- QuSecure — mode: `qusecure_careers`; status: `complete`; listing pages: `1`; search terms: `none`; result pages: `career_page=1`; direct pages opened: `0`; limitations: `no direct job listings were visible on the QuSecure careers page`; note: no reportable role today.
++- Rambus — mode: `icims_html`; status: `complete`; listing pages: `1`; search terms: `31 track-wide plus source-specific terms`; result pages: `local_filter=1`; direct pages opened: `0`; limitations: `none`; note: the artifact surfaced marketing pages and career landing pages, but no new direct job worth reporting.
++- Thales — mode: `thales_html`; status: `complete`; listing pages: `12`; search terms: `cryptography, multi-party computation, homomorphic encryption`; result pages: `cryptography=6 pages / 60 results; MPC=1 page / 1 result; homomorphic encryption=5 pages / 50 results`; direct pages opened: `0`; limitations: `none`; note: today's explicit cryptographic-systems role was already in `shared/seen_jobs.md`, and the remaining hits were co-op, V&V, or embedded roles that looked too weakly aligned.
++
++## Seen jobs to append
++
++- Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
++
++## Notes for next run
++
++- Recheck the every-run sources on 2026-03-29.
++- Ethereum Foundation becomes due again on 2026-03-29.
++- Coinbase and NXP should remain due until a scheduled run records complete coverage.
+diff --git a/tracks/core_crypto/sources.md b/tracks/core_crypto/sources.md
+index efd54d14b69568258ffe89d0c6713b6b7a3f12de..bd1b7288290807a7c89e661ac5121f1aa70fba2e
+--- a/tracks/core_crypto/sources.md
++++ b/tracks/core_crypto/sources.md
+@@ -17,40 +17,40 @@
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-27 |
+-| PQShield | https://pqshield.com/careers/ | html | 2026-03-27 |
+-| Zama | https://jobs.zama.org | html | 2026-03-27 |
+-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-27 |
+-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-27 |
+-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-27 |
+-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-27 |
+-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-27 |
+-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-26 |
++| IACR Jobs | https://www.iacr.org/jobs/ | html | 2026-03-28 |
++| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
++| Zama | https://jobs.zama.org | html | 2026-03-28 |
++| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
++| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
++| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
++| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
++| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
++| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+ 
+ ## Check every 3 runs
+ 
+ | source | url | discovery_mode | last_checked |
+ | --- | --- | --- | --- |
+-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-25 |
+-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-25 |
+-| Bosch | https://jobs.bosch.de/ | browser | 2026-03-25 |
++| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-03-28 |
++| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-03-28 |
++| Bosch | https://jobs.bosch.de/ | browser | 2026-03-28 |
+ | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
+-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-25 |
+-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-25 |
++| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
++| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
+ | Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+-| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-25 |
+-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-25 |
+-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-25 |
++| IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
++| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
++| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
+ | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-25 |
+-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-25 |
+-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-25 |
+-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-25 |
+-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-25 |
+-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-25 |
+-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-25 |
+-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-25 |
+-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-25 |
++| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
++| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
++| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |
++| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-03-28 |
++| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-03-28 |
++| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-03-28 |
++| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
++| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
++| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+ 
+ ## Keep only roles matching at least one of these
+ 
+
+tokens used
+160.611
+Scheduled `core_crypto` run completed from the repo root using today’s existing discovery artifact directly; `scripts/discover_jobs.py` was not rerun.
+
+I created [2026-03-28.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/digests/2026-03-28.md), appended one new seen role in [seen_jobs.md](/Users/jvdh/Documents/job-agent/shared/seen_jobs.md), and updated `last_checked` in [sources.md](/Users/jvdh/Documents/job-agent/tracks/core_crypto/sources.md) for the 26 sources that had complete coverage.
+
+The run produced one reportable role: Fortanix `Cryptography Engineer` in the Netherlands, ranked as a strong match but still a `watch` because of the backend Rust/C/C++/Go emphasis. Coinbase and NXP remained partial, so they were left unchanged in cadence state and called out to retry on the next scheduled run.
+[2026-03-28 08:15:10] Finished core_crypto daily run

@@ -29,3 +29,4 @@
 2026-03-27 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=85519
 2026-03-27 | Google | Research Scientist, Security and Privacy, Google Research | New York, NY, USA; Seattle, WA, USA | https://www.google.com/about/careers/applications/jobs/results/74601972883169990-research-scientist-security-and-privacy-google-research
 2026-03-27 | Thales | System Engineer - Cryptographic systems | Tubize, Belgium | https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems
+2026-03-28 | Fortanix | Cryptography Engineer | Netherlands | https://apply.workable.com/fortanix/j/A122E95976
