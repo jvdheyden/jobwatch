@@ -1,5 +1,8 @@
 # Job Digest — {{date}}
-Tags: [[job digest {{track_name}}]] [[{{track_name}} Ranked Overview]]
+Tags: [[job digest {{track_name}}]] [[{{ranked_overview_page}}]]
+
+This markdown file is rendered from `artifacts/digests/{{track_name}}/{{date}}.json` by `scripts/render_digest.py`.
+The JSON artifact is the source of truth.
 
 Track: {{track_name}}
 Run timestamp: {{timestamp}}

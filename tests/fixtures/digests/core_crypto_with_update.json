@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "track": "core_crypto",
+  "date": "2026-03-29",
+  "runs": [
+    {
+      "kind": "initial",
+      "generated_at": "2026-03-29T08:04:21+01:00",
+      "executive_summary": "One strong new role cleared the bar today.",
+      "recommended_actions": [
+        "Review LayerZero Labs soon."
+      ],
+      "top_matches": [
+        {
+          "company": "LayerZero Labs",
+          "title": "Cryptographer",
+          "listing_url": "https://www.iacr.org/jobs/item/4189",
+          "location": "Vancouver, BC Canada",
+          "source": "IACR Jobs",
+          "fit_score": 9,
+          "recommendation": "apply_now",
+          "why_match": [
+            "Exact applied-cryptography fit."
+          ],
+          "concerns": [
+            "Appears Vancouver-based rather than clearly remote."
+          ]
+        }
+      ],
+      "other_new_roles": [],
+      "filtered_roles": [],
+      "source_notes": [
+        {
+          "source": "IACR Jobs",
+          "discovery_mode": "iacr_jobs",
+          "status": "complete"
+        }
+      ],
+      "notes_for_next_run": [],
+      "discovery_artifacts": [
+        "artifacts/discovery/core_crypto/2026-03-29.json"
+      ]
+    },
+    {
+      "kind": "update",
+      "generated_at": "2026-03-29T14:35:00+01:00",
+      "executive_summary": "One additional borderline role was surfaced later the same day.",
+      "recommended_actions": [],
+      "top_matches": [],
+      "other_new_roles": [
+        {
+          "company": "Example Privacy Lab",
+          "title": "Privacy Engineer",
+          "listing_url": "https://example.com/privacy-engineer",
+          "location": "Berlin, Germany",
+          "source": "Example Board",
+          "fit_score": 6.5,
+          "recommendation": "watch",
+          "short_note": "Interesting privacy role, but less directly cryptography-focused."
+        }
+      ],
+      "filtered_roles": [],
+      "source_notes": [
+        {
+          "source": "Example Board",
+          "discovery_mode": "html",
+          "status": "complete"
+        }
+      ],
+      "notes_for_next_run": [],
+      "discovery_artifacts": [
+        "artifacts/discovery/core_crypto/2026-03-29.json"
+      ]
+    }
+  ]
+}

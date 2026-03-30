@@ -17,15 +17,15 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-03-28 |
-| PQShield | https://pqshield.com/careers/ | html | 2026-03-28 |
-| Zama | https://jobs.zama.org | html | 2026-03-28 |
-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-28 |
-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-28 |
-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-28 |
-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-28 |
-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-28 |
-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-28 |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-03-30 |
+| PQShield | https://pqshield.com/careers/ | html | 2026-03-30 |
+| Zama | https://jobs.zama.org | html | 2026-03-30 |
+| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-03-30 |
+| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-03-30 |
+| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-03-30 |
+| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-03-30 |
+| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-03-30 |
+| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-03-30 |
 
 ## Check every 3 runs
 
@@ -37,11 +37,11 @@ Cadence note:
 | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
 | Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-03-28 |
 | Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-03-28 |
-| Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-26 |
+| Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-03-29 |
 | IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
 | Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-03-28 |
 | Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-03-28 |
-| NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-25 |
+| NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-03-29 |
 | Palantir | https://jobs.lever.co/palantir | lever_json | 2026-03-28 |
 | SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-03-28 |
 | secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-03-28 |

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "track": "core_crypto",
+  "date": "2026-03-29",
+  "runs": [
+    {
+      "kind": "initial",
+      "generated_at": "2026-03-29T08:04:21+01:00",
+      "executive_summary": "One strong new role cleared the bar today.",
+      "recommended_actions": [
+        "Review LayerZero Labs soon."
+      ],
+      "top_matches": [
+        {
+          "company": "LayerZero Labs",
+          "title": "Cryptographer",
+          "listing_url": "https://www.iacr.org/jobs/item/4189",
+          "location": "Vancouver, BC Canada",
+          "remote": "unknown",
+          "team_or_domain": "zero-knowledge systems / cryptographic protocol research",
+          "posted_date": "2026-03-20",
+          "updated_date": "2026-03-22",
+          "source": "IACR Jobs",
+          "fit_score": 9,
+          "recommendation": "apply_now",
+          "why_match": [
+            "Exact applied-cryptography fit.",
+            "Strong zero-knowledge systems emphasis."
+          ],
+          "concerns": [
+            "Appears Vancouver-based rather than clearly remote."
+          ]
+        }
+      ],
+      "other_new_roles": [],
+      "filtered_roles": [],
+      "source_notes": [
+        {
+          "source": "IACR Jobs",
+          "discovery_mode": "iacr_jobs",
+          "status": "complete",
+          "listing_pages_scanned": 1,
+          "search_terms_tried": [
+            "cryptography"
+          ],
+          "result_pages_summary": "posting_blocks=2",
+          "direct_job_pages_opened": 0,
+          "limitations": [],
+          "note": "One reportable cryptography role."
+        }
+      ],
+      "notes_for_next_run": [
+        "Keep Coinbase due until coverage is complete."
+      ],
+      "discovery_artifacts": [
+        "artifacts/discovery/core_crypto/2026-03-29.json"
+      ]
+    }
+  ]
+}

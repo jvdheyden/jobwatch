@@ -9,11 +9,14 @@ This track exists only to exercise the generic multi-track runner end-to-end wit
 1. `./prefs.md`
 2. `./sources.md`
 3. `../../artifacts/discovery/test_workflow/YYYY-MM-DD.json`, if it exists for today
-4. `./digests/YYYY-MM-DD.md`, if it already exists for today
+4. `../../shared/digest_schema.md`
+5. `../../artifacts/digests/test_workflow/YYYY-MM-DD.json`, if it exists for today
+6. `./digests/YYYY-MM-DD.md`, if it already exists for today
 
 ## Workflow
 
 1. Consume today's discovery artifact for `test_workflow`.
-2. Write a short digest in `./digests/YYYY-MM-DD.md`.
-3. Rebuild the ranked overview by running `../../scripts/update_ranked_overview.py --track test_workflow`.
-4. Do not touch any other track.
+2. Write today's structured digest artifact in `../../artifacts/digests/test_workflow/YYYY-MM-DD.json`.
+3. Render `./digests/YYYY-MM-DD.md` by running `../../scripts/render_digest.py --track test_workflow --date YYYY-MM-DD`.
+4. Rebuild the ranked overview by running `../../scripts/update_ranked_overview.py --track test_workflow`.
+5. Do not touch any other track.

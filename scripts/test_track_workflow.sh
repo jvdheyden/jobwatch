@@ -13,6 +13,8 @@ GRAPH_DIR="$TEST_DIR/logseq"
 SERVER_LOG="$TEST_DIR/http-server.log"
 RUN_LOG="$ROOT/logs/$TRACK-$TODAY.log"
 ARTIFACT_DIR="$ROOT/artifacts/discovery/$TRACK"
+STRUCTURED_DIGEST_DIR="$ROOT/artifacts/digests/$TRACK"
+STRUCTURED_DIGEST_PATH="$STRUCTURED_DIGEST_DIR/$TODAY.json"
 DIGEST_PATH="$ROOT/tracks/$TRACK/digests/$TODAY.md"
 OVERVIEW_PATH="$ROOT/tracks/$TRACK/ranked_overview.md"
 STATE_PATH="$ROOT/shared/ranked_jobs/$TRACK.json"
@@ -28,8 +30,11 @@ cleanup() {
 }
 
 mkdir -p "$TEST_DIR"
-rm -f "$RUN_LOG" "$DIGEST_PATH" "$OVERVIEW_PATH" "$STATE_PATH" \
-  "$ARTIFACT_DIR/$TODAY.json" "$ARTIFACT_DIR/latest.json"
+mkdir -p "$ARTIFACT_DIR" "$STRUCTURED_DIGEST_DIR" "$(dirname "$DIGEST_PATH")"
+find "$ARTIFACT_DIR" -maxdepth 1 -type f -name '*.json' -delete
+find "$STRUCTURED_DIGEST_DIR" -maxdepth 1 -type f -name '*.json' -delete
+find "$(dirname "$DIGEST_PATH")" -maxdepth 1 -type f -name '*.md' -delete
+rm -f "$RUN_LOG" "$OVERVIEW_PATH" "$STATE_PATH"
 rm -rf "$GRAPH_DIR"
 
 python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$FIXTURE_DIR" >"$SERVER_LOG" 2>&1 &
@@ -39,11 +44,15 @@ trap cleanup EXIT
 for _ in $(seq 1 20); do
   if python3 - "$PORT" <<'PY'
 import sys
+from urllib.error import URLError
 from urllib.request import urlopen
 
 port = sys.argv[1]
-with urlopen(f"http://127.0.0.1:{port}/test_workflow_board.html", timeout=1) as response:
-    raise SystemExit(0 if response.status == 200 else 1)
+try:
+    with urlopen(f"http://127.0.0.1:{port}/test_workflow_board.html", timeout=1) as response:
+        raise SystemExit(0 if response.status == 200 else 1)
+except URLError:
+    raise SystemExit(1)
 PY
   then
     break
@@ -61,6 +70,8 @@ LOGSEQ_GRAPH_DIR="$GRAPH_DIR" \
 for path in \
   "$ARTIFACT_DIR/$TODAY.json" \
   "$ARTIFACT_DIR/latest.json" \
+  "$STRUCTURED_DIGEST_PATH" \
+  "$STRUCTURED_DIGEST_DIR/latest.json" \
   "$DIGEST_PATH" \
   "$OVERVIEW_PATH" \
   "$STATE_PATH" \
@@ -77,10 +88,12 @@ done
 rg -q "Cryptography Advisor" "$DIGEST_PATH"
 rg -q "Cryptography Advisor" "$OVERVIEW_PATH"
 rg -q "Cryptography Advisor" "$DIGEST_PAGE"
+rg -q '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
 rg -q "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
 
 echo "Generic track workflow test passed."
 echo "Artifact: $ARTIFACT_DIR/$TODAY.json"
+echo "Structured digest: $STRUCTURED_DIGEST_PATH"
 echo "Digest: $DIGEST_PATH"
 echo "Ranked overview: $OVERVIEW_PATH"
 echo "Logseq digest page: $DIGEST_PAGE"

@@ -15,16 +15,19 @@ Read these files in order before starting:
 3. `./prefs.md`
 4. `./sources.md`
 5. `../../shared/seen_jobs.md`
-6. `../../shared/digest_template.md`
-7. `../../artifacts/discovery/core_crypto/YYYY-MM-DD.json`, if it exists for today
-8. `../../artifacts/discovery/core_crypto/latest.json`, if it exists and was generated today
-9. `./digests/YYYY-MM-DD.md` for today, if it already exists
+6. `../../shared/digest_schema.md`
+7. `../../shared/digest_template.md`
+8. `../../artifacts/discovery/core_crypto/YYYY-MM-DD.json`, if it exists for today
+9. `../../artifacts/discovery/core_crypto/latest.json`, if it exists and was generated today
+10. `../../artifacts/digests/core_crypto/YYYY-MM-DD.json` for today, if it already exists
+11. `./digests/YYYY-MM-DD.md` for today, if it already exists
 
 If useful, also use:
 
-10. `../../.agents/skills/find_jobs/SKILL.md`
-11. `../../.agents/skills/rank_jobs/SKILL.md`
-12. `../../scripts/discover_jobs.py`
+12. `../../.agents/skills/find_jobs/SKILL.md`
+13. `../../.agents/skills/rank_jobs/SKILL.md`
+14. `../../scripts/discover_jobs.py`
+15. `../../scripts/render_digest.py`
 
 ## Scope
 
@@ -43,7 +46,7 @@ Use `./prefs.md` and `../../profile/prefs_global.md` as the source of truth for 
 During a normal scheduled run:
 
 - read only the track inputs above plus today's digest, if it already exists
-- write only today's digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/core_crypto.json`, `./ranked_overview.md`, and the `last_checked` column in `./sources.md`
+- write only today's structured digest artifact in `../../artifacts/digests/core_crypto/`, today's rendered digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/core_crypto.json`, `./ranked_overview.md`, and the `last_checked` column in `./sources.md`
 - do not inspect `./logs` or downstream publication targets such as `/Users/jvdh/Documents/logseq`
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
 - if today's discovery artifact exists in `../../artifacts/discovery/core_crypto/`, consume it directly instead of rerunning `../../scripts/discover_jobs.py`
@@ -73,24 +76,26 @@ For each run:
 9. Treat a source as fully checked only if the coverage notes include status, listing pages scanned, search terms tried, result pages scanned, direct job pages opened, and limitations.
 10. If a source exposes native search, do not mark it complete unless the coverage notes show that native search was actually used, or a deterministic scripted discovery artifact shows that the full source was enumerated and the full term set was applied.
 11. Use `rank_jobs` to score and prioritize them.
-12. Create or update a digest in `./digests/` using `../../shared/digest_template.md`.
-13. Add newly reported roles to `../../shared/seen_jobs.md`.
-14. Rebuild the persistent ranked overview by running `../../scripts/update_ranked_overview.py --track core_crypto`.
-15. After the run succeeds, update `last_checked` in `./sources.md` only for the sources actually checked with complete coverage.
+12. Create or update today's structured digest artifact at `../../artifacts/digests/core_crypto/YYYY-MM-DD.json` using `../../shared/digest_schema.md` as the source-of-truth schema.
+13. Render today's markdown digest by running `../../scripts/render_digest.py --track core_crypto --date YYYY-MM-DD`.
+14. Add newly reported roles to `../../shared/seen_jobs.md`.
+15. Rebuild the persistent ranked overview by running `../../scripts/update_ranked_overview.py --track core_crypto`.
+16. After the run succeeds, update `last_checked` in `./sources.md` only for the sources actually checked with complete coverage.
 
 ## Same-day reruns
 
-If today's digest file does not exist yet, create it normally.
+If today's digest JSON artifact does not exist yet, create it normally and then render the markdown digest from it.
 
 If the first run of the day finds no relevant new roles, still create today's digest and say clearly that no relevant new roles were found.
 
-If today's digest file already exists:
+If today's digest JSON artifact already exists:
 
 - read it first
-- preserve the existing content
-- append a new section at the end named `## Update HH:MM`
+- preserve the existing `runs` array
+- append one new `runs[]` entry with `kind: "update"`
 - include only roles that are newly reportable for this run
-- do not rewrite or remove earlier same-day sections
+- rerender `./digests/YYYY-MM-DD.md` after updating the JSON
+- do not rewrite or remove earlier same-day runs
 
 If no new roles are found on a later run the same day, leave today's digest unchanged.
 
@@ -98,11 +103,11 @@ If no new roles are found on a later run the same day, leave today's digest unch
 
 Return only new roles that are worth Jonas's attention.
 
-If no strong new roles are found, say so clearly in the digest.
+If no strong new roles are found, say so clearly in the structured digest artifact and rerender the markdown digest.
 
 Do not fabricate missing job details. Use `unknown` when necessary.
 
-On same-day reruns, never overwrite the existing daily digest with a fresh full rewrite.
+On same-day reruns, never hand-edit the markdown digest. Update the JSON source of truth and rerender it.
 
 The digest must include enough source coverage detail to show what was actually searched. Do not write a source as fully checked if you cannot show the coverage record.
 
@@ -111,6 +116,8 @@ If a source exposes native search and the run did not use it, or cannot show whi
 If `../../scripts/discover_jobs.py` produced a deterministic discovery artifact for a source, that artifact is acceptable proof of complete coverage when it shows the source's full enumeration strategy and the applied search terms.
 
 For scheduled runs, the artifact paths in `../../artifacts/discovery/core_crypto/` are the source of truth for discovery. Use `YYYY-MM-DD.json` first and `latest.json` second.
+
+For digest generation, `../../artifacts/digests/core_crypto/YYYY-MM-DD.json` is the source of truth. `./digests/YYYY-MM-DD.md` is derived output rendered by `../../scripts/render_digest.py`.
 
 ## Deduplication
 

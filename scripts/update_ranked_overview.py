@@ -11,6 +11,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from digest_json import digest_artifact_path, digest_page_name, extract_ranked_roles, load_digest_payload
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DIGEST_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
@@ -62,12 +64,6 @@ def make_job_key(company: str, title: str, location: str) -> str:
             normalize_text(title),
         ]
     )
-
-
-def digest_page_name(track: str, stamp: str) -> str:
-    if track == "core_crypto":
-        return f"Job Digest {stamp}"
-    return f"{track_display_name(track)} Job Digest {stamp}"
 
 
 def parse_role_blocks(text: str) -> list[tuple[str, str]]:
@@ -189,7 +185,14 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
 
     for digest_path in digest_paths:
         digest_date = digest_path.stem
-        for role in parse_ranked_roles_from_digest(digest_path):
+        json_path = digest_artifact_path(track, digest_date)
+        if json_path.exists():
+            payload = load_digest_payload(json_path, expected_track=track, expected_date=digest_date)
+            roles = extract_ranked_roles(payload)
+        else:
+            roles = parse_ranked_roles_from_digest(digest_path)
+
+        for role in roles:
             job_key = make_job_key(role["company"], role["title"], role["location"])
             record = records.get(job_key)
             if record is None:

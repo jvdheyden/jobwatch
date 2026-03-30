@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "track": "core_crypto",
-  "today": "2026-03-30",
-  "generated_at": "2026-03-30T06:00:24Z",
+  "today": "2026-03-29",
+  "generated_at": "2026-03-29T06:01:07Z",
   "mode": "discover",
   "sources": [
     {
@@ -10,7 +10,7 @@
       "source_url": "https://www.iacr.org/jobs/",
       "discovery_mode": "iacr_jobs",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -465,7 +465,7 @@
       "source_url": "https://pqshield.com/careers/",
       "discovery_mode": "html",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -649,7 +649,7 @@
       "source_url": "https://jobs.zama.org",
       "discovery_mode": "html",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -707,7 +707,7 @@
       "source_url": "https://rosemanlabs.com/en/working-at-roseman-labs",
       "discovery_mode": "html",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -753,7 +753,7 @@
       "source_url": "https://dualitytech.com/careers/",
       "discovery_mode": "html",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -882,7 +882,7 @@
       "source_url": "https://qed-it.com/careers",
       "discovery_mode": "qedit_inline",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -950,7 +950,7 @@
       "source_url": "https://leastauthority.com/careers/",
       "discovery_mode": "leastauthority_careers",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -969,7 +969,7 @@
       "source_url": "https://trailofbits.com/careers/",
       "discovery_mode": "trailofbits_browser",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 1,
@@ -1005,7 +1005,7 @@
       ],
       "result_pages_scanned": "career_page=1",
       "direct_job_pages_opened": 0,
-      "enumerated_jobs": 9,
+      "enumerated_jobs": 8,
       "matched_jobs": 4,
       "limitations": [],
       "candidates": [
@@ -1068,7 +1068,7 @@
       "source_url": "https://partisiablockchain.com/",
       "discovery_mode": "partisia_site",
       "cadence_group": "every_run",
-      "last_checked": "2026-03-29",
+      "last_checked": "2026-03-28",
       "due_today": true,
       "status": "complete",
       "listing_pages_scanned": 2,
@@ -1132,6 +1132,359 @@
         "Cloudflare challenge blocked automated access to Coinbase careers listings."
       ],
       "candidates": []
+    },
+    {
+      "source": "Ethereum Foundation",
+      "source_url": "https://jobs.lever.co/ethereumfoundation",
+      "discovery_mode": "lever_json",
+      "cadence_group": "every_3_runs",
+      "last_checked": "2026-03-26",
+      "due_today": true,
+      "status": "complete",
+      "listing_pages_scanned": 1,
+      "search_terms_tried": [
+        "cryptography",
+        "cryptographer",
+        "applied cryptography",
+        "privacy",
+        "privacy engineering",
+        "privacy-preserving",
+        "privacy-enhancing technologies",
+        "PETs",
+        "security",
+        "security research",
+        "protocol",
+        "protocol security",
+        "authentication",
+        "digital identity",
+        "key management",
+        "post-quantum",
+        "post-quantum cryptography",
+        "PQC",
+        "MPC",
+        "multi-party computation",
+        "zero-knowledge",
+        "ZK",
+        "FHE",
+        "homomorphic encryption",
+        "smart card",
+        "embedded security",
+        "secure hardware",
+        "HSM"
+      ],
+      "result_pages_scanned": "local_filter=1",
+      "direct_job_pages_opened": 0,
+      "enumerated_jobs": 0,
+      "matched_jobs": 0,
+      "limitations": [],
+      "candidates": []
+    },
+    {
+      "source": "NXP",
+      "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+      "discovery_mode": "workday_api",
+      "cadence_group": "every_3_runs",
+      "last_checked": "2026-03-25",
+      "due_today": true,
+      "status": "complete",
+      "listing_pages_scanned": 56,
+      "search_terms_tried": [
+        "cryptography",
+        "cryptographer",
+        "applied cryptography",
+        "privacy",
+        "privacy engineering",
+        "privacy-preserving",
+        "privacy-enhancing technologies",
+        "PETs",
+        "security",
+        "security research",
+        "protocol",
+        "protocol security",
+        "authentication",
+        "digital identity",
+        "key management",
+        "post-quantum",
+        "post-quantum cryptography",
+        "PQC",
+        "MPC",
+        "multi-party computation",
+        "zero-knowledge",
+        "ZK",
+        "FHE",
+        "homomorphic encryption",
+        "smart card",
+        "embedded security",
+        "secure hardware",
+        "HSM"
+      ],
+      "result_pages_scanned": "cryptography=2p/28, cryptographer=2p/28, applied cryptography=2p/27, privacy=2p/34, privacy engineering=2p/30, privacy-preserving=1p/8, privacy-enhancing technologies=1p/8, PETs=0p/0, security=8p/160, security research=5p/87, protocol=3p/50, protocol security=2p/22, authentication=1p/7, digital identity=3p/41, key management=8p/156, post-quantum=0p/0, post-quantum cryptography=0p/0, PQC=0p/0, MPC=0p/0, multi-party computation=2p/29, zero-knowledge=1p/13, ZK=0p/0, FHE=0p/0, homomorphic encryption=0p/0, smart card=2p/27, embedded security=4p/79, secure hardware=4p/71, HSM=1p/1",
+      "direct_job_pages_opened": 0,
+      "enumerated_jobs": 332,
+      "matched_jobs": 20,
+      "limitations": [],
+      "candidates": [
+        {
+          "employer": "NXP",
+          "title": "Senior Embedded AI Platform Security Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Embedded-AI-Platform-Security-Engineer_R-10060434",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Gratkorn",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Software Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Software-Security-Architect--m-f-d-_R-10060547",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "4 Locations",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'key management'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Software Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Software-Security-Architect--m-f-d-_R-10062003",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "3 Locations",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'key management'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Software Internship \u2013 Automotive Security Firmware",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Bucharest/Software-Internship---Automotive-Security-Firmware_R-10054983-1",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Bucharest",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'key management'; Enumerated through Workday jobs API for 'smart card'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior Embedded AI Platform Security Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10061316-1",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Gratkorn",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior Embedded AI Platform Security Engineer (m/w/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/Senior-Embedded-AI-Platform-Security-Engineer--m-w-d-_R-10061315",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Leuven",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Junior Embedded AI Platform Security Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062144",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Leuven",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "HW Security Architect",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Austin-Oakhill-Office/HW-Security-Architect_R-10062083",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Austin (Oakhill, Office)",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'protocol'; Enumerated through Workday jobs API for 'protocol security'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
+        },
+        {
+          "employer": "NXP",
+          "title": "ML Security Tools & Threat Modeling Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062047",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Leuven",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior ML Security Tools & Threat Modeling Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Senior-ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10062142",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Glasgow",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Junior Embedded AI Platform Security Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Junior-Embedded-AI-Platform-Security-Engineer--m-f-d-_R-10062145",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Gratkorn",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior ML Security Tools & Threat Modeling Engineer (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/ML-Security-Tools---Threat-Modeling-Engineer--m-f-d-_R-10060438",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Glasgow",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'privacy-preserving'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior AI/ML System Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Experienced-AI-ML-System-Security-Architect--m-f-d-_R-10060511",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "4 Locations",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'cryptography'; Enumerated through Workday jobs API for 'cryptographer'; Enumerated through Workday jobs API for 'applied cryptography'; Enumerated through Workday jobs API for 'privacy'; Enumerated through Workday jobs API for 'privacy engineering'; Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Crypto & Security Engineers",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Crypto---Security-Engineers_R-10062277-1",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "2 Locations",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior Security Experts (m/f/d) in our global Innovation Center Crypto & Security",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Security-Experts--f-m-d--in-our-Innovation-Center-Crypto---Security_R-10014526",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "2 Locations",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'secure hardware'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Software Security Analyst (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Software-Security-Analyst--m-f-d-_R-10062087",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Gratkorn",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'; Enumerated through Workday jobs API for 'secure hardware'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior System Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Experienced-System-Security-Architect--m-f-d-_R-10060123",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Gratkorn",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior System Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Leuven/Senior-System-Security-Architect--m-f-d-_R-10062221",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Leuven",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior System Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Barcelona/Senior-System-Security-Architect--m-f-d-_R-10062222",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Barcelona",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'embedded security'"
+        },
+        {
+          "employer": "NXP",
+          "title": "Senior System Security Architect (m/f/d)",
+          "url": "https://nxp.wd3.myworkdayjobs.com/careers/job/Glasgow/Senior-System-Security-Architect--m-f-d-_R-10062220",
+          "source_url": "https://nxp.wd3.myworkdayjobs.com/careers",
+          "alternate_url": "",
+          "location": "Glasgow",
+          "remote": "unknown",
+          "matched_terms": [
+            "security"
+          ],
+          "notes": "Enumerated through Workday jobs API for 'security'; Enumerated through Workday jobs API for 'security research'; Enumerated through Workday jobs API for 'secure hardware'"
+        }
+      ]
     }
   ]
 }

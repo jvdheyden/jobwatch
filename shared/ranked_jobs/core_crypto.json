@@ -1,6 +1,6 @@
 {
   "track": "core_crypto",
-  "generated_at": "2026-03-28T12:56:44Z",
+  "generated_at": "2026-03-30T06:09:22Z",
   "jobs": [
     {
       "job_key": "clairvault | cryptography researcher",
@@ -11,6 +11,28 @@
       "date_seen": "2026-03-20",
       "date_seen_page": "Job Digest 2026-03-20",
       "last_seen": "2026-03-20",
+      "times_seen": 1
+    },
+    {
+      "job_key": "layerzero labs | cryptographer",
+      "company": "LayerZero Labs",
+      "title": "Cryptographer",
+      "url": "https://www.iacr.org/jobs/item/4189",
+      "fit_score": 9.0,
+      "date_seen": "2026-03-29",
+      "date_seen_page": "Job Digest 2026-03-29",
+      "last_seen": "2026-03-29",
+      "times_seen": 1
+    },
+    {
+      "job_key": "quantova qvm research | senior cryptographic researcher",
+      "company": "Quantova QVM Research",
+      "title": "Senior Cryptographic Researcher",
+      "url": "https://www.iacr.org/jobs/item/4170",
+      "fit_score": 8.8,
+      "date_seen": "2026-03-30",
+      "date_seen_page": "Job Digest 2026-03-30",
+      "last_seen": "2026-03-30",
       "times_seen": 1
     },
     {
@@ -33,6 +55,17 @@
       "date_seen": "2026-03-21",
       "date_seen_page": "Job Digest 2026-03-21",
       "last_seen": "2026-03-21",
+      "times_seen": 1
+    },
+    {
+      "job_key": "technical university of munich germany | postdoc in isogeny based cryptography",
+      "company": "Technical University of Munich, Germany",
+      "title": "Postdoc in isogeny-based cryptography",
+      "url": "https://www.iacr.org/jobs/item/4158",
+      "fit_score": 8.6,
+      "date_seen": "2026-03-30",
+      "date_seen_page": "Job Digest 2026-03-30",
+      "last_seen": "2026-03-30",
       "times_seen": 1
     },
     {
@@ -66,6 +99,17 @@
       "date_seen": "2026-03-20",
       "date_seen_page": "Job Digest 2026-03-20",
       "last_seen": "2026-03-20",
+      "times_seen": 1
+    },
+    {
+      "job_key": "national university of singapore | postdoc or senior research fellow",
+      "company": "National University of Singapore",
+      "title": "Postdoc or Senior Research Fellow",
+      "url": "https://www.iacr.org/jobs/item/4186",
+      "fit_score": 8.1,
+      "date_seen": "2026-03-30",
+      "date_seen_page": "Job Digest 2026-03-30",
+      "last_seen": "2026-03-30",
       "times_seen": 1
     },
     {
@@ -176,6 +220,17 @@
       "date_seen": "2026-03-20",
       "date_seen_page": "Job Digest 2026-03-20",
       "last_seen": "2026-03-20",
+      "times_seen": 1
+    },
+    {
+      "job_key": "nanyang technological university singapore | post doc research fellow",
+      "company": "Nanyang Technological University, Singapore",
+      "title": "Post-Doc/Research Fellow",
+      "url": "https://www.iacr.org/jobs/item/4180",
+      "fit_score": 7.2,
+      "date_seen": "2026-03-30",
+      "date_seen_page": "Job Digest 2026-03-30",
+      "last_seen": "2026-03-30",
       "times_seen": 1
     },
     {

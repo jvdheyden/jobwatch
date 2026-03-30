@@ -1,0 +1,20 @@
+.DS_Store
+
+# Python cache and local virtualenvs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local test scratch space
+tests/tmp/
+
+# Generated logs
+logs/
+
+# Generated digest outputs
+artifacts/digests/
+tracks/*/digests/
