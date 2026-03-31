@@ -367,7 +367,15 @@ def parse_track_terms(text: str) -> list[str]:
 
 
 def parse_source_specific_terms(text: str) -> dict[str, SourceTermRule]:
-    section = extract_section(text, "Source-specific search terms")
+    search_terms_section = extract_section(text, "Search terms")
+    match = re.search(
+        r"^### Source-specific search terms\n(.*?)(?=^### |\Z)",
+        search_terms_section,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return {}
+    section = match.group(1).strip()
     mapping: dict[str, SourceTermRule] = {}
     for line in section.splitlines():
         stripped = line.strip()
@@ -2088,6 +2096,12 @@ def google_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     return f"{source.url}?{urlencode(params)}"
 
 
+def meta_search_url(source: SourceConfig, term: str, page_num: int) -> str:
+    del page_num
+    base = urljoin(source.url.rstrip("/") + "/", "/jobsearch")
+    return f"{base}?{urlencode({'q': term})}"
+
+
 def google_public_job_url(source: SourceConfig, job_id: str, title: str) -> str:
     base = source.url.rstrip("/")
     if not job_id or job_id == "unknown":
@@ -2245,6 +2259,72 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
         declared_total=None,
         page_signature=page_signature,
     )
+
+
+def extract_meta_jobs(page: Any, source: SourceConfig, term: str, terms: list[str], page_num: int) -> BrowserPageResult:
+    links = page.locator('a[href^="/profile/job_details/"]')
+    visible_count = links.count()
+    raw_ids: list[str] = []
+    candidates: list[Candidate] = []
+    seen_urls: set[str] = set()
+
+    for index in range(visible_count):
+        element = links.nth(index)
+        href = element.get_attribute("href") or ""
+        absolute_url = urljoin(source.url, href)
+        if not href or absolute_url in seen_urls:
+            continue
+        seen_urls.add(absolute_url)
+        raw_ids.append(absolute_url)
+
+        lines = [line for line in split_visible_lines(element.inner_text()) if line != "⋅"]
+        title = lines[0] if lines else "unknown"
+        location = next((line for line in lines[1:] if "," in line or "Multiple Locations" in line), "unknown")
+        searchable_text = " ".join(lines)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        candidates.append(
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                location=location,
+                matched_terms=matched_terms,
+                notes=f"Meta browser search q='{term}' page={page_num}",
+            )
+        )
+
+    page_signature = f"{term}:{page_num}:{len(raw_ids)}:{','.join(raw_ids[:10])}" if raw_ids else f"{term}:{page_num}:empty"
+    limitations: list[str] = []
+    if not raw_ids:
+        limitations.append(f"Meta browser search for '{term}' showed no visible job cards")
+    return BrowserPageResult(
+        candidates=candidates,
+        raw_ids=raw_ids,
+        visible_results=len(raw_ids),
+        declared_total=None,
+        page_signature=page_signature,
+        limitations=limitations,
+    )
+
+
+def advance_meta_results(page: Any, source: SourceConfig, term: str, page_num: int) -> bool:
+    del source, term, page_num
+    button = page.get_by_role("button", name="Show more").first
+    if not button.count():
+        return False
+    before_count = page.locator('a[href^="/profile/job_details/"]').count()
+    button.scroll_into_view_if_needed(timeout=5000)
+    button.click(timeout=5000)
+    for _ in range(16):
+        page.wait_for_timeout(500)
+        after_count = page.locator('a[href^="/profile/job_details/"]').count()
+        if after_count > before_count:
+            return True
+    return False
 
 
 def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[str], page_num: int) -> BrowserPageResult:
@@ -2696,6 +2776,14 @@ BROWSER_STRATEGIES = {
         supports_pagination=True,
         page_size=GOOGLE_RESULTS_PAGE_SIZE,
         max_pages=MAX_BROWSER_PAGES,
+    ),
+    "Meta": BrowserStrategy(
+        search_url_builder=meta_search_url,
+        extract_page=extract_meta_jobs,
+        advance_page=advance_meta_results,
+        supports_pagination=True,
+        cumulative_results=True,
+        max_pages=10,
     ),
 }
 

@@ -30,7 +30,7 @@ Ask for:
   - `Check every 3 runs`
 - track-wide search terms
 - source-specific search terms, including whether any source should use `[override]`
-- whether the user wants a launchd plist now, and if so, at what local time
+- whether the user wants a launchd plist now, and if so, at what local time. By default schedule the agent for this to track to run along with other already scheduled agents for other tracks.
 
 ### 2. Normalize and confirm config
 

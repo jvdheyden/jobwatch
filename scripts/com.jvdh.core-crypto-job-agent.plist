@@ -13,7 +13,12 @@
 set -euo pipefail
 
 ROOT="/Users/jvdh/Documents/job-agent"
-exec /bin/bash "$ROOT/scripts/run_track.sh" --track core_crypto
+STATUS=0
+
+/bin/bash "$ROOT/scripts/run_track.sh" --track core_crypto || STATUS=$?
+/bin/bash "$ROOT/scripts/run_track.sh" --track postdoc_crypto || STATUS=$?
+
+exit "$STATUS"
       ]]></string>
     </array>
 
