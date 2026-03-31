@@ -49,11 +49,50 @@ Ask for:
   - `hackernews_jobs`
 - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
 - Only do lightweight validation during setup. Do not search every source exhaustively.
+- If an existing mode is good enough, stop there. Do not escalate into coding work just because a source is imperfect.
 - If a source clearly cannot be covered by an existing mode, tell the user and either:
   - leave it out for now, or
   - keep it in `sources.md` with the best existing mode and note that it needs follow-up integration
 
 Before generating files, summarize the normalized config and confirm it.
+
+### 2b. Optional source-integration escalation
+
+Use this branch only when the user wants source integration now for a specific source.
+
+Escalate only if all of the following are true:
+- the source is important enough that missing it would materially weaken the track
+- an existing mode was tried or reasonably evaluated first
+- `html` or another fallback does not produce usable results
+- a canary is available, ideally with both title and URL
+
+When those conditions hold, hand off to repo-development coding work governed by `.agents/skills/coding/SKILL.md`.
+
+Treat the handoff as a narrow implementation task, not a continuation of setup exploration.
+
+The handoff should include:
+- track slug
+- source name
+- source URL
+- current attempted `discovery_mode`
+- canary title
+- canary URL if available
+- a short statement of what failed
+- the expected success condition in `scripts/discover_jobs.py`
+
+Expected coding output:
+- minimal support for that source in `scripts/discover_jobs.py`
+- one focused automated test
+- validation with `python3 scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
+- if shared code changed, `scripts/test.sh`
+
+After the coding handoff succeeds:
+- update `sources.md` with the correct `discovery_mode`
+- mention the new support explicitly in the final response
+
+If the coding handoff is not requested or does not succeed:
+- keep the source on the track only if an existing mode is still somewhat usable
+- otherwise leave it out and note it as follow-up work
 
 ### 3. Generate files
 

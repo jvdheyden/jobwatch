@@ -36,3 +36,4 @@
 2026-03-30 | National University of Singapore | Postdoc or Senior Research Fellow | Singapore | https://www.iacr.org/jobs/item/4186
 2026-03-30 | Nanyang Technological University, Singapore | Post-Doc/Research Fellow | Singapore | https://www.iacr.org/jobs/item/4180
 2026-03-31 | The Cyprus Institute | Postdoctoral Research Fellow in Quantum Computing - Cryptography - Number Theory | unknown | https://www.iacr.org/jobs/item/4147
+2026-03-31 | School of Computer Science, Shanghai Jiao Tong University, Shanghai. | PhD and Postdoctoral Researchers in post-quantum cryptography, MPC, and quantum algorithms. | unknown | https://www.iacr.org/jobs/item/4168

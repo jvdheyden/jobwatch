@@ -12,6 +12,8 @@ Role types:
 ## Keep only roles matching at least one of these keywords
 
 - multi-party computation
+- post-quantum cryptography
+- lattice-based cryptography
 - MPC
 - garbled circuits
 - isogenies
