@@ -1,6 +1,6 @@
 {
   "track": "core_crypto",
-  "generated_at": "2026-03-30T06:09:22Z",
+  "generated_at": "2026-03-31T08:40:40Z",
   "jobs": [
     {
       "job_key": "clairvault | cryptography researcher",
@@ -297,6 +297,17 @@
       "date_seen": "2026-03-20",
       "date_seen_page": "Job Digest 2026-03-20",
       "last_seen": "2026-03-20",
+      "times_seen": 1
+    },
+    {
+      "job_key": "the cyprus institute | postdoctoral research fellow in quantum computing cryptography number theory",
+      "company": "The Cyprus Institute",
+      "title": "Postdoctoral Research Fellow in Quantum Computing - Cryptography - Number Theory",
+      "url": "https://www.iacr.org/jobs/item/4147",
+      "fit_score": 6.9,
+      "date_seen": "2026-03-31",
+      "date_seen_page": "Job Digest 2026-03-31",
+      "last_seen": "2026-03-31",
       "times_seen": 1
     },
     {

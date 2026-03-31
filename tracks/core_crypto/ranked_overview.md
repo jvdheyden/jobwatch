@@ -1,8 +1,8 @@
 # Ranked Overview — Core Crypto
 
-Generated: 2026-03-30T06:09:22Z
+Generated: 2026-03-31T08:40:40Z
 Source of truth: `shared/ranked_jobs/core_crypto.json`
-Total jobs: 36
+Total jobs: 37
 Tags: [[job digest core_crypto]]
 
 | Fit score | Company | Title | Listing URL | Date seen |
@@ -34,6 +34,7 @@ Tags: [[job digest core_crypto]]
 | 7 | IBM | Backend Engineer (Cryptography Team) - Hashicorp Vault | [link](https://careers.ibm.com/careers/JobDetail?jobId=85519) | [[Job Digest 2026-03-27]] |
 | 7 | Thales | System Engineer - Cryptographic systems | [link](https://careers.thalesgroup.com/global/en/job/R0305314/System-Engineer-Cryptographic-systems) | [[Job Digest 2026-03-27]] |
 | 6.9 | secunet Security Networks AG | Technischer Berater (m/w/d) - EUDI Wallet & Digitale Identitäten | [link](https://jobs.secunet.com/Technischer-Berater-mwd-EUDI-Wallet-Digitale-Identitaeten-de-j3146.html) | [[Job Digest 2026-03-20]] |
+| 6.9 | The Cyprus Institute | Postdoctoral Research Fellow in Quantum Computing - Cryptography - Number Theory | [link](https://www.iacr.org/jobs/item/4147) | [[Job Digest 2026-03-31]] |
 | 6 | PQShield | Hardware Verification Engineer | [link](https://pqshield.com/careers/apply/4682388101) | [[Job Digest 2026-03-20]] |
 | 6 | secunet Security Networks AG | Software Developer & Verification Expert (m/w/d) | [link](https://jobs.secunet.com/Software-Developer-Verification-Expert-mwd-de-j3176.html) | [[Job Digest 2026-03-22]] |
 | 6 | secunet Security Networks AG | Software Developer mobile (m/w/d) VPN und Security (Android/iOS) | [link](https://jobs.secunet.com/Software-Developer-mobile-mwd-VPN-und-Security-AndroidiOS-de-j3208.html) | [[Job Digest 2026-03-22]] |

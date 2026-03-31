@@ -35,3 +35,4 @@
 2026-03-30 | Technical University of Munich, Germany | Postdoc in isogeny-based cryptography | Garching/Munich, Germany | https://www.iacr.org/jobs/item/4158
 2026-03-30 | National University of Singapore | Postdoc or Senior Research Fellow | Singapore | https://www.iacr.org/jobs/item/4186
 2026-03-30 | Nanyang Technological University, Singapore | Post-Doc/Research Fellow | Singapore | https://www.iacr.org/jobs/item/4180
+2026-03-31 | The Cyprus Institute | Postdoctoral Research Fellow in Quantum Computing - Cryptography - Number Theory | unknown | https://www.iacr.org/jobs/item/4147

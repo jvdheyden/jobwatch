@@ -2,8 +2,6 @@
 
 Only check the sources below for this track.
 
-Goal: find roles that are genuinely strong matches for a PhD in applied cryptography, post-quantum cryptography, MPC, privacy-preserving computation, protocol engineering, or security research.
-
 Do not waste time on broad employer pages outside this list.
 
 Cadence note:
