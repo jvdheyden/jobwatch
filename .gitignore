@@ -15,6 +15,11 @@ tests/tmp/
 # Generated logs
 logs/
 
-# Generated digest outputs
-artifacts/digests/
+# Generated artifacts and digests
+artifacts/
 tracks/*/digests/
+
+# keep test workflow
+!artifacts/digests
+artifacts/digests/*
+!artifacts/digests/test_workflow
