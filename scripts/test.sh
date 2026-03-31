@@ -22,5 +22,6 @@ pytest \
   tests/unit/test_update_ranked_overview.py \
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_iacr_jobs.py \
+  tests/integration/test_discover_yc_and_hn_jobs.py \
   tests/e2e/test_track_workflow.py \
   "${PYTEST_ARGS[@]}"

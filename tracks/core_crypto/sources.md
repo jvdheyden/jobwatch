@@ -51,6 +51,8 @@ Cadence note:
 | QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-03-28 |
 | Rambus | https://www.rambus.com/careers/ | icims_html | 2026-03-28 |
 | Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-03-28 |
+| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | |
+| Hackernews Jobs | https://news.ycombinator.com/jobs | hackernews_jobs | |
 
 ## Keep only roles matching at least one of these
 

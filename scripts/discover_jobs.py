@@ -55,6 +55,16 @@ IACR_DESCRIPTION_RE = re.compile(r'<div id="description-\d+">(?P<description>.*?
 IACR_CONTACT_RE = re.compile(r'<span id="contact-\d+">(?P<contact>.*?)</span>', flags=re.DOTALL)
 IACR_UPDATED_RE = re.compile(r"<strong>\s*Last updated:\s*</strong>\s*(?P<updated>[^<]+)", flags=re.DOTALL)
 IACR_POSTED_RE = re.compile(r"<small[^>]*>posted on (?P<posted>[^<]+)</small>", flags=re.DOTALL)
+HN_JOB_ROW_RE = re.compile(
+    r'<tr class="athing submission" id="(?P<id>\d+)">.*?'
+    r'<span class="titleline"><a href="(?P<href>[^"]+)"[^>]*>(?P<title>.*?)</a>.*?</tr>\s*'
+    r"<tr><td colspan=\"2\"></td><td class=\"subtext\">.*?"
+    r'<span class="age" title="[^"]+"><a href="item\?id=\d+">(?P<age>[^<]+)</a></span>',
+    flags=re.DOTALL,
+)
+HN_MORE_LINK_RE = re.compile(
+    r"""<a href=(?P<quote>['"])(?P<href>jobs\?next=[^'"]+)(?P=quote)\s+class=(?P<quote2>['"])morelink(?P=quote2)\s+rel=(?P<quote3>['"])next(?P=quote3)>More</a>"""
+)
 IBM_SEARCH_API_URL = "https://www-api.ibm.com/search/api/v2"
 ASHBY_JOB_BOARD_QUERY = """query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) {
   jobBoard: jobBoardWithTeams(
@@ -272,6 +282,20 @@ class LinkCollector(HTMLParser):
         self._current_text = []
 
 
+class DataPageCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.payloads: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "div":
+            return
+        attr_map = dict(attrs)
+        payload = attr_map.get("data-page")
+        if payload:
+            self.payloads.append(payload)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--track", default="core_crypto", help="Track directory name under tracks/")
@@ -317,7 +341,7 @@ def parse_markdown_table(section: str, cadence_group: str) -> list[SourceConfig]
             SourceConfig(
                 source=row["source"],
                 url=row["url"],
-                discovery_mode=row.get("discovery_mode", "html"),
+                discovery_mode=row.get("discovery_mode") or "html",
                 last_checked=row.get("last_checked") or None,
                 cadence_group=cadence_group,
             )
@@ -515,6 +539,28 @@ def is_same_page_link(source_url: str, candidate_url: str) -> bool:
 
 def split_visible_lines(value: str) -> list[str]:
     return [normalize_whitespace(part) for part in value.splitlines() if normalize_whitespace(part)]
+
+
+def extract_yc_jobs_payload(html: str) -> dict[str, Any] | None:
+    parser = DataPageCollector()
+    parser.feed(html)
+    for payload_text in parser.payloads:
+        try:
+            payload = json.loads(payload_text)
+        except json.JSONDecodeError:
+            continue
+        props = payload.get("props") or {}
+        if payload.get("component") == "WaasJobListingsPage" and isinstance(props.get("jobPostings"), list):
+            return payload
+    return None
+
+
+def infer_hn_employer(title: str) -> str:
+    title_text = strip_html_fragment(title)
+    match = re.match(r"(?P<employer>.+?)\s+\(YC [^)]+\)", title_text, flags=re.IGNORECASE)
+    if match:
+        return normalize_whitespace(match.group("employer"))
+    return "YC startup"
 
 
 def looks_like_non_job_link(text: str, href: str) -> bool:
@@ -717,6 +763,132 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
     )
 
 
+def discover_yc_jobs_board(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    payload = extract_yc_jobs_payload(html)
+    if not payload:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="failed",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["YC Startups page did not expose an embedded jobPostings payload."],
+            candidates=[],
+        )
+
+    postings = payload.get("props", {}).get("jobPostings", [])
+    candidates_by_url: dict[str, Candidate] = {}
+
+    for posting in postings:
+        title = normalize_whitespace(join_text(posting.get("title"))) or "unknown"
+        employer = normalize_whitespace(join_text(posting.get("companyName"))) or source.source
+        location = normalize_whitespace(join_text(posting.get("location"))) or "unknown"
+        role_specific_type = normalize_whitespace(join_text(posting.get("roleSpecificType")))
+        pretty_role = normalize_whitespace(join_text(posting.get("prettyRole")))
+        employment_type = normalize_whitespace(join_text(posting.get("type")))
+        salary_range = normalize_whitespace(join_text(posting.get("salaryRange")))
+        equity_range = normalize_whitespace(join_text(posting.get("equityRange")))
+        min_experience = normalize_whitespace(join_text(posting.get("minExperience")))
+        visa = normalize_whitespace(join_text(posting.get("visa")))
+        company_one_liner = normalize_whitespace(join_text(posting.get("companyOneLiner")))
+        company_batch = normalize_whitespace(join_text(posting.get("companyBatchName")))
+        created_at = normalize_whitespace(join_text(posting.get("createdAt")))
+        last_active = normalize_whitespace(join_text(posting.get("lastActive")))
+        job_url = normalize_url_without_fragment(urljoin(source.url, join_text(posting.get("url")) or source.url))
+        apply_url_raw = join_text(posting.get("applyUrl"))
+        apply_url = normalize_url_without_fragment(urljoin(source.url, apply_url_raw)) if apply_url_raw else ""
+        remote = infer_remote_status(location, title, company_one_liner)
+
+        searchable_text = " ".join(
+            part
+            for part in [
+                title,
+                employer,
+                location,
+                role_specific_type,
+                pretty_role,
+                employment_type,
+                salary_range,
+                equity_range,
+                min_experience,
+                visa,
+                company_one_liner,
+                company_batch,
+                created_at,
+                last_active,
+                job_url,
+            ]
+            if part
+        )
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        note_parts = ["YC Startups job board listing"]
+        if company_batch:
+            note_parts.append(f"Batch: {company_batch}")
+        if company_one_liner:
+            note_parts.append(f"Company: {company_one_liner}")
+        if role_specific_type or pretty_role:
+            role_summary = " / ".join(part for part in [pretty_role, role_specific_type] if part)
+            note_parts.append(f"Role: {role_summary}")
+        if employment_type:
+            note_parts.append(f"Type: {employment_type}")
+        if salary_range or equity_range:
+            comp_summary = " + ".join(part for part in [salary_range, equity_range] if part)
+            note_parts.append(f"Comp: {comp_summary}")
+        if min_experience:
+            note_parts.append(f"Experience: {min_experience}")
+        if visa:
+            note_parts.append(f"Visa: {visa}")
+        if created_at:
+            note_parts.append(f"Created: {created_at}")
+        if last_active:
+            note_parts.append(f"Last active: {last_active}")
+
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=employer,
+                title=title,
+                url=job_url,
+                source_url=source.url,
+                alternate_url=apply_url if apply_url and apply_url != job_url else "",
+                location=location,
+                remote=remote,
+                matched_terms=matched_terms,
+                notes="; ".join(note_parts),
+            ),
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"job_postings={len(postings)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(postings),
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
 def split_iacr_place(value: str) -> tuple[str, str]:
     place = normalize_whitespace(value)
     for separator in (" | ", " ; ", "; "):
@@ -823,6 +995,62 @@ def discover_iacr_jobs(source: SourceConfig, terms: list[str], timeout_seconds: 
         enumerated_jobs=posting_count,
         matched_jobs=len(candidates_by_url),
         limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_hackernews_jobs(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    candidates_by_url: dict[str, Candidate] = {}
+    listing_pages_scanned = 0
+    enumerated_jobs = 0
+    next_url = source.url
+    limitations: list[str] = []
+
+    while next_url and listing_pages_scanned < MAX_BROWSER_PAGES:
+        html = fetch_text(next_url, timeout_seconds)
+        listing_pages_scanned += 1
+        for match in HN_JOB_ROW_RE.finditer(html):
+            enumerated_jobs += 1
+            title = strip_html_fragment(match.group("title")) or "unknown"
+            job_url = normalize_url_without_fragment(urljoin(next_url, unescape(match.group("href"))))
+            age_text = normalize_whitespace(match.group("age"))
+            employer = infer_hn_employer(title)
+            searchable_text = " ".join(part for part in [title, employer, age_text, job_url] if part)
+            matched_terms = sorted(set(match_terms(searchable_text, terms)))
+            if not should_keep_candidate(title, matched_terms, searchable_text):
+                continue
+            merge_candidate(
+                candidates_by_url,
+                Candidate(
+                    employer=employer,
+                    title=title,
+                    url=job_url,
+                    source_url=source.url,
+                    matched_terms=matched_terms,
+                    notes=f"Hacker News jobs listing; Posted: {age_text}",
+                ),
+            )
+        more_match = HN_MORE_LINK_RE.search(html)
+        next_url = urljoin(next_url, unescape(more_match.group("href"))) if more_match else ""
+
+    if next_url:
+        limitations.append(f"Stopped after max_pages={MAX_BROWSER_PAGES}.")
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=listing_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=f"pages={listing_pages_scanned}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=enumerated_jobs,
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
         candidates=list(candidates_by_url.values()),
     )
 
@@ -2639,6 +2867,7 @@ DISCOVERY_HANDLERS = {
     "coinbase_browser": discover_coinbase_browser,
     "cybernetica_teamdash": discover_cybernetica_teamdash,
     "html": discover_html,
+    "hackernews_jobs": discover_hackernews_jobs,
     "iacr_jobs": discover_iacr_jobs,
     "ibm_api": discover_ibm_api,
     "infineon_api": discover_infineon_api,
@@ -2656,6 +2885,7 @@ DISCOVERY_HANDLERS = {
     "thales_html": discover_thales_html,
     "trailofbits_browser": discover_trailofbits_browser,
     "workday_api": discover_workday_api,
+    "yc_jobs_board": discover_yc_jobs_board,
     "browser": discover_browser,
 }
 
