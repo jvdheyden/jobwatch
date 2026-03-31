@@ -23,3 +23,6 @@ tracks/*/digests/
 !artifacts/digests
 artifacts/digests/*
 !artifacts/digests/test_workflow
+!artifacts/discovery
+artifacts/discovery/*
+!artifacts/discovery/test_workflow
