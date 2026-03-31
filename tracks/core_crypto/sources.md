@@ -52,34 +52,6 @@ Cadence note:
 | YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | |
 | Hackernews Jobs | https://news.ycombinator.com/jobs | hackernews_jobs | |
 
-## Keep only roles matching at least one of these
-
-- cryptography
-- applied cryptography
-- cryptography engineering
-- protocol security
-- security research
-- post-quantum cryptography
-- PQC
-- multi-party computation
-- MPC
-- zero-knowledge
-- ZK
-- homomorphic encryption
-- FHE
-- privacy-enhancing technologies
-- PETs
-- privacy
-- secure hardware
-- HSM
-- smart card
-- embedded security
-- digital identity
-- authentication
-- key management
-- wallet security
-- formal security
-
 ## Search terms
 
 Use these terms on searchable sources unless a source-specific search-term override says otherwise.
@@ -115,7 +87,7 @@ Use these terms on searchable sources unless a source-specific search-term overr
 - secure hardware
 - HSM
 
-## Source-specific search terms
+### Source-specific search terms
 
 Use these in addition to the track-wide terms when the source has native search and these terms are a better fit for that source's vocabulary.
 
