@@ -1122,6 +1122,57 @@ def discover_filtered_html_links(
     )
 
 
+def discover_pcd_team(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    searchable_text = strip_html_fragment(html)
+
+    title_match = re.search(r"<h1>(?P<title>.*?)</h1>", html, flags=re.DOTALL | re.IGNORECASE)
+    title = strip_html_fragment(title_match.group("title")) if title_match else "Software Engineer"
+    if "·" in title:
+        title = normalize_whitespace(title.split("·", 1)[0])
+    title = re.sub(r"\s+JD$", "", title).strip() or "Software Engineer"
+
+    apply_match = re.search(
+        r'<a href="(?P<href>[^"]+)"[^>]*>\s*Apply Here\s*</a>',
+        html,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    apply_url = normalize_url_without_fragment(apply_match.group("href")) if apply_match else ""
+    matched_terms = sorted(set(match_terms(searchable_text, terms)))
+
+    candidates: list[Candidate] = []
+    if should_keep_candidate(title, matched_terms, searchable_text):
+        candidates.append(
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=source.url,
+                source_url=source.url,
+                alternate_url=apply_url,
+                matched_terms=matched_terms,
+                notes="PCD Team job description page",
+            )
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="local_filter=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=1,
+        matched_jobs=len(candidates),
+        limitations=[],
+        candidates=candidates,
+    )
+
+
 def discover_qedit_inline(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     html = fetch_text(source.url, timeout_seconds)
     body = strip_html_fragment(html)
@@ -3213,6 +3264,7 @@ DISCOVERY_HANDLERS = {
     "ashby_html": discover_ashby_api,
     "neclab_jobs": discover_neclab_jobs,
     "partisia_site": discover_partisia_site,
+    "pcd_team": discover_pcd_team,
     "qedit_inline": discover_qedit_inline,
     "qusecure_careers": discover_qusecure_careers,
     "secunet_jobboard": discover_secunet_jobboard,

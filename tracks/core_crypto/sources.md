@@ -18,6 +18,7 @@ Cadence note:
 | IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-01 |
 | PQShield | https://pqshield.com/careers/ | html | 2026-04-01 |
 | Zama | https://jobs.zama.org | html | 2026-04-01 |
+| 0xPARC / PCD Team | https://pcd.team/jd | pcd_team | |
 | Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-04-01 |
 | Duality Technologies | https://dualitytech.com/careers/ | html | 2026-04-01 |
 | QEDIT | https://qed-it.com/careers | qedit_inline | 2026-04-01 |
