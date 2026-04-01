@@ -15,7 +15,7 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Bund | https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?nn=4641514 | html | |
+| Bund | https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?view=processForm&nn=4641514&cl2Categories_Laufbahn=laufbahn-hoehererdienst | service_bund_search | |
 | Bund Karriere | https://karriere.bund.de/ | html | |
 | Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | html | |
 | BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980 | html | |
@@ -25,7 +25,7 @@ Cadence note:
 | Quantum Systems | https://career.quantum-systems.com/ | html | |
 | Auswärtiges Amt | https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen | html | |
 | EnBW | https://careers.enbw.com/en_US/careers | html | |
-| BSI | https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html | html | |
+| BSI | https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html | service_bund_links | |
 
 ## Check every 3 runs
 
@@ -66,8 +66,8 @@ Use these in addition to the track-wide terms when the source has native search 
 
 Add `[override]` after the source name to replace the track-wide terms for that source.
 
-- Bund [override] — höherer Dienst, Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
-- Bund Karriere [override] — höherer Dienst, Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
+- Bund [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent Kryptographie, Referent IT-Sicherheit, Referent Cyberabwehr
+- Bund Karriere [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent Kryptographie, Referent IT-Sicherheit, Referent Cyberabwehr
 - Verfassungsschutz [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
 - BND [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
 - Bundeswehr [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Referent
@@ -76,7 +76,7 @@ Add `[override]` after the source name to replace the track-wide terms for that 
 - Quantum Systems — cryptography, security, cyber defense, IT-Sicherheit
 - Auswärtiges Amt [override] — IT-Sicherheit, Cybersecurity, Referent, Digitalisierung
 - EnBW — security, privacy, cryptography, IT-Sicherheit
-- BSI [override] — Kryptographie, IT-Sicherheit, Cybersecurity, Referent, privacy
+- BSI [override] — Kryptographie, IT-Sicherheit, Cybersecurity, Referent Kryptographie, Referent IT-Sicherheit, privacy
 
 ## Output discipline
 
