@@ -202,7 +202,7 @@ Change:
 - schedule time
 - launchd stdout/stderr log paths
 
-Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`.
+Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`. Reload the launch agent.
 
 ### 4. Validation
 
