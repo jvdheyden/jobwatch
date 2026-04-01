@@ -288,6 +288,65 @@ def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch)
     assert candidate.url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417"
 
 
+def test_discover_rheinmetall_html_extracts_structured_ssr_cards(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Rheinmetall",
+        url="https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote",
+        discovery_mode="rheinmetall_html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    html = """
+    <div class="gap-4 md:gap-6 flex flex-col">
+      <div class="flex gap-0.5 group">
+        <a href="/de/job/privacy_engineer__m_w_d_/123456" target="_blank" rel="noreferrer" class="print-avoid-page-break hidden"></a>
+        <div class="flex flex-col flex-grow overflow-hidden relative p-4 bg-neutral text-secondary transition duration-300 hover:bg-neutral-dark border-l-8">
+          <a href="/de/job/privacy_engineer__m_w_d_/123456" target="_blank" rel="noreferrer" class="print-avoid-page-break flex-grow pr-8">
+            <div class="text-sm font-bold mb-4"><div class="flex">Job</div></div>
+            <div class="text-sm font-bold md:text-xl mb-2">Privacy Engineer (m/w/d)</div>
+          </a>
+          <div class="flex justify-between items-end text-sm font-bold">
+            <div class="flex flex-col md:flex-row md:flex-wrap md:items-end">
+              <div class="flex flex-wrap mr-6">Rheinmetall Electronics GmbH | Bremen</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-0.5 group">
+        <a href="/de/job/office_manager__m_w_d_/999999" target="_blank" rel="noreferrer" class="print-avoid-page-break hidden"></a>
+        <div class="flex flex-col flex-grow overflow-hidden relative p-4 bg-neutral text-secondary transition duration-300 hover:bg-neutral-dark border-l-8">
+          <a href="/de/job/office_manager__m_w_d_/999999" target="_blank" rel="noreferrer" class="print-avoid-page-break flex-grow pr-8">
+            <div class="text-sm font-bold mb-4"><div class="flex">Job</div></div>
+            <div class="text-sm font-bold md:text-xl mb-2">Office Manager (m/w/d)</div>
+          </a>
+          <div class="flex justify-between items-end text-sm font-bold">
+            <div class="flex flex-col md:flex-row md:flex-wrap md:items-end">
+              <div class="flex flex-wrap mr-6">Rheinmetall AG | Düsseldorf</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+
+    coverage = discover_jobs.discover_rheinmetall_html(
+        source,
+        ["privacy", "cryptography", "IT-Sicherheit"],
+        timeout_seconds=5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Privacy Engineer (m/w/d)"
+    assert candidate.employer == "Rheinmetall Electronics GmbH"
+    assert candidate.location == "Bremen"
+    assert candidate.url == "https://www.rheinmetall.com/de/job/privacy_engineer__m_w_d_/123456"
+    assert candidate.matched_terms == ["privacy"]
+
+
 def test_extract_helsing_jobs_filters_visible_cards():
     page = FakePage(
         [

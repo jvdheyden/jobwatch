@@ -19,7 +19,7 @@ Cadence note:
 | Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | verfassungsschutz_rss | |
 | BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896&cl2Categories_Abschluss=master#sprg415980 | bnd_career_search | |
 | Bundeswehr | https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded | bundeswehr_jobsuche | |
-| Rheinmetall | https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote | html | |
+| Rheinmetall | https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote?9dc11c304b4c06c2f71c48cc6574e7e5term=&9dc11c304b4c06c2f71c48cc6574e7e5filter=%257B%2522occupationalArea%2522%253A%255B%2522IT%2520und%2520Software%2522%255D%257D | rheinmetall_html | |
 | Helsing | https://helsing.ai/jobs | helsing_browser | |
 | Quantum Systems | https://career.quantum-systems.com/ | recruitee_inline | |
 | Auswärtiges Amt | https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen | auswaertiges_amt_json | |
@@ -70,7 +70,7 @@ Add `[override]` after the source name to replace the track-wide terms for that 
 - Verfassungsschutz [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
 - BND [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent, IT und Informatik, Technik und Ingenieurwissenschaft, Requirements Engineering, IT-Systemadministrator
 - Bundeswehr [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Referent, Cyber/IT, Informationstechnik
-- Rheinmetall — cryptography, security, cyber defense, IT-Sicherheit
+- Rheinmetall [override] — cryptography, security, cyber defense, IT-Sicherheit
 - Helsing [override] — security engineer, cybersecurity, IT-Sicherheit, cyber defense, cryptography
 - Quantum Systems [override] — cryptography, cybersecurity, IT-Sicherheit, cyber defense
 - Auswärtiges Amt [override] — IT-Sicherheit, Cybersecurity, Cyberabwehr, Digitalisierung
