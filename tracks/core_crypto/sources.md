@@ -30,6 +30,7 @@ Cadence note:
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
 | Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-04-01 |
+| ASML | https://www.asml.com/en/careers/find-your-job | asml_browser | |
 | Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-04-01 |
 | Bosch | https://jobs.bosch.de/ | browser | 2026-04-01 |
 | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |

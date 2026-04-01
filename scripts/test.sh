@@ -21,6 +21,7 @@ pytest \
   tests/unit/test_render_digest.py \
   tests/unit/test_update_ranked_overview.py \
   tests/integration/test_sync_to_logseq.py \
+  tests/integration/test_discover_asml_browser.py \
   tests/integration/test_discover_iacr_jobs.py \
   tests/integration/test_discover_meta_browser.py \
   tests/integration/test_discover_yc_and_hn_jobs.py \

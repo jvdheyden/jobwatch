@@ -2311,6 +2311,108 @@ def extract_meta_jobs(page: Any, source: SourceConfig, term: str, terms: list[st
     )
 
 
+def extract_asml_jobs(page: Any, source: SourceConfig, terms: list[str], page_num: int) -> BrowserPageResult:
+    links = page.locator("a.search-results__item")
+    visible_count = links.count()
+    raw_ids: list[str] = []
+    candidates: list[Candidate] = []
+    seen_urls: set[str] = set()
+
+    for index in range(visible_count):
+        element = links.nth(index)
+        href = element.get_attribute("href") or ""
+        absolute_url = normalize_url_without_fragment(urljoin(source.url, href))
+        if not href or absolute_url in seen_urls:
+            continue
+        seen_urls.add(absolute_url)
+        raw_ids.append(absolute_url)
+
+        try:
+            title = element.locator("h2").first.inner_text().strip() or "unknown"
+            field_items = element.locator("ul.search-results__fields li")
+            location = field_items.nth(0).inner_text().strip() if field_items.count() > 0 else "unknown"
+            team = field_items.nth(1).inner_text().strip() if field_items.count() > 1 else ""
+        except Exception:
+            lines = [line for line in split_visible_lines(element.inner_text()) if line]
+            while lines and lines[0].upper() == "NEW":
+                lines.pop(0)
+            title = lines[0] if lines else "unknown"
+            location = lines[1] if len(lines) > 1 else "unknown"
+            team = lines[2] if len(lines) > 2 else ""
+        searchable_text = " ".join(part for part in [title, location, team] if part)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        note = f"ASML browser enumeration page={page_num}"
+        if team:
+            note = f"{note}; team={team}"
+        candidates.append(
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                location=location,
+                matched_terms=matched_terms,
+                notes=note,
+            )
+        )
+
+    page_signature = ",".join(raw_ids[:10]) if raw_ids else f"asml:{page_num}:empty"
+    limitations: list[str] = []
+    if not raw_ids:
+        limitations.append(f"ASML browser page {page_num} showed no visible job cards")
+    return BrowserPageResult(
+        candidates=candidates,
+        raw_ids=raw_ids,
+        visible_results=len(raw_ids),
+        declared_total=None,
+        page_signature=page_signature,
+        limitations=limitations,
+    )
+
+
+def dismiss_onetrust_banner(page: Any) -> None:
+    def wait_for_results() -> None:
+        try:
+            page.wait_for_function(
+                "() => document.querySelectorAll('a.search-results__item').length > 0",
+                timeout=5000,
+            )
+        except Exception:
+            page.wait_for_timeout(1000)
+
+    reject_button = page.locator("#onetrust-reject-all-handler").first
+    if reject_button.count():
+        try:
+            reject_button.click(timeout=3000)
+            wait_for_results()
+            return
+        except Exception:
+            pass
+    accept_button = page.locator("#onetrust-accept-btn-handler").first
+    if accept_button.count():
+        try:
+            accept_button.click(timeout=3000)
+            wait_for_results()
+            return
+        except Exception:
+            pass
+    try:
+        page.evaluate(
+            """
+            () => {
+              const root = document.querySelector('#onetrust-consent-sdk');
+              if (root) root.remove();
+              document.querySelectorAll('.onetrust-pc-dark-filter').forEach((node) => node.remove());
+            }
+            """
+        )
+    except Exception:
+        pass
+
+
 def advance_meta_results(page: Any, source: SourceConfig, term: str, page_num: int) -> bool:
     del source, term, page_num
     button = page.get_by_role("button", name="Show more").first
@@ -2325,6 +2427,150 @@ def advance_meta_results(page: Any, source: SourceConfig, term: str, page_num: i
         if after_count > before_count:
             return True
     return False
+
+
+def advance_asml_results(page: Any, source: SourceConfig, page_num: int) -> bool:
+    del source
+    dismiss_onetrust_banner(page)
+    next_button = page.locator('nav[aria-label="Pagination"] li.pagination-next button[role="link"]').first
+    if not next_button.count():
+        return False
+    try:
+        disabled = next_button.evaluate("(element) => Boolean(element.disabled)")
+    except Exception:
+        disabled = False
+    if disabled:
+        return False
+    active_page = page.locator('nav[aria-label="Pagination"] li.pagination-link.active button[role="link"]').first
+    current_page = active_page.inner_text().strip() if active_page.count() else ""
+    current_first = ""
+    first_card = page.locator("a.search-results__item").first
+    if first_card.count():
+        current_first = first_card.get_attribute("href") or ""
+    next_button.click(timeout=5000)
+    for _ in range(20):
+        page.wait_for_timeout(500)
+        active_page = page.locator('nav[aria-label="Pagination"] li.pagination-link.active button[role="link"]').first
+        active_label = active_page.inner_text().strip() if active_page.count() else ""
+        first_card = page.locator("a.search-results__item").first
+        next_first = first_card.get_attribute("href") if first_card.count() else ""
+        if active_label == str(page_num) and next_first != current_first:
+            return True
+        if current_page != active_label and active_label == str(page_num):
+            return True
+    return False
+
+
+def discover_asml_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Playwright is not installed; ASML browser discovery is scaffolded but inactive"],
+            candidates=[],
+        )
+
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    limitations: list[str] = []
+    pages_scanned = 0
+    declared_total: int | None = None
+    timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
+    max_pages = 30
+
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 2200})
+            page.goto(source.url, wait_until="networkidle", timeout=timeout_ms)
+            page.wait_for_timeout(1000)
+            dismiss_onetrust_banner(page)
+            count_label = page.locator(".pagination-results strong").first
+            if count_label.count():
+                count_text = re.sub(r"[^0-9]", "", count_label.inner_text())
+                if count_text:
+                    declared_total = int(count_text)
+
+            page_num = 1
+            while page_num <= max_pages:
+                result = extract_asml_jobs(page, source, terms, page_num)
+                pages_scanned += 1
+                limitations.extend(result.limitations)
+                for raw_id in result.raw_ids:
+                    raw_seen_ids.add(raw_id)
+                for candidate in result.candidates:
+                    merge_candidate(candidates_by_url, candidate)
+                if result.visible_results == 0:
+                    break
+                next_page_num = page_num + 1
+                if next_page_num > max_pages:
+                    limitations.append(f"ASML browser enumeration hit the page cap ({max_pages})")
+                    break
+                if not advance_asml_results(page, source, next_page_num):
+                    break
+                page_num = next_page_num
+            browser.close()
+    except Exception as exc:  # pragma: no cover - defensive output for live runs
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=[f"ASML browser discovery failed: {exc}"],
+            candidates=[],
+        )
+
+    result_summary = (
+        f"all_jobs={pages_scanned}p/{len(raw_seen_ids)}of{declared_total}"
+        if declared_total is not None
+        else f"all_jobs={pages_scanned}p/{len(raw_seen_ids)}"
+    )
+    status = "complete"
+    if declared_total is not None and len(raw_seen_ids) < declared_total:
+        status = "partial"
+        limitations.append(f"ASML browser enumeration surfaced {len(raw_seen_ids)} of {declared_total} jobs")
+    elif any("page cap" in limitation.lower() for limitation in limitations):
+        status = "partial"
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status=status,
+        listing_pages_scanned=pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=result_summary,
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
 
 
 def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[str], page_num: int) -> BrowserPageResult:
@@ -2951,6 +3197,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
 DISCOVERY_HANDLERS = {
     "ashby_api": discover_ashby_api,
     "automattic_browser": discover_automattic_browser,
+    "asml_browser": discover_asml_browser,
     "bosch_autocomplete": discover_bosch_autocomplete,
     "coinbase_browser": discover_coinbase_browser,
     "cybernetica_teamdash": discover_cybernetica_teamdash,
