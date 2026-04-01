@@ -17,14 +17,14 @@ Cadence note:
 | --- | --- | --- | --- |
 | Bund | https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?view=processForm&nn=4641514&cl2Categories_Laufbahn=laufbahn-hoehererdienst | service_bund_search | |
 | Bund Karriere | https://karriere.bund.de/ | html | |
-| Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | html | |
+| Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | verfassungsschutz_rss | |
 | BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980 | html | |
-| Bundeswehr | https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded | html | |
+| Bundeswehr | https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded | bundeswehr_jobsuche | |
 | Rheinmetall | https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote | html | |
-| Helsing | https://helsing.ai/jobs | html | |
-| Quantum Systems | https://career.quantum-systems.com/ | html | |
-| Auswärtiges Amt | https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen | html | |
-| EnBW | https://careers.enbw.com/en_US/careers | html | |
+| Helsing | https://helsing.ai/jobs | helsing_browser | |
+| Quantum Systems | https://career.quantum-systems.com/ | recruitee_inline | |
+| Auswärtiges Amt | https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen | auswaertiges_amt_json | |
+| EnBW | https://careers.enbw.com/en_US/careers | enbw_phenom | |
 | BSI | https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html | service_bund_links | |
 
 ## Check every 3 runs
@@ -70,12 +70,12 @@ Add `[override]` after the source name to replace the track-wide terms for that 
 - Bund Karriere [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent Kryptographie, Referent IT-Sicherheit, Referent Cyberabwehr
 - Verfassungsschutz [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
 - BND [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
-- Bundeswehr [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Referent
+- Bundeswehr [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Referent, Cyber/IT, Informationstechnik
 - Rheinmetall — cryptography, security, cyber defense, IT-Sicherheit
-- Helsing — cryptography, security, privacy, cyber defense
-- Quantum Systems — cryptography, security, cyber defense, IT-Sicherheit
-- Auswärtiges Amt [override] — IT-Sicherheit, Cybersecurity, Referent, Digitalisierung
-- EnBW — security, privacy, cryptography, IT-Sicherheit
+- Helsing [override] — security engineer, cybersecurity, IT-Sicherheit, cyber defense, cryptography
+- Quantum Systems [override] — cryptography, cybersecurity, IT-Sicherheit, cyber defense
+- Auswärtiges Amt [override] — IT-Sicherheit, Cybersecurity, Cyberabwehr, Digitalisierung
+- EnBW [override] — IT-Sicherheit, cybersecurity, information security, cryptography
 - BSI [override] — Kryptographie, IT-Sicherheit, Cybersecurity, Referent Kryptographie, Referent IT-Sicherheit, privacy
 
 ## Output discipline

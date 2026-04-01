@@ -25,6 +25,7 @@ pytest \
   tests/integration/test_discover_iacr_jobs.py \
   tests/integration/test_discover_meta_browser.py \
   tests/integration/test_discover_pcd_team.py \
+  tests/integration/test_discover_public_service_sources.py \
   tests/integration/test_discover_service_bund.py \
   tests/integration/test_discover_yc_and_hn_jobs.py \
   tests/e2e/test_track_workflow.py \

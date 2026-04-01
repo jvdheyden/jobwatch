@@ -16,6 +16,7 @@ import ssl
 import sys
 import time
 import unicodedata
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timezone
@@ -43,6 +44,7 @@ IBM_RESULTS_PAGE_SIZE = 100
 INFINEON_RESULTS_PAGE_SIZE = 10
 WORKDAY_RESULTS_PAGE_SIZE = 20
 THALES_RESULTS_PAGE_SIZE = 10
+ENBW_RESULTS_PAGE_SIZE = 10
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 IACR_POSTING_BLOCK_RE = re.compile(
     r'<h5>\s*<a href="(?P<href>[^"]+)" id="url-(?P<id>\d+)">\s*'
@@ -79,6 +81,15 @@ SERVICE_BUND_NEXT_RE = re.compile(
 )
 SERVICE_BUND_DIRECT_LINK_RE = re.compile(
     r'<a[^>]+href="(?P<href>[^"]*service\.bund\.de/[^"]*IMPORTE/Stellenangebote[^"]*)"[^>]*>(?P<text>.*?)</a>',
+    flags=re.DOTALL | re.IGNORECASE,
+)
+RECRUITEE_DATA_PROPS_RE = re.compile(r'data-props="(?P<props>[^"]+)"')
+AUSWAERTIGES_AMT_ACTION_RE = re.compile(
+    r'(?:action|dataUrl)="(?P<endpoint>/ajax/json-filterlist/[^"]+)"',
+    flags=re.IGNORECASE,
+)
+BUNDESWEHR_JOB_TITLE_RE = re.compile(
+    r'<a class="jobtitle" href="(?P<href>[^"]+)">(?P<title>.*?)</a>',
     flags=re.DOTALL | re.IGNORECASE,
 )
 IBM_SEARCH_API_URL = "https://www-api.ibm.com/search/api/v2"
@@ -182,12 +193,14 @@ SERVICE_BUND_PUBLIC_INTEREST_HINTS = (
     "krypt",
     "it-sicherheit",
     "cyber",
+    "cyber/it",
     "security",
     "attack surface",
     "biometr",
     "kritis",
     "digital",
     "informatik",
+    "informationstechnik",
     "telekommunikation",
     "netz",
 )
@@ -208,6 +221,8 @@ THALES_PAYLOAD_TERM_ALIASES = {
         "homomorpher verschluesselung",
     ),
 }
+VERFASSUNGSSCHUTZ_RSS_URL = "https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/Stellenangebote.xml"
+BUNDESWEHR_JOBSUCHE_URL = "https://www.bundeswehrkarriere.de/entdecker/jobs/jobsuche"
 
 
 @dataclass
@@ -679,6 +694,42 @@ def join_text(value: Any) -> str:
     if isinstance(value, dict):
         return " ".join(join_text(item) for item in value.values() if join_text(item))
     return str(value)
+
+
+def extract_recruitee_app_config(html: str) -> dict[str, Any] | None:
+    for match in RECRUITEE_DATA_PROPS_RE.finditer(html):
+        try:
+            payload = json.loads(unescape(match.group("props")))
+        except json.JSONDecodeError:
+            continue
+        app_config = payload.get("appConfig")
+        if isinstance(app_config, dict) and isinstance(app_config.get("offers"), list):
+            return app_config
+    return None
+
+
+def build_enbw_search_url(source_url: str, term: str, offset: int) -> str:
+    parsed = urlparse(source_url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    params = {"keywords": term}
+    if offset:
+        params["from"] = str(offset)
+    return f"{base}/de/de/search-results?{urlencode(params)}"
+
+
+def build_enbw_job_url(source_url: str, job_id: str, title: str) -> str:
+    parsed = urlparse(source_url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    slug = slugify_title(title)
+    if slug:
+        return normalize_url_without_fragment(f"{base}/de/de/job/{job_id}/{slug}")
+    return normalize_url_without_fragment(f"{base}/de/de/job/{job_id}")
+
+
+def build_enbw_apply_url(source_url: str, job_seq_no: str) -> str:
+    parsed = urlparse(source_url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    return normalize_url_without_fragment(f"{base}/de/de/apply?{urlencode({'jobSeqNo': job_seq_no})}")
 
 
 def should_keep_candidate(title: str, matched_terms: list[str], searchable_text: str) -> bool:
@@ -1310,6 +1361,409 @@ def discover_service_bund_links(source: SourceConfig, terms: list[str], timeout_
         enumerated_jobs=len(raw_urls),
         matched_jobs=len(candidates_by_url),
         limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_recruitee_inline(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    app_config = extract_recruitee_app_config(html)
+    if not app_config:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned=1,
+            search_terms_tried=terms,
+            result_pages_scanned="inline_payload=0",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Recruitee appConfig with offers was not found in the page HTML."],
+            candidates=[],
+        )
+
+    departments: dict[int, str] = {}
+    for department in app_config.get("departments") or []:
+        if not isinstance(department, dict):
+            continue
+        name = join_text(department.get("translations") or {})
+        if department.get("id") and name:
+            departments[int(department["id"])] = normalize_whitespace(name)
+
+    candidates_by_url: dict[str, Candidate] = {}
+    published_offers = [offer for offer in app_config.get("offers") or [] if offer.get("status") == "published"]
+
+    for offer in published_offers:
+        if not isinstance(offer, dict):
+            continue
+        translations = offer.get("translations") or {}
+        primary_lang = offer.get("primaryLangCode") or ""
+        translation = translations.get(primary_lang) if isinstance(translations, dict) else None
+        if not translation and isinstance(translations, dict) and translations:
+            translation = next(iter(translations.values()))
+        translation = translation or {}
+
+        title = normalize_whitespace(join_text(translation.get("title"))) or "unknown"
+        slug = normalize_whitespace(join_text(offer.get("slug")))
+        job_url = (
+            normalize_url_without_fragment(urljoin(source.url.rstrip("/") + "/", f"o/{slug}"))
+            if slug
+            else source.url
+        )
+        city = normalize_whitespace(join_text(offer.get("city")))
+        state = normalize_whitespace(join_text(translation.get("state")))
+        country = normalize_whitespace(join_text(translation.get("country")))
+        location_parts: list[str] = []
+        for part in (city, state, country):
+            if part and part not in location_parts:
+                location_parts.append(part)
+        location = ", ".join(location_parts) or "unknown"
+        department = departments.get(int(offer["departmentId"])) if offer.get("departmentId") else ""
+        employment_type = normalize_whitespace(join_text(offer.get("employmentType"))).replace("_", " ")
+        experience = normalize_whitespace(join_text(offer.get("experience"))).replace("_", " ")
+        education = normalize_whitespace(join_text(offer.get("education"))).replace("_", " ")
+        tags = ", ".join(normalize_whitespace(join_text(tag)) for tag in offer.get("tags") or [] if join_text(tag))
+        description = strip_html_fragment(join_text(translation.get("descriptionHtml")))
+        requirements = strip_html_fragment(join_text(translation.get("requirementsHtml")))
+
+        remote = "unknown"
+        if offer.get("hybrid"):
+            remote = "hybrid"
+        elif offer.get("remote"):
+            remote = "remote"
+        elif offer.get("onSite"):
+            remote = "on-site"
+
+        searchable_text = " ".join(
+            part
+            for part in [
+                title,
+                department,
+                location,
+                remote,
+                employment_type,
+                experience,
+                education,
+                tags,
+                description,
+                requirements,
+            ]
+            if part
+        )
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        note_parts = ["Recruitee inline offers payload"]
+        if department:
+            note_parts.append(f"Department: {department}")
+        if employment_type:
+            note_parts.append(f"Type: {employment_type}")
+        if remote != "unknown":
+            note_parts.append(f"Remote: {remote}")
+
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=job_url,
+                source_url=source.url,
+                location=location,
+                remote=remote,
+                matched_terms=matched_terms,
+                notes="; ".join(note_parts),
+            ),
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"offers={len(published_offers)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(published_offers),
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_verfassungsschutz_rss(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    xml_text = fetch_text(VERFASSUNGSSCHUTZ_RSS_URL, timeout_seconds)
+    root = ET.fromstring(xml_text)
+    items = root.findall("./channel/item")
+    candidates_by_url: dict[str, Candidate] = {}
+
+    for item in items:
+        title = normalize_whitespace(item.findtext("title") or "") or "unknown"
+        link = normalize_url_without_fragment(item.findtext("link") or source.url)
+        description = strip_html_fragment(item.findtext("description") or "")
+        published = normalize_whitespace(item.findtext("pubDate") or "")
+        searchable_text = " ".join(part for part in [title, description, published, link] if part)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
+            continue
+        notes = "Verfassungsschutz RSS feed"
+        if published:
+            notes = f"{notes}; published={published}"
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=link,
+                source_url=source.url,
+                matched_terms=matched_terms,
+                notes=notes,
+            ),
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"rss_items={len(items)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(items),
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_auswaertiges_amt_json(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    match = AUSWAERTIGES_AMT_ACTION_RE.search(html)
+    if not match:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned=1,
+            search_terms_tried=terms,
+            result_pages_scanned="json_feed=0",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Auswärtiges Amt JSON job-list endpoint was not found in the page HTML."],
+            candidates=[],
+        )
+
+    endpoint = normalize_url_without_fragment(urljoin(source.url, unescape(match.group("endpoint"))))
+    payload = fetch_json(endpoint, timeout_seconds)
+    items = payload.get("items") or []
+    candidates_by_url: dict[str, Candidate] = {}
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        title = normalize_whitespace(join_text(item.get("headline"))) or "unknown"
+        link = normalize_url_without_fragment(urljoin(source.url, join_text(item.get("link")) or source.url))
+        description = strip_html_fragment(join_text(item.get("text")))
+        location = "; ".join(normalize_whitespace(join_text(value)) for value in item.get("department") or [] if join_text(value))
+        published = normalize_whitespace(join_text(item.get("date")))
+        closing = normalize_whitespace(join_text(item.get("closingDate")))
+        searchable_text = " ".join(part for part in [title, location, description, published, closing, link] if part)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
+            continue
+        note_parts = ["Auswärtiges Amt JSON listings"]
+        if published:
+            note_parts.append(f"Published: {published}")
+        if closing:
+            note_parts.append(f"Deadline: {closing}")
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=link,
+                source_url=source.url,
+                location=location or "unknown",
+                matched_terms=matched_terms,
+                notes="; ".join(note_parts),
+            ),
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"json_items={len(items)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(items),
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    limitations: list[str] = []
+    result_summaries: list[str] = []
+    listing_pages_scanned = 0
+    max_pages_per_term = 5
+
+    for term in terms:
+        offset = 0
+        term_pages = 0
+        term_seen = 0
+        term_total: int | None = None
+        while term_pages < max_pages_per_term:
+            html = fetch_text(build_enbw_search_url(source.url, term, offset), timeout_seconds)
+            ddo = extract_json_object_after_marker(html, "phApp.ddo = ")
+            if not isinstance(ddo, dict):
+                limitations.append(f"EnBW search payload for '{term}' was not found in the page HTML.")
+                break
+            payload = ddo.get("eagerLoadRefineSearch") or {}
+            jobs = payload.get("data", {}).get("jobs") or []
+            hits = int(payload.get("hits") or len(jobs))
+            term_total = int(payload.get("totalHits") or len(jobs))
+            term_pages += 1
+            listing_pages_scanned += 1
+            term_seen += len(jobs)
+
+            for job in jobs:
+                if not isinstance(job, dict):
+                    continue
+                job_id = normalize_whitespace(join_text(job.get("jobId") or job.get("reqId") or job.get("jobSeqNo")))
+                if not job_id:
+                    continue
+                raw_seen_ids.add(job_id)
+                title = normalize_whitespace(join_text(job.get("title"))) or "unknown"
+                employer = normalize_whitespace(join_text(job.get("company"))) or source.source
+                location = normalize_whitespace(
+                    join_text(job.get("cityStateCountry") or job.get("location") or job.get("city"))
+                ) or "unknown"
+                description = strip_html_fragment(join_text(job.get("descriptionTeaser")))
+                category = normalize_whitespace(join_text(job.get("category")))
+                remote = normalize_whitespace(join_text(job.get("remote"))) or "unknown"
+                job_seq_no = normalize_whitespace(join_text(job.get("jobSeqNo")))
+                job_url = build_enbw_job_url(source.url, job_id, title)
+                apply_url = build_enbw_apply_url(source.url, job_seq_no) if job_seq_no else ""
+                searchable_text = " ".join(
+                    part for part in [title, employer, location, category, remote, description] if part
+                )
+                matched_terms = sorted(set(match_terms(searchable_text, terms)))
+                if not should_keep_candidate(title, matched_terms, searchable_text):
+                    continue
+                merge_candidate(
+                    candidates_by_url,
+                    Candidate(
+                        employer=employer,
+                        title=title,
+                        url=job_url,
+                        source_url=source.url,
+                        alternate_url=apply_url if apply_url and apply_url != job_url else "",
+                        location=location,
+                        remote=remote,
+                        matched_terms=matched_terms,
+                        notes=f"EnBW Phenom search keyword='{term}'",
+                    ),
+                )
+
+            if not jobs or term_total is None or term_seen >= term_total:
+                break
+            offset += hits or ENBW_RESULTS_PAGE_SIZE
+
+        total_label = term_total if term_total is not None else term_seen
+        result_summaries.append(f"{term}:{term_pages}p/{term_seen}of{total_label}")
+        if term_total is not None and term_seen < term_total:
+            limitations.append(f"EnBW search for '{term}' surfaced {term_seen} of {term_total} results")
+
+    status = "partial" if limitations else "complete"
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status=status,
+        listing_pages_scanned=listing_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=", ".join(result_summaries) if result_summaries else "none",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_bundeswehr_jobsuche(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(BUNDESWEHR_JOBSUCHE_URL, timeout_seconds)
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_urls: set[str] = set()
+
+    for match in BUNDESWEHR_JOB_TITLE_RE.finditer(html):
+        absolute_url = normalize_url_without_fragment(urljoin(BUNDESWEHR_JOBSUCHE_URL, unescape(match.group("href"))))
+        raw_urls.add(absolute_url)
+        title = strip_html_fragment(match.group("title")) or "unknown"
+        searchable_text = " ".join(part for part in [title, absolute_url] if part)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
+            continue
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                matched_terms=matched_terms,
+                notes="Bundeswehr jobsuche profile catalog fallback; Bewerbungsportal returned a generic error page in automation",
+            ),
+        )
+
+    limitations = [
+        "Bundeswehr Bewerbungsportal returned a generic error page in automation; using the public jobsuche profile catalog as a fallback."
+    ]
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"profiles={len(raw_urls)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
         candidates=list(candidates_by_url.values()),
     )
 
@@ -2554,6 +3008,62 @@ def extract_meta_jobs(page: Any, source: SourceConfig, term: str, terms: list[st
     )
 
 
+def extract_helsing_jobs(page: Any, source: SourceConfig, term: str, terms: list[str], page_num: int) -> BrowserPageResult:
+    del term
+    links = page.locator('a[href^="/jobs/"]')
+    visible_count = links.count()
+    raw_ids: list[str] = []
+    candidates: list[Candidate] = []
+    seen_urls: set[str] = set()
+
+    for index in range(visible_count):
+        element = links.nth(index)
+        href = element.get_attribute("href") or ""
+        absolute_url = normalize_url_without_fragment(urljoin(source.url, href))
+        if not href or absolute_url in seen_urls:
+            continue
+        seen_urls.add(absolute_url)
+        raw_ids.append(absolute_url)
+
+        lines = split_visible_lines(element.inner_text())
+        title = lines[0] if lines else "unknown"
+        team = lines[1] if len(lines) > 1 else ""
+        employment_type = lines[2] if len(lines) > 2 else ""
+        location = lines[3] if len(lines) > 3 else "unknown"
+        searchable_text = " ".join(part for part in [title, team, employment_type, location] if part)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        note = f"Helsing jobs page browser enumeration page={page_num}"
+        if team:
+            note = f"{note}; team={team}"
+        candidates.append(
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                location=location,
+                matched_terms=matched_terms,
+                notes=note,
+            )
+        )
+
+    page_signature = ",".join(raw_ids[:10]) if raw_ids else f"helsing:{page_num}:empty"
+    limitations: list[str] = []
+    if not raw_ids:
+        limitations.append("Helsing jobs page showed no visible job cards")
+    return BrowserPageResult(
+        candidates=candidates,
+        raw_ids=raw_ids,
+        visible_results=len(raw_ids),
+        declared_total=None,
+        page_signature=page_signature,
+        limitations=limitations,
+    )
+
+
 def extract_asml_jobs(page: Any, source: SourceConfig, terms: list[str], page_num: int) -> BrowserPageResult:
     links = page.locator("a.search-results__item")
     visible_count = links.count()
@@ -3248,6 +3758,75 @@ def discover_thales_browser(source: SourceConfig, terms: list[str], timeout_seco
     )
 
 
+def discover_helsing_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Playwright is not installed; Helsing browser discovery is unavailable"],
+            candidates=[],
+        )
+
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 2200})
+            page.goto(source.url, wait_until="domcontentloaded", timeout=max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS))
+            page.wait_for_timeout(3000)
+            result = extract_helsing_jobs(page, source, "catalog", terms, 1)
+            browser.close()
+    except Exception as exc:  # pragma: no cover - defensive output for live runs
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="partial",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=[f"Helsing browser discovery failed: {type(exc).__name__}: {exc}"],
+            candidates=[],
+        )
+
+    status = "complete" if result.raw_ids else "partial"
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status=status,
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="catalog=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(result.raw_ids),
+        matched_jobs=len(result.candidates),
+        limitations=result.limitations,
+        candidates=result.candidates,
+    )
+
+
 BROWSER_STRATEGIES = {
     "Bosch": BrowserStrategy(
         search_url_builder=bosch_search_url,
@@ -3441,9 +4020,13 @@ DISCOVERY_HANDLERS = {
     "ashby_api": discover_ashby_api,
     "automattic_browser": discover_automattic_browser,
     "asml_browser": discover_asml_browser,
+    "auswaertiges_amt_json": discover_auswaertiges_amt_json,
     "bosch_autocomplete": discover_bosch_autocomplete,
+    "bundeswehr_jobsuche": discover_bundeswehr_jobsuche,
     "coinbase_browser": discover_coinbase_browser,
     "cybernetica_teamdash": discover_cybernetica_teamdash,
+    "enbw_phenom": discover_enbw_phenom,
+    "helsing_browser": discover_helsing_browser,
     "html": discover_html,
     "hackernews_jobs": discover_hackernews_jobs,
     "iacr_jobs": discover_iacr_jobs,
@@ -3459,12 +4042,14 @@ DISCOVERY_HANDLERS = {
     "pcd_team": discover_pcd_team,
     "qedit_inline": discover_qedit_inline,
     "qusecure_careers": discover_qusecure_careers,
+    "recruitee_inline": discover_recruitee_inline,
     "service_bund_links": discover_service_bund_links,
     "service_bund_search": discover_service_bund_search,
     "secunet_jobboard": discover_secunet_jobboard,
     "thales_browser": discover_thales_browser,
     "thales_html": discover_thales_html,
     "trailofbits_browser": discover_trailofbits_browser,
+    "verfassungsschutz_rss": discover_verfassungsschutz_rss,
     "workday_api": discover_workday_api,
     "yc_jobs_board": discover_yc_jobs_board,
     "browser": discover_browser,
