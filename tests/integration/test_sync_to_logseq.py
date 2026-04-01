@@ -33,7 +33,33 @@ def test_sync_to_logseq_copies_digest_and_overview_to_temp_graph(tmp_job_agent_r
     assert (tmp_graph_dir / "pages" / "Core Crypto Job Digest 2026-03-29.md").exists()
     assert (tmp_graph_dir / "pages" / "Core Crypto Ranked Overview.md").exists()
     journal_text = (tmp_graph_dir / "journals" / "2026_03_29.md").read_text()
-    assert "- New [[Core Crypto Job Digest 2026-03-29]]" in journal_text
+    assert journal_text == "- New [[Core Crypto Job Digest 2026-03-29]]\n"
+
+
+def test_sync_to_logseq_inserts_blank_line_before_entry_when_journal_not_empty(
+    tmp_job_agent_root, tmp_graph_dir, repo_root, run_cmd
+):
+    _write_sync_inputs(tmp_job_agent_root, "2026-03-29")
+    journal_path = tmp_graph_dir / "journals" / "2026_03_29.md"
+    journal_path.parent.mkdir(parents=True, exist_ok=True)
+    journal_path.write_text("- Existing entry\n")
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2026-03-29",
+        "JOB_AGENT_JOURNAL_DATE": "2026_03_29",
+        "LOGSEQ_GRAPH_DIR": str(tmp_graph_dir),
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "sync_to_logseq.sh"),
+        "--track",
+        "core_crypto",
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert journal_path.read_text() == "- Existing entry\n\n- New [[Core Crypto Job Digest 2026-03-29]]\n"
 
 
 def test_sync_to_logseq_does_not_duplicate_journal_link(tmp_job_agent_root, tmp_graph_dir, repo_root, run_cmd):

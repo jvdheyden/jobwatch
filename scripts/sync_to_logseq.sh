@@ -63,6 +63,9 @@ fi
 
 if ! grep -Fqx -- "- New [[${PAGE_NAME}]]" "$JOURNAL_FILE" 2>/dev/null; then
   {
+    if [[ -s "$JOURNAL_FILE" ]]; then
+      echo
+    fi
     echo "- New [[${PAGE_NAME}]]"
   } >> "$JOURNAL_FILE"
 fi
