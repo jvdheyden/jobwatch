@@ -39,6 +39,7 @@ Cadence note:
 | IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
 | Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-04-01 |
 | Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-04-01 |
+| Meta | https://www.metacareers.com/jobs | browser | |
 | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-04-01 |
 | Palantir | https://jobs.lever.co/palantir | lever_json | 2026-04-01 |
 | SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-04-01 |
