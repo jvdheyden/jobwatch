@@ -23,8 +23,6 @@ def track_display_name(track: str) -> str:
 
 
 def digest_page_name(track: str, stamp: str) -> str:
-    if track == "core_crypto":
-        return f"Job Digest {stamp}"
     return f"{track_display_name(track)} Job Digest {stamp}"
 
 

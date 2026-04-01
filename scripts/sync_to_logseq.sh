@@ -43,11 +43,7 @@ TRACK_DISPLAY_NAME="$(track_display_name "$TRACK")"
 TODAY="${JOB_AGENT_JOURNAL_DATE:-$(date +%Y_%m_%d)}"
 STAMP="$TODAY_STAMP"
 JOURNAL_FILE="$JOURNAL_DIR/$TODAY.md"
-if [[ "$TRACK" == "core_crypto" ]]; then
-  PAGE_NAME="Job Digest $STAMP"
-else
-  PAGE_NAME="$TRACK_DISPLAY_NAME Job Digest $STAMP"
-fi
+PAGE_NAME="$TRACK_DISPLAY_NAME Job Digest $STAMP"
 PAGE_FILE="$PAGES_DIR/$PAGE_NAME.md"
 RANKED_OVERVIEW_PAGE_FILE="$PAGES_DIR/$TRACK_DISPLAY_NAME Ranked Overview.md"
 
@@ -67,7 +63,6 @@ fi
 
 if ! grep -Fqx -- "- New [[${PAGE_NAME}]]" "$JOURNAL_FILE" 2>/dev/null; then
   {
-    echo
     echo "- New [[${PAGE_NAME}]]"
   } >> "$JOURNAL_FILE"
 fi

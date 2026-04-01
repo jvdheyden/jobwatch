@@ -37,3 +37,5 @@
 2026-03-30 | Nanyang Technological University, Singapore | Post-Doc/Research Fellow | Singapore | https://www.iacr.org/jobs/item/4180
 2026-03-31 | The Cyprus Institute | Postdoctoral Research Fellow in Quantum Computing - Cryptography - Number Theory | unknown | https://www.iacr.org/jobs/item/4147
 2026-03-31 | School of Computer Science, Shanghai Jiao Tong University, Shanghai. | PhD and Postdoctoral Researchers in post-quantum cryptography, MPC, and quantum algorithms. | unknown | https://www.iacr.org/jobs/item/4168
+2026-04-01 | NXP | Senior Security Experts (m/f/d) in our global Innovation Center Crypto & Security | 2 Locations | https://nxp.wd3.myworkdayjobs.com/careers/job/Gratkorn/Security-Experts--f-m-d--in-our-Innovation-Center-Crypto---Security_R-10014526
+2026-04-01 | IBM | Security Consultant – PKI & Crypto (German) | Multiple Cities | https://careers.ibm.com/careers/JobDetail?jobId=93640

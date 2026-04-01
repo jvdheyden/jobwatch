@@ -19,6 +19,10 @@ logs/
 artifacts/
 tracks/*/digests/
 
+# generated output
+shared/seen_jobs.md
+ranked_overview.md
+
 # keep test workflow
 !artifacts/digests
 artifacts/digests/*
@@ -26,3 +30,4 @@ artifacts/digests/*
 !artifacts/discovery
 artifacts/discovery/*
 !artifacts/discovery/test_workflow
+!tracks/test_workflow/ranked_overview.md

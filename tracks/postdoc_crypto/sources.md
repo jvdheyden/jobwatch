@@ -15,15 +15,15 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-01 |
 
 ## Check every 3 runs
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | |
-| IBM Research | https://www.ibm.com/careers/search | ibm_api | |
-| Meta | https://www.metacareers.com/jobs | browser | |
+| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-04-01 |
+| IBM Research | https://www.ibm.com/careers/search | ibm_api | 2026-04-01 |
+| Meta | https://www.metacareers.com/jobs | browser | 2026-04-01 |
 
 ## Search terms
 

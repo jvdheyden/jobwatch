@@ -30,10 +30,10 @@ def test_sync_to_logseq_copies_digest_and_overview_to_temp_graph(tmp_job_agent_r
     )
 
     assert result.returncode == 0, result.stderr
-    assert (tmp_graph_dir / "pages" / "Job Digest 2026-03-29.md").exists()
+    assert (tmp_graph_dir / "pages" / "Core Crypto Job Digest 2026-03-29.md").exists()
     assert (tmp_graph_dir / "pages" / "Core Crypto Ranked Overview.md").exists()
     journal_text = (tmp_graph_dir / "journals" / "2026_03_29.md").read_text()
-    assert "- New [[Job Digest 2026-03-29]]" in journal_text
+    assert "- New [[Core Crypto Job Digest 2026-03-29]]" in journal_text
 
 
 def test_sync_to_logseq_does_not_duplicate_journal_link(tmp_job_agent_root, tmp_graph_dir, repo_root, run_cmd):
@@ -51,4 +51,4 @@ def test_sync_to_logseq_does_not_duplicate_journal_link(tmp_job_agent_root, tmp_
     assert first.returncode == 0, first.stderr
     assert second.returncode == 0, second.stderr
     journal_text = (tmp_graph_dir / "journals" / "2026_03_29.md").read_text()
-    assert journal_text.count("- New [[Job Digest 2026-03-29]]") == 1
+    assert journal_text.count("- New [[Core Crypto Job Digest 2026-03-29]]") == 1

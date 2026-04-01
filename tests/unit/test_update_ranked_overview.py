@@ -40,7 +40,7 @@ def test_update_ranked_overview_builds_state_from_digest_json(tmp_job_agent_root
     assert state_payload["jobs"][0]["company"] == "LayerZero Labs"
     assert state_payload["jobs"][0]["title"] == "Cryptographer"
     assert state_payload["jobs"][0]["fit_score"] == 9.0
-    assert state_payload["jobs"][0]["date_seen_page"] == "Job Digest 2026-03-29"
+    assert state_payload["jobs"][0]["date_seen_page"] == "Core Crypto Job Digest 2026-03-29"
 
 
 def test_core_crypto_ranked_state_matches_digest(tmp_job_agent_root, load_json_fixture, monkeypatch):
@@ -64,7 +64,7 @@ def test_core_crypto_ranked_state_matches_digest(tmp_job_agent_root, load_json_f
             role["title"],
             role["url"],
             float(role["fit_score"]),
-            "Job Digest 2026-03-29",
+            "Core Crypto Job Digest 2026-03-29",
         )
         for role in expected_roles
     )
