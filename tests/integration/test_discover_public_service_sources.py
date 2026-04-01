@@ -325,3 +325,57 @@ def test_extract_helsing_jobs_filters_visible_cards():
     assert candidate.location == "Berlin, Germany"
     assert candidate.url == "https://helsing.ai/jobs/4334849101"
     assert candidate.matched_terms == ["security"]
+
+
+def test_discover_bnd_career_search_extracts_native_result_cards(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="BND",
+        url="https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980",
+        discovery_mode="bnd_career_search",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    html = """
+    <html><body>
+      <a href="SharedDocs/Stellenangebote/DE/Stellenangebote/AS-2026-038-ma-it-anforderungsmanagement-pullach.html?nn=415896" class="c-career-item__link">
+        <strong class="c-career-item__title">Mitarbeiter / Mitarbeiterin (w/m/d) für IT-Anforderungsmanagement und Requirements Engineering</strong>
+        <span class="c-career-item__bubbles">
+          <span class="c-bubble">Pullach</span>
+          <span class="c-bubble">IT und Informatik</span>
+          <span class="c-bubble">Technik und Ingenieurwissenschaft</span>
+          <span class="c-bubble">Bachelor/FH-Diplom</span>
+        </span>
+      </a>
+      <a href="SharedDocs/Stellenangebote/DE/Stellenangebote/AS-2026-020-sicherungsangestellte-rheinhausen.html?nn=415896" class="c-career-item__link">
+        <strong class="c-career-item__title">Sicherungsangestellte bzw. Fachkräfte (w/m/d) für Schutz und Sicherheit</strong>
+        <span class="c-career-item__bubbles">
+          <span class="c-bubble">Rheinhausen</span>
+          <span class="c-bubble">Berufsausbildung</span>
+        </span>
+      </a>
+    </body></html>
+    """
+    seen_urls: list[str] = []
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        seen_urls.append(url)
+        return html
+
+    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_bnd_career_search(
+        source,
+        ["IT-Sicherheit", "Referent", "engineering"],
+        timeout_seconds=5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.listing_pages_scanned == 3
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    assert all("templateQueryString=" in url for url in seen_urls)
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Mitarbeiter / Mitarbeiterin (w/m/d) für IT-Anforderungsmanagement und Requirements Engineering"
+    assert candidate.location == "Pullach"
+    assert candidate.url == "https://www.bnd.bund.de/SharedDocs/Stellenangebote/DE/Stellenangebote/AS-2026-038-ma-it-anforderungsmanagement-pullach.html?nn=415896"
+    assert candidate.matched_terms == ["engineering"]

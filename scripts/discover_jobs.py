@@ -92,6 +92,13 @@ BUNDESWEHR_JOB_TITLE_RE = re.compile(
     r'<a class="jobtitle" href="(?P<href>[^"]+)">(?P<title>.*?)</a>',
     flags=re.DOTALL | re.IGNORECASE,
 )
+BND_RESULT_RE = re.compile(
+    r'<a[^>]+href="(?P<href>[^"]*SharedDocs/Stellenangebote/DE/Stellenangebote/[^"]*)"[^>]*class="c-career-item__link"[^>]*>'
+    r'\s*<strong[^>]*class="c-career-item__title"[^>]*>(?P<title>.*?)</strong>'
+    r'(?P<bubbles>.*?)</a>',
+    flags=re.DOTALL | re.IGNORECASE,
+)
+BND_BUBBLE_RE = re.compile(r'<span[^>]*class="c-bubble"[^>]*>(?P<text>.*?)</span>', flags=re.DOTALL | re.IGNORECASE)
 IBM_SEARCH_API_URL = "https://www-api.ibm.com/search/api/v2"
 ASHBY_JOB_BOARD_QUERY = """query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) {
   jobBoard: jobBoardWithTeams(
@@ -730,6 +737,16 @@ def build_enbw_apply_url(source_url: str, job_seq_no: str) -> str:
     parsed = urlparse(source_url)
     base = f"{parsed.scheme}://{parsed.netloc}"
     return normalize_url_without_fragment(f"{base}/de/de/apply?{urlencode({'jobSeqNo': job_seq_no})}")
+
+
+def build_bnd_search_url(source_url: str, term: str, page_num: int) -> str:
+    parsed = urlparse(source_url)
+    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    params["nn"] = params.get("nn") or "415896"
+    params["queryResultId"] = "null"
+    params["pageNo"] = str(max(page_num - 1, 0))
+    params["templateQueryString"] = term
+    return parsed._replace(query=urlencode(params), fragment="sprg415980").geturl()
 
 
 def should_keep_candidate(title: str, matched_terms: list[str], searchable_text: str) -> bool:
@@ -1760,6 +1777,78 @@ def discover_bundeswehr_jobsuche(source: SourceConfig, terms: list[str], timeout
         listing_pages_scanned=1,
         search_terms_tried=terms,
         result_pages_scanned=f"profiles={len(raw_urls)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_bnd_career_search(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_urls: set[str] = set()
+    listing_pages_scanned = 0
+    result_summaries: list[str] = []
+    limitations: list[str] = []
+    errored_terms: list[str] = []
+    parsed_source = urlparse(source.url)
+    base_url = f"{parsed_source.scheme}://{parsed_source.netloc}/"
+
+    for term in terms:
+        try:
+            html = fetch_text(build_bnd_search_url(source.url, term, 1), timeout_seconds)
+        except Exception:
+            errored_terms.append(term)
+            continue
+        listing_pages_scanned += 1
+        term_seen = 0
+        for match in BND_RESULT_RE.finditer(html):
+            absolute_url = normalize_url_without_fragment(urljoin(base_url, unescape(match.group("href"))))
+            raw_urls.add(absolute_url)
+            title = strip_html_fragment(match.group("title")) or "unknown"
+            bubbles = [
+                strip_html_fragment(bubble_match.group("text"))
+                for bubble_match in BND_BUBBLE_RE.finditer(match.group("bubbles"))
+                if strip_html_fragment(bubble_match.group("text"))
+            ]
+            location = bubbles[0] if bubbles else "unknown"
+            searchable_text = " ".join(part for part in [title, *bubbles] if part)
+            matched_terms = sorted(set(match_terms(searchable_text, terms)))
+            if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
+                continue
+            term_seen += 1
+            notes = f"BND native career search keyword='{term}'"
+            if len(bubbles) > 1:
+                notes = f"{notes}; tags={', '.join(bubbles[1:])}"
+            merge_candidate(
+                candidates_by_url,
+                Candidate(
+                    employer=source.source,
+                    title=title,
+                    url=absolute_url,
+                    source_url=source.url,
+                    location=location,
+                    matched_terms=matched_terms,
+                    notes=notes,
+                ),
+            )
+        result_summaries.append(f"{term}:1p/{term_seen}")
+
+    if errored_terms:
+        limitations.append("Errored terms: " + ", ".join(sorted(set(errored_terms))))
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial" if limitations else "complete",
+        listing_pages_scanned=listing_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=", ".join(result_summaries) if result_summaries else "none",
         direct_job_pages_opened=0,
         enumerated_jobs=len(raw_urls),
         matched_jobs=len(candidates_by_url),
@@ -4021,6 +4110,7 @@ DISCOVERY_HANDLERS = {
     "automattic_browser": discover_automattic_browser,
     "asml_browser": discover_asml_browser,
     "auswaertiges_amt_json": discover_auswaertiges_amt_json,
+    "bnd_career_search": discover_bnd_career_search,
     "bosch_autocomplete": discover_bosch_autocomplete,
     "bundeswehr_jobsuche": discover_bundeswehr_jobsuche,
     "coinbase_browser": discover_coinbase_browser,

@@ -16,9 +16,8 @@ Cadence note:
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
 | Bund | https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?view=processForm&nn=4641514&cl2Categories_Laufbahn=laufbahn-hoehererdienst | service_bund_search | |
-| Bund Karriere | https://karriere.bund.de/ | html | |
 | Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | verfassungsschutz_rss | |
-| BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980 | html | |
+| BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896&cl2Categories_Abschluss=master#sprg415980 | bnd_career_search | |
 | Bundeswehr | https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded | bundeswehr_jobsuche | |
 | Rheinmetall | https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote | html | |
 | Helsing | https://helsing.ai/jobs | helsing_browser | |
@@ -69,7 +68,7 @@ Add `[override]` after the source name to replace the track-wide terms for that 
 - Bund [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent Kryptographie, Referent IT-Sicherheit, Referent Cyberabwehr
 - Bund Karriere [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent Kryptographie, Referent IT-Sicherheit, Referent Cyberabwehr
 - Verfassungsschutz [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
-- BND [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent
+- BND [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Spionageabwehr, Referent, IT und Informatik, Technik und Ingenieurwissenschaft, Requirements Engineering, IT-Systemadministrator
 - Bundeswehr [override] — Kryptographie, IT-Sicherheit, Cyberabwehr, Referent, Cyber/IT, Informationstechnik
 - Rheinmetall — cryptography, security, cyber defense, IT-Sicherheit
 - Helsing [override] — security engineer, cybersecurity, IT-Sicherheit, cyber defense, cryptography
