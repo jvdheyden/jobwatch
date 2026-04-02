@@ -311,7 +311,29 @@ def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch)
       <a class="jobtitle" href="/koch-123">Köchin / Koch</a>
     </body></html>
     """
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    detail_html = """
+    <html><body>
+      <h2>Ihre Aufgaben</h2>
+      <ul>
+        <li>Betreiben sicherer IT-Systeme.</li>
+        <li>Unterstuetzung bei der Abwehr von Cyberangriffen.</li>
+      </ul>
+      <h2>Was fuer uns zaehlt</h2>
+      <p>Interesse an Informationstechnik und belastbare technische Grundlagen.</p>
+      <h2>Was fuer Sie zaehlt</h2>
+      <p>Besoldung nach dem Soldatengesetz sowie unentgeltliche truppenaerztliche Versorgung.</p>
+    </body></html>
+    """
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        if url == discover_jobs.BUNDESWEHR_JOBSUCHE_URL:
+            return html
+        if url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417":
+            return detail_html
+        raise AssertionError(f"unexpected fetch: {url}")
+
+    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(
         source,
@@ -320,11 +342,54 @@ def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch)
     )
 
     assert coverage.status == "partial"
+    assert coverage.direct_job_pages_opened == 1
     assert coverage.enumerated_jobs == 2
     assert coverage.matched_jobs == 1
     candidate = coverage.candidates[0]
     assert candidate.title == "Soldatin / Soldat in der Informationstechnik"
-    assert candidate.url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417"
+    assert candidate.url == "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html?job=soldatin-soldat-in-der-informationstechnik-417"
+    assert candidate.alternate_url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417"
+    assert "Tasks: Betreiben sicherer IT-Systeme." in candidate.notes
+    assert "Qualifications: Interesse an Informationstechnik" in candidate.notes
+    assert "Compensation: Besoldung nach dem Soldatengesetz" in candidate.notes
+
+
+def test_discover_bundeswehr_jobsuche_keeps_allowlisted_portal_url_when_detail_fetch_fails(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Bundeswehr",
+        url="https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded",
+        discovery_mode="bundeswehr_jobsuche",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    html = """
+    <html><body>
+      <a class="jobtitle" href="/soldatin-soldat-in-der-informationstechnik-417">Soldatin / Soldat in der Informationstechnik</a>
+    </body></html>
+    """
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        if url == discover_jobs.BUNDESWEHR_JOBSUCHE_URL:
+            return html
+        if url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417":
+            raise TimeoutError("detail fetch blocked")
+        raise AssertionError(f"unexpected fetch: {url}")
+
+    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_bundeswehr_jobsuche(
+        source,
+        ["Informationstechnik"],
+        timeout_seconds=5,
+    )
+
+    assert coverage.direct_job_pages_opened == 0
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.url == "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html?job=soldatin-soldat-in-der-informationstechnik-417"
+    assert candidate.alternate_url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417"
+    assert candidate.notes == "Bundeswehr jobsuche profile catalog fallback; Bewerbungsportal returned a generic error page in automation"
 
 
 def test_discover_rheinmetall_html_extracts_structured_ssr_cards(monkeypatch):

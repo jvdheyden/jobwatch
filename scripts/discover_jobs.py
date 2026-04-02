@@ -249,6 +249,43 @@ THALES_PAYLOAD_TERM_ALIASES = {
 }
 VERFASSUNGSSCHUTZ_RSS_URL = "https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/Stellenangebote.xml"
 BUNDESWEHR_JOBSUCHE_URL = "https://www.bundeswehrkarriere.de/entdecker/jobs/jobsuche"
+BUNDESWEHR_TASK_HEADINGS = (
+    "Ihre Aufgaben",
+    "Aufgaben",
+    "Was Sie bei uns bewegt",
+    "Was du bei uns bewegst",
+)
+BUNDESWEHR_QUALIFICATION_HEADINGS = (
+    "Was fuer uns zaehlt",
+    "Ihr Profil",
+    "Voraussetzungen",
+    "Das bringen Sie mit",
+    "Das bringst du mit",
+    "Qualifikationen",
+)
+BUNDESWEHR_COMPENSATION_HEADINGS = (
+    "Was fuer Sie zaehlt",
+    "Verguetung",
+    "Besoldung",
+    "Gehalt",
+)
+BUNDESWEHR_DETAIL_STOP_HEADINGS = (
+    *BUNDESWEHR_TASK_HEADINGS,
+    *BUNDESWEHR_QUALIFICATION_HEADINGS,
+    *BUNDESWEHR_COMPENSATION_HEADINGS,
+    "Bewerbung & Kontakt",
+    "Bewerbung",
+    "Kontakt",
+    "Karriereperspektiven",
+    "Weitere Informationen",
+)
+BUNDESWEHR_COMPENSATION_MARKERS = (
+    "besoldung",
+    "verguetung",
+    "gehalt",
+    "entgelt",
+    "sold",
+)
 
 
 @dataclass
@@ -626,6 +663,98 @@ def normalize_url_without_fragment(value: str) -> str:
     parsed = urlparse(value)
     path = parsed.path.rstrip("/") or "/"
     return parsed._replace(path=path, fragment="").geturl()
+
+
+def build_bundeswehr_portal_candidate_url(source_url: str, detail_url: str) -> str:
+    parsed_source = urlparse(source_url)
+    detail_slug = Path(urlparse(detail_url).path).name
+    query_pairs = [(key, value) for key, value in parse_qsl(parsed_source.query, keep_blank_values=True) if key != "job"]
+    if detail_slug:
+        query_pairs.append(("job", detail_slug))
+    return normalize_url_without_fragment(parsed_source._replace(query=urlencode(query_pairs), fragment="").geturl())
+
+
+def extract_visible_text_lines_from_html(html: str) -> list[str]:
+    text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", html or "")
+    text = re.sub(r"(?i)</?\s*(?:p|div|li|ul|ol|h[1-6]|section|article|tr|td|th|dl|dt|dd)\b[^>]*>", "\n", text)
+    text = unescape(HTML_TAG_RE.sub(" ", text))
+    return [normalize_whitespace(line) for line in text.splitlines() if normalize_whitespace(line)]
+
+
+def extract_visible_text_marker_snippet(
+    text: str,
+    markers: tuple[str, ...],
+    stop_headings: tuple[str, ...],
+    *,
+    max_lines: int = 3,
+) -> str:
+    lines = split_visible_lines(text)
+    stop_heading_set = {normalize_heading_line(heading) for heading in stop_headings}
+    normalized_markers = tuple(normalize_for_matching(marker) for marker in markers)
+    for index, line in enumerate(lines):
+        normalized_line = normalize_for_matching(line)
+        if not any(marker in normalized_line for marker in normalized_markers):
+            continue
+        collected: list[str] = []
+        for candidate_line in lines[index : index + max_lines]:
+            if collected and normalize_heading_line(candidate_line) in stop_heading_set:
+                break
+            cleaned = normalize_whitespace(re.sub(r"^[•*-\u2022]+\s*", "", candidate_line))
+            if cleaned:
+                collected.append(cleaned)
+        if collected:
+            return normalize_whitespace(" ".join(collected))
+    return ""
+
+
+def extract_bundeswehr_detail_sections(detail_html: str) -> dict[str, str]:
+    detail_text = "\n".join(extract_visible_text_lines_from_html(detail_html))
+    tasks = extract_visible_text_section(detail_text, BUNDESWEHR_TASK_HEADINGS, BUNDESWEHR_DETAIL_STOP_HEADINGS)
+    qualifications = extract_visible_text_section(
+        detail_text,
+        BUNDESWEHR_QUALIFICATION_HEADINGS,
+        BUNDESWEHR_DETAIL_STOP_HEADINGS,
+    )
+    compensation = extract_visible_text_section(
+        detail_text,
+        BUNDESWEHR_COMPENSATION_HEADINGS,
+        BUNDESWEHR_DETAIL_STOP_HEADINGS,
+    )
+    if not compensation:
+        compensation = extract_visible_text_marker_snippet(
+            detail_text,
+            BUNDESWEHR_COMPENSATION_MARKERS,
+            BUNDESWEHR_DETAIL_STOP_HEADINGS,
+        )
+    return {
+        "tasks": tasks,
+        "qualifications": qualifications,
+        "compensation": compensation,
+    }
+
+
+def apply_bundeswehr_detail_text(candidate: Candidate, detail_html: str, terms: list[str]) -> bool:
+    sections = extract_bundeswehr_detail_sections(detail_html)
+    detail_text_for_matching = " ".join(part for part in sections.values() if part)
+    original_terms = list(candidate.matched_terms)
+    if detail_text_for_matching:
+        candidate.matched_terms = sorted(set(candidate.matched_terms + match_terms(detail_text_for_matching, terms)))
+
+    original_notes = candidate.notes
+    note_parts = [candidate.notes] if candidate.notes else []
+    for label, key in (
+        ("Tasks", "tasks"),
+        ("Qualifications", "qualifications"),
+        ("Compensation", "compensation"),
+    ):
+        value = sections[key]
+        if not value:
+            continue
+        detail_note = f"{label}: {truncate_text(value, 260)}"
+        if detail_note not in note_parts:
+            note_parts.append(detail_note)
+    candidate.notes = "; ".join(dict.fromkeys(part for part in note_parts if part))
+    return candidate.notes != original_notes or candidate.matched_terms != original_terms
 
 
 def build_workday_job_url(source_url: str, external_path: str) -> str:
@@ -2040,6 +2169,7 @@ def discover_bundeswehr_jobsuche(source: SourceConfig, terms: list[str], timeout
     html = fetch_text(BUNDESWEHR_JOBSUCHE_URL, timeout_seconds)
     candidates_by_url: dict[str, Candidate] = {}
     raw_urls: set[str] = set()
+    detail_pages_opened = 0
 
     for match in BUNDESWEHR_JOB_TITLE_RE.finditer(html):
         absolute_url = normalize_url_without_fragment(urljoin(BUNDESWEHR_JOBSUCHE_URL, unescape(match.group("href"))))
@@ -2049,17 +2179,23 @@ def discover_bundeswehr_jobsuche(source: SourceConfig, terms: list[str], timeout
         matched_terms = sorted(set(match_terms(searchable_text, terms)))
         if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
             continue
-        merge_candidate(
-            candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=absolute_url,
-                source_url=source.url,
-                matched_terms=matched_terms,
-                notes="Bundeswehr jobsuche profile catalog fallback; Bewerbungsportal returned a generic error page in automation",
-            ),
+        candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=build_bundeswehr_portal_candidate_url(source.url, absolute_url),
+            source_url=source.url,
+            alternate_url=absolute_url,
+            matched_terms=matched_terms,
+            notes="Bundeswehr jobsuche profile catalog fallback; Bewerbungsportal returned a generic error page in automation",
         )
+        try:
+            detail_html = fetch_text(absolute_url, timeout_seconds)
+        except Exception:
+            detail_html = ""
+        else:
+            detail_pages_opened += 1
+            apply_bundeswehr_detail_text(candidate, detail_html, terms)
+        merge_candidate(candidates_by_url, candidate)
 
     limitations = [
         "Bundeswehr Bewerbungsportal returned a generic error page in automation; using the public jobsuche profile catalog as a fallback."
@@ -2075,7 +2211,7 @@ def discover_bundeswehr_jobsuche(source: SourceConfig, terms: list[str], timeout
         listing_pages_scanned=1,
         search_terms_tried=terms,
         result_pages_scanned=f"profiles={len(raw_urls)}",
-        direct_job_pages_opened=0,
+        direct_job_pages_opened=detail_pages_opened,
         enumerated_jobs=len(raw_urls),
         matched_jobs=len(candidates_by_url),
         limitations=limitations,

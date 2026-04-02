@@ -201,6 +201,10 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert "Your first concrete step must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py." in prompt_text
     assert "Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch." in prompt_text
     assert "If the failing check is detail_depth, prefer source-specific detail-page enrichment for already-kept candidates and append substantive role detail to existing extracted notes or fields." in prompt_text
+    assert "Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this repair." in prompt_text
+    assert "Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds." in prompt_text
+    assert "Stop as soon as the focused validation command completes; do not continue into broader verification after that point." in prompt_text
+    assert "The orchestrator owns rediscovery and final eval." in prompt_text
 
 
 def test_repair_source_stops_at_retry_limit(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
@@ -356,6 +360,76 @@ fi
     assert summary["attempts"][2]["eval_final_status"] == "pass"
 
 
+def test_repair_source_proceeds_to_rediscovery_after_idle_with_success_signals(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
+    write_stub_discover_script(tmp_job_agent_root)
+    artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
+    write_example_artifact(artifact_path)
+
+    coder_script = tmp_job_agent_root / "fake_success_then_idle_coder.sh"
+    coder_script.write_text(
+        """#!/bin/bash
+set -euo pipefail
+cat >/dev/null
+touch "$JOB_AGENT_ROOT/fixed.marker"
+touch "$JOB_AGENT_ROOT/scripts/discover_jobs.py"
+echo '{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/zsh -lc '\''python3 scripts/discover_jobs.py --track public_service --source \"Example Source\" --today 2026-04-02 --pretty'\''","aggregated_output":"ok","exit_code":0,"status":"completed"}}'
+trap 'exit 0' TERM
+sleep 30
+"""
+    )
+    coder_script.chmod(0o755)
+
+    eval_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.json"
+    summary_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.repair_loop.json"
+    env = os.environ.copy()
+    env["JOB_AGENT_ROOT"] = str(tmp_job_agent_root)
+
+    result = run_cmd(
+        "python3",
+        str(repo_root / "scripts" / "repair_source.py"),
+        "--track",
+        "public_service",
+        "--source",
+        "Example Source",
+        "--today",
+        "2026-04-02",
+        "--artifact-path",
+        str(artifact_path),
+        "--canary-title",
+        "Privacy Engineer",
+        "--canary-url",
+        "https://jobs.example.com/jobs/999",
+        "--reviewer",
+        "off",
+        "--coder-bin",
+        str(coder_script),
+        "--idle-timeout-seconds",
+        "1",
+        "--repair-timeout-seconds",
+        "10",
+        "--max-attempts",
+        "1",
+        "--eval-output",
+        str(eval_output),
+        "--summary-output",
+        str(summary_output),
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(summary_output.read_text())
+    assert summary["final_status"] == "pass"
+    assert summary["repair_attempts_used"] == 1
+    assert summary["attempts"][0]["coding_completion_state"] == "ready_for_rediscovery_idle"
+    assert summary["attempts"][0]["rediscovery_invoked"] is True
+    assert summary["attempts"][0]["coding_success_signals"]["ready_for_rediscovery"] is True
+    assert summary["attempts"][0]["coding_success_signals"]["touched_likely_file"] is True
+    assert summary["attempts"][0]["coding_success_signals"]["source_scoped_discovery_commands"]
+    assert "coding_postmortem_path" not in summary["attempts"][0]
+    assert summary["attempts"][1]["eval_final_status"] == "pass"
+
+
 def test_repair_source_aborts_idle_coder(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
     write_stub_discover_script(tmp_job_agent_root)
     artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
@@ -414,6 +488,7 @@ sleep 30
     summary = json.loads(summary_output.read_text())
     assert summary["final_status"] == "blocked"
     assert summary["attempts"][0]["coding_invoked"] is True
+    assert summary["attempts"][0]["coding_completion_state"] == "blocked_idle_no_progress"
     assert "went idle after 1s" in summary["attempts"][0]["coding_error"]
     postmortem = json.loads(Path(summary["attempts"][0]["coding_postmortem_path"]).read_text())
     assert postmortem["failure_class"] == "idle"

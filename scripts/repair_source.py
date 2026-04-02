@@ -221,16 +221,27 @@ def iter_coder_events(stdout_log_path: Path) -> list[dict[str, Any]]:
     return events
 
 
+def iter_completed_command_events(stdout_log_path: Path) -> list[dict[str, Any]]:
+    completed: list[dict[str, Any]] = []
+    for event in iter_coder_events(stdout_log_path):
+        item = event.get("item")
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") != "command_execution":
+            continue
+        if item.get("status") != "completed":
+            continue
+        completed.append(item)
+    return completed
+
+
 def extract_tests_touched_or_run(stdout_log_path: Path, files_touched: list[str]) -> list[str]:
     seen: list[str] = []
     for relative in files_touched:
         if relative.startswith("tests/"):
             seen.append(relative)
 
-    for event in iter_coder_events(stdout_log_path):
-        item = event.get("item")
-        if not isinstance(item, dict) or item.get("type") != "command_execution":
-            continue
+    for item in iter_completed_command_events(stdout_log_path):
         command = item.get("command")
         if not isinstance(command, str):
             continue
@@ -242,6 +253,43 @@ def extract_tests_touched_or_run(stdout_log_path: Path, files_touched: list[str]
         if value not in deduped:
             deduped.append(value)
     return deduped
+
+
+def detect_ready_for_rediscovery_signals(
+    *,
+    stdout_log_path: Path,
+    files_touched: list[str],
+    likely_file: str,
+    track: str,
+    source: str,
+    today: str,
+) -> dict[str, Any]:
+    touched_likely_file = likely_file in files_touched
+    source_discovery_commands: list[str] = []
+    focused_test_commands: list[str] = []
+    source_token = source.replace('"', '\\"')
+
+    for item in iter_completed_command_events(stdout_log_path):
+        command = item.get("command")
+        exit_code = item.get("exit_code")
+        if not isinstance(command, str) or exit_code != 0:
+            continue
+        if (
+            "python3 scripts/discover_jobs.py" in command
+            and f"--track {track}" in command
+            and today in command
+            and (source in command or source_token in command)
+        ):
+            source_discovery_commands.append(truncate_text(command, 240))
+        if "pytest" in command and (source.lower() in command.lower() or source_slug(source) in command):
+            focused_test_commands.append(truncate_text(command, 240))
+
+    return {
+        "touched_likely_file": touched_likely_file,
+        "source_scoped_discovery_commands": source_discovery_commands,
+        "focused_test_commands": focused_test_commands,
+        "ready_for_rediscovery": touched_likely_file and bool(source_discovery_commands),
+    }
 
 
 RUNTIME_ERROR_PATTERNS = (
@@ -514,10 +562,13 @@ def build_coder_prompt(
             "- Do not modify unrelated sources or track configuration.",
             "- Do not broaden search terms unless the ticket explicitly requires it.",
             "- Do not edit discovery or eval artifacts directly.",
+            "- Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this repair.",
+            "- Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds.",
             f"- After your code change, validate with: python3 scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",
             f"- Check that the fresh source artifact includes the detail missing from the repair ticket for the canary {json.dumps(canary_title)}.",
-            "- Run the most relevant tests for the changed code before finishing.",
-            f"- The orchestrator will regenerate {fresh_artifact_path} and rerun scripts/eval_source_quality.py after your fix.",
+            "- Run only the most relevant focused tests for the changed code before finishing.",
+            "- Stop as soon as the focused validation command completes; do not continue into broader verification after that point.",
+            f"- The orchestrator owns rediscovery and final eval. It will regenerate {fresh_artifact_path} and rerun scripts/eval_source_quality.py after your fix.",
             "- If you cannot get to a pass with one focused fix, stop with a concrete blocker rather than exploring broadly.",
         ]
     )
@@ -866,14 +917,45 @@ def main() -> int:
         attempt_record["coding_exit_code"] = completed_returncode
         attempts.append(attempt_record)
 
+        files_touched = detect_files_touched(pre_coder_snapshot, snapshot_workspace_files(WORK_ROOT))
+        tests_touched_or_run = extract_tests_touched_or_run(stdout_log_path, files_touched)
+        runtime_error_signatures = extract_runtime_error_signatures(attempt_record)
+        ready_signals = detect_ready_for_rediscovery_signals(
+            stdout_log_path=stdout_log_path,
+            files_touched=files_touched,
+            likely_file=repair_ticket.get("likely_file") or "scripts/discover_jobs.py",
+            track=args.track,
+            source=args.source,
+            today=args.today,
+        )
+        attempt_record["files_touched"] = files_touched
+        attempt_record["tests_touched_or_run"] = tests_touched_or_run
+        attempt_record["runtime_error_signatures"] = runtime_error_signatures
+
         if completed_returncode not in (None, 0) and "coding_error" not in attempt_record:
             attempt_record["coding_error"] = f"repair run exited with code {completed_returncode}"
             attempt_blocked = True
 
-        if attempt_blocked or completed_returncode not in (None, 0):
-            files_touched = detect_files_touched(pre_coder_snapshot, snapshot_workspace_files(WORK_ROOT))
-            tests_touched_or_run = extract_tests_touched_or_run(stdout_log_path, files_touched)
-            runtime_error_signatures = extract_runtime_error_signatures(attempt_record)
+        ready_for_rediscovery = attempt_blocked and ready_signals["ready_for_rediscovery"]
+
+        if ready_for_rediscovery:
+            attempt_record["coding_completion_state"] = (
+                "ready_for_rediscovery_idle" if "idle" in str(attempt_record.get("coding_error", "")) else "ready_for_rediscovery_timeout"
+            )
+            attempt_record["coding_completion_reason"] = attempt_record.get("coding_error", "")
+            attempt_record["coding_success_signals"] = ready_signals
+            attempt_record.pop("coding_error", None)
+            attempt_blocked = False
+        elif attempt_blocked:
+            attempt_record["coding_completion_state"] = (
+                "blocked_idle_no_progress" if "idle" in str(attempt_record.get("coding_error", "")) else "blocked_timeout_no_progress"
+            )
+        elif completed_returncode not in (None, 0):
+            attempt_record["coding_completion_state"] = "blocked_nonzero_exit"
+        else:
+            attempt_record["coding_completion_state"] = "completed"
+
+        if not ready_for_rediscovery and (attempt_blocked or completed_returncode not in (None, 0)):
             postmortem_path = default_postmortem_path(args.track, args.source, args.today, attempt_number)
             postmortem = build_coding_postmortem(
                 track=args.track,
