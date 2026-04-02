@@ -86,6 +86,7 @@ Expected coding output:
 - one focused automated test
 - validation with `python3 scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
 - quality-gate validation with `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+- if that evaluation returns `repair_needed`, prefer `python3 scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]` over ad hoc manual retrying
 - if shared code changed, `scripts/test.sh`
 
 After the coding handoff succeeds:

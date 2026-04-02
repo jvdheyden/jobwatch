@@ -23,6 +23,7 @@ pytest \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \
   tests/integration/test_eval_source_quality.py \
+  tests/integration/test_repair_source.py \
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_asml_browser.py \
   tests/integration/test_discover_iacr_jobs.py \
