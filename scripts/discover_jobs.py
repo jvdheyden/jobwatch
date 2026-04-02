@@ -599,6 +599,16 @@ def normalize_whitespace(value: str) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
 
 
+def truncate_text(value: str, limit: int = 240) -> str:
+    text = normalize_whitespace(value)
+    if len(text) <= limit:
+        return text
+    boundary = text.rfind(" ", 0, limit - 3)
+    if boundary == -1 or boundary < limit // 2:
+        boundary = limit - 3
+    return text[:boundary].rstrip() + "..."
+
+
 def slugify_title(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value or "")
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
@@ -618,6 +628,62 @@ def build_workday_job_url(source_url: str, external_path: str) -> str:
     if parsed.scheme and parsed.netloc:
         return normalize_url_without_fragment(external_path)
     return normalize_url_without_fragment(source_url.rstrip("/") + "/" + external_path.lstrip("/"))
+
+
+def extract_verfassungsschutz_value(html: str, label: str) -> str:
+    patterns = [
+        rf'<strong[^>]*class="label"[^>]*>\s*{re.escape(label)}\s*</strong>\s*<span[^>]*class="value"[^>]*>(?P<value>.*?)</span>',
+        rf'<span[^>]*class="label"[^>]*>\s*{re.escape(label)}\s*</span>\s*<span[^>]*class="value"[^>]*>(?P<value>.*?)</span>',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
+        if match:
+            return strip_html_fragment(match.group("value"))
+    return ""
+
+
+def extract_verfassungsschutz_section(html: str, *headings: str) -> str:
+    for heading in headings:
+        pattern = rf'<h2[^>]*>\s*{re.escape(heading)}\s*</h2>\s*(?P<body>.*?)(?=<h2[^>]*>|</main>)'
+        match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
+        if match:
+            return strip_html_fragment(match.group("body"))
+    return ""
+
+
+def fetch_verfassungsschutz_job_details(url: str, timeout_seconds: int) -> dict[str, str]:
+    html = fetch_text(url, timeout_seconds)
+
+    description = ""
+    meta_match = re.search(
+        r'<meta[^>]+name="description"[^>]+content="(?P<value>[^"]+)"',
+        html,
+        re.IGNORECASE,
+    )
+    if meta_match:
+        description = strip_html_fragment(meta_match.group("value"))
+
+    apply_match = re.search(
+        r'<a[^>]+href="(?P<href>[^"]+)"[^>]*class="application-link"',
+        html,
+        re.IGNORECASE,
+    )
+    apply_url = ""
+    if apply_match:
+        apply_url = normalize_url_without_fragment(urljoin(url, apply_match.group("href")))
+
+    details = {
+        "description": description,
+        "deadline": extract_verfassungsschutz_value(html, "Bewerbungsfrist"),
+        "career_track": extract_verfassungsschutz_value(html, "Laufbahn"),
+        "working_time": extract_verfassungsschutz_value(html, "Arbeitszeit"),
+        "location": extract_verfassungsschutz_value(html, "Arbeitsort"),
+        "tasks": extract_verfassungsschutz_section(html, "Ihre Aufgaben", "Aufgaben"),
+        "offer": extract_verfassungsschutz_section(html, "Wir bieten"),
+        "profile": extract_verfassungsschutz_section(html, "Ihr Profil", "Anforderungen"),
+        "apply_url": apply_url,
+    }
+    return details
 
 
 def is_same_page_link(source_url: str, candidate_url: str) -> bool:
@@ -1691,19 +1757,65 @@ def discover_verfassungsschutz_rss(source: SourceConfig, terms: list[str], timeo
     root = ET.fromstring(xml_text)
     items = root.findall("./channel/item")
     candidates_by_url: dict[str, Candidate] = {}
+    direct_job_pages_opened = 0
+    detail_fetch_failures = 0
 
     for item in items:
         title = normalize_whitespace(item.findtext("title") or "") or "unknown"
         link = normalize_url_without_fragment(item.findtext("link") or source.url)
         description = strip_html_fragment(item.findtext("description") or "")
         published = normalize_whitespace(item.findtext("pubDate") or "")
-        searchable_text = " ".join(part for part in [title, description, published, link] if part)
+        location = "unknown"
+        alternate_url = ""
+        note_parts = ["Verfassungsschutz RSS feed"]
+        searchable_parts = [title, description, published, link]
+
+        if published:
+            note_parts.append(f"published={published}")
+
+        direct_job_pages_opened += 1
+        try:
+            details = fetch_verfassungsschutz_job_details(link, timeout_seconds)
+            if details["location"]:
+                location = details["location"]
+            if details["apply_url"]:
+                alternate_url = details["apply_url"]
+            searchable_parts.extend(
+                part
+                for part in (
+                    details["description"],
+                    details["deadline"],
+                    details["career_track"],
+                    details["working_time"],
+                    details["location"],
+                    details["tasks"],
+                    details["offer"],
+                    details["profile"],
+                    details["apply_url"],
+                )
+                if part
+            )
+            if details["description"]:
+                note_parts.append(f"Description: {truncate_text(details['description'], 180)}")
+            if details["deadline"]:
+                note_parts.append(f"Deadline: {details['deadline']}")
+            if details["career_track"]:
+                note_parts.append(f"Laufbahn: {details['career_track']}")
+            if details["working_time"]:
+                note_parts.append(f"Arbeitszeit: {details['working_time']}")
+            if details["location"]:
+                note_parts.append(f"Location: {details['location']}")
+            if details["tasks"]:
+                note_parts.append(f"Tasks: {truncate_text(details['tasks'], 260)}")
+            if details["profile"]:
+                note_parts.append(f"Profile: {truncate_text(details['profile'], 260)}")
+        except Exception:
+            detail_fetch_failures += 1
+
+        searchable_text = " ".join(part for part in searchable_parts if part)
         matched_terms = sorted(set(match_terms(searchable_text, terms)))
         if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
             continue
-        notes = "Verfassungsschutz RSS feed"
-        if published:
-            notes = f"{notes}; published={published}"
         merge_candidate(
             candidates_by_url,
             Candidate(
@@ -1711,9 +1823,19 @@ def discover_verfassungsschutz_rss(source: SourceConfig, terms: list[str], timeo
                 title=title,
                 url=link,
                 source_url=source.url,
+                alternate_url=alternate_url,
+                location=location,
                 matched_terms=matched_terms,
-                notes=notes,
+                notes="; ".join(note_parts),
             ),
+        )
+
+    limitations: list[str] = []
+    status = "complete"
+    if detail_fetch_failures:
+        status = "partial"
+        limitations.append(
+            f"detail page enrichment failed for {detail_fetch_failures} of {len(items)} RSS items; affected roles fall back to feed metadata"
         )
 
     return Coverage(
@@ -1723,14 +1845,14 @@ def discover_verfassungsschutz_rss(source: SourceConfig, terms: list[str], timeo
         cadence_group=source.cadence_group,
         last_checked=source.last_checked,
         due_today=False,
-        status="complete",
+        status=status,
         listing_pages_scanned=1,
         search_terms_tried=terms,
         result_pages_scanned=f"rss_items={len(items)}",
-        direct_job_pages_opened=0,
+        direct_job_pages_opened=direct_job_pages_opened,
         enumerated_jobs=len(items),
         matched_jobs=len(candidates_by_url),
-        limitations=[],
+        limitations=limitations,
         candidates=list(candidates_by_url.values()),
     )
 

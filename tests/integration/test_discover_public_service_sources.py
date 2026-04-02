@@ -117,7 +117,40 @@ def test_discover_verfassungsschutz_rss_filters_to_relevant_roles(monkeypatch):
       </item>
     </channel></rss>
     """
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: xml_text)
+    detail_pages = {
+        "https://www.verfassungsschutz.de/SharedDocs/stellenangebote/refleitung-cyberabwehr.html": """
+        <html><head>
+          <meta name="description" content="Wir suchen Referatsleitungen (m/w/d) mit Schwerpunkt Cyberabwehr in Berlin und Köln"/>
+        </head><body>
+          <main>
+            <strong class="label">Bewerbungsfrist</strong><span class="value">17. April 2026</span>
+            <strong class="label">Laufbahn</strong><span class="value">Höherer Dienst</span>
+            <strong class="label">Arbeitszeit</strong><span class="value">Vollzeit, Teilzeit</span>
+            <span class="label">Arbeitsort</span><span class="value">Berlin, Köln</span>
+            <a href="https://bewerbung.example/refleitung" class="application-link">Zum Bewerbungsportal</a>
+            <h2>Ihre Aufgaben</h2>
+            <p>Sie leiten ein Team in der Cyberabwehr und beraten zu IT-Sicherheit.</p>
+            <h2>Ihr Profil</h2>
+            <p>Master in Informatik, Mathematik oder Cybersecurity.</p>
+            <h2>Wir bieten</h2>
+            <p>Unbefristete Einstellung und E 13 TV EntgO Bund.</p>
+          </main>
+        </body></html>
+        """,
+        "https://www.verfassungsschutz.de/SharedDocs/stellenangebote/verwaltung.html": """
+        <html><body><main>
+          <span class="label">Arbeitsort</span><span class="value">Köln</span>
+          <h2>Ihre Aufgaben</h2><p>Allgemeine Verwaltung.</p>
+        </main></body></html>
+        """,
+    }
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        if url == discover_jobs.VERFASSUNGSSCHUTZ_RSS_URL:
+            return xml_text
+        return detail_pages[url]
+
+    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_verfassungsschutz_rss(
         source,
@@ -127,10 +160,16 @@ def test_discover_verfassungsschutz_rss_filters_to_relevant_roles(monkeypatch):
 
     assert coverage.status == "complete"
     assert coverage.enumerated_jobs == 2
+    assert coverage.direct_job_pages_opened == 2
     assert coverage.matched_jobs == 1
     candidate = coverage.candidates[0]
     assert candidate.title == "Referatsleitungen (m/w/d) im Bereich Cyberabwehr"
     assert candidate.url.endswith("/refleitung-cyberabwehr.html")
+    assert candidate.location == "Berlin, Köln"
+    assert candidate.alternate_url == "https://bewerbung.example/refleitung"
+    assert "Deadline: 17. April 2026" in candidate.notes
+    assert "Tasks: Sie leiten ein Team in der Cyberabwehr und beraten zu IT-Sicherheit." in candidate.notes
+    assert "Profile: Master in Informatik, Mathematik oder Cybersecurity." in candidate.notes
 
 
 def test_discover_auswaertiges_amt_json_extracts_structured_listings(monkeypatch):
