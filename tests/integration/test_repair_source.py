@@ -261,6 +261,101 @@ cat >/dev/null
     assert summary["attempts"][1]["eval_final_status"] == "repair_needed"
 
 
+def test_repair_source_retries_blocked_coder_with_postmortem_context(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
+    write_stub_discover_script(tmp_job_agent_root)
+    artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
+    write_example_artifact(artifact_path)
+
+    coder_script = tmp_job_agent_root / "fake_retrying_coder.sh"
+    coder_script.write_text(
+        """#!/bin/bash
+set -euo pipefail
+count_file="$JOB_AGENT_ROOT/coder-count.txt"
+count=0
+if [ -f "$count_file" ]; then
+  count="$(cat "$count_file")"
+fi
+count=$((count + 1))
+echo "$count" >"$count_file"
+cat >"$JOB_AGENT_ROOT/prompt-$count.txt"
+if [ "$count" -eq 1 ]; then
+  echo '{"type":"status","message":"first attempt will idle"}'
+  trap 'exit 0' TERM
+  sleep 30
+else
+  echo '{"type":"status","message":"second attempt uses postmortem"}'
+  touch "$JOB_AGENT_ROOT/fixed.marker"
+fi
+"""
+    )
+    coder_script.chmod(0o755)
+
+    eval_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.json"
+    summary_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.repair_loop.json"
+    env = os.environ.copy()
+    env["JOB_AGENT_ROOT"] = str(tmp_job_agent_root)
+
+    result = run_cmd(
+        "python3",
+        str(repo_root / "scripts" / "repair_source.py"),
+        "--track",
+        "public_service",
+        "--source",
+        "Example Source",
+        "--today",
+        "2026-04-02",
+        "--artifact-path",
+        str(artifact_path),
+        "--canary-title",
+        "Privacy Engineer",
+        "--canary-url",
+        "https://jobs.example.com/jobs/999",
+        "--reviewer",
+        "off",
+        "--coder-bin",
+        str(coder_script),
+        "--idle-timeout-seconds",
+        "1",
+        "--repair-timeout-seconds",
+        "10",
+        "--max-attempts",
+        "2",
+        "--eval-output",
+        str(eval_output),
+        "--summary-output",
+        str(summary_output),
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(summary_output.read_text())
+    first_prompt = (tmp_job_agent_root / "prompt-1.txt").read_text()
+    second_prompt = (tmp_job_agent_root / "prompt-2.txt").read_text()
+    first_postmortem_path = Path(summary["attempts"][0]["coding_postmortem_path"])
+    first_postmortem = json.loads(first_postmortem_path.read_text())
+
+    assert summary["final_status"] == "pass"
+    assert summary["repair_attempts_used"] == 2
+    assert len(summary["attempts"]) == 3
+    assert summary["attempts"][0]["coding_error"] == "repair run went idle after 1s without new output"
+    assert first_postmortem_path.exists()
+    assert first_postmortem["failure_class"] == "idle"
+    assert "coder-count.txt" in first_postmortem["files_touched"]
+    assert "prompt-1.txt" in first_postmortem["files_touched"]
+    assert first_postmortem["tests_touched_or_run"] == []
+    assert first_postmortem["runtime_error_signatures"] == []
+    assert first_postmortem["likely_next_step"] == (
+        "Resume in scripts/discover_jobs.py and make a focused patch or focused test update before more investigation."
+    )
+    assert "Prior blocked attempt context:" not in first_prompt
+    assert "Prior blocked attempt context:" in second_prompt
+    assert "repair run went idle after 1s without new output" in second_prompt
+    assert summary["attempts"][1]["coding_invoked"] is True
+    assert summary["attempts"][1]["rediscovery_invoked"] is True
+    assert summary["attempts"][2]["eval_final_status"] == "pass"
+
+
 def test_repair_source_aborts_idle_coder(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
     write_stub_discover_script(tmp_job_agent_root)
     artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
@@ -305,6 +400,8 @@ sleep 30
         "1",
         "--repair-timeout-seconds",
         "10",
+        "--max-attempts",
+        "1",
         "--eval-output",
         str(eval_output),
         "--summary-output",
@@ -318,6 +415,14 @@ sleep 30
     assert summary["final_status"] == "blocked"
     assert summary["attempts"][0]["coding_invoked"] is True
     assert "went idle after 1s" in summary["attempts"][0]["coding_error"]
+    postmortem = json.loads(Path(summary["attempts"][0]["coding_postmortem_path"]).read_text())
+    assert postmortem["failure_class"] == "idle"
+    assert postmortem["files_touched"] == []
+    assert postmortem["tests_touched_or_run"] == []
+    assert postmortem["runtime_error_signatures"] == []
+    assert postmortem["likely_next_step"] == (
+        "Resume in scripts/discover_jobs.py and make a focused patch or focused test update before more investigation."
+    )
 
 
 def test_repair_source_updates_summary_while_repairing(tmp_job_agent_root: Path, repo_root: Path):

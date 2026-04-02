@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -17,6 +18,7 @@ from source_quality import generated_at, source_slug, truncate_text
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORK_ROOT = Path(os.environ.get("JOB_AGENT_ROOT", REPO_ROOT))
 POLL_INTERVAL_SECONDS = 2.0
+SNAPSHOT_IGNORED_PATH_PREFIXES = ("artifacts/evals/", ".git/")
 
 
 def default_artifact_path(track: str, stamp: str) -> Path:
@@ -45,6 +47,10 @@ def default_coder_stderr_log_path(track: str, source: str, stamp: str, attempt: 
 
 def default_coder_last_message_path(track: str, source: str, stamp: str, attempt: int) -> Path:
     return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.attempt{attempt}.coder.last_message.txt"
+
+
+def default_postmortem_path(track: str, source: str, stamp: str, attempt: int) -> Path:
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.attempt{attempt}.postmortem.json"
 
 
 def resolve_coder_bin(explicit: str | None) -> Path | None:
@@ -179,6 +185,198 @@ def update_attempt_from_logs(
     return stdout_offset, stderr_offset, last_message_mtime, activity
 
 
+def snapshot_workspace_files(root: Path) -> dict[str, int]:
+    snapshot: dict[str, int] = {}
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root).as_posix()
+        if relative.startswith(SNAPSHOT_IGNORED_PATH_PREFIXES):
+            continue
+        if "/__pycache__/" in relative or relative.endswith(".pyc"):
+            continue
+        try:
+            snapshot[relative] = path.stat().st_mtime_ns
+        except FileNotFoundError:
+            continue
+    return snapshot
+
+
+def detect_files_touched(before: dict[str, int], after: dict[str, int]) -> list[str]:
+    touched: list[str] = []
+    for relative in sorted(set(before) | set(after)):
+        if before.get(relative) != after.get(relative):
+            touched.append(relative)
+    return touched
+
+
+def iter_coder_events(stdout_log_path: Path) -> list[dict[str, Any]]:
+    if not stdout_log_path.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    for line in stdout_log_path.read_text(errors="replace").splitlines():
+        parsed = _maybe_parse_json_line(line.strip())
+        if parsed is not None:
+            events.append(parsed)
+    return events
+
+
+def extract_tests_touched_or_run(stdout_log_path: Path, files_touched: list[str]) -> list[str]:
+    seen: list[str] = []
+    for relative in files_touched:
+        if relative.startswith("tests/"):
+            seen.append(relative)
+
+    for event in iter_coder_events(stdout_log_path):
+        item = event.get("item")
+        if not isinstance(item, dict) or item.get("type") != "command_execution":
+            continue
+        command = item.get("command")
+        if not isinstance(command, str):
+            continue
+        if "pytest" in command or "scripts/test.sh" in command or "python3 -m py_compile" in command:
+            seen.append(truncate_text(command, 200))
+
+    deduped: list[str] = []
+    for value in seen:
+        if value not in deduped:
+            deduped.append(value)
+    return deduped
+
+
+RUNTIME_ERROR_PATTERNS = (
+    re.compile(r"\b[A-Za-z_]+Error:\s+[^\n]+"),
+    re.compile(r"\b[A-Za-z_]+Error\s+<[^>\n]+>"),
+    re.compile(r"unexpected keyword argument '[^']+'"),
+    re.compile(r"Please use browser\.new_context\(\)"),
+)
+
+
+def extract_runtime_error_signatures(attempt_record: dict[str, Any]) -> list[str]:
+    text_fragments = [
+        str(attempt_record.get("coding_error", "")),
+        str(attempt_record.get("coding_last_stderr_excerpt", "")),
+        str(attempt_record.get("coding_last_event_excerpt", "")),
+        str(attempt_record.get("coding_last_message_excerpt", "")),
+        str(attempt_record.get("rediscovery_stderr", "")),
+    ]
+    matches: list[str] = []
+    for fragment in text_fragments:
+        if not fragment:
+            continue
+        for pattern in RUNTIME_ERROR_PATTERNS:
+            for match in pattern.findall(fragment):
+                cleaned = truncate_text(match.strip(), 200)
+                if cleaned not in matches:
+                    matches.append(cleaned)
+    return matches
+
+
+def classify_failure(
+    *,
+    blocked_reason: str,
+    runtime_error_signatures: list[str],
+    files_touched: list[str],
+    attempt_record: dict[str, Any],
+) -> str:
+    if "failed to launch coding repair run" in blocked_reason:
+        return "blocked_launch"
+    if attempt_record.get("rediscovery_exit_code") not in (None, 0) or "rediscovery failed" in blocked_reason:
+        return "rediscovery_failure"
+    if runtime_error_signatures:
+        return "runtime_bug"
+    if "idle" in blocked_reason:
+        return "idle"
+    if "timed out" in blocked_reason:
+        return "timeout_after_patch" if files_touched else "timeout_without_patch"
+    if attempt_record.get("coding_exit_code") not in (None, 0):
+        return "nonzero_exit"
+    return "blocked_unknown"
+
+
+def select_primary_repair_file(files_touched: list[str], fallback: str) -> str:
+    for path in files_touched:
+        if path.startswith(("scripts/", "tests/", ".agents/")):
+            return path
+    for path in files_touched:
+        if path.endswith((".py", ".sh", ".md", ".json")):
+            return path
+    return fallback
+
+
+def build_coding_postmortem(
+    *,
+    track: str,
+    source: str,
+    today: str,
+    attempt_number: int,
+    repair_ticket: dict[str, Any],
+    attempt_record: dict[str, Any],
+    files_touched: list[str],
+    tests_touched_or_run: list[str],
+    runtime_error_signatures: list[str],
+) -> dict[str, Any]:
+    blocked_reason = (
+        attempt_record.get("coding_error")
+        or attempt_record.get("error")
+        or "repair attempt ended without a passing rediscovery/eval result"
+    )
+    failure_class = classify_failure(
+        blocked_reason=blocked_reason,
+        runtime_error_signatures=runtime_error_signatures,
+        files_touched=files_touched,
+        attempt_record=attempt_record,
+    )
+    likely_file = repair_ticket.get("likely_file") or "scripts/discover_jobs.py"
+    primary_file = select_primary_repair_file(files_touched, likely_file)
+    if failure_class == "idle":
+        likely_next_step = f"Resume in {primary_file} and make a focused patch or focused test update before more investigation."
+    elif failure_class == "timeout_after_patch":
+        likely_next_step = f"Continue from the existing patch in {primary_file}, run the most relevant focused validation earlier, and rerun source-scoped discovery."
+    elif failure_class == "timeout_without_patch":
+        likely_next_step = f"Start with a focused patch or focused test update in {likely_file} before broader investigation."
+    elif failure_class == "runtime_bug":
+        runtime_label = runtime_error_signatures[0] if runtime_error_signatures else "the runtime failure"
+        likely_next_step = f"Fix {runtime_label} in {primary_file}, then rerun source-scoped discovery."
+    elif failure_class == "rediscovery_failure":
+        likely_next_step = f"Fix the rediscovery/runtime issue in {primary_file}, then rerun source-scoped discovery."
+    elif failure_class == "blocked_launch":
+        likely_next_step = "Fix the repair-run launch issue before retrying the source repair."
+    elif failure_class == "nonzero_exit":
+        likely_next_step = f"Fix the failing command path in {primary_file}, then rerun the focused validation and source-scoped discovery."
+    else:
+        likely_next_step = f"Continue from the last concrete in-repo step in {primary_file} and rerun focused validation before broader investigation."
+
+    return {
+        "schema_version": 1,
+        "generated_at": generated_at(),
+        "track": track,
+        "source": source,
+        "date": today,
+        "attempt_number": attempt_number,
+        "blocked_reason": blocked_reason,
+        "repair_ticket_summary": repair_ticket.get("summary", ""),
+        "failing_checks": repair_ticket.get("failing_checks", []),
+        "failure_class": failure_class,
+        "last_meaningful_action": attempt_record.get("coding_last_event_excerpt", ""),
+        "last_event_type": attempt_record.get("coding_last_event_type", "unknown"),
+        "last_message_excerpt": attempt_record.get("coding_last_message_excerpt", ""),
+        "last_stderr_excerpt": attempt_record.get("coding_last_stderr_excerpt", ""),
+        "coding_exit_code": attempt_record.get("coding_exit_code"),
+        "rediscovery_exit_code": attempt_record.get("rediscovery_exit_code"),
+        "files_touched": files_touched,
+        "tests_touched_or_run": tests_touched_or_run,
+        "runtime_error_signatures": runtime_error_signatures,
+        "likely_next_step": likely_next_step,
+        "confidence": "medium" if attempt_record.get("coding_last_event_excerpt") else "low",
+    }
+
+
+def write_postmortem(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n")
+
+
 def run_eval(
     *,
     track: str,
@@ -271,6 +469,7 @@ def build_coder_prompt(
     repair_ticket: dict[str, Any],
     canary_title: str,
     canary_url: str,
+    prior_postmortem: dict[str, Any] | None,
 ) -> str:
     lines = [
         f"Repair the {source} source integration from the repository root in mode: repo_dev.",
@@ -288,6 +487,14 @@ def build_coder_prompt(
             [
                 "Canary:",
                 json.dumps({"title": canary_title, "url": canary_url}, ensure_ascii=False, indent=2),
+            ]
+        )
+    if prior_postmortem:
+        lines.extend(
+            [
+                "Prior blocked attempt context:",
+                json.dumps(prior_postmortem, ensure_ascii=False, indent=2),
+                "Use the prior blocked attempt context to avoid repeating the same failed investigation path.",
             ]
         )
     lines.extend(
@@ -329,6 +536,7 @@ def run_coder(
     repair_ticket: dict[str, Any],
     canary_title: str,
     canary_url: str,
+    prior_postmortem: dict[str, Any] | None,
     timeout_seconds: int,
     stdout_log_path: Path,
     stderr_log_path: Path,
@@ -344,6 +552,7 @@ def run_coder(
         repair_ticket=repair_ticket,
         canary_title=canary_title,
         canary_url=canary_url,
+        prior_postmortem=prior_postmortem,
     )
     env = os.environ.copy()
     env.update(
@@ -358,6 +567,7 @@ def run_coder(
             "JOB_AGENT_CANARY_TITLE": canary_title,
             "JOB_AGENT_CANARY_URL": canary_url,
             "JOB_AGENT_REPAIR_TICKET": json.dumps(repair_ticket),
+            "JOB_AGENT_PRIOR_POSTMORTEM": json.dumps(prior_postmortem) if prior_postmortem else "",
         }
     )
     command = [
@@ -436,6 +646,7 @@ def main() -> int:
     final_eval: dict[str, Any] | None = None
     phase = "starting"
     active_artifact_path = artifact_path
+    prior_postmortem: dict[str, Any] | None = None
 
     write_summary(
         summary_output,
@@ -526,6 +737,7 @@ def main() -> int:
         attempt_record["coding_last_event_type"] = "launched"
         attempt_record["coding_last_event_excerpt"] = "repair child launched"
         attempt_record["coding_idle_timeout_seconds"] = args.idle_timeout_seconds
+        pre_coder_snapshot = snapshot_workspace_files(WORK_ROOT)
 
         try:
             phase = "repairing"
@@ -557,6 +769,7 @@ def main() -> int:
                 repair_ticket=repair_ticket,
                 canary_title=args.canary_title,
                 canary_url=args.canary_url,
+                prior_postmortem=prior_postmortem,
                 timeout_seconds=args.repair_timeout_seconds,
                 stdout_log_path=stdout_log_path,
                 stderr_log_path=stderr_log_path,
@@ -575,6 +788,7 @@ def main() -> int:
         stderr_offset = 0
         last_message_mtime: float | None = None
         completed_returncode: int | None = None
+        attempt_blocked = False
         while True:
             stdout_offset, stderr_offset, last_message_mtime, activity = update_attempt_from_logs(
                 attempt_record,
@@ -621,7 +835,7 @@ def main() -> int:
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait(timeout=5)
-                final_status = "blocked"
+                attempt_blocked = True
                 attempt_record["coding_error"] = f"repair run timed out after {args.repair_timeout_seconds}s"
                 completed_returncode = process.returncode
                 break
@@ -632,7 +846,7 @@ def main() -> int:
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait(timeout=5)
-                final_status = "blocked"
+                attempt_blocked = True
                 attempt_record["coding_error"] = f"repair run went idle after {args.idle_timeout_seconds}s without new output"
                 completed_returncode = process.returncode
                 attempt_record["coding_last_event_type"] = "idle_timeout"
@@ -652,8 +866,34 @@ def main() -> int:
         attempt_record["coding_exit_code"] = completed_returncode
         attempts.append(attempt_record)
 
-        if completed_returncode != 0 or final_status == "blocked":
-            break
+        if completed_returncode not in (None, 0) and "coding_error" not in attempt_record:
+            attempt_record["coding_error"] = f"repair run exited with code {completed_returncode}"
+            attempt_blocked = True
+
+        if attempt_blocked or completed_returncode not in (None, 0):
+            files_touched = detect_files_touched(pre_coder_snapshot, snapshot_workspace_files(WORK_ROOT))
+            tests_touched_or_run = extract_tests_touched_or_run(stdout_log_path, files_touched)
+            runtime_error_signatures = extract_runtime_error_signatures(attempt_record)
+            postmortem_path = default_postmortem_path(args.track, args.source, args.today, attempt_number)
+            postmortem = build_coding_postmortem(
+                track=args.track,
+                source=args.source,
+                today=args.today,
+                attempt_number=attempt_number,
+                repair_ticket=repair_ticket,
+                attempt_record=attempt_record,
+                files_touched=files_touched,
+                tests_touched_or_run=tests_touched_or_run,
+                runtime_error_signatures=runtime_error_signatures,
+            )
+            write_postmortem(postmortem_path, postmortem)
+            attempt_record["coding_postmortem_path"] = str(postmortem_path)
+            attempt_record["coding_postmortem_summary"] = postmortem["blocked_reason"]
+            prior_postmortem = postmortem
+            if repair_attempts >= args.max_attempts:
+                final_status = "blocked"
+                break
+            continue
 
         phase = "rediscovering"
         rediscovery = run_discovery(
@@ -670,9 +910,30 @@ def main() -> int:
         attempt_record["rediscovery_stderr"] = truncate_text(rediscovery.stderr, 2000)
 
         if rediscovery.returncode != 0:
-            final_status = "blocked"
             attempt_record["error"] = "rediscovery failed after coding repair"
-            break
+            files_touched = detect_files_touched(pre_coder_snapshot, snapshot_workspace_files(WORK_ROOT))
+            tests_touched_or_run = extract_tests_touched_or_run(stdout_log_path, files_touched)
+            runtime_error_signatures = extract_runtime_error_signatures(attempt_record)
+            postmortem_path = default_postmortem_path(args.track, args.source, args.today, attempt_number)
+            postmortem = build_coding_postmortem(
+                track=args.track,
+                source=args.source,
+                today=args.today,
+                attempt_number=attempt_number,
+                repair_ticket=repair_ticket,
+                attempt_record=attempt_record,
+                files_touched=files_touched,
+                tests_touched_or_run=tests_touched_or_run,
+                runtime_error_signatures=runtime_error_signatures,
+            )
+            write_postmortem(postmortem_path, postmortem)
+            attempt_record["coding_postmortem_path"] = str(postmortem_path)
+            attempt_record["coding_postmortem_summary"] = postmortem["blocked_reason"]
+            prior_postmortem = postmortem
+            if repair_attempts >= args.max_attempts:
+                final_status = "blocked"
+                break
+            continue
 
         active_artifact_path = fresh_artifact_path
 
