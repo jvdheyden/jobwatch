@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,7 @@ from source_quality import generated_at, source_slug, truncate_text
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORK_ROOT = Path(os.environ.get("JOB_AGENT_ROOT", REPO_ROOT))
+POLL_INTERVAL_SECONDS = 2.0
 
 
 def default_artifact_path(track: str, stamp: str) -> Path:
@@ -31,6 +33,18 @@ def default_summary_output(track: str, source: str, stamp: str) -> Path:
 
 def default_fresh_artifact_path(track: str, source: str, stamp: str) -> Path:
     return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.discovery.json"
+
+
+def default_coder_stdout_log_path(track: str, source: str, stamp: str, attempt: int) -> Path:
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.attempt{attempt}.coder.stdout.jsonl"
+
+
+def default_coder_stderr_log_path(track: str, source: str, stamp: str, attempt: int) -> Path:
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.attempt{attempt}.coder.stderr.log"
+
+
+def default_coder_last_message_path(track: str, source: str, stamp: str, attempt: int) -> Path:
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.attempt{attempt}.coder.last_message.txt"
 
 
 def resolve_coder_bin(explicit: str | None) -> Path | None:
@@ -82,6 +96,87 @@ def write_summary(
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def _maybe_parse_json_line(line: str) -> dict[str, Any] | None:
+    try:
+        value = json.loads(line)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _event_excerpt(event: dict[str, Any], fallback: str) -> str:
+    for key in ("message", "text", "content", "output", "summary", "status"):
+        value = event.get(key)
+        if isinstance(value, str) and value.strip():
+            return truncate_text(value, 400)
+    return truncate_text(fallback, 400)
+
+
+def _event_type(event: dict[str, Any]) -> str:
+    for key in ("type", "event", "kind"):
+        value = event.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return "json_event"
+
+
+def _read_new_text(path: Path, offset: int) -> tuple[int, str]:
+    if not path.exists():
+        return offset, ""
+    with path.open("r", encoding="utf-8", errors="replace") as handle:
+        handle.seek(offset)
+        chunk = handle.read()
+        return handle.tell(), chunk
+
+
+def update_attempt_from_logs(
+    attempt_record: dict[str, Any],
+    stdout_path: Path,
+    stderr_path: Path,
+    last_message_path: Path,
+    stdout_offset: int,
+    stderr_offset: int,
+    last_message_mtime: float | None,
+) -> tuple[int, int, float | None, bool]:
+    activity = False
+    stdout_offset, stdout_chunk = _read_new_text(stdout_path, stdout_offset)
+    stderr_offset, stderr_chunk = _read_new_text(stderr_path, stderr_offset)
+
+    for line in stdout_chunk.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        activity = True
+        attempt_record["coding_last_activity_at"] = generated_at()
+        attempt_record["coding_stdout_bytes"] = stdout_path.stat().st_size if stdout_path.exists() else 0
+        parsed = _maybe_parse_json_line(stripped)
+        if parsed is not None:
+            attempt_record["coding_last_event_type"] = _event_type(parsed)
+            attempt_record["coding_last_event_excerpt"] = _event_excerpt(parsed, stripped)
+        else:
+            attempt_record["coding_last_event_type"] = "stdout"
+            attempt_record["coding_last_event_excerpt"] = truncate_text(stripped, 400)
+
+    for line in stderr_chunk.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        activity = True
+        attempt_record["coding_last_activity_at"] = generated_at()
+        attempt_record["coding_stderr_bytes"] = stderr_path.stat().st_size if stderr_path.exists() else 0
+        attempt_record["coding_last_stderr_excerpt"] = truncate_text(stripped, 400)
+
+    if last_message_path.exists():
+        mtime = last_message_path.stat().st_mtime
+        if last_message_mtime is None or mtime > last_message_mtime:
+            activity = True
+            attempt_record["coding_last_activity_at"] = generated_at()
+            attempt_record["coding_last_message_excerpt"] = truncate_text(last_message_path.read_text(errors="replace"), 400)
+            last_message_mtime = mtime
+
+    return stdout_offset, stderr_offset, last_message_mtime, activity
 
 
 def run_eval(
@@ -200,7 +295,11 @@ def build_coder_prompt(
             "Use this repair ticket as the source of truth:",
             json.dumps(repair_ticket, ensure_ascii=False, indent=2),
             "Constraints:",
-            "- Prefer the smallest change in scripts/discover_jobs.py or closely related tests/helpers.",
+            "- Unless the repair ticket clearly indicates a validator bug, make the functional fix in scripts/discover_jobs.py.",
+            f"- Start in scripts/discover_jobs.py and look first for source-specific functions or helpers named after {source} (for example discover/extract/advance helpers) or the relevant HTML/browser parser used by this source.",
+            "- If a source-specific function or strategy already exists, patch that path instead of exploring unrelated files.",
+            "- If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed in scripts/discover_jobs.py and wire it into the existing discovery dispatch.",
+            "- Only change another file when required for a focused test, a directly related helper, or when the repair ticket clearly indicates a validator bug.",
             "- Do not modify unrelated sources or track configuration.",
             "- Do not broaden search terms unless the ticket explicitly requires it.",
             "- Do not edit discovery or eval artifacts directly.",
@@ -227,7 +326,10 @@ def run_coder(
     canary_title: str,
     canary_url: str,
     timeout_seconds: int,
-) -> subprocess.CompletedProcess[str]:
+    stdout_log_path: Path,
+    stderr_log_path: Path,
+    last_message_path: Path,
+) -> subprocess.Popen[str]:
     prompt = build_coder_prompt(
         track=track,
         source=source,
@@ -264,18 +366,34 @@ def run_coder(
         str(WORK_ROOT),
         "-s",
         "workspace-write",
+        "--json",
+        "--output-last-message",
+        str(last_message_path),
         "-",
     ]
-    return subprocess.run(
-        command,
-        input=prompt,
-        text=True,
-        capture_output=True,
-        check=False,
-        cwd=WORK_ROOT,
-        env=env,
-        timeout=timeout_seconds,
-    )
+    stdout_log_path.parent.mkdir(parents=True, exist_ok=True)
+    stderr_log_path.parent.mkdir(parents=True, exist_ok=True)
+    stdout_handle = stdout_log_path.open("w", encoding="utf-8")
+    stderr_handle = stderr_log_path.open("w", encoding="utf-8")
+    try:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=stdout_handle,
+            stderr=stderr_handle,
+            text=True,
+            cwd=WORK_ROOT,
+            env=env,
+        )
+    except Exception:
+        stdout_handle.close()
+        stderr_handle.close()
+        raise
+
+    assert process.stdin is not None
+    process.stdin.write(prompt)
+    process.stdin.close()
+    return process
 
 
 def main() -> int:
@@ -298,6 +416,7 @@ def main() -> int:
     parser.add_argument("--coder-bin", help="Binary to invoke for the coding repair run; defaults to CODEX_BIN/codex")
     parser.add_argument("--timeout-seconds", type=int, default=60, help="Timeout for reviewer/raw page fetches during eval")
     parser.add_argument("--repair-timeout-seconds", type=int, default=600, help="Timeout for each coding repair run")
+    parser.add_argument("--idle-timeout-seconds", type=int, default=90, help="Abort a coding repair attempt if it produces no new output for this many seconds")
     parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding repair attempts")
     args = parser.parse_args()
 
@@ -309,7 +428,7 @@ def main() -> int:
 
     attempts: list[dict[str, Any]] = []
     repair_attempts = 0
-    final_status = "blocked"
+    final_status = "running"
     final_eval: dict[str, Any] | None = None
     phase = "starting"
     active_artifact_path = artifact_path
@@ -391,6 +510,19 @@ def main() -> int:
             attempts.append(attempt_record)
             break
 
+        attempt_number = repair_attempts + 1
+        stdout_log_path = default_coder_stdout_log_path(args.track, args.source, args.today, attempt_number)
+        stderr_log_path = default_coder_stderr_log_path(args.track, args.source, args.today, attempt_number)
+        last_message_path = default_coder_last_message_path(args.track, args.source, args.today, attempt_number)
+        attempt_record["coding_invoked"] = True
+        attempt_record["coding_stdout_log"] = str(stdout_log_path)
+        attempt_record["coding_stderr_log"] = str(stderr_log_path)
+        attempt_record["coding_last_message_path"] = str(last_message_path)
+        attempt_record["coding_started_at"] = generated_at()
+        attempt_record["coding_last_event_type"] = "launched"
+        attempt_record["coding_last_event_excerpt"] = "repair child launched"
+        attempt_record["coding_idle_timeout_seconds"] = args.idle_timeout_seconds
+
         try:
             phase = "repairing"
             write_summary(
@@ -410,7 +542,7 @@ def main() -> int:
                 final_eval=final_eval,
                 phase=phase,
             )
-            completed = run_coder(
+            process = run_coder(
                 coder_bin=coder_bin,
                 track=args.track,
                 source=args.source,
@@ -422,25 +554,101 @@ def main() -> int:
                 canary_title=args.canary_title,
                 canary_url=args.canary_url,
                 timeout_seconds=args.repair_timeout_seconds,
+                stdout_log_path=stdout_log_path,
+                stderr_log_path=stderr_log_path,
+                last_message_path=last_message_path,
             )
-        except subprocess.TimeoutExpired as exc:
+        except Exception as exc:
             final_status = "blocked"
-            attempt_record["coding_invoked"] = True
-            attempt_record["coding_error"] = f"repair run timed out after {args.repair_timeout_seconds}s"
-            attempt_record["coding_stdout"] = truncate_text(exc.stdout or "", 2000)
-            attempt_record["coding_stderr"] = truncate_text(exc.stderr or "", 2000)
+            attempt_record["coding_error"] = f"failed to launch coding repair run: {exc}"
             attempts.append(attempt_record)
             break
 
+        attempt_record["coding_pid"] = process.pid
+        start_time = time.monotonic()
+        last_activity_time = start_time
+        stdout_offset = 0
+        stderr_offset = 0
+        last_message_mtime: float | None = None
+        completed_returncode: int | None = None
+        while True:
+            stdout_offset, stderr_offset, last_message_mtime, activity = update_attempt_from_logs(
+                attempt_record,
+                stdout_log_path,
+                stderr_log_path,
+                last_message_path,
+                stdout_offset,
+                stderr_offset,
+                last_message_mtime,
+            )
+            if activity:
+                last_activity_time = time.monotonic()
+
+            returncode = process.poll()
+            idle_seconds = int(time.monotonic() - last_activity_time)
+            attempt_record["coding_idle_seconds"] = idle_seconds
+            elapsed_seconds = int(time.monotonic() - start_time)
+            attempt_record["coding_elapsed_seconds"] = elapsed_seconds
+            write_summary(
+                summary_output,
+                track=args.track,
+                source=args.source,
+                today=args.today,
+                artifact_path=artifact_path,
+                active_artifact_path=active_artifact_path,
+                eval_output=eval_output,
+                canary_title=args.canary_title,
+                canary_url=args.canary_url,
+                max_attempts=args.max_attempts,
+                repair_attempts=repair_attempts,
+                attempts=attempts + [attempt_record],
+                final_status="running",
+                final_eval=final_eval,
+                phase=phase,
+            )
+
+            if returncode is not None:
+                completed_returncode = returncode
+                break
+            if elapsed_seconds >= args.repair_timeout_seconds:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+                final_status = "blocked"
+                attempt_record["coding_error"] = f"repair run timed out after {args.repair_timeout_seconds}s"
+                completed_returncode = process.returncode
+                break
+            if idle_seconds >= args.idle_timeout_seconds:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+                final_status = "blocked"
+                attempt_record["coding_error"] = f"repair run went idle after {args.idle_timeout_seconds}s without new output"
+                completed_returncode = process.returncode
+                attempt_record["coding_last_event_type"] = "idle_timeout"
+                break
+            time.sleep(POLL_INTERVAL_SECONDS)
+
         repair_attempts += 1
-        attempt_record["coding_invoked"] = True
-        attempt_record["coding_exit_code"] = completed.returncode
-        attempt_record["coding_stdout"] = truncate_text(completed.stdout, 2000)
-        attempt_record["coding_stderr"] = truncate_text(completed.stderr, 2000)
+        stdout_offset, stderr_offset, last_message_mtime, _ = update_attempt_from_logs(
+            attempt_record,
+            stdout_log_path,
+            stderr_log_path,
+            last_message_path,
+            stdout_offset,
+            stderr_offset,
+            last_message_mtime,
+        )
+        attempt_record["coding_exit_code"] = completed_returncode
         attempts.append(attempt_record)
 
-        if completed.returncode != 0:
-            final_status = "blocked"
+        if completed_returncode != 0 or final_status == "blocked":
             break
 
         phase = "rediscovering"
