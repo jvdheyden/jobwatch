@@ -13,19 +13,24 @@ from typing import Any
 from source_quality import generated_at, source_slug, truncate_text
 
 
-ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[1]
+WORK_ROOT = Path(os.environ.get("JOB_AGENT_ROOT", REPO_ROOT))
 
 
 def default_artifact_path(track: str, stamp: str) -> Path:
-    return ROOT / "artifacts" / "discovery" / track / f"{stamp}.json"
+    return WORK_ROOT / "artifacts" / "discovery" / track / f"{stamp}.json"
 
 
 def default_eval_output(track: str, source: str, stamp: str) -> Path:
-    return ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.json"
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.json"
 
 
 def default_summary_output(track: str, source: str, stamp: str) -> Path:
-    return ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.repair_loop.json"
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.repair_loop.json"
+
+
+def default_fresh_artifact_path(track: str, source: str, stamp: str) -> Path:
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.discovery.json"
 
 
 def resolve_coder_bin(explicit: str | None) -> Path | None:
@@ -38,6 +43,45 @@ def resolve_coder_bin(explicit: str | None) -> Path | None:
     if default_codex.exists():
         return default_codex
     return None
+
+
+def write_summary(
+    path: Path,
+    *,
+    track: str,
+    source: str,
+    today: str,
+    artifact_path: Path,
+    active_artifact_path: Path,
+    eval_output: Path,
+    canary_title: str,
+    canary_url: str,
+    max_attempts: int,
+    repair_attempts: int,
+    attempts: list[dict[str, Any]],
+    final_status: str,
+    final_eval: dict[str, Any] | None,
+    phase: str,
+) -> None:
+    payload = {
+        "schema_version": 1,
+        "generated_at": generated_at(),
+        "track": track,
+        "source": source,
+        "date": today,
+        "artifact_path": str(artifact_path),
+        "active_artifact_path": str(active_artifact_path),
+        "eval_output": str(eval_output),
+        "canary": {"title": canary_title, "url": canary_url},
+        "max_attempts": max_attempts,
+        "repair_attempts_used": repair_attempts,
+        "attempts": attempts,
+        "phase": phase,
+        "final_status": final_status,
+        "final_eval": final_eval,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def run_eval(
@@ -55,7 +99,7 @@ def run_eval(
 ) -> tuple[int, dict[str, Any]]:
     command = [
         "python3",
-        str(ROOT / "scripts" / "eval_source_quality.py"),
+        str(REPO_ROOT / "scripts" / "eval_source_quality.py"),
         "--track",
         track,
         "--source",
@@ -83,10 +127,42 @@ def run_eval(
         check=False,
         text=True,
         capture_output=True,
-        cwd=ROOT,
+        cwd=WORK_ROOT,
     )
     payload = json.loads(eval_output.read_text())
     return completed.returncode, payload
+
+
+def run_discovery(
+    *,
+    track: str,
+    source: str,
+    today: str,
+    artifact_path: Path,
+    timeout_seconds: int,
+) -> subprocess.CompletedProcess[str]:
+    command = [
+        "python3",
+        str(WORK_ROOT / "scripts" / "discover_jobs.py"),
+        "--track",
+        track,
+        "--source",
+        source,
+        "--today",
+        today,
+        "--pretty",
+        "--timeout-seconds",
+        str(timeout_seconds),
+        "--output",
+        str(artifact_path),
+    ]
+    return subprocess.run(
+        command,
+        check=False,
+        text=True,
+        capture_output=True,
+        cwd=WORK_ROOT,
+    )
 
 
 def build_coder_prompt(
@@ -95,6 +171,7 @@ def build_coder_prompt(
     source: str,
     today: str,
     artifact_path: Path,
+    fresh_artifact_path: Path,
     eval_output: Path,
     repair_ticket: dict[str, Any],
     canary_title: str,
@@ -107,7 +184,8 @@ def build_coder_prompt(
         f"Track: {track}",
         f"Source: {source}",
         f"Date: {today}",
-        f"Discovery artifact: {artifact_path}",
+        f"Previous discovery artifact: {artifact_path}",
+        f"Fresh discovery artifact target: {fresh_artifact_path}",
         f"Current eval artifact: {eval_output}",
     ]
     if canary_title or canary_url:
@@ -125,8 +203,12 @@ def build_coder_prompt(
             "- Prefer the smallest change in scripts/discover_jobs.py or closely related tests/helpers.",
             "- Do not modify unrelated sources or track configuration.",
             "- Do not broaden search terms unless the ticket explicitly requires it.",
+            "- Do not edit discovery or eval artifacts directly.",
+            f"- After your code change, validate with: python3 scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",
+            f"- Check that the fresh source artifact includes the detail missing from the repair ticket for the canary {json.dumps(canary_title)}.",
             "- Run the most relevant tests for the changed code before finishing.",
-            "The orchestrator will rerun scripts/eval_source_quality.py after your fix.",
+            f"- The orchestrator will regenerate {fresh_artifact_path} and rerun scripts/eval_source_quality.py after your fix.",
+            "- If you cannot get to a pass with one focused fix, stop with a concrete blocker rather than exploring broadly.",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -139,6 +221,7 @@ def run_coder(
     source: str,
     today: str,
     artifact_path: Path,
+    fresh_artifact_path: Path,
     eval_output: Path,
     repair_ticket: dict[str, Any],
     canary_title: str,
@@ -150,6 +233,7 @@ def run_coder(
         source=source,
         today=today,
         artifact_path=artifact_path,
+        fresh_artifact_path=fresh_artifact_path,
         eval_output=eval_output,
         repair_ticket=repair_ticket,
         canary_title=canary_title,
@@ -158,11 +242,12 @@ def run_coder(
     env = os.environ.copy()
     env.update(
         {
-            "JOB_AGENT_ROOT": str(ROOT),
+            "JOB_AGENT_ROOT": str(WORK_ROOT),
             "JOB_AGENT_TRACK": track,
             "JOB_AGENT_SOURCE": source,
             "JOB_AGENT_TODAY": today,
             "JOB_AGENT_DISCOVERY_ARTIFACT": str(artifact_path),
+            "JOB_AGENT_REDISCOVERY_ARTIFACT": str(fresh_artifact_path),
             "JOB_AGENT_EVAL_ARTIFACT": str(eval_output),
             "JOB_AGENT_CANARY_TITLE": canary_title,
             "JOB_AGENT_CANARY_URL": canary_url,
@@ -176,7 +261,7 @@ def run_coder(
         "never",
         "exec",
         "-C",
-        str(ROOT),
+        str(WORK_ROOT),
         "-s",
         "workspace-write",
         "-",
@@ -187,15 +272,10 @@ def run_coder(
         text=True,
         capture_output=True,
         check=False,
-        cwd=ROOT,
+        cwd=WORK_ROOT,
         env=env,
         timeout=timeout_seconds,
     )
-
-
-def write_summary(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def main() -> int:
@@ -217,11 +297,12 @@ def main() -> int:
     parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer")
     parser.add_argument("--coder-bin", help="Binary to invoke for the coding repair run; defaults to CODEX_BIN/codex")
     parser.add_argument("--timeout-seconds", type=int, default=60, help="Timeout for reviewer/raw page fetches during eval")
-    parser.add_argument("--repair-timeout-seconds", type=int, default=1200, help="Timeout for each coding repair run")
+    parser.add_argument("--repair-timeout-seconds", type=int, default=600, help="Timeout for each coding repair run")
     parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding repair attempts")
     args = parser.parse_args()
 
     artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)
+    fresh_artifact_path = default_fresh_artifact_path(args.track, args.source, args.today)
     eval_output = Path(args.eval_output) if args.eval_output else default_eval_output(args.track, args.source, args.today)
     summary_output = Path(args.summary_output) if args.summary_output else default_summary_output(args.track, args.source, args.today)
     coder_bin = resolve_coder_bin(args.coder_bin)
@@ -230,13 +311,34 @@ def main() -> int:
     repair_attempts = 0
     final_status = "blocked"
     final_eval: dict[str, Any] | None = None
+    phase = "starting"
+    active_artifact_path = artifact_path
+
+    write_summary(
+        summary_output,
+        track=args.track,
+        source=args.source,
+        today=args.today,
+        artifact_path=artifact_path,
+        active_artifact_path=active_artifact_path,
+        eval_output=eval_output,
+        canary_title=args.canary_title,
+        canary_url=args.canary_url,
+        max_attempts=args.max_attempts,
+        repair_attempts=repair_attempts,
+        attempts=attempts,
+        final_status="running",
+        final_eval=final_eval,
+        phase=phase,
+    )
 
     while True:
+        phase = "evaluating"
         eval_returncode, eval_payload = run_eval(
             track=args.track,
             source=args.source,
             today=args.today,
-            artifact_path=artifact_path,
+            artifact_path=active_artifact_path,
             eval_output=eval_output,
             canary_title=args.canary_title,
             canary_url=args.canary_url,
@@ -248,12 +350,14 @@ def main() -> int:
         attempt_record: dict[str, Any] = {
             "eval_index": len(attempts) + 1,
             "eval_returncode": eval_returncode,
+            "artifact_path": str(active_artifact_path),
             "eval_output": str(eval_output),
             "eval_final_status": eval_payload.get("final_status", "blocked"),
             "deterministic_confidence": eval_payload.get("deterministic", {}).get("confidence", "failed"),
             "reviewer_status": eval_payload.get("reviewer", {}).get("status", "unknown"),
             "repair_ticket_summary": (eval_payload.get("repair_ticket") or {}).get("summary", ""),
             "coding_invoked": False,
+            "rediscovery_invoked": False,
         }
 
         status = eval_payload.get("final_status", "blocked")
@@ -288,12 +392,31 @@ def main() -> int:
             break
 
         try:
+            phase = "repairing"
+            write_summary(
+                summary_output,
+                track=args.track,
+                source=args.source,
+                today=args.today,
+                artifact_path=artifact_path,
+                active_artifact_path=active_artifact_path,
+                eval_output=eval_output,
+                canary_title=args.canary_title,
+                canary_url=args.canary_url,
+                max_attempts=args.max_attempts,
+                repair_attempts=repair_attempts,
+                attempts=attempts + [attempt_record],
+                final_status="running",
+                final_eval=final_eval,
+                phase=phase,
+            )
             completed = run_coder(
                 coder_bin=coder_bin,
                 track=args.track,
                 source=args.source,
                 today=args.today,
                 artifact_path=artifact_path,
+                fresh_artifact_path=fresh_artifact_path,
                 eval_output=eval_output,
                 repair_ticket=repair_ticket,
                 canary_title=args.canary_title,
@@ -320,23 +443,45 @@ def main() -> int:
             final_status = "blocked"
             break
 
-    summary = {
-        "schema_version": 1,
-        "generated_at": generated_at(),
-        "track": args.track,
-        "source": args.source,
-        "date": args.today,
-        "artifact_path": str(artifact_path),
-        "eval_output": str(eval_output),
-        "canary": {"title": args.canary_title, "url": args.canary_url},
-        "max_attempts": args.max_attempts,
-        "repair_attempts_used": repair_attempts,
-        "attempts": attempts,
-        "final_status": final_status,
-        "final_eval": final_eval,
-    }
-    write_summary(summary_output, summary)
-    print(json.dumps(summary, indent=2))
+        phase = "rediscovering"
+        rediscovery = run_discovery(
+            track=args.track,
+            source=args.source,
+            today=args.today,
+            artifact_path=fresh_artifact_path,
+            timeout_seconds=args.timeout_seconds,
+        )
+        attempt_record["rediscovery_invoked"] = True
+        attempt_record["rediscovery_exit_code"] = rediscovery.returncode
+        attempt_record["rediscovery_artifact"] = str(fresh_artifact_path)
+        attempt_record["rediscovery_stdout"] = truncate_text(rediscovery.stdout, 2000)
+        attempt_record["rediscovery_stderr"] = truncate_text(rediscovery.stderr, 2000)
+
+        if rediscovery.returncode != 0:
+            final_status = "blocked"
+            attempt_record["error"] = "rediscovery failed after coding repair"
+            break
+
+        active_artifact_path = fresh_artifact_path
+
+    write_summary(
+        summary_output,
+        track=args.track,
+        source=args.source,
+        today=args.today,
+        artifact_path=artifact_path,
+        active_artifact_path=active_artifact_path,
+        eval_output=eval_output,
+        canary_title=args.canary_title,
+        canary_url=args.canary_url,
+        max_attempts=args.max_attempts,
+        repair_attempts=repair_attempts,
+        attempts=attempts,
+        final_status=final_status,
+        final_eval=final_eval,
+        phase="finished",
+    )
+    print(summary_output.read_text().rstrip())
     return 0 if final_status == "pass" else 1
 
 
