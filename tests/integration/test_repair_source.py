@@ -195,8 +195,12 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert summary["active_artifact_path"].endswith("2026-04-02.discovery.json")
     assert json.loads(eval_output.read_text())["final_status"] == "pass"
     assert "make the functional fix in scripts/discover_jobs.py" in prompt_text
+    assert "Start by inspecting the source-specific parser path in scripts/discover_jobs.py and any existing source-specific tests before broader investigation." in prompt_text
     assert "look first for source-specific functions or helpers named after Example Source" in prompt_text
     assert "If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed in scripts/discover_jobs.py" in prompt_text
+    assert "Your first concrete step must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py." in prompt_text
+    assert "Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch." in prompt_text
+    assert "If the failing check is detail_depth, prefer source-specific detail-page enrichment for already-kept candidates and append substantive role detail to existing extracted notes or fields." in prompt_text
 
 
 def test_repair_source_stops_at_retry_limit(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
