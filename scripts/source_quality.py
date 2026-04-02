@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import unescape
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
@@ -40,6 +40,82 @@ NON_JOB_URL_MARKERS = (
     "/impressum",
     "mailto:",
 )
+DETAIL_FIELD_KEYS = (
+    "tasks",
+    "responsibilities",
+    "qualifications",
+    "requirements",
+    "profile",
+    "compensation",
+    "salary",
+    "salary_range",
+    "equity_range",
+)
+DETAIL_NOTE_MARKERS = (
+    "tasks:",
+    "task:",
+    "responsibilities",
+    "responsibility",
+    "requirements:",
+    "qualifications:",
+    "profile:",
+    "deadline:",
+    "bewerbungsfrist",
+    "minimum qualifications",
+    "preferred qualifications",
+    "what you'll do",
+    "what you will do",
+    "your profile",
+    "ihr profil",
+    "anforderungen",
+    "aufgaben",
+    "salary:",
+    "compensation:",
+    "pay range",
+    "salary range",
+)
+PROVENANCE_NOTE_MARKERS = (
+    "enumerated through",
+    "static html enumeration",
+    "browser search q=",
+    "meta browser search",
+    "hacker news jobs listing",
+    "posted:",
+)
+RAW_DETAIL_MARKERS = {
+    "tasks": (
+        "responsibilities",
+        "responsibility",
+        "what you'll do",
+        "what you will do",
+        "your tasks",
+        "aufgaben",
+        "ihre aufgaben",
+        "job description",
+    ),
+    "qualifications": (
+        "qualifications",
+        "required qualifications",
+        "minimum qualifications",
+        "preferred qualifications",
+        "requirements",
+        "your profile",
+        "ihr profil",
+        "anforderungen",
+        "what you'll need",
+        "what you need",
+    ),
+    "compensation": (
+        "salary",
+        "compensation",
+        "pay range",
+        "salary range",
+        "equity",
+        "vergutung",
+        "entgelt",
+        "besoldung",
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -162,11 +238,48 @@ def _suspicious_candidate(candidate: dict[str, Any]) -> list[str]:
     return reasons
 
 
+def _has_meaningful_detail_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if not isinstance(value, str):
+        return True
+    return normalize_whitespace(value).lower() not in {"", "unknown", "n/a"}
+
+
+def _has_substantive_notes(candidate: dict[str, Any]) -> bool:
+    notes = normalize_whitespace(str(candidate.get("notes", "")))
+    if not notes:
+        return False
+    normalized = normalize_for_matching(notes)
+    if any(marker in normalized for marker in DETAIL_NOTE_MARKERS):
+        return True
+    if any(marker in normalized for marker in PROVENANCE_NOTE_MARKERS):
+        return False
+    return len(notes) >= 120 or len(notes.split()) >= 20
+
+
+def _candidate_has_detail(candidate: dict[str, Any]) -> bool:
+    if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
+        return True
+    return _has_substantive_notes(candidate)
+
+
+def _raw_detail_categories(raw_text: str) -> set[str]:
+    normalized = normalize_for_matching(strip_html_fragment(raw_text))
+    categories: set[str] = set()
+    for category, markers in RAW_DETAIL_MARKERS.items():
+        if any(marker in normalized for marker in markers):
+            categories.add(category)
+    return categories
+
+
 def validate_source_coverage(
     source: dict[str, Any],
     *,
     canary_title: str = "",
     canary_url: str = "",
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    raw_text_fetcher: Callable[[str, int], str] = fetch_text,
 ) -> dict[str, Any]:
     candidates = source.get("candidates", [])
     source_url = source.get("source_url", "")
@@ -232,32 +345,51 @@ def validate_source_coverage(
         results.append(ValidatorResult("url_allowlist", "pass", "info", "Candidate URLs stay within the source/domain allowlist."))
 
     normalized_urls: dict[str, int] = {}
-    normalized_pairs: dict[str, int] = {}
-    duplicates: list[str] = []
+    normalized_triples: dict[str, int] = {}
+    duplicate_urls: list[str] = []
+    duplicate_role_triples: list[str] = []
     for candidate in candidates:
         normalized_url = normalize_url_without_fragment(candidate.get("url", ""))
         if normalized_url:
             normalized_urls[normalized_url] = normalized_urls.get(normalized_url, 0) + 1
-        pair_key = "|".join(
+        triple_key = "|".join(
             [
                 normalize_for_matching(candidate.get("employer", "")),
                 normalize_for_matching(candidate.get("title", "")),
+                normalize_for_matching(candidate.get("location", "")),
             ]
         )
-        normalized_pairs[pair_key] = normalized_pairs.get(pair_key, 0) + 1
-    duplicates.extend(url for url, count in normalized_urls.items() if count > 1)
-    duplicates.extend(pair for pair, count in normalized_pairs.items() if count > 1)
-    if duplicates:
+        normalized_triples[triple_key] = normalized_triples.get(triple_key, 0) + 1
+    duplicate_urls.extend(url for url, count in normalized_urls.items() if count > 1)
+    duplicate_role_triples.extend(triple for triple, count in normalized_triples.items() if count > 1)
+    if duplicate_urls:
         results.append(
             ValidatorResult(
                 "duplicate_jobs",
                 "fail",
                 "blocking",
-                "Duplicate candidate URLs or employer/title pairs detected: " + ", ".join(duplicates[:6]),
+                "Duplicate candidate URLs detected: " + ", ".join(duplicate_urls[:6]),
+            )
+        )
+    elif duplicate_role_triples:
+        warnings.append("Possible duplicate roles share employer, title, and location.")
+        results.append(
+            ValidatorResult(
+                "duplicate_jobs",
+                "warn",
+                "major",
+                "Possible duplicate roles share employer/title/location: " + ", ".join(duplicate_role_triples[:6]),
             )
         )
     else:
-        results.append(ValidatorResult("duplicate_jobs", "pass", "info", "No duplicate candidate URLs or employer/title pairs detected."))
+        results.append(
+            ValidatorResult(
+                "duplicate_jobs",
+                "pass",
+                "info",
+                "No duplicate candidate URLs detected; role/title/location combinations are unique.",
+            )
+        )
 
     suspicious: list[str] = []
     for candidate in candidates:
@@ -310,6 +442,55 @@ def validate_source_coverage(
             )
     else:
         results.append(ValidatorResult("canary_present", "skip", "info", "No canary provided."))
+
+    if not candidates:
+        results.append(ValidatorResult("detail_depth", "skip", "info", "No candidates to evaluate for role-detail depth."))
+    elif any(_candidate_has_detail(candidate) for candidate in candidates):
+        results.append(
+            ValidatorResult(
+                "detail_depth",
+                "pass",
+                "info",
+                "At least one candidate carries substantive role detail beyond title-level metadata.",
+            )
+        )
+    else:
+        sampled_pages: list[str] = []
+        seen_urls: set[str] = set()
+        for candidate in candidates:
+            normalized_url = normalize_url_without_fragment(candidate.get("url", ""))
+            if not normalized_url or normalized_url in seen_urls:
+                continue
+            seen_urls.add(normalized_url)
+            try:
+                raw_text = raw_text_fetcher(normalized_url, timeout_seconds)
+            except Exception:
+                continue
+            categories = sorted(_raw_detail_categories(raw_text))
+            if categories:
+                sampled_pages.append(f"{normalized_url} ({', '.join(categories)})")
+            if len(seen_urls) >= 3:
+                break
+        if sampled_pages:
+            results.append(
+                ValidatorResult(
+                    "detail_depth",
+                    "fail",
+                    "blocking",
+                    "Sampled job pages expose detail sections, but extracted candidates still lack substantive role detail: "
+                    + "; ".join(sampled_pages[:3]),
+                )
+            )
+        else:
+            warnings.append("Candidates only contain title/card-level metadata without substantive role detail.")
+            results.append(
+                ValidatorResult(
+                    "detail_depth",
+                    "warn",
+                    "major",
+                    "Candidates only contain title/card-level metadata; no tasks, qualifications, compensation, or substantive notes were extracted.",
+                )
+            )
 
     sparse_optional = [
         candidate
