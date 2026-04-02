@@ -8,6 +8,7 @@ Cadence note:
 - `last_checked` is updated only on successful normal daily runs.
 - For `Check every 3 runs`, treat one scheduled day as one run.
 - Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- For `Check every month`, recheck once the calendar month changes.
 - Manual same-day reruns do not advance cadence.
 - `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
 
@@ -15,7 +16,7 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-01 |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-02 |
 
 ## Check every 3 runs
 
@@ -24,6 +25,11 @@ Cadence note:
 | Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-04-01 |
 | IBM Research | https://www.ibm.com/careers/search | ibm_api | 2026-04-01 |
 | Meta | https://www.metacareers.com/jobs | browser | 2026-04-01 |
+
+## Check every month
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
 
 ## Search terms
 

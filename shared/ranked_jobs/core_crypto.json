@@ -1,6 +1,6 @@
 {
   "track": "core_crypto",
-  "generated_at": "2026-04-01T07:37:53Z",
+  "generated_at": "2026-04-02T06:10:10Z",
   "jobs": [
     {
       "job_key": "clairvault | cryptography researcher",
@@ -220,6 +220,17 @@
       "date_seen": "2026-03-20",
       "date_seen_page": "Core Crypto Job Digest 2026-03-20",
       "last_seen": "2026-03-20",
+      "times_seen": 1
+    },
+    {
+      "job_key": "xi an jiaotong liverpool university pqc x | faculty and post doc positions in cryptography implementation",
+      "company": "Xi'an Jiaotong-Liverpool University / PQC-X",
+      "title": "Faculty and Post-doc Positions in Cryptography Implementation",
+      "url": "https://www.iacr.org/jobs/item/4118",
+      "fit_score": 7.7,
+      "date_seen": "2026-04-02",
+      "date_seen_page": "Core Crypto Job Digest 2026-04-02",
+      "last_seen": "2026-04-02",
       "times_seen": 1
     },
     {

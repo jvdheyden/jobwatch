@@ -74,6 +74,7 @@ Use the `last_checked` column in `./sources.md` as the track's source-check stat
 
 - Check all sources listed under `Check every run`.
 - For sources listed under `Check every 3 runs`, check only rows whose `last_checked` is blank or at least 3 calendar days old.
+- For sources listed under `Check every month`, check only rows whose `last_checked` is blank or from a different calendar month than today.
 - Treat one scheduled day as one run for cadence purposes.
 - Manual same-day reruns do not advance cadence.
 - After a successful normal run, update `last_checked` in `./sources.md` to today's date only for the sources actually checked on that run with complete coverage records.

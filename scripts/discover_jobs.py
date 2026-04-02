@@ -68,6 +68,7 @@ HN_JOB_ROW_RE = re.compile(
 HN_MORE_LINK_RE = re.compile(
     r"""<a href=(?P<quote>['"])(?P<href>jobs\?next=[^'"]+)(?P=quote)\s+class=(?P<quote2>['"])morelink(?P=quote2)\s+rel=(?P<quote3>['"])next(?P=quote3)>More</a>"""
 )
+HN_WHOISHIRING_TITLE_RE = re.compile(r"^Ask HN:\s+Who is hiring\?", flags=re.IGNORECASE)
 SERVICE_BUND_RESULT_RE = re.compile(
     r'<a[^>]+href="(?P<href>[^"]*IMPORTE/Stellenangebote[^"]*)"[^>]*>'
     r'.*?<h3>(?P<title>.*?)</h3>'
@@ -372,7 +373,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--source", action="append", default=[], help="Limit to one or more source names")
     parser.add_argument(
         "--cadence-group",
-        choices=["every_run", "every_3_runs"],
+        choices=["every_run", "every_3_runs", "every_month"],
         action="append",
         default=[],
         help="Limit to one or more cadence groups",
@@ -393,6 +394,12 @@ def extract_section(text: str, heading: str) -> str:
     if not match:
         raise ValueError(f"Missing section: {heading}")
     return match.group(1).strip()
+
+
+def extract_section_optional(text: str, heading: str) -> str:
+    pattern = rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)"
+    match = re.search(pattern, text, flags=re.MULTILINE | re.DOTALL)
+    return match.group(1).strip() if match else ""
 
 
 def parse_markdown_table(section: str, cadence_group: str) -> list[SourceConfig]:
@@ -474,9 +481,10 @@ def load_track_config(track: str) -> tuple[list[SourceConfig], list[str], dict[s
     text = path.read_text()
     every_run = parse_markdown_table(extract_section(text, "Check every run"), "every_run")
     every_3_runs = parse_markdown_table(extract_section(text, "Check every 3 runs"), "every_3_runs")
+    every_month = parse_markdown_table(extract_section_optional(text, "Check every month"), "every_month")
     track_terms = parse_track_terms(text)
     source_terms = parse_source_specific_terms(text)
-    return every_run + every_3_runs, track_terms, source_terms
+    return every_run + every_3_runs + every_month, track_terms, source_terms
 
 
 def source_due_today(source: SourceConfig, today: date) -> bool:
@@ -488,6 +496,8 @@ def source_due_today(source: SourceConfig, today: date) -> bool:
         last_checked = date.fromisoformat(source.last_checked)
     except ValueError:
         return True
+    if source.cadence_group == "every_month":
+        return (today.year, today.month) != (last_checked.year, last_checked.month)
     return (today - last_checked).days >= 3
 
 
@@ -638,6 +648,46 @@ def infer_hn_employer(title: str) -> str:
     if match:
         return normalize_whitespace(match.group("employer"))
     return "YC startup"
+
+
+def extract_first_external_url_from_html(html_text: str, base_url: str) -> str:
+    parser = LinkCollector()
+    parser.feed(html_text or "")
+    for link in parser.links:
+        absolute_url = normalize_url_without_fragment(urljoin(base_url, link["href"]))
+        parsed = urlparse(absolute_url)
+        if parsed.scheme in {"http", "https"} and parsed.netloc and parsed.netloc != "news.ycombinator.com":
+            return absolute_url
+    return ""
+
+
+def infer_hn_whoishiring_fields(clean_text: str, fallback_employer: str) -> tuple[str, str, str]:
+    segments = [normalize_whitespace(segment) for segment in clean_text.split("|") if normalize_whitespace(segment)]
+    if not segments:
+        employer = fallback_employer or "HN employer"
+        return employer, "Hiring post", "unknown"
+
+    employer = segments[0]
+    workplace_tokens = ("remote", "hybrid", "onsite", "on-site", "full-time", "part-time", "contract", "intern")
+
+    title = "Hiring post"
+    title_index = -1
+    for index, segment in enumerate(segments[1:], start=1):
+        lowered = normalize_for_matching(segment)
+        if any(token in lowered for token in workplace_tokens):
+            continue
+        title = segment
+        title_index = index
+        break
+
+    location = "unknown"
+    for segment in segments[(title_index + 1) if title_index >= 0 else 1 :]:
+        lowered = normalize_for_matching(segment)
+        if any(token in lowered for token in workplace_tokens) or "," in segment or "(" in segment:
+            location = segment
+            break
+
+    return employer or fallback_employer or "HN employer", title, location
 
 
 def looks_like_non_job_link(text: str, href: str) -> bool:
@@ -1205,6 +1255,97 @@ def discover_hackernews_jobs(source: SourceConfig, terms: list[str], timeout_sec
         enumerated_jobs=enumerated_jobs,
         matched_jobs=len(candidates_by_url),
         limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_hackernews_whoishiring_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    parsed = urlparse(source.url)
+    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    username = params.get("id") or "whoishiring"
+    user = fetch_json(f"https://hacker-news.firebaseio.com/v0/user/{username}.json", timeout_seconds)
+    submitted_ids = user.get("submitted") or []
+
+    story: dict[str, Any] | None = None
+    story_title = ""
+    for item_id in submitted_ids[:30]:
+        item = fetch_json(f"https://hacker-news.firebaseio.com/v0/item/{item_id}.json", timeout_seconds)
+        title = normalize_whitespace(join_text(item.get("title")))
+        if item.get("type") == "story" and HN_WHOISHIRING_TITLE_RE.match(title):
+            story = item
+            story_title = title
+            break
+
+    if not story:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="failed",
+            listing_pages_scanned=1,
+            search_terms_tried=terms,
+            result_pages_scanned="story_lookup=0",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=[f"Could not resolve a recent 'Who is hiring?' story from HN user '{username}'."],
+            candidates=[],
+        )
+
+    story_id = story["id"]
+    story_url = normalize_url_without_fragment(f"https://news.ycombinator.com/item?id={story_id}")
+    candidates_by_url: dict[str, Candidate] = {}
+    enumerated_jobs = 0
+
+    for comment_id in story.get("kids") or []:
+        comment = fetch_json(f"https://hacker-news.firebaseio.com/v0/item/{comment_id}.json", timeout_seconds)
+        if comment.get("dead") or comment.get("deleted") or not comment.get("text"):
+            continue
+        enumerated_jobs += 1
+        text_html = join_text(comment.get("text"))
+        clean_text = strip_html_fragment(text_html)
+        employer, title, location = infer_hn_whoishiring_fields(clean_text, comment.get("by") or "HN employer")
+        remote = infer_remote_status(location, clean_text)
+        searchable_text = " ".join(part for part in [title, employer, location, clean_text] if part)
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        comment_url = normalize_url_without_fragment(f"https://news.ycombinator.com/item?id={comment_id}")
+        external_url = extract_first_external_url_from_html(text_html, story_url)
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=employer,
+                title=title,
+                url=comment_url,
+                source_url=source.url,
+                alternate_url=external_url,
+                location=location,
+                remote=remote,
+                matched_terms=matched_terms,
+                notes=f"HN Who is hiring thread: {story_title}; Story: {story_url}",
+            ),
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"story_id={story_id}; top_level_comments={enumerated_jobs}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=enumerated_jobs,
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
         candidates=list(candidates_by_url.values()),
     )
 
@@ -4243,6 +4384,7 @@ DISCOVERY_HANDLERS = {
     "lever_json": discover_lever_json,
     "greenhouse_api": discover_greenhouse_api,
     "ashby_html": discover_ashby_api,
+    "hackernews_whoishiring_api": discover_hackernews_whoishiring_api,
     "neclab_jobs": discover_neclab_jobs,
     "partisia_site": discover_partisia_site,
     "pcd_team": discover_pcd_team,

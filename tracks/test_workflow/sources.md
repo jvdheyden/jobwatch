@@ -11,6 +11,11 @@
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
 
+## Check every month
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+
 ## Search terms
 
 ### Track-wide terms

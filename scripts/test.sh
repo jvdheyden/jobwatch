@@ -17,6 +17,7 @@ if [[ ${#PYTEST_ARGS[@]} -eq 0 ]]; then
 fi
 
 pytest \
+  tests/unit/test_discover_jobs_config.py \
   tests/unit/test_digest_json.py \
   tests/unit/test_render_digest.py \
   tests/unit/test_update_ranked_overview.py \

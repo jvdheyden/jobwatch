@@ -28,6 +28,7 @@ Ask for:
 - sources:
   - `Check every run`
   - `Check every 3 runs`
+  - `Check every month`
 - track-wide search terms
 - source-specific search terms, including whether any source should use `[override]`
 - whether the user wants a launchd plist now, and if so, at what local time. By default schedule the agent for this to track to run along with other already scheduled agents for other tracks.
@@ -140,6 +141,7 @@ Cadence note:
 - `last_checked` is updated only on successful normal daily runs.
 - For `Check every 3 runs`, treat one scheduled day as one run.
 - Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- For `Check every month`, recheck once the calendar month changes.
 - Manual same-day reruns do not advance cadence.
 - `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
 
@@ -149,6 +151,11 @@ Cadence note:
 | ... | ... | ... | ... |
 
 ## Check every 3 runs
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| ... | ... | ... | ... |
+
+## Check every month
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
 | ... | ... | ... | ... |

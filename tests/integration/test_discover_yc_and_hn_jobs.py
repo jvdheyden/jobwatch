@@ -116,3 +116,62 @@ def test_discover_hackernews_jobs_extracts_submission_rows_across_pages(monkeypa
         "Cipher (YC S24) is hiring a Security Engineer",
         "Orbit (YC W25) is hiring a Cryptography Engineer",
     }
+
+
+def test_discover_hackernews_whoishiring_api_resolves_latest_story_and_filters_comments(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Hacker News Who Is Hiring",
+        url="https://news.ycombinator.com/user?id=whoishiring",
+        discovery_mode="hackernews_whoishiring_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    payloads = {
+        "https://hacker-news.firebaseio.com/v0/user/whoishiring.json": {
+            "id": "whoishiring",
+            "submitted": [200, 100],
+        },
+        "https://hacker-news.firebaseio.com/v0/item/200.json": {
+            "id": 200,
+            "type": "story",
+            "title": "Ask HN: Who wants to be hired? (April 2026)",
+        },
+        "https://hacker-news.firebaseio.com/v0/item/100.json": {
+            "id": 100,
+            "type": "story",
+            "title": "Ask HN: Who is hiring? (April 2026)",
+            "kids": [101, 102],
+        },
+        "https://hacker-news.firebaseio.com/v0/item/101.json": {
+            "id": 101,
+            "by": "cipherjobs",
+            "text": 'Cipher | Cryptography Engineer | Remote | Full-time | <a href="https://example.com/jobs/cryptography-engineer">Apply</a> Building privacy-preserving systems.',
+        },
+        "https://hacker-news.firebaseio.com/v0/item/102.json": {
+            "id": 102,
+            "by": "plainjobs",
+            "text": "Plain | Product Manager | Remote | Full-time",
+        },
+    }
+
+    monkeypatch.setattr(discover_jobs, "fetch_json", lambda url, timeout_seconds: payloads[url])
+
+    coverage = discover_jobs.discover_hackernews_whoishiring_api(
+        source,
+        ["cryptography", "privacy", "security"],
+        timeout_seconds=5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.employer == "Cipher"
+    assert candidate.title == "Cryptography Engineer"
+    assert candidate.url == "https://news.ycombinator.com/item?id=101"
+    assert candidate.alternate_url == "https://example.com/jobs/cryptography-engineer"
+    assert candidate.location == "Remote"
+    assert candidate.remote == "remote"
+    assert candidate.matched_terms == ["cryptography", "privacy"]
+    assert "Ask HN: Who is hiring? (April 2026)" in candidate.notes

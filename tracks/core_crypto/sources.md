@@ -8,6 +8,7 @@ Cadence note:
 - `last_checked` is updated only on successful normal daily runs.
 - For `Check every 3 runs`, treat one scheduled day as one run.
 - Skip sources checked in the previous 2 scheduled days; recheck on day 3 or later.
+- For `Check every month`, recheck once the calendar month changes.
 - Manual same-day reruns do not advance cadence.
 - `discovery_mode` is used by `../../scripts/discover_jobs.py` for deterministic source coverage.
 
@@ -15,23 +16,23 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-01 |
-| PQShield | https://pqshield.com/careers/ | html | 2026-04-01 |
-| Zama | https://jobs.zama.org | html | 2026-04-01 |
-| 0xPARC / PCD Team | https://pcd.team/jd | pcd_team | |
-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-04-01 |
-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-04-01 |
-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-04-01 |
-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-04-01 |
-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-04-01 |
-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-04-01 |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-02 |
+| PQShield | https://pqshield.com/careers/ | html | 2026-04-02 |
+| Zama | https://jobs.zama.org | html | 2026-04-02 |
+| 0xPARC / PCD Team | https://pcd.team/jd | pcd_team | 2026-04-02 |
+| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-04-02 |
+| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-04-02 |
+| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-04-02 |
+| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-04-02 |
+| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-04-02 |
+| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-04-02 |
 
 ## Check every 3 runs
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
 | Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-04-01 |
-| ASML | https://www.asml.com/en/careers/find-your-job | asml_browser | |
+| ASML | https://www.asml.com/en/careers/find-your-job | asml_browser | 2026-04-02 |
 | Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-04-01 |
 | Bosch | https://jobs.bosch.de/ | browser | 2026-04-01 |
 | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
@@ -41,7 +42,7 @@ Cadence note:
 | IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
 | Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-04-01 |
 | Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-04-01 |
-| Meta | https://www.metacareers.com/jobs | browser | |
+| Meta | https://www.metacareers.com/jobs | browser | 2026-04-02 |
 | NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-04-01 |
 | Palantir | https://jobs.lever.co/palantir | lever_json | 2026-04-01 |
 | SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-04-01 |
@@ -54,6 +55,12 @@ Cadence note:
 | Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-04-01 |
 | YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | 2026-04-01 |
 | Hackernews Jobs | https://news.ycombinator.com/jobs | hackernews_jobs | 2026-04-01 |
+
+## Check every month
+
+| source | url | discovery_mode | last_checked |
+| --- | --- | --- | --- |
+| Hacker News Who Is Hiring | https://news.ycombinator.com/user?id=whoishiring | hackernews_whoishiring_api | |
 
 ## Search terms
 

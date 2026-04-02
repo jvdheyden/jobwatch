@@ -1,5 +1,61 @@
 {
   "track": "public_service",
-  "generated_at": "2026-04-01T17:15:10Z",
-  "jobs": []
+  "generated_at": "2026-04-02T06:23:38Z",
+  "jobs": [
+    {
+      "job_key": "verfassungsschutz | referenten referentinnen m w d in der cyber und spionageabwehr",
+      "company": "Verfassungsschutz",
+      "title": "Referenten/Referentinnen (m/w/d) in der Cyber- und Spionageabwehr",
+      "url": "https://www.verfassungsschutz.de/SharedDocs/stellenangebote/DE/2026-03-06-referenten-cyber-spio-ausschreibung.html",
+      "fit_score": 8.5,
+      "date_seen": "2026-04-02",
+      "date_seen_page": "Public Service Job Digest 2026-04-02",
+      "last_seen": "2026-04-02",
+      "times_seen": 1
+    },
+    {
+      "job_key": "auswartiges amt | it referentin it referenten m w d und stellvertretende referatsleitung cyberabwehr im auswartigen amt",
+      "company": "Auswärtiges Amt",
+      "title": "IT-Referentin / IT-Referenten (m/w/d) und stellvertretende Referatsleitung Cyberabwehr im Auswärtigen Amt",
+      "url": "https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen/2762720-2762720",
+      "fit_score": 8.0,
+      "date_seen": "2026-04-02",
+      "date_seen_page": "Public Service Job Digest 2026-04-02",
+      "last_seen": "2026-04-02",
+      "times_seen": 1
+    },
+    {
+      "job_key": "verfassungsschutz | technische n analyst in m w d fur die cyberabwehr",
+      "company": "Verfassungsschutz",
+      "title": "Technische/-n Analyst/-in (m/w/d) für die Cyberabwehr",
+      "url": "https://www.verfassungsschutz.de/SharedDocs/stellenangebote/DE/2026-03-23-analyst-cyber-ausschreibung.html",
+      "fit_score": 7.5,
+      "date_seen": "2026-04-02",
+      "date_seen_page": "Public Service Job Digest 2026-04-02",
+      "last_seen": "2026-04-02",
+      "times_seen": 1
+    },
+    {
+      "job_key": "bsi | it spezialist w m d im bereich hoheitliche biometrie bsi 2026 022",
+      "company": "BSI",
+      "title": "IT-Spezialist (w/m/d) im Bereich Hoheitliche Biometrie BSI-2026-022",
+      "url": "https://www.service.bund.de/IMPORTE/Stellenangebote/editor/BVA-BSI/2026/03/6434124.html",
+      "fit_score": 7.0,
+      "date_seen": "2026-04-02",
+      "date_seen_page": "Public Service Job Digest 2026-04-02",
+      "last_seen": "2026-04-02",
+      "times_seen": 1
+    },
+    {
+      "job_key": "bsi | kritis it sicherheitsexpertin kritis it sicherheitsexperte w m d in w14 kritis sektoren finanz und versicherungswesen wasser it und tk sowie digitale dienste bsi 2026 024",
+      "company": "BSI",
+      "title": "KRITIS-IT-Sicherheitsexpertin / KRITIS-IT-Sicherheitsexperte (w/m/d) in W14 KRITIS-Sektoren Finanz- und Versicherungswesen, Wasser, IT und TK sowie Digitale Dienste BSI-2026-024",
+      "url": "https://www.service.bund.de/IMPORTE/Stellenangebote/editor/BVA-BSI/2026/03/6447106.html",
+      "fit_score": 6.5,
+      "date_seen": "2026-04-02",
+      "date_seen_page": "Public Service Job Digest 2026-04-02",
+      "last_seen": "2026-04-02",
+      "times_seen": 1
+    }
+  ]
 }
