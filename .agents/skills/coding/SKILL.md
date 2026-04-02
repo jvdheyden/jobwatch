@@ -15,6 +15,9 @@ description: Coding agent for this repo.
 When explaining code, prefer call diagrams and (if relevant) state diagrams.
 
 ## Testing and verification
+- Use the repo-local Python virtualenv at `./.venv` for Python tests and helper scripts.
+- If `./.venv` is missing, bootstrap it with `bash scripts/bootstrap_venv.sh` before running Python test commands.
+- Prefer `./.venv/bin/python -m pytest ...` over bare `pytest` or `python3 -m pytest`.
 - When changing behavior or fixing a bug, add or update tests where reasonable.
 - Do not force TDD for trivial refactors, config changes, or docs-only edits.
 - Run relevant checks during development when helpful.

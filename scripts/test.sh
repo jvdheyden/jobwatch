@@ -3,8 +3,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PYTHON_BIN="$ROOT/.venv/bin/python"
 
 cd "$ROOT"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  echo "Missing repo-local virtualenv at $ROOT/.venv." >&2
+  echo "Run: bash scripts/bootstrap_venv.sh" >&2
+  exit 1
+fi
 
 bash -n scripts/run_track.sh
 bash -n scripts/sync_to_logseq.sh
@@ -16,7 +23,7 @@ if [[ ${#PYTEST_ARGS[@]} -eq 0 ]]; then
   PYTEST_ARGS=(-q)
 fi
 
-pytest \
+"$PYTHON_BIN" -m pytest \
   tests/unit/test_discover_jobs_config.py \
   tests/unit/test_digest_json.py \
   tests/unit/test_render_digest.py \

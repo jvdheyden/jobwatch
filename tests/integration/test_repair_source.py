@@ -205,6 +205,8 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert "Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds." in prompt_text
     assert "Stop as soon as the focused validation command completes; do not continue into broader verification after that point." in prompt_text
     assert "The orchestrator owns rediscovery and final eval." in prompt_text
+    assert "Use the repo-local virtualenv for Python tests and helper scripts" in prompt_text
+    assert "./.venv/bin/python scripts/discover_jobs.py --track public_service --source \"Example Source\" --today 2026-04-02 --pretty" in prompt_text
 
 
 def test_repair_source_stops_at_retry_limit(tmp_job_agent_root: Path, run_cmd, repo_root: Path):

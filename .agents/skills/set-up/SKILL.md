@@ -85,9 +85,9 @@ The handoff should include:
 Expected coding output:
 - minimal support for that source in `scripts/discover_jobs.py`
 - one focused automated test
-- validation with `python3 scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
-- quality-gate validation with `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
-- if that evaluation returns `repair_needed`, prefer `python3 scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]` over ad hoc manual retrying
+- validation with `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
+- quality-gate validation with `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+- if that evaluation returns `repair_needed`, prefer `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]` over ad hoc manual retrying
 - if shared code changed, `scripts/test.sh`
 
 After the coding handoff succeeds:
@@ -258,9 +258,9 @@ Do not change the shared runner shape. The plist should still call `scripts/run_
 
 After scaffolding, run:
 
-1. `python3 scripts/discover_jobs.py --track {track_slug} --list-sources`
-2. `python3 scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --due-only --pretty`
-3. `python3 scripts/update_ranked_overview.py --track {track_slug}`
+1. `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --list-sources`
+2. `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --due-only --pretty`
+3. `./.venv/bin/python scripts/update_ranked_overview.py --track {track_slug}`
 
 If you created a plist, also run:
 
@@ -273,10 +273,10 @@ If setup required changes to shared code such as `scripts/discover_jobs.py`, als
 If setup included source integration with a canary, also run:
 
 6. For each newly added or materially changed source that was actually probed and has a canary:
-   `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+   `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
 7. For at most the top 2 `repair_needed` sources by default:
-   `python3 scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+   `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
 

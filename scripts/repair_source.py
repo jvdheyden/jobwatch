@@ -8,6 +8,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -51,6 +52,13 @@ def default_coder_last_message_path(track: str, source: str, stamp: str, attempt
 
 def default_postmortem_path(track: str, source: str, stamp: str, attempt: int) -> Path:
     return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.attempt{attempt}.postmortem.json"
+
+
+def resolve_repo_python() -> str:
+    venv_python = REPO_ROOT / ".venv" / "bin" / "python"
+    if venv_python.exists():
+        return str(venv_python)
+    return sys.executable
 
 
 def resolve_coder_bin(explicit: str | None) -> Path | None:
@@ -275,7 +283,7 @@ def detect_ready_for_rediscovery_signals(
         if not isinstance(command, str) or exit_code != 0:
             continue
         if (
-            "python3 scripts/discover_jobs.py" in command
+            "scripts/discover_jobs.py" in command
             and f"--track {track}" in command
             and today in command
             and (source in command or source_token in command)
@@ -439,7 +447,7 @@ def run_eval(
     timeout_seconds: int,
 ) -> tuple[int, dict[str, Any]]:
     command = [
-        "python3",
+        resolve_repo_python(),
         str(REPO_ROOT / "scripts" / "eval_source_quality.py"),
         "--track",
         track,
@@ -483,7 +491,7 @@ def run_discovery(
     timeout_seconds: int,
 ) -> subprocess.CompletedProcess[str]:
     command = [
-        "python3",
+        resolve_repo_python(),
         str(WORK_ROOT / "scripts" / "discover_jobs.py"),
         "--track",
         track,
@@ -564,7 +572,8 @@ def build_coder_prompt(
             "- Do not edit discovery or eval artifacts directly.",
             "- Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this repair.",
             "- Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds.",
-            f"- After your code change, validate with: python3 scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",
+            f"- After your code change, validate with: ./.venv/bin/python scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",
+            "- Use the repo-local virtualenv for Python tests and helper scripts; if it is missing, bootstrap it with `bash scripts/bootstrap_venv.sh` before Python test commands.",
             f"- Check that the fresh source artifact includes the detail missing from the repair ticket for the canary {json.dumps(canary_title)}.",
             "- Run only the most relevant focused tests for the changed code before finishing.",
             "- Stop as soon as the focused validation command completes; do not continue into broader verification after that point.",
