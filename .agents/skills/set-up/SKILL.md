@@ -11,6 +11,7 @@ Default assumption:
 - This is a scaffolding task, not a full source-integration task.
 - Reuse the shared scripts in `scripts/`.
 - Do not add new discovery code to `scripts/discover_jobs.py` unless the user explicitly asks for source integration now.
+- For source integration, evaluate newly added or materially changed sources; do not reevaluate stable unchanged sources unless the user asks.
 
 ## Workflow
 
@@ -97,6 +98,45 @@ After the coding handoff succeeds:
 If the coding handoff is not requested or does not succeed:
 - keep the source on the track only if an existing mode is still somewhat usable
 - otherwise leave it out and note it as follow-up work
+
+### 2c. Source-quality triage for setup-time integration
+
+Use this branch when setup includes multiple newly added sources and the user wants a better-than-scaffolding integration pass.
+
+Run `scripts/eval_source_quality.py` for each source that meets both conditions:
+- it is newly added to the track or its scraper changed materially during this setup pass
+- it was actually probed with a real `discover_jobs.py` run and has a canary
+
+Do not run the quality gate for:
+- stable unchanged sources already supported in the repo
+- sources that were only scaffolded but not probed
+- broad follow-up sources the user did not ask to integrate now
+
+After running the quality gate, classify each evaluated source:
+- `pass`: source is ready; keep it and report it as supported
+- `repair_needed`: source is a candidate for coding repair
+- `blocked`: stop treating the source as ready; report the blocker explicitly
+
+Do not auto-escalate every `repair_needed` source into coding.
+
+Instead, rank `repair_needed` sources by:
+1. importance to the track
+2. whether fallback parsing is unusable or too noisy
+3. canary quality and reproducibility
+
+Default repair budget during setup:
+- escalate at most the top `2` `repair_needed` sources
+- you may escalate `3` only if the user clearly asked for a broader integration pass
+- leave the rest as follow-up work instead of turning setup into a long multi-source coding session
+
+For each source selected for repair:
+- hand off to repo-development coding work as described above
+- prefer `scripts/repair_source.py` over ad hoc repeated retrying once an initial `eval_source_quality.py` run returns `repair_needed`
+- treat the source as supported only if the final repair-loop result is `final_status: "pass"`
+
+For each source not selected for repair:
+- keep it only if the fallback mode is still somewhat usable and label it as partial/follow-up
+- otherwise leave it out for now and report why
 
 ### 3. Generate files
 
@@ -232,7 +272,11 @@ If setup required changes to shared code such as `scripts/discover_jobs.py`, als
 
 If setup included source integration with a canary, also run:
 
-6. `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+6. For each newly added or materially changed source that was actually probed and has a canary:
+   `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+
+7. For at most the top 2 `repair_needed` sources by default:
+   `python3 scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
 
@@ -242,5 +286,7 @@ Report:
 - what files were created or changed
 - which sources were included and with which `discovery_mode`
 - which validation commands passed
+- which newly integrated sources passed the quality gate
+- which sources were deferred instead of escalated, and why
 - any sources that still need custom integration or follow-up
 - a succinct suggested commit message
