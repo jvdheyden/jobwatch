@@ -308,12 +308,19 @@ class BrowserPageResult:
     limitations: list[str] = field(default_factory=list)
 
 
+@dataclass
+class BrowserEnrichmentResult:
+    direct_job_pages_opened: int = 0
+    limitations: list[str] = field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class BrowserStrategy:
     search_url_builder: Callable[[SourceConfig, str, int], str]
     extract_page: Callable[[Any, SourceConfig, str, list[str], int], BrowserPageResult]
     prepare_page: Callable[[Any], None] | None = None
     advance_page: Callable[[Any, SourceConfig, str, int], bool] | None = None
+    enrich_candidates: Callable[[Any, dict[str, Candidate], list[str], int], BrowserEnrichmentResult] | None = None
     override_terms: tuple[str, ...] | None = None
     supports_pagination: bool = False
     cumulative_results: bool = False
@@ -3267,6 +3274,163 @@ def meta_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     return f"{base}?{urlencode({'q': term})}"
 
 
+META_TASK_HEADINGS = (
+    "Responsibilities",
+    "What You'll Do",
+    "What You Will Do",
+)
+META_MINIMUM_QUALIFICATION_HEADINGS = (
+    "Minimum Qualifications",
+    "Qualifications",
+    "Requirements",
+)
+META_PREFERRED_QUALIFICATION_HEADINGS = ("Preferred Qualifications",)
+META_DETAIL_STOP_HEADINGS = (
+    *META_TASK_HEADINGS,
+    *META_MINIMUM_QUALIFICATION_HEADINGS,
+    *META_PREFERRED_QUALIFICATION_HEADINGS,
+    "Locations",
+    "About Meta",
+    "About Us",
+    "Team",
+    "Job Interviews",
+    "Culture",
+    "Benefits",
+    "Compensation",
+    "Equal Employment Opportunity",
+)
+META_DETAIL_IGNORED_LINES = {
+    "Apply to Job",
+    "Save Job",
+    "Share Job",
+    "See all jobs",
+    "Show more",
+    "Read more",
+}
+
+
+def normalize_heading_line(value: str) -> str:
+    return normalize_for_matching(re.sub(r":\s*$", "", normalize_whitespace(value)))
+
+
+def extract_visible_text_section(text: str, headings: tuple[str, ...], stop_headings: tuple[str, ...]) -> str:
+    lines = split_visible_lines(text)
+    target_headings = {normalize_heading_line(heading) for heading in headings}
+    stop_heading_set = {normalize_heading_line(heading) for heading in stop_headings}
+    collected: list[str] = []
+    collecting = False
+
+    for line in lines:
+        normalized_line = normalize_heading_line(line)
+        if not collecting:
+            if normalized_line in target_headings:
+                collecting = True
+            continue
+        if normalized_line in stop_heading_set:
+            break
+        cleaned = normalize_whitespace(re.sub(r"^[•*\-\u2022]+\s*", "", line))
+        if not cleaned or cleaned in META_DETAIL_IGNORED_LINES:
+            continue
+        collected.append(cleaned)
+
+    return normalize_whitespace(" ".join(collected))
+
+
+def extract_meta_detail_sections(detail_text: str) -> dict[str, str]:
+    tasks = extract_visible_text_section(detail_text, META_TASK_HEADINGS, META_DETAIL_STOP_HEADINGS)
+    minimum_qualifications = extract_visible_text_section(
+        detail_text,
+        META_MINIMUM_QUALIFICATION_HEADINGS,
+        META_DETAIL_STOP_HEADINGS,
+    )
+    preferred_qualifications = extract_visible_text_section(
+        detail_text,
+        META_PREFERRED_QUALIFICATION_HEADINGS,
+        META_DETAIL_STOP_HEADINGS,
+    )
+    qualifications = "; ".join(
+        part for part in [minimum_qualifications, preferred_qualifications] if part
+    )
+    return {
+        "tasks": tasks,
+        "qualifications": qualifications,
+    }
+
+
+def apply_meta_detail_text(candidate: Candidate, detail_text: str, terms: list[str]) -> bool:
+    sections = extract_meta_detail_sections(detail_text)
+    detail_text_for_matching = " ".join(part for part in sections.values() if part)
+    original_terms = list(candidate.matched_terms)
+    if detail_text_for_matching:
+        candidate.matched_terms = sorted(set(candidate.matched_terms + match_terms(detail_text_for_matching, terms)))
+
+    original_notes = candidate.notes
+    note_parts = [candidate.notes] if candidate.notes else []
+    if sections["tasks"]:
+        task_note = f"Tasks: {truncate_text(sections['tasks'], 260)}"
+        if not candidate.notes or task_note not in candidate.notes:
+            note_parts.append(task_note)
+    if sections["qualifications"]:
+        qualifications_note = f"Qualifications: {truncate_text(sections['qualifications'], 260)}"
+        if not candidate.notes or qualifications_note not in candidate.notes:
+            note_parts.append(qualifications_note)
+
+    updated_notes = "; ".join(dict.fromkeys(part for part in note_parts if part))
+    candidate.notes = updated_notes
+    return candidate.notes != original_notes or candidate.matched_terms != original_terms
+
+
+def enrich_meta_candidates(page: Any, candidates_by_url: dict[str, Candidate], terms: list[str], timeout_ms: int) -> BrowserEnrichmentResult:
+    if not candidates_by_url:
+        return BrowserEnrichmentResult()
+
+    context = page.context
+    browser_attr = getattr(context, "browser", None)
+    browser = browser_attr() if callable(browser_attr) else browser_attr
+    if browser is not None:
+        detail_page = browser.new_page(viewport={"width": 1440, "height": 2200})
+    else:
+        detail_page = context.new_page()
+    opened_pages = 0
+    missing_detail_urls: list[str] = []
+
+    try:
+        for candidate in sorted(candidates_by_url.values(), key=lambda item: item.url):
+            detail_page.goto(candidate.url, wait_until="domcontentloaded", timeout=timeout_ms)
+            opened_pages += 1
+            try:
+                detail_page.wait_for_function(
+                    """
+                    () => {
+                      const text = (document.body && document.body.innerText || '').toLowerCase();
+                      return text.includes('responsibilities')
+                        || text.includes('minimum qualifications')
+                        || text.includes('preferred qualifications')
+                        || text.includes('not logged in');
+                    }
+                    """,
+                    timeout=5000,
+                )
+            except Exception:
+                detail_page.wait_for_timeout(1000)
+            detail_text = detail_page.locator("body").inner_text(timeout=5000)
+            if not apply_meta_detail_text(candidate, detail_text, terms):
+                missing_detail_urls.append(candidate.url)
+    finally:
+        detail_page.close()
+
+    limitations: list[str] = []
+    if missing_detail_urls:
+        limitations.append(
+            f"Meta detail page enrichment yielded no substantive role detail for {len(missing_detail_urls)} of {len(candidates_by_url)} matched roles"
+        )
+
+    return BrowserEnrichmentResult(
+        direct_job_pages_opened=opened_pages,
+        limitations=limitations,
+    )
+
+
 def google_public_job_url(source: SourceConfig, job_id: str, title: str) -> str:
     base = source.url.rstrip("/")
     if not job_id or job_id == "unknown":
@@ -4317,6 +4481,7 @@ BROWSER_STRATEGIES = {
         search_url_builder=meta_search_url,
         extract_page=extract_meta_jobs,
         advance_page=advance_meta_results,
+        enrich_candidates=enrich_meta_candidates,
         supports_pagination=True,
         cumulative_results=True,
         max_pages=10,
@@ -4372,6 +4537,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
     pages_scanned = 0
     status = "complete"
     effective_terms = list(strategy.override_terms) if strategy.override_terms else terms
+    direct_job_pages_opened = 0
 
     try:
         with sync_playwright() as playwright:
@@ -4444,6 +4610,11 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                     limitations.append(
                         f"{source.source} browser search for '{term}' hit the page cap ({strategy.max_pages})"
                     )
+            if strategy.enrich_candidates:
+                enrichment = strategy.enrich_candidates(page, candidates_by_url, terms, timeout_ms)
+                direct_job_pages_opened += enrichment.direct_job_pages_opened
+                if enrichment.limitations:
+                    limitations.extend(enrichment.limitations)
             browser.close()
     except Exception as exc:  # pragma: no cover - defensive output for live runs
         return Coverage(
@@ -4476,7 +4647,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
         listing_pages_scanned=pages_scanned,
         search_terms_tried=effective_terms,
         result_pages_scanned=", ".join(result_summaries) if result_summaries else "none",
-        direct_job_pages_opened=0,
+        direct_job_pages_opened=direct_job_pages_opened,
         enumerated_jobs=len(raw_seen_ids),
         matched_jobs=len(candidates_by_url),
         limitations=deduped_limitations,
