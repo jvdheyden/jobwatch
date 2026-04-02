@@ -85,10 +85,12 @@ Expected coding output:
 - minimal support for that source in `scripts/discover_jobs.py`
 - one focused automated test
 - validation with `python3 scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
+- quality-gate validation with `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 - if shared code changed, `scripts/test.sh`
 
 After the coding handoff succeeds:
 - update `sources.md` with the correct `discovery_mode`
+- treat the source as supported only if the quality-gate result is `final_status: "pass"`
 - mention the new support explicitly in the final response
 
 If the coding handoff is not requested or does not succeed:
@@ -226,6 +228,12 @@ If you created a plist, also run:
 If setup required changes to shared code such as `scripts/discover_jobs.py`, also run:
 
 5. `scripts/test.sh`
+
+If setup included source integration with a canary, also run:
+
+6. `python3 scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+
+Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
 
 ### 5. Final response
 

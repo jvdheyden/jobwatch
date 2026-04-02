@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Evaluate one source artifact for extraction quality and repair readiness."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+from typing import Any
+
+from source_quality import (
+    build_repair_ticket,
+    generated_at,
+    load_source_coverage,
+    review_source_with_llm,
+    source_slug,
+    validate_source_coverage,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def default_artifact_path(track: str, stamp: str) -> Path:
+    return ROOT / "artifacts" / "discovery" / track / f"{stamp}.json"
+
+
+def default_output_path(track: str, source: str, stamp: str) -> Path:
+    return ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.json"
+
+
+def resolve_reviewer_bin(explicit: str | None) -> Path | None:
+    if explicit:
+        return Path(explicit)
+    env_bin = os.environ.get("JOB_AGENT_REVIEWER_BIN")
+    if env_bin:
+        return Path(env_bin)
+    codex_bin = os.environ.get("CODEX_BIN")
+    if codex_bin:
+        return Path(codex_bin)
+    default_codex = Path("/opt/homebrew/bin/codex")
+    if default_codex.exists():
+        return default_codex
+    return None
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--track", required=True, help="Track slug, e.g. core_crypto")
+    parser.add_argument("--source", required=True, help="Source name exactly as it appears in the discovery artifact")
+    parser.add_argument("--today", required=True, help="Date stamp in YYYY-MM-DD format")
+    parser.add_argument("--artifact-path", help="Path to the discovery artifact; defaults to today's track artifact")
+    parser.add_argument("--output", help="Write the evaluation JSON here")
+    parser.add_argument("--canary-title", default="", help="Expected canary title for this source")
+    parser.add_argument("--canary-url", default="", help="Expected canary URL for this source")
+    parser.add_argument(
+        "--reviewer",
+        choices=("auto", "off", "force"),
+        default="auto",
+        help="Whether to run the LLM reviewer",
+    )
+    parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer; defaults to JOB_AGENT_REVIEWER_BIN/CODEX_BIN/codex")
+    parser.add_argument("--timeout-seconds", type=int, default=20, help="Timeout for reviewer/raw page fetches")
+    args = parser.parse_args()
+
+    artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)
+    output_path = Path(args.output) if args.output else default_output_path(args.track, args.source, args.today)
+
+    reviewer_bin = resolve_reviewer_bin(args.reviewer_bin)
+    try:
+        _, source = load_source_coverage(artifact_path, args.source)
+        deterministic = validate_source_coverage(
+            source,
+            canary_title=args.canary_title,
+            canary_url=args.canary_url,
+        )
+        reviewer_needed = args.reviewer == "force" or (
+            args.reviewer == "auto" and deterministic["confidence"] != "high"
+        )
+        if args.reviewer == "off":
+            reviewer = {
+                "status": "skipped",
+                "defects": [],
+                "reason": "reviewer disabled",
+            }
+        elif reviewer_needed:
+            reviewer = review_source_with_llm(
+                ROOT,
+                artifact_path,
+                source,
+                canary_title=args.canary_title,
+                canary_url=args.canary_url,
+                reviewer_bin=reviewer_bin,
+                timeout_seconds=args.timeout_seconds,
+            )
+        else:
+            reviewer = {
+                "status": "skipped",
+                "defects": [],
+                "reason": "deterministic confidence high",
+            }
+    except Exception as exc:
+        payload: dict[str, Any] = {
+            "schema_version": 1,
+            "generated_at": generated_at(),
+            "track": args.track,
+            "source": args.source,
+            "date": args.today,
+            "artifact_path": str(artifact_path),
+            "canary": {"title": args.canary_title, "url": args.canary_url},
+            "deterministic": {
+                "confidence": "failed",
+                "checks": [
+                    {
+                        "name": "source_coverage_present",
+                        "status": "fail",
+                        "severity": "blocking",
+                        "details": str(exc),
+                    }
+                ],
+                "warnings": [],
+            },
+            "reviewer": {"status": "skipped", "defects": [], "reason": "source loading failed"},
+            "final_status": "blocked",
+            "repair_ticket": {
+                "status": "open",
+                "track": args.track,
+                "source": args.source,
+                "discovery_mode": "",
+                "canary_title": args.canary_title,
+                "canary_url": args.canary_url,
+                "summary": str(exc),
+                "defect_types": ["source_coverage_present"],
+                "failing_checks": ["source_coverage_present"],
+                "reviewer_defects": [],
+                "likely_file": "scripts/discover_jobs.py",
+                "success_condition": "Source appears in today's discovery artifact and passes deterministic validation.",
+                "non_goals": [
+                    "Do not redesign multiple sources at once.",
+                    "Do not broaden track search terms unless the defect explicitly requires it.",
+                ],
+            },
+        }
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(payload, indent=2) + "\n")
+        print(json.dumps(payload, indent=2))
+        return 1
+
+    repair_ticket = build_repair_ticket(
+        args.track,
+        source,
+        deterministic,
+        reviewer,
+        canary_title=args.canary_title,
+        canary_url=args.canary_url,
+    )
+    final_status = "pass"
+    if repair_ticket:
+        final_status = "repair_needed"
+    if deterministic["confidence"] == "failed" and reviewer.get("status") == "blocked":
+        final_status = "blocked"
+
+    payload = {
+        "schema_version": 1,
+        "generated_at": generated_at(),
+        "track": args.track,
+        "source": args.source,
+        "date": args.today,
+        "artifact_path": str(artifact_path),
+        "canary": {"title": args.canary_title, "url": args.canary_url},
+        "deterministic": deterministic,
+        "reviewer": reviewer,
+        "final_status": final_status,
+        "repair_ticket": repair_ticket,
+    }
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(payload, indent=2) + "\n")
+    print(json.dumps(payload, indent=2))
+    return 0 if final_status == "pass" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

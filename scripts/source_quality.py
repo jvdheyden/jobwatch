@@ -1,0 +1,542 @@
+#!/usr/bin/env python3
+"""Helpers for source-integration quality evaluation."""
+
+from __future__ import annotations
+
+import json
+import re
+import ssl
+import subprocess
+import unicodedata
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from html import unescape
+from pathlib import Path
+from typing import Any
+from urllib.parse import urljoin, urlparse
+from urllib.request import Request, urlopen
+
+
+USER_AGENT = "job-agent-source-quality/0.1"
+DEFAULT_TIMEOUT_SECONDS = 20
+HTML_TAG_RE = re.compile(r"<[^>]+>")
+NON_JOB_TITLE_MARKERS = (
+    "open positions",
+    "open jobs",
+    "search results",
+    "rss",
+    "twitter",
+    "join us",
+    "karrieremessen",
+    "offene stellen",
+    "newsletter",
+    "feed",
+)
+NON_JOB_URL_MARKERS = (
+    "/rss",
+    "/feed",
+    "twitter.com",
+    "/newsletter",
+    "/impressum",
+    "mailto:",
+)
+
+
+@dataclass(frozen=True)
+class ValidatorResult:
+    name: str
+    status: str
+    severity: str
+    details: str
+
+
+def generated_at() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def normalize_whitespace(value: str) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+def strip_html_fragment(value: str) -> str:
+    return normalize_whitespace(unescape(HTML_TAG_RE.sub(" ", value or "")))
+
+
+def truncate_text(value: str, limit: int = 400) -> str:
+    text = normalize_whitespace(value)
+    if len(text) <= limit:
+        return text
+    boundary = text.rfind(" ", 0, limit - 3)
+    if boundary == -1 or boundary < limit // 2:
+        boundary = limit - 3
+    return text[:boundary].rstrip() + "..."
+
+
+def normalize_for_matching(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_text.lower()
+
+
+def normalize_url_without_fragment(value: str) -> str:
+    parsed = urlparse(value or "")
+    path = parsed.path.rstrip("/") or "/"
+    return parsed._replace(path=path, fragment="").geturl()
+
+
+def source_slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+
+
+def fetch_text(url: str, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS) -> str:
+    request = Request(url, headers={"User-Agent": USER_AGENT})
+    context = ssl.create_default_context()
+    with urlopen(request, timeout=timeout_seconds, context=context) as response:
+        content_type = response.headers.get_content_charset() or "utf-8"
+        return response.read().decode(content_type, errors="replace")
+
+
+def registrable_domain(url: str) -> str:
+    host = (urlparse(url).hostname or "").lower().strip(".")
+    if not host:
+        return ""
+    if re.fullmatch(r"\d+\.\d+\.\d+\.\d+", host):
+        return host
+    parts = host.split(".")
+    if len(parts) <= 2:
+        return host
+    return ".".join(parts[-2:])
+
+
+def is_allowed_candidate_domain(source_url: str, candidate_url: str) -> bool:
+    source_host = (urlparse(source_url).hostname or "").lower()
+    candidate_host = (urlparse(candidate_url).hostname or "").lower()
+    if not candidate_host:
+        return False
+    if candidate_host == source_host or candidate_host.endswith("." + source_host):
+        return True
+    return registrable_domain(source_url) == registrable_domain(candidate_url)
+
+
+def extract_json_from_text(text: str) -> Any:
+    decoder = json.JSONDecoder()
+    for index, char in enumerate(text):
+        if char not in "[{":
+            continue
+        try:
+            value, end = decoder.raw_decode(text[index:])
+        except json.JSONDecodeError:
+            continue
+        remainder = text[index + end :].strip()
+        if not remainder:
+            return value
+    raise ValueError("no JSON object found in reviewer output")
+
+
+def load_source_coverage(artifact_path: Path, source_name: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    payload = json.loads(artifact_path.read_text())
+    for source in payload.get("sources", []):
+        if source.get("source") == source_name:
+            return payload, source
+    raise KeyError(f"source {source_name!r} not found in {artifact_path}")
+
+
+def _missing_core_field(value: Any) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, str):
+        return False
+    return normalize_whitespace(value) == ""
+
+
+def _suspicious_candidate(candidate: dict[str, Any]) -> list[str]:
+    title = normalize_for_matching(candidate.get("title", ""))
+    url = normalize_for_matching(candidate.get("url", ""))
+    reasons: list[str] = []
+    if any(marker in title for marker in NON_JOB_TITLE_MARKERS):
+        reasons.append("title looks like navigation or category text")
+    if any(marker in url for marker in NON_JOB_URL_MARKERS):
+        reasons.append("url looks like feed or navigation page")
+    if re.fullmatch(r"\d+\s+offene\s+stellen", title):
+        reasons.append("title is only a result count")
+    return reasons
+
+
+def validate_source_coverage(
+    source: dict[str, Any],
+    *,
+    canary_title: str = "",
+    canary_url: str = "",
+) -> dict[str, Any]:
+    candidates = source.get("candidates", [])
+    source_url = source.get("source_url", "")
+    results: list[ValidatorResult] = []
+    warnings: list[str] = []
+
+    if source.get("enumerated_jobs", 0) or candidates:
+        results.append(ValidatorResult("artifact_nonempty", "pass", "info", "Source enumerated at least one posting or candidate."))
+    else:
+        results.append(ValidatorResult("artifact_nonempty", "fail", "blocking", "Source artifact enumerated no postings and produced no candidates."))
+
+    missing_fields: list[str] = []
+    for index, candidate in enumerate(candidates):
+        for field in ("title", "url", "source_url", "employer"):
+            if _missing_core_field(candidate.get(field)):
+                missing_fields.append(f"candidate[{index}].{field}")
+    if missing_fields:
+        results.append(
+            ValidatorResult(
+                "required_fields",
+                "fail",
+                "blocking",
+                "Missing core fields: " + ", ".join(missing_fields[:8]),
+            )
+        )
+    else:
+        results.append(ValidatorResult("required_fields", "pass", "info", "All candidates have title, url, source_url, and employer."))
+
+    empty_fields: list[str] = []
+    for index, candidate in enumerate(candidates):
+        for field in ("title", "url", "source_url", "employer"):
+            value = candidate.get(field)
+            if isinstance(value, str) and value.strip() == "":
+                empty_fields.append(f"candidate[{index}].{field}")
+    if empty_fields:
+        warnings.append("Some extracted fields are empty: " + ", ".join(empty_fields[:8]))
+        results.append(
+            ValidatorResult(
+                "no_empty_fields",
+                "warn",
+                "major",
+                "Empty extracted fields: " + ", ".join(empty_fields[:8]),
+            )
+        )
+    else:
+        results.append(ValidatorResult("no_empty_fields", "pass", "info", "No empty extracted fields among checked candidate fields."))
+
+    disallowed_urls = [
+        candidate.get("url", "")
+        for candidate in candidates
+        if candidate.get("url") and not is_allowed_candidate_domain(source_url, candidate["url"])
+    ]
+    if disallowed_urls:
+        results.append(
+            ValidatorResult(
+                "url_allowlist",
+                "fail",
+                "blocking",
+                "Candidate URLs fall outside the source domain allowlist: " + ", ".join(disallowed_urls[:5]),
+            )
+        )
+    else:
+        results.append(ValidatorResult("url_allowlist", "pass", "info", "Candidate URLs stay within the source/domain allowlist."))
+
+    normalized_urls: dict[str, int] = {}
+    normalized_pairs: dict[str, int] = {}
+    duplicates: list[str] = []
+    for candidate in candidates:
+        normalized_url = normalize_url_without_fragment(candidate.get("url", ""))
+        if normalized_url:
+            normalized_urls[normalized_url] = normalized_urls.get(normalized_url, 0) + 1
+        pair_key = "|".join(
+            [
+                normalize_for_matching(candidate.get("employer", "")),
+                normalize_for_matching(candidate.get("title", "")),
+            ]
+        )
+        normalized_pairs[pair_key] = normalized_pairs.get(pair_key, 0) + 1
+    duplicates.extend(url for url, count in normalized_urls.items() if count > 1)
+    duplicates.extend(pair for pair, count in normalized_pairs.items() if count > 1)
+    if duplicates:
+        results.append(
+            ValidatorResult(
+                "duplicate_jobs",
+                "fail",
+                "blocking",
+                "Duplicate candidate URLs or employer/title pairs detected: " + ", ".join(duplicates[:6]),
+            )
+        )
+    else:
+        results.append(ValidatorResult("duplicate_jobs", "pass", "info", "No duplicate candidate URLs or employer/title pairs detected."))
+
+    suspicious: list[str] = []
+    for candidate in candidates:
+        reasons = _suspicious_candidate(candidate)
+        if reasons:
+            suspicious.append(f"{candidate.get('title', 'unknown')}: {', '.join(reasons)}")
+    if suspicious and len(suspicious) == len(candidates):
+        results.append(
+            ValidatorResult(
+                "listing_kind",
+                "fail",
+                "blocking",
+                "All surfaced candidates look like navigation or non-job content: " + "; ".join(suspicious[:4]),
+            )
+        )
+    elif suspicious:
+        warnings.append("Some candidates look suspiciously non-job-like.")
+        results.append(
+            ValidatorResult(
+                "listing_kind",
+                "warn",
+                "major",
+                "Some candidates look suspicious: " + "; ".join(suspicious[:4]),
+            )
+        )
+    else:
+        results.append(ValidatorResult("listing_kind", "pass", "info", "Surfaced candidates look like job listings."))
+
+    if canary_title or canary_url:
+        normalized_canary_title = normalize_for_matching(canary_title)
+        normalized_canary_url = normalize_url_without_fragment(canary_url) if canary_url else ""
+        canary_found = False
+        for candidate in candidates:
+            if normalized_canary_url and normalize_url_without_fragment(candidate.get("url", "")) == normalized_canary_url:
+                canary_found = True
+                break
+            if normalized_canary_title and normalize_for_matching(candidate.get("title", "")) == normalized_canary_title:
+                canary_found = True
+                break
+        if canary_found:
+            results.append(ValidatorResult("canary_present", "pass", "info", "Canary was found in the extracted candidates."))
+        else:
+            results.append(
+                ValidatorResult(
+                    "canary_present",
+                    "fail",
+                    "blocking",
+                    "Canary was not found in the extracted candidates.",
+                )
+            )
+    else:
+        results.append(ValidatorResult("canary_present", "skip", "info", "No canary provided."))
+
+    sparse_optional = [
+        candidate
+        for candidate in candidates
+        if normalize_whitespace(candidate.get("location", "")) in ("", "unknown")
+        and normalize_whitespace(candidate.get("notes", "")) == ""
+    ]
+    if candidates and len(sparse_optional) == len(candidates):
+        warnings.append("All candidates are sparse: missing location and notes.")
+        results.append(
+            ValidatorResult(
+                "sparse_extraction",
+                "warn",
+                "major",
+                "All candidates are missing both location and notes; extraction quality looks low.",
+            )
+        )
+    else:
+        results.append(ValidatorResult("sparse_extraction", "pass", "info", "At least one candidate carries extracted detail beyond title and URL."))
+
+    blocking = [result for result in results if result.status == "fail"]
+    warns = [result for result in results if result.status == "warn"]
+    if blocking:
+        confidence = "failed"
+    elif warns:
+        confidence = "low"
+    else:
+        confidence = "high"
+
+    return {
+        "confidence": confidence,
+        "checks": [result.__dict__ for result in results],
+        "warnings": warnings,
+    }
+
+
+def _build_reviewer_context(
+    artifact_path: Path,
+    source: dict[str, Any],
+    canary_title: str,
+    canary_url: str,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    samples: list[dict[str, str]] = []
+    sample_urls: list[str] = []
+    if canary_url:
+        sample_urls.append(canary_url)
+    sample_urls.extend(candidate.get("url", "") for candidate in source.get("candidates", [])[:3])
+
+    seen_urls: set[str] = set()
+    for url in sample_urls:
+        normalized = normalize_url_without_fragment(url)
+        if not normalized or normalized in seen_urls:
+            continue
+        seen_urls.add(normalized)
+        try:
+            raw_text = truncate_text(strip_html_fragment(fetch_text(normalized, timeout_seconds)), 2000)
+        except Exception as exc:
+            raw_text = f"FETCH_FAILED: {exc}"
+        samples.append({"url": normalized, "raw_text": raw_text})
+
+    return {
+        "artifact_path": str(artifact_path),
+        "source": {
+            "source": source.get("source"),
+            "source_url": source.get("source_url"),
+            "discovery_mode": source.get("discovery_mode"),
+            "status": source.get("status"),
+            "search_terms_tried": source.get("search_terms_tried", []),
+            "candidates": source.get("candidates", []),
+        },
+        "canary": {"title": canary_title, "url": canary_url},
+        "raw_samples": samples,
+    }
+
+
+def review_source_with_llm(
+    root: Path,
+    artifact_path: Path,
+    source: dict[str, Any],
+    *,
+    canary_title: str,
+    canary_url: str,
+    reviewer_bin: Path | None,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    if reviewer_bin is None or not reviewer_bin.exists():
+        return {
+            "status": "blocked",
+            "defects": [],
+            "error": "No reviewer binary available.",
+        }
+
+    context = _build_reviewer_context(artifact_path, source, canary_title, canary_url, timeout_seconds)
+    prompt = (
+        "Review this job-source extraction and return JSON only.\n"
+        "Allowed defect types: missing_field, wrong_content, navigation_noise, partial_description, canary_missing, bad_url, duplication, other.\n"
+        "Allowed severities: blocking, major, minor.\n"
+        "Return exactly: {\"defects\": [...]}.\n"
+        "If no issues, return {\"defects\": []}.\n\n"
+        + json.dumps(context, ensure_ascii=False, indent=2)
+    )
+
+    command = [
+        str(reviewer_bin),
+        "--search",
+        "-a",
+        "never",
+        "exec",
+        "-C",
+        str(root),
+        "-s",
+        "read-only",
+        "-",
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            input=prompt,
+            text=True,
+            capture_output=True,
+            check=False,
+            cwd=root,
+            timeout=timeout_seconds,
+        )
+    except Exception as exc:
+        return {"status": "blocked", "defects": [], "error": str(exc)}
+
+    if completed.returncode != 0:
+        return {
+            "status": "blocked",
+            "defects": [],
+            "error": completed.stderr.strip() or f"reviewer exited with status {completed.returncode}",
+        }
+
+    try:
+        parsed = extract_json_from_text(completed.stdout)
+    except Exception as exc:
+        return {
+            "status": "blocked",
+            "defects": [],
+            "error": f"reviewer output was not parseable JSON: {exc}",
+            "raw_output": completed.stdout.strip(),
+        }
+
+    defects = parsed.get("defects", []) if isinstance(parsed, dict) else []
+    if not isinstance(defects, list):
+        return {
+            "status": "blocked",
+            "defects": [],
+            "error": "reviewer output did not contain a defects list",
+            "raw_output": completed.stdout.strip(),
+        }
+
+    normalized_defects: list[dict[str, str]] = []
+    for defect in defects:
+        if not isinstance(defect, dict):
+            continue
+        normalized_defects.append(
+            {
+                "type": str(defect.get("type", "other")),
+                "severity": str(defect.get("severity", "minor")),
+                "source": str(defect.get("source", source.get("source", ""))),
+                "candidate_url": str(defect.get("candidate_url", "")),
+                "canary_title": str(defect.get("canary_title", canary_title)),
+                "observed": normalize_whitespace(str(defect.get("observed", ""))),
+                "expected": normalize_whitespace(str(defect.get("expected", ""))),
+                "repair_hint": normalize_whitespace(str(defect.get("repair_hint", ""))),
+                "repro_step": normalize_whitespace(str(defect.get("repro_step", ""))),
+            }
+        )
+
+    return {
+        "status": "completed",
+        "defects": normalized_defects,
+    }
+
+
+def build_repair_ticket(
+    track: str,
+    source: dict[str, Any],
+    deterministic: dict[str, Any],
+    reviewer: dict[str, Any],
+    *,
+    canary_title: str,
+    canary_url: str,
+) -> dict[str, Any] | None:
+    failing_checks = [check for check in deterministic["checks"] if check["status"] == "fail"]
+    blocking_defects = [
+        defect
+        for defect in reviewer.get("defects", [])
+        if defect.get("severity") in {"blocking", "major"}
+    ]
+    if not failing_checks and not blocking_defects:
+        return None
+
+    summary = ""
+    defect_types: list[str] = []
+    if failing_checks:
+        primary = failing_checks[0]
+        summary = primary["details"]
+        defect_types.append(primary["name"])
+    elif blocking_defects:
+        primary = blocking_defects[0]
+        summary = primary.get("observed") or primary.get("repair_hint") or primary.get("type", "reviewer defect")
+        defect_types.append(primary.get("type", "other"))
+
+    success_condition = "Deterministic validators all pass"
+    if canary_title or canary_url:
+        success_condition += " and the canary is present in the extracted candidates"
+    success_condition += "."
+
+    return {
+        "status": "open",
+        "track": track,
+        "source": source.get("source", ""),
+        "discovery_mode": source.get("discovery_mode", ""),
+        "canary_title": canary_title,
+        "canary_url": canary_url,
+        "summary": summary,
+        "defect_types": defect_types,
+        "failing_checks": [check["name"] for check in failing_checks],
+        "reviewer_defects": blocking_defects,
+        "likely_file": "scripts/discover_jobs.py",
+        "success_condition": success_condition,
+        "non_goals": [
+            "Do not redesign multiple sources at once.",
+            "Do not broaden track search terms unless the defect explicitly requires it.",
+        ],
+    }
