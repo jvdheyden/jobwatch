@@ -3,7 +3,7 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.jvdh.alignment-tech-job-agent</string>
+    <string>com.jvdh.tracks-job-agent</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -15,6 +15,9 @@ set -euo pipefail
 ROOT="/Users/jvdh/Documents/job-agent"
 STATUS=0
 
+/bin/bash "$ROOT/scripts/run_track.sh" --track core_crypto || STATUS=$?
+/bin/bash "$ROOT/scripts/run_track.sh" --track postdoc_crypto || STATUS=$?
+/bin/bash "$ROOT/scripts/run_track.sh" --track public_service || STATUS=$?
 /bin/bash "$ROOT/scripts/run_track.sh" --track alignment_tech || STATUS=$?
 
 exit "$STATUS"
@@ -41,9 +44,9 @@ exit "$STATUS"
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/jvdh/Documents/job-agent/logs/launchd-alignment-tech.out</string>
+    <string>/Users/jvdh/Documents/job-agent/logs/launchd-tracks.out</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/jvdh/Documents/job-agent/logs/launchd-alignment-tech.err</string>
+    <string>/Users/jvdh/Documents/job-agent/logs/launchd-tracks.err</string>
   </dict>
 </plist>

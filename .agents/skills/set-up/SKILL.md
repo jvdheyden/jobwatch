@@ -195,7 +195,7 @@ Create:
 - `tracks/{track_slug}/sources.md`
 - `tracks/{track_slug}/AGENTS.md`
 - `tracks/{track_slug}/digests/`
-- optionally `scripts/com.jvdh.{track_slug_with_hyphens}-job-agent.plist`
+- optionally update `scripts/com.jvdh.tracks-job-agent.plist`
 
 Do not hand-write `tracks/{track_slug}/ranked_overview.md` or `shared/ranked_jobs/{track_slug}.json`.
 Let `scripts/update_ranked_overview.py --track {track_slug}` initialize those.
@@ -296,14 +296,15 @@ Important:
 
 #### Optional launchd plist
 
-If the user wants scheduled runs, create `scripts/com.jvdh.{track_slug_with_hyphens}-job-agent.plist` by adapting `scripts/com.jvdh.core-crypto-job-agent.plist`.
+If the user wants scheduled runs along with the other tracks, update `scripts/com.jvdh.tracks-job-agent.plist` to add the new `run_track.sh --track {track_slug}` invocation to the shared schedule.
+
+Only create a dedicated per-track plist if the user explicitly asks for a separate schedule or separate logs.
 
 Change:
-- plist label
-- plist filename
-- `--track {track_slug}`
-- schedule time
-- launchd stdout/stderr log paths
+- the shared plist's `ProgramArguments` to include `--track {track_slug}`
+- schedule time if the user wants the shared schedule changed
+
+If you do create a dedicated per-track plist, use a generic naming scheme only when it actually represents multiple tracks. Do not create a new per-track plist by default just because a new track was added.
 
 Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`. Reload the launch agent.
 
@@ -315,9 +316,9 @@ After scaffolding, run:
 2. `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --due-only --pretty`
 3. `./.venv/bin/python scripts/update_ranked_overview.py --track {track_slug}`
 
-If you created a plist, also run:
+If you updated the shared plist or created a dedicated plist, also run:
 
-4. `plutil -lint scripts/com.jvdh.{track_slug_with_hyphens}-job-agent.plist`
+4. `plutil -lint scripts/com.jvdh.tracks-job-agent.plist` for the shared scheduler, or lint the dedicated plist path if you explicitly created one
 
 If setup required changes to shared code such as `scripts/discover_jobs.py`, also run:
 
