@@ -15,20 +15,35 @@ Default assumption:
 
 ## Workflow
 
-### 1. Gather input
+### 1. Gather the minimum `prefs.md` brief first
+
+Start by collecting only the minimum information needed to draft `prefs.md`.
 
 Ask for:
 - user name, unless already known
 - track display name
 - proposed track slug; offer a slugified version using lowercase letters, digits, and underscores
 - broad search area for the track
-- track preferences:
-  - goals / role types
-  - keep-only keywords
-  - important constraints or red flags
-- geography / remote preferences, if track-specific
-- optional seed companies, sectors, or labs
-- existing sources, if already known:
+- goals / role types
+- keep-only keywords, or an explicit `none yet`
+- important constraints or red flags, or an explicit `none yet`
+- geography / remote preferences, or an explicit `none yet`
+
+Hard gate:
+- Do not call `../discover-sources/SKILL.md` until this minimum brief is captured in the conversation or already exists in `tracks/{track_slug}/prefs.md`.
+- Track name or slug alone is not enough.
+- Do not infer a source list from `cv.md`, `profile/prefs_global.md`, or the track name alone.
+- If the minimum brief is not available yet, stay in question-asking mode.
+
+### 2. Ask for known companies and job boards
+
+After the minimum `prefs.md` brief is captured, ask what sources the user already knows and wants on the track.
+
+Ask for:
+- known companies to track, if any
+- known job boards or career pages, if any
+- optional sectors, labs, or organizations to target
+- existing sources already bucketed by cadence, if known:
   - `Check every run`
   - `Check every 3 runs`
   - `Check every month`
@@ -36,30 +51,34 @@ Ask for:
 - source-specific search terms, including whether any source should use `[override]`, if already known
 - whether the user wants a launchd plist now, and if so, at what local time. By default schedule the agent for this to track to run along with other already scheduled agents for other tracks.
 
-### 2. Optional source discovery
+### 3. Optional source discovery
 
-Use this branch after the user has stated the track preferences and before finalizing the source list.
+Use this branch only after the minimum `prefs.md` brief is available and the user has had a chance to provide known companies and job boards.
 
-- First capture the user's preferences, especially:
+- First summarize the current setup brief and current source list:
   - goals / role types
   - keep-only keywords
   - constraints or red flags
   - geography / remote preferences
-  - optional seed companies, sectors, or labs
-- Then assess whether the user already has a strong official source list.
-- If the source list is missing, sparse, too broad, or clearly incomplete, hand off to `../discover-sources/SKILL.md`.
+  - optional seed companies, sectors, labs, or organizations
+  - any known companies, job boards, or career pages already supplied by the user
+- Then ask whether the user wants help finding official sources via `../discover-sources/SKILL.md`.
+- Treat discovery as opt-in assistance, not as a default setup step.
+- If the user already has a strong official source list and does not want help expanding it, skip this branch.
+- If the user wants help and the source list is missing, sparse, too broad, or clearly incomplete, hand off to `../discover-sources/SKILL.md`.
 - Pass the handoff enough context to make the discovery preference-aware:
   - user name
   - track display name
   - broad search area
   - the stated track preferences above
+  - any user-provided companies, sectors, labs, organizations, job boards, or career pages
   - any existing source list, if present
 - Treat the returned source pack as a recommendation, not as final config.
 - Review the proposed sources with the user, let them trim or add to the list, and then continue with normalization.
 - Reuse suggested cadence buckets and search terms from `discover-sources` as defaults when they fit.
 - Do not turn this branch into source integration. Deep validation and coding escalation still happen later.
 
-### 3. Normalize and confirm config
+### 4. Normalize and confirm config
 
 - Normalize the slug before writing files.
 - Treat the final source list as coming from the user, from `discover-sources`, or from both.
@@ -86,7 +105,7 @@ Use this branch after the user has stated the track preferences and before final
 
 Before generating files, summarize the normalized config and confirm it.
 
-### 3b. Optional source-integration escalation
+### 4b. Optional source-integration escalation
 
 Use this branch only when the user wants source integration now for a specific source.
 
@@ -127,7 +146,7 @@ If the coding handoff is not requested or does not succeed:
 - keep the source on the track only if an existing mode is still somewhat usable
 - otherwise leave it out and note it as follow-up work
 
-### 3c. Source-quality triage for setup-time integration
+### 4c. Source-quality triage for setup-time integration
 
 Use this branch when setup includes multiple newly added sources and the user wants a better-than-scaffolding integration pass.
 
@@ -166,7 +185,7 @@ For each source not selected for repair:
 - keep it only if the fallback mode is still somewhat usable and label it as partial/follow-up
 - otherwise leave it out for now and report why
 
-### 4. Generate files
+### 5. Generate files
 
 Create:
 - `tracks/{track_slug}/prefs.md`

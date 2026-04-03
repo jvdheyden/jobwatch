@@ -9,11 +9,30 @@ Use this skill during track setup when the user needs help identifying companies
 
 This skill is for source discovery, not track scaffolding, job discovery, ranking, or source integration.
 
+## Precondition
+
+Use this skill only after the minimum setup brief already exists either:
+- in the current `set-up` conversation, or
+- in an existing `tracks/{track_slug}/prefs.md`
+
+Required minimum brief:
+- track display name
+- broad search area
+- goals / role types
+- keep-only keywords, or explicit `none yet`
+- constraints / red flags, or explicit `none yet`
+- geography / remote preferences, or explicit `none yet`
+
+Track name or slug alone is not enough.
+
+If this brief is not available yet, stop and return control to `set-up` so it can continue asking questions before any source search.
+
 ## Input
 
 Assume `set-up` has already gathered the user's preferences. Use those preferences as the primary filter.
 
 Read, when available:
+- `tracks/{track_slug}/prefs.md`
 - `cv.md`
 - `profile/prefs_global.md`
 - the user's stated setup preferences:
@@ -22,10 +41,10 @@ Read, when available:
   - keep-only keywords
   - constraints and red flags
   - geography / remote preferences
-  - seed companies, sectors, or labs
+  - seed companies, sectors, labs, organizations, job boards, or career pages
   - any existing partial source list
 
-If the user already has a strong official source list, do not replace it. Use this skill only to fill gaps, tighten the list, or propose better official sources.
+If the user already has a strong official source list, do not replace it. Use this skill only to fill gaps, tighten the list, or propose better official sources after `set-up` has offered discovery and the user wants that help.
 
 ## Workflow
 
@@ -120,7 +139,7 @@ If no strong official sources are found, say so clearly and return only the best
 
 ## Handoff back to `set-up`
 
-- `set-up` should call this skill only after capturing the user's preferences.
+- `set-up` should call this skill only after the minimum setup brief is available, the user has been asked for known companies and job boards, and the user wants help finding additional sources.
 - `set-up` owns the final source list and confirmation step.
 - Treat the output as recommended input to normalize, confirm, and write.
 - If the user rejects or trims sources, adapt the shortlist instead of rerunning unnecessary discovery.
