@@ -45,6 +45,8 @@ INFINEON_RESULTS_PAGE_SIZE = 10
 WORKDAY_RESULTS_PAGE_SIZE = 20
 THALES_RESULTS_PAGE_SIZE = 10
 ENBW_RESULTS_PAGE_SIZE = 10
+GETRO_RESULTS_PAGE_SIZE = 100
+MAX_GETRO_PAGES = 50
 MAX_RHEINMETALL_PAGES = 20
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 IACR_POSTING_BLOCK_RE = re.compile(
@@ -86,6 +88,11 @@ SERVICE_BUND_DIRECT_LINK_RE = re.compile(
     flags=re.DOTALL | re.IGNORECASE,
 )
 RECRUITEE_DATA_PROPS_RE = re.compile(r'data-props="(?P<props>[^"]+)"')
+NEXT_DATA_SCRIPT_RE = re.compile(
+    r'<script[^>]+id="__NEXT_DATA__"[^>]*>(?P<payload>.*?)</script>',
+    flags=re.DOTALL | re.IGNORECASE,
+)
+PERSONIO_NEXT_F_CHUNK_RE = re.compile(r'self\.__next_f\.push\(\[1,"(?P<chunk>.*?)"\]\)', flags=re.DOTALL)
 AUSWAERTIGES_AMT_ACTION_RE = re.compile(
     r'(?:action|dataUrl)="(?P<endpoint>/ajax/json-filterlist/[^"]+)"',
     flags=re.IGNORECASE,
@@ -829,6 +836,14 @@ def build_workday_job_url(source_url: str, external_path: str) -> str:
     return normalize_url_without_fragment(source_url.rstrip("/") + "/" + external_path.lstrip("/"))
 
 
+def build_workable_job_url(source_url: str, board_slug: str, shortcode: str) -> str:
+    if not shortcode:
+        return source_url
+    parsed = urlparse(source_url)
+    base_url = f"{parsed.scheme or 'https'}://{parsed.netloc}"
+    return normalize_url_without_fragment(f"{base_url}/{board_slug}/j/{shortcode}")
+
+
 def extract_verfassungsschutz_value(html: str, label: str) -> str:
     patterns = [
         rf'<strong[^>]*class="label"[^>]*>\s*{re.escape(label)}\s*</strong>\s*<span[^>]*class="value"[^>]*>(?P<value>.*?)</span>',
@@ -905,6 +920,16 @@ def extract_yc_jobs_payload(html: str) -> dict[str, Any] | None:
         if payload.get("component") == "WaasJobListingsPage" and isinstance(props.get("jobPostings"), list):
             return payload
     return None
+
+
+def extract_next_data_payload(html: str) -> dict[str, Any] | None:
+    match = NEXT_DATA_SCRIPT_RE.search(html)
+    if not match:
+        return None
+    try:
+        return json.loads(unescape(match.group("payload")))
+    except json.JSONDecodeError:
+        return None
 
 
 def infer_hn_employer(title: str) -> str:
@@ -1024,6 +1049,38 @@ def extract_json_object_after_marker(text: str, marker: str) -> dict[str, Any] |
     return None
 
 
+def extract_json_array_after_marker(text: str, marker: str) -> list[Any] | None:
+    marker_index = text.find(marker)
+    if marker_index == -1:
+        return None
+    start = text.find("[", marker_index + len(marker))
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                return json.loads(text[start : index + 1])
+    return None
+
+
 def join_text(value: Any) -> str:
     if value is None:
         return ""
@@ -1109,6 +1166,19 @@ def should_keep_candidate(title: str, matched_terms: list[str], searchable_text:
         term for term in match_terms(searchable_text, matched_terms) if term.lower() in SPECIALIZED_SIGNAL_TERMS
     ]
     return title_is_technical and bool(body_specialized_matches)
+
+
+def extract_personio_jobs_from_html(html: str) -> list[Any] | None:
+    for match in PERSONIO_NEXT_F_CHUNK_RE.finditer(html):
+        chunk = match.group("chunk")
+        try:
+            decoded = json.loads(f'"{chunk}"')
+        except json.JSONDecodeError:
+            continue
+        jobs = extract_json_array_after_marker(decoded, '{"jobs":')
+        if jobs is not None:
+            return jobs
+    return None
 
 
 def looks_like_job_link(text: str, href: str) -> bool:
@@ -3242,6 +3312,342 @@ def discover_ashby_api(source: SourceConfig, terms: list[str], timeout_seconds: 
     )
 
 
+def discover_workable_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    path_bits = [bit for bit in urlparse(source.url).path.split("/") if bit]
+    if not path_bits:
+        raise ValueError(f"Could not derive Workable board slug from {source.url}")
+    board_slug = path_bits[0]
+    parsed = urlparse(source.url)
+    endpoint = f"{parsed.scheme or 'https'}://{parsed.netloc}/api/v3/accounts/{board_slug}/jobs"
+    response = post_json(
+        endpoint,
+        {"query": ""},
+        timeout_seconds,
+        headers={"Referer": source.url, "X-Requested-With": "XMLHttpRequest"},
+    )
+    jobs = response.get("results") or []
+    reported_total = int(response.get("total", len(jobs)) or 0)
+    candidates_by_url: dict[str, Candidate] = {}
+
+    for job in jobs:
+        title = normalize_whitespace(join_text(job.get("title"))) or "unknown"
+        location = normalize_whitespace(join_text(job.get("location"))) or normalize_whitespace(join_text(job.get("locations")))
+        location = location or "unknown"
+        workplace = normalize_whitespace(join_text(job.get("workplace")))
+        department = normalize_whitespace(join_text(job.get("department")))
+        employment_type = normalize_whitespace(join_text(job.get("type")))
+        shortcode = normalize_whitespace(join_text(job.get("shortcode")))
+        remote_flag = job.get("remote")
+        if remote_flag is True:
+            remote = "remote"
+        elif remote_flag is False:
+            remote = infer_remote_status(location, workplace)
+        else:
+            remote = infer_remote_status(location, workplace, join_text(remote_flag))
+
+        searchable_text = " ".join(
+            part
+            for part in [
+                title,
+                location,
+                workplace,
+                department,
+                employment_type,
+                join_text(job.get("state")),
+                join_text(job.get("published")),
+            ]
+            if part
+        )
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+
+        note_parts = ["Enumerated through Workable jobs API"]
+        if department:
+            note_parts.append(f"Department: {department}")
+        if workplace:
+            note_parts.append(f"Workplace: {workplace}")
+        if employment_type:
+            note_parts.append(f"Type: {employment_type}")
+
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=build_workable_job_url(source.url, board_slug, shortcode),
+                source_url=source.url,
+                location=location,
+                remote=remote,
+                matched_terms=matched_terms,
+                notes="; ".join(note_parts),
+            ),
+        )
+
+    limitations: list[str] = []
+    status = "complete"
+    if reported_total > len(jobs):
+        status = "partial"
+        limitations.append(
+            f"Workable reported {reported_total} openings but returned {len(jobs)} records in the board payload."
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status=status,
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="local_filter=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=reported_total or len(jobs),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_getro_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    next_data = extract_next_data_payload(html)
+    if not next_data:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="failed",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Getro jobs page did not expose a __NEXT_DATA__ payload."],
+            candidates=[],
+        )
+
+    page_props = next_data.get("props", {}).get("pageProps", {})
+    collection_id = normalize_whitespace(join_text(page_props.get("network", {}).get("id")))
+    if not collection_id:
+        collection_id = normalize_whitespace(join_text(page_props.get("initialState", {}).get("network", {}).get("id")))
+    if not collection_id:
+        return Coverage(
+            source=source.source,
+            source_url=source.url,
+            discovery_mode=source.discovery_mode,
+            cadence_group=source.cadence_group,
+            last_checked=source.last_checked,
+            due_today=False,
+            status="failed",
+            listing_pages_scanned="unknown",
+            search_terms_tried=terms,
+            result_pages_scanned="unknown",
+            direct_job_pages_opened=0,
+            enumerated_jobs=0,
+            matched_jobs=0,
+            limitations=["Getro jobs page exposed __NEXT_DATA__ but no collection id."],
+            candidates=[],
+        )
+
+    endpoint = f"https://api.getro.com/api/v2/collections/{collection_id}/search/jobs"
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    page_signatures: set[str] = set()
+    reported_total = 0
+    limitations: list[str] = []
+    pages_scanned = 0
+    status = "complete"
+    reached_end = False
+    observed_page_size = 0
+
+    for page_num in range(MAX_GETRO_PAGES):
+        response = post_json(
+            endpoint,
+            {"hitsPerPage": GETRO_RESULTS_PAGE_SIZE, "page": page_num, "filters": "", "query": ""},
+            timeout_seconds,
+            headers={"Referer": source.url},
+        )
+        results = response.get("results", {})
+        jobs = results.get("jobs") or []
+        reported_total = max(reported_total, int(results.get("count", reported_total or 0) or 0))
+        if not jobs:
+            reached_end = True
+            break
+        if not observed_page_size:
+            observed_page_size = len(jobs)
+
+        page_signature = ",".join(str(job.get("id") or job.get("slug") or job.get("url") or "") for job in jobs[:10])
+        if page_signature and page_signature in page_signatures:
+            status = "partial"
+            limitations.append("Getro collection search repeated a page before exhausting the listing.")
+            break
+        if page_signature:
+            page_signatures.add(page_signature)
+
+        pages_scanned += 1
+        for job in jobs:
+            raw_id = str(job.get("id") or job.get("slug") or job.get("url") or f"{page_num}:{len(raw_seen_ids)}")
+            raw_seen_ids.add(raw_id)
+            title = normalize_whitespace(join_text(job.get("title"))) or "unknown"
+            employer = normalize_whitespace(join_text(job.get("organization", {}).get("name"))) or source.source
+            location_parts = [normalize_whitespace(join_text(item)) for item in (job.get("locations") or [])]
+            location = "; ".join(part for part in location_parts if part) or "unknown"
+            work_mode = normalize_whitespace(join_text(job.get("workMode") or job.get("work_mode")))
+            seniority = normalize_whitespace(join_text(job.get("seniority")))
+            job_url = normalize_url_without_fragment(join_text(job.get("url")) or source.url)
+            searchable_text = " ".join(
+                part
+                for part in [
+                    title,
+                    employer,
+                    location,
+                    work_mode,
+                    seniority,
+                    join_text(job.get("skills")),
+                    join_text(job.get("organization", {}).get("topics")),
+                    join_text(job.get("organization", {}).get("industryTags")),
+                ]
+                if part
+            )
+            matched_terms = sorted(set(match_terms(searchable_text, terms)))
+            if not should_keep_candidate(title, matched_terms, searchable_text):
+                continue
+
+            note_parts = ["Enumerated through Getro collection search API"]
+            if work_mode:
+                note_parts.append(f"Work mode: {work_mode}")
+            if seniority:
+                note_parts.append(f"Seniority: {seniority}")
+
+            merge_candidate(
+                candidates_by_url,
+                Candidate(
+                    employer=employer,
+                    title=title,
+                    url=job_url,
+                    source_url=source.url,
+                    location=location,
+                    remote=infer_remote_status(location, work_mode, title),
+                    matched_terms=matched_terms,
+                    notes="; ".join(note_parts),
+                ),
+            )
+
+        if reported_total and len(raw_seen_ids) >= reported_total:
+            reached_end = True
+            break
+        if observed_page_size and len(jobs) < observed_page_size:
+            reached_end = True
+            break
+
+    if not reached_end and status == "complete":
+        status = "partial"
+        limitations.append(f"Getro collection search hit the page cap ({MAX_GETRO_PAGES}).")
+
+    deduped_limitations = list(dict.fromkeys(limitations))
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status=status,
+        listing_pages_scanned=pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=f"collection={pages_scanned}p/{len(raw_seen_ids)}of{reported_total or len(raw_seen_ids)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=deduped_limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+def discover_personio_page(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    html = fetch_text(source.url, timeout_seconds)
+    jobs = extract_personio_jobs_from_html(html)
+    if jobs is None:
+        if "Derzeit keine offenen Positionen" in html or "No open positions" in html:
+            jobs = []
+        else:
+            return Coverage(
+                source=source.source,
+                source_url=source.url,
+                discovery_mode=source.discovery_mode,
+                cadence_group=source.cadence_group,
+                last_checked=source.last_checked,
+                due_today=False,
+                status="failed",
+                listing_pages_scanned="unknown",
+                search_terms_tried=terms,
+                result_pages_scanned="unknown",
+                direct_job_pages_opened=0,
+                enumerated_jobs=0,
+                matched_jobs=0,
+                limitations=["Personio page did not expose a parseable jobs payload."],
+                candidates=[],
+            )
+
+    candidates_by_url: dict[str, Candidate] = {}
+    for job in jobs:
+        title = normalize_whitespace(join_text(job.get("name") or job.get("title"))) or "unknown"
+        location = normalize_whitespace(join_text(job.get("office") or job.get("location") or job.get("locations"))) or "unknown"
+        searchable_text = " ".join(
+            part
+            for part in [
+                title,
+                location,
+                join_text(job.get("department")),
+                join_text(job.get("employmentType") or job.get("employment_type")),
+                join_text(job),
+            ]
+            if part
+        )
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+        job_url = normalize_url_without_fragment(join_text(job.get("url") or job.get("absoluteUrl") or source.url))
+        merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=job_url,
+                source_url=source.url,
+                location=location,
+                remote=infer_remote_status(location, searchable_text),
+                matched_terms=matched_terms,
+                notes="Enumerated through Personio page payload",
+            ),
+        )
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"jobs={len(jobs)}",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(jobs),
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
 def discover_thales_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     candidates_by_url: dict[str, Candidate] = {}
     raw_seen_ids: set[str] = set()
@@ -4875,11 +5281,13 @@ DISCOVERY_HANDLERS = {
     "leastauthority_careers": discover_leastauthority_careers,
     "lever_json": discover_lever_json,
     "greenhouse_api": discover_greenhouse_api,
+    "getro_api": discover_getro_api,
     "ashby_html": discover_ashby_api,
     "hackernews_whoishiring_api": discover_hackernews_whoishiring_api,
     "neclab_jobs": discover_neclab_jobs,
     "partisia_site": discover_partisia_site,
     "pcd_team": discover_pcd_team,
+    "personio_page": discover_personio_page,
     "qedit_inline": discover_qedit_inline,
     "qusecure_careers": discover_qusecure_careers,
     "recruitee_inline": discover_recruitee_inline,
@@ -4891,6 +5299,7 @@ DISCOVERY_HANDLERS = {
     "thales_html": discover_thales_html,
     "trailofbits_browser": discover_trailofbits_browser,
     "verfassungsschutz_rss": discover_verfassungsschutz_rss,
+    "workable_api": discover_workable_api,
     "workday_api": discover_workday_api,
     "yc_jobs_board": discover_yc_jobs_board,
     "browser": discover_browser,

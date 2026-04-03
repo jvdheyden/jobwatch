@@ -21,23 +21,19 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Mindvalley | https://jobs.ashbyhq.com/mindvalley | ashby_api | |
 | Coefficient Giving | https://jobs.ashbyhq.com/coefficientgiving | ashby_api | |
-| One Acre Fund | https://oneacrefund.org/careers | html | |
-| Innovate Animal Ag | https://innovateanimalag.org/careers | html | |
 | YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | |
+| Deutsche Wildtier Stiftung | https://www.deutschewildtierstiftung.de/ueber-uns/stellenangebote | html | |
+| Bergwaldprojekt | https://www.bergwaldprojekt.de/ueber-uns/stellen | html | |
+| Waking Up | https://apply.workable.com/waking-up-1/ | workable_api | |
+| Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | getro_api | |
+| Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | personio_page | |
 
 ## Check every month
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Deutsche Wildtier Stiftung | https://www.deutschewildtierstiftung.de/ueber-uns/stellenangebote | html | |
-| Bergwaldprojekt | https://www.bergwaldprojekt.de/ueber-uns/stellen | html | |
 | Hacker News Who Is Hiring | https://news.ycombinator.com/user?id=whoishiring | hackernews_whoishiring_api | |
-Follow-up sources below are kept with conservative fallback coverage and may need later integration work.
-| Waking Up | https://apply.workable.com/waking-up-1/ | html | |
-| Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | html | |
-| Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | html | |
 
 ## Search terms
 
