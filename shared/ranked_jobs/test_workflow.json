@@ -1,12 +1,12 @@
 {
   "track": "test_workflow",
-  "generated_at": "2026-04-02T14:13:42Z",
+  "generated_at": "2026-04-03T09:19:24Z",
   "jobs": [
     {
       "job_key": "local test board | cryptography advisor",
       "company": "Local Test Board",
       "title": "Cryptography Advisor",
-      "url": "http://127.0.0.1:18765/jobs/cryptography-advisor.html",
+      "url": "file:///jobs/cryptography-advisor.html",
       "fit_score": 8.4,
       "date_seen": "2030-01-15",
       "date_seen_page": "Test Workflow Job Digest 2030-01-15",

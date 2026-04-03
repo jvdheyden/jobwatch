@@ -286,6 +286,32 @@ BUNDESWEHR_COMPENSATION_MARKERS = (
     "entgelt",
     "sold",
 )
+PCD_TEAM_TASK_HEADINGS = (
+    "The perks of this job are that the candidate would",
+    "What you'll do",
+    "What you will do",
+    "What youll do",
+    "Responsibilities",
+)
+PCD_TEAM_QUALIFICATION_HEADINGS = (
+    "The platonic ideal candidate",
+    "Qualifications",
+    "Requirements",
+    "Who you are",
+    "What you'll need",
+    "What you will need",
+    "What you need",
+    "What youll need",
+)
+PCD_TEAM_DETAIL_STOP_HEADINGS = (
+    *PCD_TEAM_TASK_HEADINGS,
+    *PCD_TEAM_QUALIFICATION_HEADINGS,
+    "Compensation",
+    "Benefits",
+    "Apply",
+    "Apply Here",
+    "About PCD",
+)
 
 
 @dataclass
@@ -761,6 +787,35 @@ def apply_bundeswehr_detail_text(candidate: Candidate, detail_html: str, terms: 
         detail_note = f"{label}: {truncate_text(value, 260)}"
         if detail_note not in note_parts:
             note_parts.append(detail_note)
+    candidate.notes = "; ".join(dict.fromkeys(part for part in note_parts if part))
+    return candidate.notes != original_notes or candidate.matched_terms != original_terms
+
+
+def extract_pcd_team_detail_sections(detail_html: str) -> dict[str, str]:
+    detail_text = "\n".join(extract_visible_text_lines_from_html(detail_html))
+    return {
+        "tasks": extract_visible_text_section(detail_text, PCD_TEAM_TASK_HEADINGS, PCD_TEAM_DETAIL_STOP_HEADINGS),
+        "qualifications": extract_visible_text_section(
+            detail_text,
+            PCD_TEAM_QUALIFICATION_HEADINGS,
+            PCD_TEAM_DETAIL_STOP_HEADINGS,
+        ),
+    }
+
+
+def apply_pcd_team_detail_text(candidate: Candidate, detail_html: str, terms: list[str]) -> bool:
+    sections = extract_pcd_team_detail_sections(detail_html)
+    detail_text_for_matching = " ".join(part for part in sections.values() if part)
+    original_terms = list(candidate.matched_terms)
+    if detail_text_for_matching:
+        candidate.matched_terms = sorted(set(candidate.matched_terms + match_terms(detail_text_for_matching, terms)))
+
+    original_notes = candidate.notes
+    note_parts = [candidate.notes] if candidate.notes else []
+    if sections["tasks"]:
+        note_parts.append(f"Tasks: {truncate_text(sections['tasks'], 260)}")
+    if sections["qualifications"]:
+        note_parts.append(f"Qualifications: {truncate_text(sections['qualifications'], 260)}")
     candidate.notes = "; ".join(dict.fromkeys(part for part in note_parts if part))
     return candidate.notes != original_notes or candidate.matched_terms != original_terms
 
@@ -2407,17 +2462,17 @@ def discover_pcd_team(source: SourceConfig, terms: list[str], timeout_seconds: i
 
     candidates: list[Candidate] = []
     if should_keep_candidate(title, matched_terms, searchable_text):
-        candidates.append(
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=source.url,
-                source_url=source.url,
-                alternate_url=apply_url,
-                matched_terms=matched_terms,
-                notes="PCD Team job description page",
-            )
+        candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=source.url,
+            source_url=source.url,
+            alternate_url=apply_url,
+            matched_terms=matched_terms,
+            notes="PCD Team job description page",
         )
+        apply_pcd_team_detail_text(candidate, html, terms)
+        candidates.append(candidate)
 
     return Coverage(
         source=source.source,

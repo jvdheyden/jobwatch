@@ -26,17 +26,43 @@ Ask for:
   - goals / role types
   - keep-only keywords
   - important constraints or red flags
-- sources:
+- geography / remote preferences, if track-specific
+- optional seed companies, sectors, or labs
+- existing sources, if already known:
   - `Check every run`
   - `Check every 3 runs`
   - `Check every month`
-- track-wide search terms
-- source-specific search terms, including whether any source should use `[override]`
+- track-wide search terms, if already known
+- source-specific search terms, including whether any source should use `[override]`, if already known
 - whether the user wants a launchd plist now, and if so, at what local time. By default schedule the agent for this to track to run along with other already scheduled agents for other tracks.
 
-### 2. Normalize and confirm config
+### 2. Optional source discovery
+
+Use this branch after the user has stated the track preferences and before finalizing the source list.
+
+- First capture the user's preferences, especially:
+  - goals / role types
+  - keep-only keywords
+  - constraints or red flags
+  - geography / remote preferences
+  - optional seed companies, sectors, or labs
+- Then assess whether the user already has a strong official source list.
+- If the source list is missing, sparse, too broad, or clearly incomplete, hand off to `../discover-sources/SKILL.md`.
+- Pass the handoff enough context to make the discovery preference-aware:
+  - user name
+  - track display name
+  - broad search area
+  - the stated track preferences above
+  - any existing source list, if present
+- Treat the returned source pack as a recommendation, not as final config.
+- Review the proposed sources with the user, let them trim or add to the list, and then continue with normalization.
+- Reuse suggested cadence buckets and search terms from `discover-sources` as defaults when they fit.
+- Do not turn this branch into source integration. Deep validation and coding escalation still happen later.
+
+### 3. Normalize and confirm config
 
 - Normalize the slug before writing files.
+- Treat the final source list as coming from the user, from `discover-sources`, or from both.
 - Infer `discovery_mode` from the source URL when obvious.
 - Prefer existing modes already supported by `scripts/discover_jobs.py`.
 - Common modes worth trying first:
@@ -50,6 +76,8 @@ Ask for:
   - `yc_jobs_board`
   - `hackernews_jobs`
 - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
+- If track-wide or source-specific search terms were not already provided, derive an initial set from the user's stated preferences and any `discover-sources` suggestions.
+- If `discover-sources` suggested cadence buckets, use those as defaults unless there is a clearer reason to place the source elsewhere.
 - Only do lightweight validation during setup. Do not search every source exhaustively.
 - If an existing mode is good enough, stop there. Do not escalate into coding work just because a source is imperfect.
 - If a source clearly cannot be covered by an existing mode, tell the user and either:
@@ -58,7 +86,7 @@ Ask for:
 
 Before generating files, summarize the normalized config and confirm it.
 
-### 2b. Optional source-integration escalation
+### 3b. Optional source-integration escalation
 
 Use this branch only when the user wants source integration now for a specific source.
 
@@ -99,7 +127,7 @@ If the coding handoff is not requested or does not succeed:
 - keep the source on the track only if an existing mode is still somewhat usable
 - otherwise leave it out and note it as follow-up work
 
-### 2c. Source-quality triage for setup-time integration
+### 3c. Source-quality triage for setup-time integration
 
 Use this branch when setup includes multiple newly added sources and the user wants a better-than-scaffolding integration pass.
 
@@ -138,7 +166,7 @@ For each source not selected for repair:
 - keep it only if the fallback mode is still somewhat usable and label it as partial/follow-up
 - otherwise leave it out for now and report why
 
-### 3. Generate files
+### 4. Generate files
 
 Create:
 - `tracks/{track_slug}/prefs.md`
@@ -169,6 +197,9 @@ Role types:
 
 ## Constraints and red flags
 {user input constraints / red flags}
+
+## Location and work-mode preferences
+{user input geography / remote preferences or "- none specified yet"}
 ```
 
 #### `sources.md`
@@ -254,7 +285,7 @@ Change:
 
 Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`. Reload the launch agent.
 
-### 4. Validation
+### 5. Validation
 
 After scaffolding, run:
 
@@ -280,10 +311,11 @@ If setup included source integration with a canary, also run:
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
 
-### 5. Final response
+### 6. Final response
 
 Report:
 - what files were created or changed
+- whether `discover-sources` was used, and which returned sources were kept
 - which sources were included and with which `discovery_mode`
 - which validation commands passed
 - which newly integrated sources passed the quality gate
