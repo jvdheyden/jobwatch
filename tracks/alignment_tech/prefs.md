@@ -20,7 +20,10 @@ Role types:
 - cryptography
 
 ## Constraints and red flags
-- none specified yet
+- Strong negative for generic software roles that do not clearly touch spiritual/conscious tech, ag tech, animal welfare, biodiversity, conservation, or sustainability.
+- Strong negative for US-only remote roles unless the mission fit is exceptional.
+- Strong negative for fully on-site US roles unless the mission fit is exceptional and relocation is realistic.
 
 ## Location and work-mode preferences
-- none specified yet
+- Prefer global remote roles or roles that are practical from Europe.
+- Prefer Europe-based remote or hybrid over North America-only setups when the fit is otherwise similar.

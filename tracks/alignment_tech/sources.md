@@ -21,19 +21,19 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Coefficient Giving | https://jobs.ashbyhq.com/coefficientgiving | ashby_api | |
-| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | |
-| Deutsche Wildtier Stiftung | https://www.deutschewildtierstiftung.de/ueber-uns/stellenangebote | html | |
-| Bergwaldprojekt | https://www.bergwaldprojekt.de/ueber-uns/stellen | html | |
-| Waking Up | https://apply.workable.com/waking-up-1/ | workable_api | |
-| Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | getro_api | |
-| Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | personio_page | |
+| Coefficient Giving | https://jobs.ashbyhq.com/coefficientgiving | ashby_api | 2026-04-03 |
+| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | 2026-04-03 |
+| Deutsche Wildtier Stiftung | https://www.deutschewildtierstiftung.de/ueber-uns/stellenangebote | html | 2026-04-03 |
+| Bergwaldprojekt | https://www.bergwaldprojekt.de/ueber-uns/stellen | html | 2026-04-03 |
+| Waking Up | https://apply.workable.com/waking-up-1/ | workable_api | 2026-04-03 |
+| Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | getro_api | 2026-04-03 |
+| Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | personio_page | 2026-04-03 |
 
 ## Check every month
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Hacker News Who Is Hiring | https://news.ycombinator.com/user?id=whoishiring | hackernews_whoishiring_api | |
+| Hacker News Who Is Hiring | https://news.ycombinator.com/user?id=whoishiring | hackernews_whoishiring_api | 2026-04-03 |
 
 ## Search terms
 
@@ -79,3 +79,4 @@ Add `[override]` after the source name to replace the track-wide terms for that 
 - Never report a role already listed in ../../shared/seen_jobs.md
 - Prefer 3-8 strong matches over a long noisy list.
 - Include direct job links in the digest, not just the company careers page.
+- For `YC Startups`, `Spirit Tech Collective Jobs`, and `Hacker News Who Is Hiring`, only surface roles with explicit evidence for the track sectors or a clearly known alignment-tech employer.

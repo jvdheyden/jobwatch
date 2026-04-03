@@ -175,3 +175,4 @@ def test_discover_hackernews_whoishiring_api_resolves_latest_story_and_filters_c
     assert candidate.remote == "remote"
     assert candidate.matched_terms == ["cryptography", "privacy"]
     assert "Ask HN: Who is hiring? (April 2026)" in candidate.notes
+    assert "Excerpt:" in candidate.notes

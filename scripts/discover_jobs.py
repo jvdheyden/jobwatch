@@ -222,6 +222,64 @@ SPECIALIZED_SIGNAL_TERMS = {
     "secure hardware",
     "hsm",
 }
+ALIGNMENT_TECH_SECTOR_FILTER_SOURCES = {
+    "YC Startups",
+    "Spirit Tech Collective Jobs",
+    "Hacker News Who Is Hiring",
+}
+ALIGNMENT_TECH_SECTOR_HINTS = (
+    "ag tech",
+    "agtech",
+    "ag-tech",
+    "agriculture",
+    "agricultural",
+    "farm",
+    "farmer",
+    "farmers",
+    "dairy",
+    "livestock",
+    "coffee",
+    "smallholder",
+    "animal welfare",
+    "animal health",
+    "animal-health",
+    "biodiversity",
+    "wildlife",
+    "wildtier",
+    "conservation",
+    "forest",
+    "reforestation",
+    "ecology",
+    "sustainability",
+    "sustainable",
+    "deforestation",
+    "meditation",
+    "mindfulness",
+    "wellness",
+    "mental health",
+    "mental-health",
+    "spiritual",
+    "conscious",
+    "consciousness",
+    "yoga",
+)
+ALIGNMENT_TECH_PRIORITY_EMPLOYERS = (
+    "albert schweitzer stiftung",
+    "bergwaldprojekt",
+    "coefficient giving",
+    "deutsche wildtier stiftung",
+    "enveritas",
+    "gaia",
+    "half earth project",
+    "headspace",
+    "innovate animal ag",
+    "jhourney",
+    "mindvalley",
+    "one acre fund",
+    "spade agriculture",
+    "waking up",
+    "yoga international",
+)
 SERVICE_BUND_PUBLIC_INTEREST_HINTS = (
     "krypt",
     "it-sicherheit",
@@ -1168,6 +1226,52 @@ def should_keep_candidate(title: str, matched_terms: list[str], searchable_text:
     return title_is_technical and bool(body_specialized_matches)
 
 
+def candidate_searchable_text(candidate: Candidate) -> str:
+    return normalize_for_matching(
+        " ".join(
+            part
+            for part in [
+                candidate.employer,
+                candidate.title,
+                candidate.location,
+                candidate.notes,
+                candidate.url,
+                candidate.alternate_url,
+            ]
+            if part
+        )
+    )
+
+
+def alignment_candidate_has_sector_evidence(candidate: Candidate) -> bool:
+    haystack = candidate_searchable_text(candidate)
+    if any(normalize_for_matching(hint) in haystack for hint in ALIGNMENT_TECH_SECTOR_HINTS):
+        return True
+    return any(normalize_for_matching(employer) in haystack for employer in ALIGNMENT_TECH_PRIORITY_EMPLOYERS)
+
+
+def filter_coverage_for_track(track: str, coverage: Coverage) -> Coverage:
+    if track != "alignment_tech" or coverage.source not in ALIGNMENT_TECH_SECTOR_FILTER_SOURCES:
+        return coverage
+
+    kept_candidates = [candidate for candidate in coverage.candidates if alignment_candidate_has_sector_evidence(candidate)]
+    removed = len(coverage.candidates) - len(kept_candidates)
+    if removed <= 0:
+        return coverage
+
+    coverage.candidates = kept_candidates
+    coverage.matched_jobs = len(kept_candidates)
+    coverage.limitations = list(
+        dict.fromkeys(
+            [
+                *coverage.limitations,
+                f"Alignment Tech filter removed {removed} candidate(s) from this broad source without explicit sector evidence.",
+            ]
+        )
+    )
+    return coverage
+
+
 def extract_personio_jobs_from_html(html: str) -> list[Any] | None:
     for match in PERSONIO_NEXT_F_CHUNK_RE.finditer(html):
         chunk = match.group("chunk")
@@ -1651,6 +1755,13 @@ def discover_hackernews_whoishiring_api(source: SourceConfig, terms: list[str], 
 
         comment_url = normalize_url_without_fragment(f"https://news.ycombinator.com/item?id={comment_id}")
         external_url = extract_first_external_url_from_html(text_html, story_url)
+        note_parts = [
+            f"HN Who is hiring thread: {story_title}",
+            f"Story: {story_url}",
+        ]
+        excerpt = truncate_text(clean_text, 260)
+        if excerpt:
+            note_parts.append(f"Excerpt: {excerpt}")
         merge_candidate(
             candidates_by_url,
             Candidate(
@@ -1662,7 +1773,7 @@ def discover_hackernews_whoishiring_api(source: SourceConfig, terms: list[str], 
                 location=location,
                 remote=remote,
                 matched_terms=matched_terms,
-                notes=f"HN Who is hiring thread: {story_title}; Story: {story_url}",
+                notes="; ".join(note_parts),
             ),
         )
 
@@ -3501,6 +3612,12 @@ def discover_getro_api(source: SourceConfig, terms: list[str], timeout_seconds: 
             location = "; ".join(part for part in location_parts if part) or "unknown"
             work_mode = normalize_whitespace(join_text(job.get("workMode") or job.get("work_mode")))
             seniority = normalize_whitespace(join_text(job.get("seniority")))
+            topics = [normalize_whitespace(join_text(item)) for item in (job.get("organization", {}).get("topics") or [])]
+            topics = [item for item in topics if item]
+            industry_tags = [
+                normalize_whitespace(join_text(item)) for item in (job.get("organization", {}).get("industryTags") or [])
+            ]
+            industry_tags = [item for item in industry_tags if item]
             job_url = normalize_url_without_fragment(join_text(job.get("url")) or source.url)
             searchable_text = " ".join(
                 part
@@ -3525,6 +3642,10 @@ def discover_getro_api(source: SourceConfig, terms: list[str], timeout_seconds: 
                 note_parts.append(f"Work mode: {work_mode}")
             if seniority:
                 note_parts.append(f"Seniority: {seniority}")
+            if topics:
+                note_parts.append(f"Topics: {', '.join(topics)}")
+            if industry_tags:
+                note_parts.append(f"Industries: {', '.join(industry_tags)}")
 
             merge_candidate(
                 candidates_by_url,
@@ -5420,6 +5541,7 @@ def main() -> int:
                 f"Discovering source {index}/{total_sources}: {source.source} (mode={source.discovery_mode})",
             )
             coverage = discover_source(source, terms, args.timeout_seconds)
+            coverage = filter_coverage_for_track(args.track, coverage)
             coverage.due_today = source_due_today(source, today)
             emit_progress(
                 args.progress,

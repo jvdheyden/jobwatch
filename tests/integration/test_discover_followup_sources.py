@@ -152,6 +152,10 @@ def test_discover_getro_api_paginates_collection_results(monkeypatch):
     titles = {candidate.title for candidate in coverage.candidates}
     assert employers == {"YouVersion", "Headspace"}
     assert titles == {"Senior Software Engineer", "Security Engineer"}
+    notes_by_employer = {candidate.employer: candidate.notes for candidate in coverage.candidates}
+    assert "Topics: Learning" in notes_by_employer["YouVersion"]
+    assert "Industries: Software" in notes_by_employer["YouVersion"]
+    assert "Topics: Wellness" in notes_by_employer["Headspace"]
 
 
 def test_discover_personio_page_parses_embedded_jobs_payload(monkeypatch):
