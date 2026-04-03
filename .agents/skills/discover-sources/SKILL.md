@@ -57,8 +57,10 @@ If the user already has a strong official source list, do not replace it. Use th
 ### 2. Discover candidate employers and official sources
 
 - Prioritize employers, research labs, and organizations likely to post the target roles.
+- When a target employer homepage is known, inspect the official homepage header, footer, and main navigation first for links such as `Careers`, `Jobs`, `Join us`, or `Work with us` before doing broader search.
 - Prefer official career pages and first-party hosted boards.
-- Accept official Greenhouse, Lever, Ashby, Workday, and comparable first-party boards when they are clearly tied to the employer.
+- Treat homepage-linked official careers pages and homepage-linked ATS destinations as high-confidence official sources.
+- Accept official Greenhouse, Lever, Ashby, Workday, Workable, and comparable first-party boards when they are clearly tied to the employer.
 - Do not use third-party aggregators unless the user explicitly asks for them or the track scope requires them.
 - If the user provided seed employers, preserve them unless they clearly conflict with the stated preferences.
 
@@ -66,6 +68,7 @@ If the user already has a strong official source list, do not replace it. Use th
 
 - Confirm the source appears official and relevant to the stated preferences.
 - Detect board family or likely `discovery_mode` when obvious from the URL or page shape.
+- If an official ATS board is linked from the employer homepage or official careers page, keep it even when it must fall back to `html`.
 - If unclear, keep the source only when it still looks plausibly official and default `suggested_discovery_mode` to `html`.
 - Do not do exhaustive browsing, canary discovery, source-quality evaluation, or scraper integration here.
 
@@ -89,9 +92,12 @@ If the user already has a strong official source list, do not replace it. Use th
 - Lever boards: `lever_json`
 - Ashby boards with usable API responses: `ashby_api`
 - Ashby boards without reliable API clues: `ashby_html`
+- Workable boards and other official ATS pages without dedicated support: `html`
 - Unknown or custom official pages: `html`
 
 If more than one mode seems plausible, choose the conservative supported option and note the uncertainty.
+
+Common pattern to preserve: if an employer homepage links directly to an official ATS board, keep that board as a primary source. Example: if `https://www.wakingup.com/` links to `https://apply.workable.com/waking-up-1/`, keep the Workable board as an official primary source.
 
 ## Output contract
 

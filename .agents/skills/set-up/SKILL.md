@@ -73,6 +73,7 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
   - the stated track preferences above
   - any user-provided companies, sectors, labs, organizations, job boards, or career pages
   - any existing source list, if present
+- Prefer official homepage-linked careers pages or ATS boards from user-supplied companies when `discover-sources` finds them.
 - Treat the returned source pack as a recommendation, not as final config.
 - Review the proposed sources with the user, let them trim or add to the list, and then continue with normalization.
 - Reuse suggested cadence buckets and search terms from `discover-sources` as defaults when they fit.
@@ -94,7 +95,9 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
   - `iacr_jobs`
   - `yc_jobs_board`
   - `hackernews_jobs`
+- Common official board families worth recognizing during normalization include Greenhouse, Lever, Ashby, Workday, and Workable, even when some of them still fall back to `html`.
 - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
+- If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.
 - If track-wide or source-specific search terms were not already provided, derive an initial set from the user's stated preferences and any `discover-sources` suggestions.
 - If `discover-sources` suggested cadence buckets, use those as defaults unless there is a clearer reason to place the source elsewhere.
 - Only do lightweight validation during setup. Do not search every source exhaustively.
