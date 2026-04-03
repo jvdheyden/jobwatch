@@ -10,7 +10,6 @@ PORT="${TEST_WORKFLOW_PORT:-18765}"
 FIXTURE_DIR="$ROOT/tests/fixtures/test_workflow"
 TEST_DIR="$ROOT/tests/tmp/test_workflow"
 GRAPH_DIR="$TEST_DIR/logseq"
-SERVER_LOG="$TEST_DIR/http-server.log"
 RUN_LOG="$ROOT/logs/$TRACK-$TODAY.log"
 ARTIFACT_DIR="$ROOT/artifacts/discovery/$TRACK"
 STRUCTURED_DIGEST_DIR="$ROOT/artifacts/digests/$TRACK"
@@ -21,11 +20,13 @@ STATE_PATH="$ROOT/shared/ranked_jobs/$TRACK.json"
 DIGEST_PAGE="$GRAPH_DIR/pages/Test Workflow Job Digest $TODAY.md"
 OVERVIEW_PAGE="$GRAPH_DIR/pages/Test Workflow Ranked Overview.md"
 JOURNAL_PATH="$GRAPH_DIR/journals/$JOURNAL_DATE.md"
+SOURCES_PATH="$ROOT/tracks/$TRACK/sources.md"
+SOURCES_BACKUP="$TEST_DIR/sources.md.backup"
 
 cleanup() {
-  if [[ -n "${SERVER_PID:-}" ]]; then
-    kill "$SERVER_PID" 2>/dev/null || true
-    wait "$SERVER_PID" 2>/dev/null || true
+  if [[ -f "$SOURCES_BACKUP" ]]; then
+    cp "$SOURCES_BACKUP" "$SOURCES_PATH"
+    rm -f "$SOURCES_BACKUP"
   fi
 }
 
@@ -37,28 +38,26 @@ find "$(dirname "$DIGEST_PATH")" -maxdepth 1 -type f -name '*.md' -delete
 rm -f "$RUN_LOG" "$OVERVIEW_PATH" "$STATE_PATH"
 rm -rf "$GRAPH_DIR"
 
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$FIXTURE_DIR" >"$SERVER_LOG" 2>&1 &
-SERVER_PID=$!
 trap cleanup EXIT
 
-for _ in $(seq 1 20); do
-  if python3 - "$PORT" <<'PY'
+cp "$SOURCES_PATH" "$SOURCES_BACKUP"
+LOCAL_BOARD_URL="$(python3 - "$FIXTURE_DIR/test_workflow_board.html" <<'PY'
+from pathlib import Path
 import sys
-from urllib.error import URLError
-from urllib.request import urlopen
 
-port = sys.argv[1]
-try:
-    with urlopen(f"http://127.0.0.1:{port}/test_workflow_board.html", timeout=1) as response:
-        raise SystemExit(0 if response.status == 200 else 1)
-except URLError:
-    raise SystemExit(1)
+print(Path(sys.argv[1]).resolve().as_uri())
 PY
-  then
-    break
-  fi
-  sleep 0.2
-done
+)"
+python3 - "$SOURCES_PATH" "$LOCAL_BOARD_URL" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+local_board_url = sys.argv[2]
+text = path.read_text()
+text = text.replace("http://127.0.0.1:18765/test_workflow_board.html", local_board_url)
+path.write_text(text)
+PY
 
 CODEX_BIN="$ROOT/tests/e2e/fake_codex.sh" \
 JOB_AGENT_ROOT="$ROOT" \
@@ -90,6 +89,10 @@ rg -q "Cryptography Advisor" "$OVERVIEW_PATH"
 rg -q "Cryptography Advisor" "$DIGEST_PAGE"
 rg -q '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
 rg -q "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
+rg -q "Discovery phase started" "$RUN_LOG"
+rg -q "Codex phase started" "$RUN_LOG"
+rg -q "Sync phase finished successfully" "$RUN_LOG"
+rg -q "Finished $TRACK daily run" "$RUN_LOG"
 
 echo "Generic track workflow test passed."
 echo "Artifact: $ARTIFACT_DIR/$TODAY.json"

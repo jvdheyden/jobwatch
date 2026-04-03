@@ -427,6 +427,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", help="Write JSON output to this path instead of stdout")
     parser.add_argument("--latest-output", help="Also write the same JSON to a stable latest-artifact path")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
+    parser.add_argument("--progress", action="store_true", help="Emit per-source progress lines to stderr")
     parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS, help="Network timeout")
     parser.add_argument("--plan-only", action="store_true", help="Parse config and compute due sources without fetching")
     return parser
@@ -633,6 +634,13 @@ def match_terms_with_aliases(
 
 def generated_at() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def emit_progress(enabled: bool, message: str) -> None:
+    if not enabled:
+        return
+    stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{stamp}] {message}", file=sys.stderr, flush=True)
 
 
 def strip_html_fragment(value: str) -> str:
@@ -1128,7 +1136,7 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
         absolute_url = normalize_url_without_fragment(urljoin(source.url, href))
         if absolute_url in seen_urls:
             continue
-        if urlparse(absolute_url).scheme not in {"http", "https"}:
+        if urlparse(absolute_url).scheme not in {"file", "http", "https"}:
             continue
         if looks_like_non_job_link(text, absolute_url):
             continue
@@ -4940,10 +4948,22 @@ def main() -> int:
         }
     else:
         coverages: list[Coverage] = []
-        for source in sources:
+        total_sources = len(sources)
+        for index, source in enumerate(sources, start=1):
             terms = normalize_terms(track_terms, source_term_map.get(source.source))
+            emit_progress(
+                args.progress,
+                f"Discovering source {index}/{total_sources}: {source.source} (mode={source.discovery_mode})",
+            )
             coverage = discover_source(source, terms, args.timeout_seconds)
             coverage.due_today = source_due_today(source, today)
+            emit_progress(
+                args.progress,
+                (
+                    f"Completed source {index}/{total_sources}: {source.source} "
+                    f"(status={coverage.status}, matched={coverage.matched_jobs}, candidates={len(coverage.candidates)})"
+                ),
+            )
             coverages.append(coverage)
         payload = {
             "schema_version": 1,
