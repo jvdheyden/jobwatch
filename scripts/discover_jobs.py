@@ -29,7 +29,13 @@ from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
-USER_AGENT = "job-agent-discovery/0.1"
+# Some public career pages reject obviously scripted user agents with a 403.
+# Use a stable browser-like agent so deterministic HTML discovery still works.
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/136.0.0.0 Safari/537.36"
+)
 DEFAULT_TIMEOUT_SECONDS = 20
 DEFAULT_BROWSER_TIMEOUT_MS = 60_000
 MAX_BROWSER_PAGES = 10
