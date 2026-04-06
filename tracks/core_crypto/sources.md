@@ -16,51 +16,51 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-02 |
-| PQShield | https://pqshield.com/careers/ | html | 2026-04-02 |
-| Zama | https://jobs.zama.org | html | 2026-04-02 |
-| 0xPARC / PCD Team | https://pcd.team/jd | pcd_team | 2026-04-02 |
-| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-04-02 |
-| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-04-02 |
-| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-04-02 |
-| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-04-02 |
-| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-04-02 |
-| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-04-02 |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-06 |
+| PQShield | https://pqshield.com/careers/ | html | 2026-04-06 |
+| Zama | https://jobs.zama.org | html | 2026-04-06 |
+| 0xPARC / PCD Team | https://pcd.team/jd | pcd_team | 2026-04-06 |
+| Roseman Labs | https://rosemanlabs.com/en/working-at-roseman-labs | html | 2026-04-06 |
+| Duality Technologies | https://dualitytech.com/careers/ | html | 2026-04-06 |
+| QEDIT | https://qed-it.com/careers | qedit_inline | 2026-04-06 |
+| Least Authority | https://leastauthority.com/careers/ | leastauthority_careers | 2026-04-06 |
+| Trail of Bits | https://trailofbits.com/careers/ | trailofbits_browser | 2026-04-06 |
+| Partisia Blockchain | https://partisiablockchain.com/ | partisia_site | 2026-04-06 |
 
 ## Check every 3 runs
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-04-01 |
-| ASML | https://www.asml.com/en/careers/find-your-job | asml_browser | 2026-04-02 |
-| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-04-01 |
-| Bosch | https://jobs.bosch.de/ | browser | 2026-04-01 |
+| Anthropic | https://job-boards.greenhouse.io/anthropic/ | greenhouse_api | 2026-04-04 |
+| ASML | https://www.asml.com/en/careers/find-your-job | asml_browser | 2026-04-05 |
+| Automattic | https://automattic.com/jobs/ | automattic_browser | 2026-04-04 |
+| Bosch | https://jobs.bosch.de/ | browser | 2026-04-05 |
 | Coinbase | https://www.coinbase.com/careers | coinbase_browser | 2026-03-25 |
-| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-04-01 |
-| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-04-01 |
-| Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-04-01 |
+| Cybernetica | https://cyber.ee/careers/open-positions | cybernetica_teamdash | 2026-04-04 |
+| Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-04-04 |
+| Ethereum Foundation | https://jobs.lever.co/ethereumfoundation | lever_json | 2026-04-04 |
 | IBM | https://www.ibm.com/careers/search | ibm_api | 2026-03-28 |
-| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-04-01 |
-| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-04-01 |
-| Meta | https://www.metacareers.com/jobs | browser | 2026-04-02 |
-| NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-04-01 |
-| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-04-01 |
-| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-04-01 |
-| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-04-01 |
-| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-04-01 |
-| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-04-01 |
-| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-04-01 |
-| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-04-01 |
-| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-04-01 |
-| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-04-01 |
-| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | 2026-04-01 |
-| Hackernews Jobs | https://news.ycombinator.com/jobs | hackernews_jobs | 2026-04-01 |
+| Infineon | https://jobs.infineon.com/careers | infineon_api | 2026-04-04 |
+| Mistral AI | https://jobs.lever.co/mistral | lever_json | 2026-04-04 |
+| Meta | https://www.metacareers.com/jobs | browser | 2026-04-05 |
+| NXP | https://nxp.wd3.myworkdayjobs.com/careers | workday_api | 2026-04-05 |
+| Palantir | https://jobs.lever.co/palantir | lever_json | 2026-04-04 |
+| SandboxAQ | https://jobs.ashbyhq.com/sandboxaq | ashby_api | 2026-04-04 |
+| secunet | https://jobs.secunet.com/ | secunet_jobboard | 2026-04-04 |
+| NEC Laboratories Europe | https://jobs.neclab.eu/ | neclab_jobs | 2026-04-04 |
+| Quantinuum | https://jobs.eu.lever.co/quantinuum | lever_json | 2026-04-04 |
+| Qrypt | https://jobs.lever.co/qrypt | lever_json | 2026-04-04 |
+| QuSecure | https://www.qusecure.com/careers/ | qusecure_careers | 2026-04-04 |
+| Rambus | https://www.rambus.com/careers/ | icims_html | 2026-04-04 |
+| Thales | https://careers.thalesgroup.com/global/en/search-results | thales_html | 2026-04-04 |
+| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | 2026-04-04 |
+| Hackernews Jobs | https://news.ycombinator.com/jobs | hackernews_jobs | 2026-04-04 |
 
 ## Check every month
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Hacker News Who Is Hiring | https://news.ycombinator.com/user?id=whoishiring | hackernews_whoishiring_api | |
+| Hacker News Who Is Hiring | https://news.ycombinator.com/user?id=whoishiring | hackernews_whoishiring_api | 2026-04-04 |
 
 ## Search terms
 
