@@ -301,3 +301,79 @@ def test_build_reviewer_context_includes_canary_candidate_outside_cap():
     assert f"Role {canary_index}" in titles
     assert f"Role {source_quality.REVIEWER_MAX_CANDIDATES - 1}" not in titles
     assert raw_sample_urls[0] == f"https://jobs.example.com/jobs/{canary_index}"
+
+
+def test_build_reviewer_command_forces_low_reasoning_effort():
+    command = source_quality.build_reviewer_command(
+        Path("/tmp/jobsearch"),
+        Path("/usr/local/bin/codex"),
+    )
+
+    assert command == [
+        "/usr/local/bin/codex",
+        "--search",
+        "-a",
+        "never",
+        "exec",
+        "-c",
+        'model_reasoning_effort="low"',
+        "-C",
+        "/tmp/jobsearch",
+        "-s",
+        "read-only",
+        "-",
+    ]
+
+
+def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fields(monkeypatch):
+    source = {
+        "source": "Example Source",
+        "source_url": "https://jobs.example.com/search",
+        "discovery_mode": "html",
+        "status": "complete",
+        "search_terms_tried": ["security"],
+        "candidates": [],
+    }
+
+    monkeypatch.setattr(
+        source_quality,
+        "_build_reviewer_context",
+        lambda *_args, **_kwargs: {"source": {"source": "Example Source"}, "canary": {"title": "", "url": ""}, "raw_samples": []},
+    )
+
+    class Completed:
+        returncode = 0
+        stdout = """
+{"defects":[
+  {"type":"canary_missing","severity":"blocking","message":"ignore this"},
+  {"type":"partial_description","severity":"major","message":"No descriptive notes were extracted.","path":"raw_samples"}
+]}
+"""
+        stderr = ""
+
+    monkeypatch.setattr(source_quality.subprocess, "run", lambda *args, **kwargs: Completed())
+
+    reviewer = source_quality.review_source_with_llm(
+        Path("/tmp/jobsearch"),
+        Path("artifacts/discovery/public_service/2026-04-02.json"),
+        source,
+        canary_title="",
+        canary_url="",
+        reviewer_bin=Path("/bin/bash"),
+        timeout_seconds=5,
+    )
+
+    assert reviewer["status"] == "completed"
+    assert reviewer["defects"] == [
+        {
+            "type": "partial_description",
+            "severity": "major",
+            "source": "Example Source",
+            "candidate_url": "",
+            "canary_title": "",
+            "observed": "No descriptive notes were extracted.",
+            "expected": "",
+            "repair_hint": "",
+            "repro_step": "raw_samples",
+        }
+    ]

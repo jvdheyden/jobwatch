@@ -21,6 +21,7 @@ USER_AGENT = "job-agent-source-quality/0.1"
 DEFAULT_TIMEOUT_SECONDS = 20
 DEFAULT_REVIEW_TIMEOUT_SECONDS = 120
 REVIEWER_MAX_CANDIDATES = 10
+REVIEWER_REASONING_EFFORT = "low"
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 NON_JOB_TITLE_MARKERS = (
     "open positions",
@@ -614,6 +615,23 @@ def _build_reviewer_context(
     }
 
 
+def build_reviewer_command(root: Path, reviewer_bin: Path) -> list[str]:
+    return [
+        str(reviewer_bin),
+        "--search",
+        "-a",
+        "never",
+        "exec",
+        "-c",
+        f'model_reasoning_effort="{REVIEWER_REASONING_EFFORT}"',
+        "-C",
+        str(root),
+        "-s",
+        "read-only",
+        "-",
+    ]
+
+
 def review_source_with_llm(
     root: Path,
     artifact_path: Path,
@@ -632,27 +650,19 @@ def review_source_with_llm(
         }
 
     context = _build_reviewer_context(artifact_path, source, canary_title, canary_url, timeout_seconds)
+    canary_instruction = (
+        "If canary.title and canary.url are both empty, treat the canary as not provided and do not emit canary_missing.\n"
+    )
     prompt = (
         "Review this job-source extraction and return JSON only.\n"
         "Allowed defect types: missing_field, wrong_content, navigation_noise, partial_description, canary_missing, bad_url, duplication, other.\n"
         "Allowed severities: blocking, major, minor.\n"
         "Return exactly: {\"defects\": [...]}.\n"
         "If no issues, return {\"defects\": []}.\n\n"
+        + canary_instruction
         + json.dumps(context, ensure_ascii=False, indent=2)
     )
-
-    command = [
-        str(reviewer_bin),
-        "--search",
-        "-a",
-        "never",
-        "exec",
-        "-C",
-        str(root),
-        "-s",
-        "read-only",
-        "-",
-    ]
+    command = build_reviewer_command(root, reviewer_bin)
     try:
         completed = subprocess.run(
             command,
@@ -696,19 +706,20 @@ def review_source_with_llm(
     for defect in defects:
         if not isinstance(defect, dict):
             continue
-        normalized_defects.append(
-            {
-                "type": str(defect.get("type", "other")),
-                "severity": str(defect.get("severity", "minor")),
-                "source": str(defect.get("source", source.get("source", ""))),
-                "candidate_url": str(defect.get("candidate_url", "")),
-                "canary_title": str(defect.get("canary_title", canary_title)),
-                "observed": normalize_whitespace(str(defect.get("observed", ""))),
-                "expected": normalize_whitespace(str(defect.get("expected", ""))),
-                "repair_hint": normalize_whitespace(str(defect.get("repair_hint", ""))),
-                "repro_step": normalize_whitespace(str(defect.get("repro_step", ""))),
-            }
-        )
+        normalized_defect = {
+            "type": str(defect.get("type", "other")),
+            "severity": str(defect.get("severity", "minor")),
+            "source": str(defect.get("source", source.get("source", ""))),
+            "candidate_url": str(defect.get("candidate_url", defect.get("url", ""))),
+            "canary_title": str(defect.get("canary_title", canary_title)),
+            "observed": normalize_whitespace(str(defect.get("observed", defect.get("message", "")))),
+            "expected": normalize_whitespace(str(defect.get("expected", ""))),
+            "repair_hint": normalize_whitespace(str(defect.get("repair_hint", defect.get("hint", "")))),
+            "repro_step": normalize_whitespace(str(defect.get("repro_step", defect.get("path", "")))),
+        }
+        if not canary_title and not canary_url and normalized_defect["type"] == "canary_missing":
+            continue
+        normalized_defects.append(normalized_defect)
 
     return {
         "status": "completed",
