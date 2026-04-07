@@ -57,6 +57,17 @@ exec "$@"
     )
 
 
+def _write_path_codex(root: Path) -> None:
+    _write_executable(
+        root / "bin" / "codex",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+exec "$ROOT/fake_codex.sh" "$@"
+""",
+    )
+
+
 def _successful_discovery_script() -> str:
     return """#!/usr/bin/env python3
 from __future__ import annotations
@@ -226,6 +237,34 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     caffeinate_args = (tmp_job_agent_root / "caffeinate-args.txt").read_text()
     assert "-dimsu" in caffeinate_args
     assert "--discovery-timeout-secs" in caffeinate_args
+
+
+def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_path_codex(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_job_agent_root / "codex-prompt.txt").exists()
 
 
 def test_run_track_times_out_discovery_and_continues_to_codex_fallback(

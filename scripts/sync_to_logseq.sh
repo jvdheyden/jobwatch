@@ -26,7 +26,13 @@ ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TODAY_STAMP="${JOB_AGENT_TODAY:-$(date +%F)}"
 DIGEST="$ROOT/tracks/$TRACK/digests/$TODAY_STAMP.md"
 RANKED_OVERVIEW="$ROOT/tracks/$TRACK/ranked_overview.md"
-GRAPH_DIR="${LOGSEQ_GRAPH_DIR:-/Users/jvdh/Documents/logseq}"
+GRAPH_DIR="${LOGSEQ_GRAPH_DIR:-}"
+
+if [[ -z "$GRAPH_DIR" ]]; then
+  echo "LOGSEQ_GRAPH_DIR is not set; skipping Logseq sync" >&2
+  exit 0
+fi
+
 JOURNAL_DIR="$GRAPH_DIR/journals"
 PAGES_DIR="$GRAPH_DIR/pages"
 

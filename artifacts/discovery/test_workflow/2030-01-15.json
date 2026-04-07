@@ -2,12 +2,12 @@
   "schema_version": 1,
   "track": "test_workflow",
   "today": "2030-01-15",
-  "generated_at": "2026-04-03T14:45:33Z",
+  "generated_at": "2026-04-07T10:45:15Z",
   "mode": "discover",
   "sources": [
     {
       "source": "Local Test Board",
-      "source_url": "file:///Users/jvdh/Documents/job-agent/tests/fixtures/test_workflow/test_workflow_board.html",
+      "source_url": "file:///home/jvdh/Documents/jobsearch/tests/fixtures/test_workflow/test_workflow_board.html",
       "discovery_mode": "html",
       "cadence_group": "every_run",
       "last_checked": null,
@@ -27,7 +27,7 @@
           "employer": "Local Test Board",
           "title": "Cryptography Advisor",
           "url": "file:///jobs/cryptography-advisor.html",
-          "source_url": "file:///Users/jvdh/Documents/job-agent/tests/fixtures/test_workflow/test_workflow_board.html",
+          "source_url": "file:///home/jvdh/Documents/jobsearch/tests/fixtures/test_workflow/test_workflow_board.html",
           "alternate_url": "",
           "location": "unknown",
           "remote": "unknown",

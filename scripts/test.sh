@@ -14,6 +14,9 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
 fi
 
 bash -n scripts/run_track.sh
+bash -n scripts/setup_machine.sh
+bash -n scripts/install_scheduler.sh
+bash -n scripts/run_scheduled_jobs.sh
 bash -n scripts/sync_to_logseq.sh
 bash -n scripts/test_track_workflow.sh
 bash -n tests/e2e/fake_codex.sh
@@ -28,8 +31,10 @@ fi
   tests/unit/test_discover_jobs_progress.py \
   tests/unit/test_digest_json.py \
   tests/unit/test_render_digest.py \
+  tests/unit/test_machine_resolution.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \
+  tests/integration/test_machine_setup.py \
   tests/integration/test_run_track.py \
   tests/integration/test_eval_source_quality.py \
   tests/integration/test_repair_source.py \

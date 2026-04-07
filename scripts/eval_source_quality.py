@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -39,9 +40,9 @@ def resolve_reviewer_bin(explicit: str | None) -> Path | None:
     codex_bin = os.environ.get("CODEX_BIN")
     if codex_bin:
         return Path(codex_bin)
-    default_codex = Path("/opt/homebrew/bin/codex")
-    if default_codex.exists():
-        return default_codex
+    which_codex = shutil.which("codex")
+    if which_codex:
+        return Path(which_codex)
     return None
 
 

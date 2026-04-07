@@ -1,52 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
+  <!-- Template only. Use scripts/setup_machine.sh and scripts/install_scheduler.sh. -->
   <dict>
     <key>Label</key>
-    <string>com.jvdh.tracks-job-agent</string>
+    <string>com.jvdh.jobsearch.scheduler</string>
 
     <key>ProgramArguments</key>
     <array>
-      <string>/bin/zsh</string>
-      <string>-lc</string>
-      <string><![CDATA[
-set -euo pipefail
-
-ROOT="/Users/jvdh/Documents/job-agent"
-STATUS=0
-
-/bin/bash "$ROOT/scripts/run_track.sh" --track core_crypto || STATUS=$?
-/bin/bash "$ROOT/scripts/run_track.sh" --track postdoc_crypto || STATUS=$?
-/bin/bash "$ROOT/scripts/run_track.sh" --track public_service || STATUS=$?
-/bin/bash "$ROOT/scripts/run_track.sh" --track alignment_tech || STATUS=$?
-
-exit "$STATUS"
-      ]]></string>
+      <string>/bin/bash</string>
+      <string>__JOBSEARCH_ROOT__/scripts/run_scheduled_jobs.sh</string>
     </array>
 
     <key>EnvironmentVariables</key>
     <dict>
       <key>HOME</key>
-      <string>/Users/jvdh</string>
+      <string>__HOME__</string>
       <key>PATH</key>
-      <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+      <string>__PATH__</string>
     </dict>
 
     <key>WorkingDirectory</key>
-    <string>/Users/jvdh</string>
+    <string>__JOBSEARCH_ROOT__</string>
 
-    <key>StartCalendarInterval</key>
-    <dict>
-      <key>Hour</key>
-      <integer>8</integer>
-      <key>Minute</key>
-      <integer>0</integer>
-    </dict>
+    <key>StartInterval</key>
+    <integer>60</integer>
 
     <key>StandardOutPath</key>
-    <string>/Users/jvdh/Documents/job-agent/logs/launchd-tracks.out</string>
+    <string>__JOBSEARCH_ROOT__/logs/scheduler.out</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/jvdh/Documents/job-agent/logs/launchd-tracks.err</string>
+    <string>__JOBSEARCH_ROOT__/logs/scheduler.err</string>
   </dict>
 </plist>

@@ -62,7 +62,7 @@ During a normal scheduled run:
 
 - read only the track inputs above plus today's digest, if it already exists
 - write only today's structured digest artifact in `../../artifacts/digests/core_crypto/`, today's rendered digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/core_crypto.json`, `./ranked_overview.md`, and the `last_checked` column in `./sources.md`
-- do not inspect `./logs` or downstream publication targets such as `/Users/jvdh/Documents/logseq`
+- do not inspect `./logs` or downstream publication targets such as the configured Logseq graph
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
 - if today's discovery artifact exists in `../../artifacts/discovery/core_crypto/`, consume it directly instead of rerunning `../../scripts/discover_jobs.py`
 

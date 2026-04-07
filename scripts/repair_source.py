@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -67,9 +68,9 @@ def resolve_coder_bin(explicit: str | None) -> Path | None:
     env_bin = os.environ.get("CODEX_BIN")
     if env_bin:
         return Path(env_bin)
-    default_codex = Path("/opt/homebrew/bin/codex")
-    if default_codex.exists():
-        return default_codex
+    which_codex = shutil.which("codex")
+    if which_codex:
+        return Path(which_codex)
     return None
 
 

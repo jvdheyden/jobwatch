@@ -78,3 +78,23 @@ def test_sync_to_logseq_does_not_duplicate_journal_link(tmp_job_agent_root, tmp_
     assert second.returncode == 0, second.stderr
     journal_text = (tmp_graph_dir / "journals" / "2026_03_29.md").read_text()
     assert journal_text.count("- New [[Core Crypto Job Digest 2026-03-29]]") == 1
+
+
+def test_sync_to_logseq_skips_when_graph_dir_is_unset(tmp_job_agent_root, repo_root, run_cmd):
+    _write_sync_inputs(tmp_job_agent_root, "2026-03-29")
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2026-03-29",
+        "JOB_AGENT_JOURNAL_DATE": "2026_03_29",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "sync_to_logseq.sh"),
+        "--track",
+        "core_crypto",
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "LOGSEQ_GRAPH_DIR is not set; skipping Logseq sync" in result.stderr

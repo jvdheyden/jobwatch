@@ -12,6 +12,11 @@ venv/
 # Local test scratch space
 tests/tmp/
 
+# Machine-local scheduler config
+.env.local
+.schedule.local
+.scheduler/
+
 # Generated logs
 logs/
 

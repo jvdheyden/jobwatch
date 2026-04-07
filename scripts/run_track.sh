@@ -7,7 +7,7 @@ DISCOVERY_TIMEOUT_SECS="${DISCOVERY_TIMEOUT_SECS:-1800}"
 DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
 CODEX_HEARTBEAT_SECS="${CODEX_HEARTBEAT_SECS:-300}"
 CODEX_IDLE_TIMEOUT_SECS="${CODEX_IDLE_TIMEOUT_SECS:-900}"
-CODEX_BIN="${CODEX_BIN:-/opt/homebrew/bin/codex}"
+CODEX_BIN="${CODEX_BIN:-}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
@@ -59,6 +59,23 @@ timestamp() {
 log() {
   echo "[$(timestamp)] $*"
 }
+
+resolve_codex_bin() {
+  if [[ -n "$CODEX_BIN" ]]; then
+    printf '%s\n' "$CODEX_BIN"
+    return 0
+  fi
+  if command -v codex >/dev/null 2>&1; then
+    command -v codex
+    return 0
+  fi
+  return 1
+}
+
+if ! CODEX_BIN="$(resolve_codex_bin)"; then
+  log "codex binary not found; set CODEX_BIN or add codex to PATH"
+  exit 127
+fi
 
 LAST_BG_PID=""
 
@@ -269,7 +286,7 @@ Follow the repository AGENTS.md for mode routing, then follow tracks/$TRACK/AGEN
 Use scripted discovery helpers when available.
 $DISCOVERY_PROMPT_BLOCK
 This is a normal scheduled run, not a debugging session.
-Do not inspect ./logs or downstream publication targets such as /Users/jvdh/Documents/logseq unless explicitly asked to debug the runner.
+Do not inspect ./logs or downstream publication targets such as the configured Logseq graph unless explicitly asked to debug the runner.
 EOF
 
 log "Codex phase started"
