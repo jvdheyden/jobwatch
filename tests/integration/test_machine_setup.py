@@ -78,7 +78,8 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# Optional: Logseq graph root for digest publication." in env_text
     assert schedule_file.exists()
     assert "daily 08:00 track core_crypto" in schedule_file.read_text()
-    assert (scheduler_dir / "cron.entry").exists()
+    cron_text = (scheduler_dir / "cron.entry").read_text()
+    assert cron_text.startswith("# BEGIN jobsearch scheduler\n* * * * * /bin/bash ")
     assert (scheduler_dir / "com.jvdh.jobsearch.scheduler.plist").exists()
 
     schedule_file.write_text("daily 08:00 track demo\n")

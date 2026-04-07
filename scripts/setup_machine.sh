@@ -245,7 +245,7 @@ stderr_log="$ROOT/logs/scheduler.err"
 
 {
   echo "# BEGIN jobsearch scheduler"
-  printf '* * * * /bin/bash %s >>%s 2>>%s\n' \
+  printf '* * * * * /bin/bash %s >>%s 2>>%s\n' \
     "$(shell_escape "$runner_path")" \
     "$(shell_escape "$stdout_log")" \
     "$(shell_escape "$stderr_log")"
