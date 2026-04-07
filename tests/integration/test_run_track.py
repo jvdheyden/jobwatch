@@ -165,6 +165,26 @@ time.sleep(5)
 """
 
 
+def _slow_codex_exit_zero_on_term_script() -> str:
+    return """#!/bin/bash
+set -euo pipefail
+trap 'exit 0' TERM
+cat >/dev/null
+echo "codex starting long run"
+sleep 30
+"""
+
+
+def _idle_codex_script() -> str:
+    return """#!/bin/bash
+set -euo pipefail
+trap 'exit 0' TERM
+cat >/dev/null
+echo "codex emitted one line"
+sleep 30
+"""
+
+
 def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)
@@ -246,3 +266,79 @@ def test_run_track_times_out_discovery_and_continues_to_codex_fallback(
     assert "No fresh discovery artifact is available for today's scheduled run because artifact generation timed out." in prompt_text
     assert "A discovery artifact for today's scheduled run has already been written" not in prompt_text
     assert not (tmp_job_agent_root / "artifacts" / "discovery" / "demo" / "2030-01-15.json").exists()
+
+
+def test_run_track_fails_when_codex_times_out_even_if_codex_exits_zero_on_term(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(tmp_job_agent_root / "fake_codex.sh", _slow_codex_exit_zero_on_term_script())
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "CODEX_IDLE_TIMEOUT_SECS": "30",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "1",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 124, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Codex exceeded 1s; terminating" in log_text
+    assert "Codex phase timed out after 1s" in log_text
+    assert "Codex phase finished successfully" not in log_text
+    assert not (tmp_job_agent_root / "tracks" / "demo" / "digests" / "2030-01-15.md").exists()
+    assert not (tmp_job_agent_root / "sync.log").exists()
+
+
+def test_run_track_aborts_idle_codex_and_logs_heartbeat(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(tmp_job_agent_root / "fake_codex.sh", _idle_codex_script())
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "CODEX_HEARTBEAT_SECS": "1",
+        "CODEX_IDLE_TIMEOUT_SECS": "1",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "30",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 125, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Codex still running after 1s" in log_text
+    assert "Codex went idle after 1s without new output; terminating" in log_text
+    assert "Codex phase went idle after 1s without new output" in log_text
+    assert "Codex phase finished successfully" not in log_text
+    assert not (tmp_job_agent_root / "tracks" / "demo" / "digests" / "2030-01-15.md").exists()
+    assert not (tmp_job_agent_root / "sync.log").exists()

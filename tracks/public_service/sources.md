@@ -16,16 +16,16 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Bund | https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?view=processForm&nn=4641514&cl2Categories_Laufbahn=laufbahn-hoehererdienst | service_bund_search | 2026-04-06 |
-| Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | verfassungsschutz_rss | 2026-04-06 |
-| BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896&cl2Categories_Abschluss=master#sprg415980 | bnd_career_search | 2026-04-06 |
+| Bund | https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?view=processForm&nn=4641514&cl2Categories_Laufbahn=laufbahn-hoehererdienst | service_bund_search | 2026-04-07 |
+| Verfassungsschutz | https://www.verfassungsschutz.de/SiteGlobals/Forms/Suche/Stellenangebotesuche_Formular.html?nn=719030&location=Grunds%C3%A4tzlich+Berlin+und+K%C3%B6ln&section.GROUP=1 | verfassungsschutz_rss | 2026-04-07 |
+| BND | https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896&cl2Categories_Abschluss=master#sprg415980 | bnd_career_search | 2026-04-07 |
 | Bundeswehr | https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded | bundeswehr_jobsuche | |
-| Rheinmetall | https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote?9dc11c304b4c06c2f71c48cc6574e7e5term=&9dc11c304b4c06c2f71c48cc6574e7e5filter=%257B%2522occupationalArea%2522%253A%255B%2522IT%2520und%2520Software%2522%255D%257D | rheinmetall_html | 2026-04-06 |
-| Helsing | https://helsing.ai/jobs | helsing_browser | 2026-04-06 |
-| Quantum Systems | https://career.quantum-systems.com/ | recruitee_inline | 2026-04-06 |
-| Auswärtiges Amt | https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen | auswaertiges_amt_json | 2026-04-06 |
-| EnBW | https://careers.enbw.com/en_US/careers | enbw_phenom | 2026-04-06 |
-| BSI | https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html | service_bund_links | 2026-04-06 |
+| Rheinmetall | https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote?9dc11c304b4c06c2f71c48cc6574e7e5term=&9dc11c304b4c06c2f71c48cc6574e7e5filter=%257B%2522occupationalArea%2522%253A%255B%2522IT%2520und%2520Software%2522%255D%257D | rheinmetall_html | 2026-04-07 |
+| Helsing | https://helsing.ai/jobs | helsing_browser | 2026-04-07 |
+| Quantum Systems | https://career.quantum-systems.com/ | recruitee_inline | 2026-04-07 |
+| Auswärtiges Amt | https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen | auswaertiges_amt_json | 2026-04-07 |
+| EnBW | https://careers.enbw.com/en_US/careers | enbw_phenom | 2026-04-07 |
+| BSI | https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html | service_bund_links | 2026-04-07 |
 
 ## Check every 3 runs
 

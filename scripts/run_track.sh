@@ -5,6 +5,8 @@ TRACK=""
 TIMEOUT_SECS="${TIMEOUT_SECS:-2700}"
 DISCOVERY_TIMEOUT_SECS="${DISCOVERY_TIMEOUT_SECS:-1800}"
 DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
+CODEX_HEARTBEAT_SECS="${CODEX_HEARTBEAT_SECS:-300}"
+CODEX_IDLE_TIMEOUT_SECS="${CODEX_IDLE_TIMEOUT_SECS:-900}"
 CODEX_BIN="${CODEX_BIN:-/opt/homebrew/bin/codex}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -65,8 +67,22 @@ stop_helper() {
   if [[ -z "$pid" ]]; then
     return
   fi
+  pkill -TERM -P "$pid" 2>/dev/null || true
   kill "$pid" 2>/dev/null || true
   wait "$pid" 2>/dev/null || true
+  pkill -KILL -P "$pid" 2>/dev/null || true
+}
+
+terminate_process() {
+  local target_pid="$1"
+  local label="$2"
+
+  kill "$target_pid" 2>/dev/null || true
+  sleep 5
+  if kill -0 "$target_pid" 2>/dev/null; then
+    log "$label still running after TERM; forcing kill"
+    kill -9 "$target_pid" 2>/dev/null || true
+  fi
 }
 
 start_timeout_watchdog() {
@@ -80,12 +96,7 @@ start_timeout_watchdog() {
     if kill -0 "$target_pid" 2>/dev/null; then
       : >"$flag_file"
       log "$label exceeded ${timeout_secs}s; terminating"
-      kill "$target_pid" 2>/dev/null || true
-      sleep 5
-      if kill -0 "$target_pid" 2>/dev/null; then
-        log "$label still running after TERM; forcing kill"
-        kill -9 "$target_pid" 2>/dev/null || true
-      fi
+      terminate_process "$target_pid" "$label"
     fi
   ) &
 
@@ -112,6 +123,55 @@ start_heartbeat() {
   LAST_BG_PID="$!"
 }
 
+start_idle_watchdog() {
+  local target_pid="$1"
+  local idle_timeout_secs="$2"
+  local label="$3"
+  local activity_file="$4"
+  local flag_file="$5"
+  local poll_secs=5
+
+  if [[ "$idle_timeout_secs" -le 0 ]]; then
+    LAST_BG_PID=""
+    return
+  fi
+
+  if [[ "$idle_timeout_secs" -lt "$poll_secs" ]]; then
+    poll_secs="$idle_timeout_secs"
+  fi
+  if [[ "$poll_secs" -lt 1 ]]; then
+    poll_secs=1
+  fi
+
+  (
+    while kill -0 "$target_pid" 2>/dev/null; do
+      sleep "$poll_secs"
+      if ! kill -0 "$target_pid" 2>/dev/null; then
+        break
+      fi
+
+      local last_activity=""
+      if [[ -f "$activity_file" ]]; then
+        last_activity="$(cat "$activity_file" 2>/dev/null || true)"
+      fi
+      if [[ ! "$last_activity" =~ ^[0-9]+$ ]]; then
+        continue
+      fi
+
+      local now
+      now="$(date +%s)"
+      if (( now - last_activity >= idle_timeout_secs )); then
+        : >"$flag_file"
+        log "$label went idle after ${idle_timeout_secs}s without new output; terminating"
+        terminate_process "$target_pid" "$label"
+        break
+      fi
+    done
+  ) &
+
+  LAST_BG_PID="$!"
+}
+
 if [[ -z "${JOB_AGENT_CAFFEINATED:-}" ]]; then
   if CAFFEINATE_BIN="$(command -v caffeinate 2>/dev/null)"; then
     log "Re-executing $TRACK run under caffeinate via $CAFFEINATE_BIN"
@@ -128,8 +188,11 @@ fi
 PROMPT_FILE="$(mktemp "${TMPDIR:-/tmp}/${TRACK}-prompt.XXXXXX")"
 DISCOVERY_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-discovery-timeout.$$"
 CODEX_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-codex-timeout.$$"
-rm -f "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG"
-trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG"' EXIT
+CODEX_IDLE_FLAG="${TMPDIR:-/tmp}/${TRACK}-codex-idle.$$"
+CODEX_ACTIVITY_FILE="${TMPDIR:-/tmp}/${TRACK}-codex-activity.$$"
+CODEX_OUTPUT_PIPE="${TMPDIR:-/tmp}/${TRACK}-codex-output.$$"
+rm -f "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG" "$CODEX_IDLE_FLAG" "$CODEX_ACTIVITY_FILE" "$CODEX_OUTPUT_PIPE"
+trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG" "$CODEX_IDLE_FLAG" "$CODEX_ACTIVITY_FILE" "$CODEX_OUTPUT_PIPE"' EXIT
 
 log "Starting $TRACK daily run"
 log "Discovery phase started"
@@ -210,25 +273,53 @@ Do not inspect ./logs or downstream publication targets such as /Users/jvdh/Docu
 EOF
 
 log "Codex phase started"
+mkfifo "$CODEX_OUTPUT_PIPE"
+printf '%s\n' "$(date +%s)" >"$CODEX_ACTIVITY_FILE"
+(
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    printf '%s\n' "$line"
+    printf '%s\n' "$(date +%s)" >"$CODEX_ACTIVITY_FILE"
+  done <"$CODEX_OUTPUT_PIPE"
+) &
+CODEX_READER_PID=$!
+
 JOB_AGENT_ROOT="$ROOT" \
 JOB_AGENT_TRACK="$TRACK" \
 JOB_AGENT_TODAY="$TODAY" \
-"$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE" &
+"$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE" >"$CODEX_OUTPUT_PIPE" 2>&1 &
 CODEX_PID=$!
 start_timeout_watchdog "$CODEX_PID" "$TIMEOUT_SECS" "Codex" "$CODEX_TIMEOUT_FLAG"
-WATCHDOG_PID="$LAST_BG_PID"
+CODEX_WATCHDOG_PID="$LAST_BG_PID"
+if [[ "$CODEX_HEARTBEAT_SECS" -gt 0 ]]; then
+  start_heartbeat "$CODEX_PID" "$CODEX_HEARTBEAT_SECS" "Codex"
+  CODEX_HEARTBEAT_PID="$LAST_BG_PID"
+else
+  CODEX_HEARTBEAT_PID=""
+fi
+start_idle_watchdog "$CODEX_PID" "$CODEX_IDLE_TIMEOUT_SECS" "Codex" "$CODEX_ACTIVITY_FILE" "$CODEX_IDLE_FLAG"
+CODEX_IDLE_WATCHDOG_PID="$LAST_BG_PID"
 
 set +e
 wait "$CODEX_PID"
 CODEX_STATUS=$?
 set -e
 
-stop_helper "$WATCHDOG_PID"
+stop_helper "$CODEX_WATCHDOG_PID"
+stop_helper "$CODEX_HEARTBEAT_PID"
+stop_helper "$CODEX_IDLE_WATCHDOG_PID"
+wait "$CODEX_READER_PID" 2>/dev/null || true
+
+if [[ -f "$CODEX_TIMEOUT_FLAG" ]]; then
+  log "Codex phase timed out after ${TIMEOUT_SECS}s"
+  exit 124
+fi
+
+if [[ -f "$CODEX_IDLE_FLAG" ]]; then
+  log "Codex phase went idle after ${CODEX_IDLE_TIMEOUT_SECS}s without new output"
+  exit 125
+fi
 
 if [[ $CODEX_STATUS -ne 0 ]]; then
-  if [[ -f "$CODEX_TIMEOUT_FLAG" ]]; then
-    log "Codex phase timed out after ${TIMEOUT_SECS}s"
-  fi
   log "Codex exited with status $CODEX_STATUS"
   exit "$CODEX_STATUS"
 fi

@@ -28,7 +28,7 @@ Cadence note:
 | Waking Up | https://apply.workable.com/waking-up-1/ | workable_api | 2026-04-06 |
 | Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | getro_api | 2026-04-06 |
 | Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | personio_page | 2026-04-06 |
-| E.O. Wilson Biodiversity Foundation | https://eowilsonfoundation.org/about-us/careers/ | html | 2026-04-04 |
+| E.O. Wilson Biodiversity Foundation | https://eowilsonfoundation.org/about-us/careers/ | html | 2026-04-07 |
 
 ## Check every month
 
