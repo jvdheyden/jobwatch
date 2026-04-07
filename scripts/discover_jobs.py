@@ -3060,6 +3060,23 @@ def build_ibm_search_payload(offset: int, size: int, title_query: str | None = N
     }
 
 
+IBM_RESEARCH_GENERIC_MATCH_TERMS = frozenset({"research scientist", "postdoc", "postdoctoral"})
+
+
+def should_keep_ibm_candidate(source: SourceConfig, title: str, matched_terms: list[str]) -> bool:
+    if source.source != "IBM Research":
+        return True
+
+    title_lower = title.lower()
+    if "postdoctoral" in title_lower or "postdoc" in title_lower:
+        return True
+    if "research scientist" not in title_lower:
+        return False
+
+    normalized_matches = {normalize_for_matching(term) for term in matched_terms}
+    return any(term not in IBM_RESEARCH_GENERIC_MATCH_TERMS for term in normalized_matches)
+
+
 def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     candidates_by_url: dict[str, Candidate] = {}
     raw_seen_ids: set[str] = set()
@@ -3100,6 +3117,11 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
             matched_terms = sorted(set(match_terms(searchable_text, terms)))
             if not should_keep_candidate(title, matched_terms, searchable_text):
                 continue
+            if not should_keep_ibm_candidate(source, title, matched_terms):
+                continue
+            note_parts = ["Enumerated through IBM careers search API with title-scoped server-side filtering"]
+            if description:
+                note_parts.append(f"Summary: {truncate_text(description, 220)}")
             merge_candidate(
                 candidates_by_url,
                 Candidate(
@@ -3110,7 +3132,7 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
                     location=location,
                     remote=remote,
                     matched_terms=matched_terms,
-                    notes="Enumerated through IBM careers search API with title-scoped server-side filtering",
+                    notes="; ".join(note_parts),
                 ),
             )
 

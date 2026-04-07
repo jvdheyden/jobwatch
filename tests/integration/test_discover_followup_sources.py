@@ -190,3 +190,106 @@ def test_discover_personio_page_parses_embedded_jobs_payload(monkeypatch):
     assert candidate.url == "https://albert.example/jobs/software-engineer"
     assert candidate.location == "Berlin, Germany"
     assert candidate.matched_terms == ["software engineer"]
+
+
+def test_discover_ibm_api_filters_ibm_research_generic_noise_and_keeps_canary_detail(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="IBM Research",
+        url="https://www.ibm.com/careers/search",
+        discovery_mode="ibm_api",
+        last_checked=None,
+        cadence_group="every_month",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        assert url == discover_jobs.IBM_SEARCH_API_URL
+        assert headers == {"Referer": "https://www.ibm.com/"}
+        return {
+            "hits": {
+                "total": {"value": 4},
+                "hits": [
+                    {
+                        "_id": "107245",
+                        "_source": {
+                            "title": "Postdoctoral IT Research Scientist - IBM Research South Africa",
+                            "url": "https://careers.ibm.com/careers/JobDetail?jobId=107245",
+                            "description": (
+                                "Join us for a unique 24-month paid internship at the IBM Research Africa lab "
+                                "in Johannesburg, South Africa."
+                            ),
+                            "field_keyword_19": "JOHANNESBURG, ZA",
+                            "field_keyword_17": "Hybrid",
+                            "field_keyword_08": "Cloud",
+                            "field_keyword_18": "Internship",
+                        },
+                    },
+                    {
+                        "_id": "88976",
+                        "_source": {
+                            "title": "Quantum Hardware Research Scientist",
+                            "url": "https://careers.ibm.com/careers/JobDetail?jobId=88976",
+                            "description": "Quantum hardware role for scalable fault tolerant systems.",
+                            "field_keyword_19": "Yorktown Heights, US",
+                            "field_keyword_17": "",
+                            "field_keyword_08": "Research",
+                            "field_keyword_18": "Professional",
+                        },
+                    },
+                    {
+                        "_id": "60324",
+                        "_source": {
+                            "title": "Research Scientist—AI & Algorithmic Innovations Intern: 2026",
+                            "url": "https://careers.ibm.com/careers/JobDetail?jobId=60324",
+                            "description": "Research internship in AI systems.",
+                            "field_keyword_19": "Warrington, GB",
+                            "field_keyword_17": "Hybrid",
+                            "field_keyword_08": "Research",
+                            "field_keyword_18": "Internship",
+                        },
+                    },
+                    {
+                        "_id": "85519",
+                        "_source": {
+                            "title": "Backend Engineer (Cryptography Team) - Hashicorp Vault",
+                            "url": "https://careers.ibm.com/careers/JobDetail?jobId=85519",
+                            "description": "Backend engineer on the cryptography team.",
+                            "field_keyword_19": "Multiple Cities",
+                            "field_keyword_17": "Hybrid",
+                            "field_keyword_08": "Software Engineering",
+                            "field_keyword_18": "Professional",
+                        },
+                    },
+                ],
+            }
+        }
+
+    monkeypatch.setattr(discover_jobs, "post_json", fake_post_json)
+    monkeypatch.setattr(discover_jobs, "IBM_RESULTS_PAGE_SIZE", 25)
+
+    coverage = discover_jobs.discover_ibm_api(
+        source,
+        [
+            "multi-party computation",
+            "MPC",
+            "garbled circuits",
+            "isogenies",
+            "isogeny-based cryptography",
+            "real-world cryptography",
+            "real-world protocols",
+            "privacy-enhancing applications",
+            "privacy-preserving applications",
+            "research scientist",
+            "postdoctoral",
+            "postdoc",
+            "cryptography",
+        ],
+        timeout_seconds=5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 4
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Postdoctoral IT Research Scientist - IBM Research South Africa"
+    assert candidate.matched_terms == ["postdoc", "postdoctoral", "research scientist"]
+    assert "Summary: Join us for a unique 24-month paid internship" in candidate.notes
