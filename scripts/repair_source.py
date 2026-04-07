@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from source_quality import generated_at, source_slug, truncate_text
+from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, generated_at, source_slug, truncate_text
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -689,7 +689,12 @@ def main() -> int:
     )
     parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer")
     parser.add_argument("--coder-bin", help="Binary to invoke for the coding repair run; defaults to CODEX_BIN/codex")
-    parser.add_argument("--timeout-seconds", type=int, default=60, help="Timeout for reviewer/raw page fetches during eval")
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=DEFAULT_REVIEW_TIMEOUT_SECONDS,
+        help="Timeout for reviewer/raw page fetches during eval",
+    )
     parser.add_argument("--repair-timeout-seconds", type=int, default=600, help="Timeout for each coding repair run")
     parser.add_argument("--idle-timeout-seconds", type=int, default=90, help="Abort a coding repair attempt if it produces no new output for this many seconds")
     parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding repair attempts")

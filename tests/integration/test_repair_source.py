@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import repair_source
 import subprocess
 import time
 from pathlib import Path
@@ -130,6 +131,10 @@ def write_example_artifact(path: Path) -> None:
         )
         + "\n"
     )
+
+
+def test_repair_source_default_timeout_seconds_is_120():
+    assert repair_source.DEFAULT_REVIEW_TIMEOUT_SECONDS == 120
 
 
 def test_repair_source_runs_coder_and_reaches_pass(tmp_job_agent_root: Path, run_cmd, repo_root: Path):

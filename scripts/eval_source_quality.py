@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from source_quality import (
+    DEFAULT_REVIEW_TIMEOUT_SECONDS,
     build_repair_ticket,
     generated_at,
     load_source_coverage,
@@ -62,7 +63,12 @@ def main() -> int:
         help="Whether to run the LLM reviewer",
     )
     parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer; defaults to JOB_AGENT_REVIEWER_BIN/CODEX_BIN/codex")
-    parser.add_argument("--timeout-seconds", type=int, default=60, help="Timeout for reviewer/raw page fetches")
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=DEFAULT_REVIEW_TIMEOUT_SECONDS,
+        help="Timeout for reviewer/raw page fetches",
+    )
     args = parser.parse_args()
 
     artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)

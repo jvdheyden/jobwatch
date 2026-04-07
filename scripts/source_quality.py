@@ -19,6 +19,8 @@ from urllib.request import Request, urlopen
 
 USER_AGENT = "job-agent-source-quality/0.1"
 DEFAULT_TIMEOUT_SECONDS = 20
+DEFAULT_REVIEW_TIMEOUT_SECONDS = 120
+REVIEWER_MAX_CANDIDATES = 10
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 NON_JOB_TITLE_MARKERS = (
     "open positions",
@@ -271,6 +273,41 @@ def _raw_detail_categories(raw_text: str) -> set[str]:
         if any(marker in normalized for marker in markers):
             categories.add(category)
     return categories
+
+
+def _candidate_matches_canary(candidate: dict[str, Any], canary_title: str, canary_url: str) -> bool:
+    normalized_canary_url = normalize_url_without_fragment(canary_url) if canary_url else ""
+    if normalized_canary_url and normalize_url_without_fragment(candidate.get("url", "")) == normalized_canary_url:
+        return True
+    normalized_canary_title = normalize_for_matching(canary_title) if canary_title else ""
+    return bool(normalized_canary_title) and normalize_for_matching(candidate.get("title", "")) == normalized_canary_title
+
+
+def _select_reviewer_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    canary_title: str,
+    canary_url: str,
+    limit: int = REVIEWER_MAX_CANDIDATES,
+) -> list[dict[str, Any]]:
+    if len(candidates) <= limit:
+        return list(candidates)
+
+    selected = list(candidates[:limit])
+    canary_candidate = next(
+        (candidate for candidate in candidates if _candidate_matches_canary(candidate, canary_title, canary_url)),
+        None,
+    )
+    if canary_candidate is None or any(
+        _candidate_matches_canary(candidate, canary_title, canary_url) for candidate in selected
+    ):
+        return selected
+
+    for index in range(len(selected) - 1, -1, -1):
+        if not _candidate_matches_canary(selected[index], canary_title, canary_url):
+            selected[index] = canary_candidate
+            break
+    return selected
 
 
 def validate_source_coverage(
@@ -533,12 +570,19 @@ def _build_reviewer_context(
     canary_title: str,
     canary_url: str,
     timeout_seconds: int,
+    raw_text_fetcher: Callable[[str, int], str] = fetch_text,
 ) -> dict[str, Any]:
+    candidates = list(source.get("candidates", []))
+    reviewer_candidates = _select_reviewer_candidates(
+        candidates,
+        canary_title=canary_title,
+        canary_url=canary_url,
+    )
     samples: list[dict[str, str]] = []
     sample_urls: list[str] = []
     if canary_url:
         sample_urls.append(canary_url)
-    sample_urls.extend(candidate.get("url", "") for candidate in source.get("candidates", [])[:3])
+    sample_urls.extend(candidate.get("url", "") for candidate in reviewer_candidates[:3])
 
     seen_urls: set[str] = set()
     for url in sample_urls:
@@ -547,7 +591,7 @@ def _build_reviewer_context(
             continue
         seen_urls.add(normalized)
         try:
-            raw_text = truncate_text(strip_html_fragment(fetch_text(normalized, timeout_seconds)), 2000)
+            raw_text = truncate_text(strip_html_fragment(raw_text_fetcher(normalized, timeout_seconds)), 2000)
         except Exception as exc:
             raw_text = f"FETCH_FAILED: {exc}"
         samples.append({"url": normalized, "raw_text": raw_text})
@@ -560,7 +604,10 @@ def _build_reviewer_context(
             "discovery_mode": source.get("discovery_mode"),
             "status": source.get("status"),
             "search_terms_tried": source.get("search_terms_tried", []),
-            "candidates": source.get("candidates", []),
+            "candidate_count_total": len(candidates),
+            "candidate_count_shared": len(reviewer_candidates),
+            "candidate_context_truncated": len(reviewer_candidates) < len(candidates),
+            "candidates": reviewer_candidates,
         },
         "canary": {"title": canary_title, "url": canary_url},
         "raw_samples": samples,
