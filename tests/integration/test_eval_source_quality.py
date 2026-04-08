@@ -100,6 +100,12 @@ JSON
     assert payload["final_status"] == "repair_needed"
     assert payload["repair_ticket"]["status"] == "open"
     assert payload["repair_ticket"]["summary"] == "No descriptive notes were extracted."
+    assert payload["repair_ticket"]["failure_mode"] == "missing_detail"
+    assert payload["repair_ticket"]["suggested_strategy"] == "enrich kept candidates"
+    assert payload["repair_ticket"]["target_outcome"].startswith("Fresh discovery artifact keeps the relevant candidates")
+    assert payload["repair_ticket"]["primary_evidence"] == [
+        "partial_description: No descriptive notes were extracted."
+    ]
 
 
 def test_eval_source_quality_default_timeout_seconds_is_120():

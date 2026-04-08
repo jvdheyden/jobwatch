@@ -200,16 +200,26 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert summary["active_artifact_path"].endswith("2026-04-02.discovery.json")
     assert json.loads(eval_output.read_text())["final_status"] == "pass"
     assert "make the functional fix in scripts/discover_jobs.py" in prompt_text
+    assert "Execution modes:" in prompt_text
+    assert "quick_fix_mode" in prompt_text
+    assert "handoff_mode" in prompt_text
+    assert "Failure mode:" in prompt_text
+    assert "Target outcome:" in prompt_text
+    assert "Suggested strategy:" in prompt_text
     assert "Start by inspecting the source-specific parser path in scripts/discover_jobs.py and any existing source-specific tests before broader investigation." in prompt_text
     assert "look first for source-specific functions or helpers named after Example Source" in prompt_text
     assert "If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed in scripts/discover_jobs.py" in prompt_text
-    assert "Your first concrete step must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py." in prompt_text
+    assert "Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py." in prompt_text
     assert "Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch." in prompt_text
-    assert "If the failing check is detail_depth, prefer source-specific detail-page enrichment for already-kept candidates and append substantive role detail to existing extracted notes or fields." in prompt_text
+    assert "REPAIR_HANDOFF:" in prompt_text
+    assert "No focused test target was inferred." in prompt_text
+    assert "Do not add detail enrichment unless the ticket's target outcome explicitly requires it." in prompt_text
+    assert "If the failing check is detail_depth, prefer source-specific detail-page enrichment for already-kept candidates and append substantive role detail to existing extracted notes or fields." not in prompt_text
     assert "Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this repair." in prompt_text
     assert "Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds." in prompt_text
     assert "Stop as soon as the focused validation command completes; do not continue into broader verification after that point." in prompt_text
     assert "The orchestrator owns rediscovery and final eval." in prompt_text
+    assert "After your code change, check that the fresh source artifact meets the target outcome and success condition in the repair ticket." in prompt_text
     assert "Use the repo-local virtualenv for Python tests and helper scripts" in prompt_text
     assert "./.venv/bin/python scripts/discover_jobs.py --track public_service --source \"Example Source\" --today 2026-04-02 --pretty" in prompt_text
 
@@ -504,6 +514,71 @@ sleep 30
     assert postmortem["runtime_error_signatures"] == []
     assert postmortem["likely_next_step"] == (
         "Resume in scripts/discover_jobs.py and make a focused patch or focused test update before more investigation."
+    )
+
+
+def test_repair_source_records_structured_handoff_without_rediscovery(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
+    write_stub_discover_script(tmp_job_agent_root)
+    artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
+    write_example_artifact(artifact_path)
+
+    coder_script = tmp_job_agent_root / "fake_handoff_coder.sh"
+    coder_script.write_text(
+        """#!/bin/bash
+set -euo pipefail
+cat >/dev/null
+cat <<'JSON'
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"REPAIR_HANDOFF: {\\"reason\\":\\"No credible focused fix yet\\",\\"likely_file\\":\\"scripts/discover_jobs.py\\",\\"hypothesis\\":\\"The source-specific keep logic is still too broad for this source\\",\\"next_edit\\":\\"Tighten the source-specific keep logic in scripts/discover_jobs.py and add a focused regression in tests/integration/test_discover_followup_sources.py.\\",\\"test_hint\\":\\"tests/integration/test_discover_followup_sources.py\\",\\"evidence\\":[\\"The source still surfaces noisy candidates\\",\\"No focused regression exists yet\\"]}"}}
+JSON
+"""
+    )
+    coder_script.chmod(0o755)
+
+    eval_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.json"
+    summary_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.repair_loop.json"
+    env = os.environ.copy()
+    env["JOB_AGENT_ROOT"] = str(tmp_job_agent_root)
+
+    result = run_cmd(
+        "python3",
+        str(repo_root / "scripts" / "repair_source.py"),
+        "--track",
+        "public_service",
+        "--source",
+        "Example Source",
+        "--today",
+        "2026-04-02",
+        "--artifact-path",
+        str(artifact_path),
+        "--canary-title",
+        "Privacy Engineer",
+        "--canary-url",
+        "https://jobs.example.com/jobs/999",
+        "--reviewer",
+        "off",
+        "--coder-bin",
+        str(coder_script),
+        "--max-attempts",
+        "1",
+        "--eval-output",
+        str(eval_output),
+        "--summary-output",
+        str(summary_output),
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 1
+    summary = json.loads(summary_output.read_text())
+    assert summary["final_status"] == "blocked"
+    assert summary["attempts"][0]["coding_completion_state"] == "blocked_handoff"
+    assert summary["attempts"][0]["rediscovery_invoked"] is False
+    assert summary["attempts"][0]["coding_handoff"]["likely_file"] == "scripts/discover_jobs.py"
+    postmortem = json.loads(Path(summary["attempts"][0]["coding_postmortem_path"]).read_text())
+    assert postmortem["failure_class"] == "needs_handoff"
+    assert postmortem["structured_handoff"]["test_hint"] == "tests/integration/test_discover_followup_sources.py"
+    assert postmortem["likely_next_step"] == (
+        "Tighten the source-specific keep logic in scripts/discover_jobs.py and add a focused regression in tests/integration/test_discover_followup_sources.py."
     )
 
 

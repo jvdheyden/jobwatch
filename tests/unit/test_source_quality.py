@@ -184,7 +184,57 @@ def test_build_repair_ticket_prefers_blocking_deterministic_failure():
     assert ticket is not None
     assert ticket["summary"] == "All surfaced candidates look like navigation or non-job content."
     assert ticket["defect_types"] == ["listing_kind"]
+    assert ticket["failure_mode"] == "candidate_noise"
+    assert ticket["primary_evidence"][0] == "listing_kind: All surfaced candidates look like navigation or non-job content."
+    assert ticket["target_outcome"].startswith("Fresh discovery artifact removes implausible candidates")
+    assert ticket["suggested_strategy"] == "tighten source-specific keep filter"
+    assert ticket["test_hint"] == ""
     assert ticket["likely_file"] == "scripts/discover_jobs.py"
+
+
+def test_build_repair_ticket_maps_reviewer_only_other_noise_to_candidate_noise():
+    source = {
+        "source": "IBM Research",
+        "discovery_mode": "ibm_api",
+    }
+    deterministic = {
+        "confidence": "low",
+        "checks": [],
+        "warnings": [],
+    }
+    reviewer = {
+        "status": "completed",
+        "defects": [
+            {
+                "type": "other",
+                "severity": "major",
+                "observed": "Quantum hardware role is not plausibly aligned with the postdoc cryptography track terms.",
+                "repair_hint": "",
+            },
+            {
+                "type": "other",
+                "severity": "major",
+                "observed": "Intern role is not a postdoctoral/research role aligned with the target track.",
+                "repair_hint": "",
+            },
+        ],
+    }
+
+    ticket = source_quality.build_repair_ticket(
+        "postdoc_crypto",
+        source,
+        deterministic,
+        reviewer,
+        canary_title="Postdoctoral IT Research Scientist - IBM Research South Africa",
+        canary_url="https://careers.ibm.com/careers/JobDetail?jobId=107245",
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "candidate_noise"
+    assert ticket["suggested_strategy"] == "tighten source-specific keep filter"
+    assert ticket["test_hint"] == "tests/integration/test_discover_followup_sources.py"
+    assert any("not plausibly aligned" in evidence for evidence in ticket["primary_evidence"])
+    assert "Preserve the canary" in ticket["target_outcome"]
 
 
 def test_build_reviewer_context_shares_all_candidates_when_under_cap():

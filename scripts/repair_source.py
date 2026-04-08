@@ -301,6 +301,73 @@ def detect_ready_for_rediscovery_signals(
     }
 
 
+HANDOFF_PREFIX = "REPAIR_HANDOFF:"
+
+
+def _extract_agent_messages(stdout_log_path: Path, last_message_path: Path) -> list[str]:
+    messages: list[str] = []
+    for event in iter_coder_events(stdout_log_path):
+        item = event.get("item")
+        if isinstance(item, dict) and item.get("type") == "agent_message":
+            text = item.get("text")
+            if isinstance(text, str) and text.strip():
+                messages.append(text.strip())
+            continue
+        if event.get("type") == "agent_message":
+            text = event.get("text")
+            if isinstance(text, str) and text.strip():
+                messages.append(text.strip())
+    if last_message_path.exists():
+        text = last_message_path.read_text(errors="replace").strip()
+        if text:
+            messages.append(text)
+    return messages
+
+
+def _normalize_handoff_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    evidence = payload.get("evidence", [])
+    normalized_evidence: list[str] = []
+    if isinstance(evidence, list):
+        for value in evidence:
+            if isinstance(value, str) and value.strip():
+                normalized_evidence.append(truncate_text(value, 240))
+    elif isinstance(evidence, str) and evidence.strip():
+        normalized_evidence.append(truncate_text(evidence, 240))
+
+    normalized = {
+        "reason": truncate_text(str(payload.get("reason", "")).strip(), 240),
+        "likely_file": truncate_text(str(payload.get("likely_file", "")).strip(), 240),
+        "hypothesis": truncate_text(str(payload.get("hypothesis", "")).strip(), 240),
+        "next_edit": truncate_text(str(payload.get("next_edit", "")).strip(), 240),
+        "test_hint": truncate_text(str(payload.get("test_hint", "")).strip(), 240),
+        "evidence": normalized_evidence[:3],
+    }
+    if not any([normalized["reason"], normalized["likely_file"], normalized["hypothesis"], normalized["next_edit"], normalized["test_hint"], normalized["evidence"]]):
+        return None
+    return normalized
+
+
+def extract_structured_handoff(stdout_log_path: Path, last_message_path: Path) -> dict[str, Any] | None:
+    for message in reversed(_extract_agent_messages(stdout_log_path, last_message_path)):
+        if not message.startswith(HANDOFF_PREFIX):
+            continue
+        payload_text = message[len(HANDOFF_PREFIX) :].strip()
+        try:
+            parsed = json.loads(payload_text)
+        except json.JSONDecodeError:
+            return {
+                "reason": truncate_text(payload_text, 240),
+                "likely_file": "",
+                "hypothesis": "",
+                "next_edit": "",
+                "test_hint": "",
+                "evidence": [],
+            }
+        if isinstance(parsed, dict):
+            return _normalize_handoff_payload(parsed)
+    return None
+
+
 RUNTIME_ERROR_PATTERNS = (
     re.compile(r"\b[A-Za-z_]+Error:\s+[^\n]+"),
     re.compile(r"\b[A-Za-z_]+Error\s+<[^>\n]+>"),
@@ -336,6 +403,8 @@ def classify_failure(
     files_touched: list[str],
     attempt_record: dict[str, Any],
 ) -> str:
+    if attempt_record.get("coding_handoff"):
+        return "needs_handoff"
     if "failed to launch coding repair run" in blocked_reason:
         return "blocked_launch"
     if attempt_record.get("rediscovery_exit_code") not in (None, 0) or "rediscovery failed" in blocked_reason:
@@ -373,7 +442,10 @@ def build_coding_postmortem(
     tests_touched_or_run: list[str],
     runtime_error_signatures: list[str],
 ) -> dict[str, Any]:
+    handoff = attempt_record.get("coding_handoff")
     blocked_reason = (
+        handoff.get("reason") if isinstance(handoff, dict) and handoff.get("reason") else None
+    ) or (
         attempt_record.get("coding_error")
         or attempt_record.get("error")
         or "repair attempt ended without a passing rediscovery/eval result"
@@ -385,8 +457,17 @@ def build_coding_postmortem(
         attempt_record=attempt_record,
     )
     likely_file = repair_ticket.get("likely_file") or "scripts/discover_jobs.py"
-    primary_file = select_primary_repair_file(files_touched, likely_file)
-    if failure_class == "idle":
+    primary_file = select_primary_repair_file(
+        files_touched,
+        (handoff.get("likely_file") if isinstance(handoff, dict) else "") or likely_file,
+    )
+    if failure_class == "needs_handoff":
+        likely_next_step = (
+            handoff.get("next_edit")
+            if isinstance(handoff, dict) and handoff.get("next_edit")
+            else f"Resume in {primary_file} using the structured handoff before broader investigation."
+        )
+    elif failure_class == "idle":
         likely_next_step = f"Resume in {primary_file} and make a focused patch or focused test update before more investigation."
     elif failure_class == "timeout_after_patch":
         likely_next_step = f"Continue from the existing patch in {primary_file}, run the most relevant focused validation earlier, and rerun source-scoped discovery."
@@ -424,6 +505,7 @@ def build_coding_postmortem(
         "files_touched": files_touched,
         "tests_touched_or_run": tests_touched_or_run,
         "runtime_error_signatures": runtime_error_signatures,
+        "structured_handoff": handoff if isinstance(handoff, dict) else None,
         "likely_next_step": likely_next_step,
         "confidence": "medium" if attempt_record.get("coding_last_event_excerpt") else "low",
     }
@@ -528,10 +610,15 @@ def build_coder_prompt(
     canary_url: str,
     prior_postmortem: dict[str, Any] | None,
 ) -> str:
+    failure_mode = str(repair_ticket.get("failure_mode", "unknown") or "unknown")
+    target_outcome = str(repair_ticket.get("target_outcome", "") or repair_ticket.get("success_condition", ""))
+    suggested_strategy = str(repair_ticket.get("suggested_strategy", "") or "inspect the likely file and make the narrowest fix")
+    test_hint = str(repair_ticket.get("test_hint", "") or "")
+    primary_evidence = repair_ticket.get("primary_evidence", [])
     lines = [
         f"Repair the {source} source integration from the repository root in mode: repo_dev.",
         "Follow the repository AGENTS.md for mode routing, then follow .agents/skills/coding/SKILL.md.",
-        "Make one focused fix for this source only.",
+        "Aim for one focused repair attempt for this source only.",
         f"Track: {track}",
         f"Source: {source}",
         f"Date: {today}",
@@ -558,16 +645,23 @@ def build_coder_prompt(
         [
             "Use this repair ticket as the source of truth:",
             json.dumps(repair_ticket, ensure_ascii=False, indent=2),
+            "Execution modes:",
+            "- quick_fix_mode: if the ticket points to a credible focused fix, inspect only the likely file and preferred focused test target, then patch immediately.",
+            "- handoff_mode: if a focused quick fix is not credible after the first local pass, stop broad investigation and emit a structured handoff for the next repair child.",
+            "Operational guidance:",
+            f"- Failure mode: {failure_mode}",
+            f"- Target outcome: {target_outcome}",
+            f"- Suggested strategy: {suggested_strategy}",
             "Constraints:",
             "- Unless the repair ticket clearly indicates a validator bug, make the functional fix in scripts/discover_jobs.py.",
             "- Start by inspecting the source-specific parser path in scripts/discover_jobs.py and any existing source-specific tests before broader investigation.",
             f"- Start in scripts/discover_jobs.py and look first for source-specific functions or helpers named after {source} (for example discover/extract/advance helpers) or the relevant HTML/browser parser used by this source.",
             "- If a source-specific function or strategy already exists, patch that path instead of exploring unrelated files.",
             "- If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed in scripts/discover_jobs.py and wire it into the existing discovery dispatch.",
-            "- Your first concrete step must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py.",
+            "- Within the first local pass, decide whether you are in quick_fix_mode or handoff_mode. Do not continue exploratory reading once you can state a credible patch hypothesis or a credible blocker.",
+            "- Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py.",
             "- Only change another file when required for a focused test, a directly related helper, or when the repair ticket clearly indicates a validator bug.",
             "- Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch.",
-            "- If the failing check is detail_depth, prefer source-specific detail-page enrichment for already-kept candidates and append substantive role detail to existing extracted notes or fields.",
             "- Do not modify unrelated sources or track configuration.",
             "- Do not broaden search terms unless the ticket explicitly requires it.",
             "- Do not edit discovery or eval artifacts directly.",
@@ -575,13 +669,30 @@ def build_coder_prompt(
             "- Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds.",
             f"- After your code change, validate with: ./.venv/bin/python scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",
             "- Use the repo-local virtualenv for Python tests and helper scripts; if it is missing, bootstrap it with `bash scripts/bootstrap_venv.sh` before Python test commands.",
-            f"- Check that the fresh source artifact includes the detail missing from the repair ticket for the canary {json.dumps(canary_title)}.",
+            "- After your code change, check that the fresh source artifact meets the target outcome and success condition in the repair ticket.",
             "- Run only the most relevant focused tests for the changed code before finishing.",
             "- Stop as soon as the focused validation command completes; do not continue into broader verification after that point.",
             f"- The orchestrator owns rediscovery and final eval. It will regenerate {fresh_artifact_path} and rerun scripts/eval_source_quality.py after your fix.",
-            "- If you cannot get to a pass with one focused fix, stop with a concrete blocker rather than exploring broadly.",
+            "- If you switch to handoff_mode, do not keep exploring broadly. Gather only the minimum evidence needed to unblock the next repair child and then exit.",
+            f'- End handoff_mode with a final assistant message exactly starting with {HANDOFF_PREFIX} followed by JSON.',
+            '- Use this handoff JSON shape: {"reason":"why a quick fix is not credible now","likely_file":"path to resume in","hypothesis":"best current explanation","next_edit":"single narrow next edit","test_hint":"preferred focused test file","evidence":["most useful fact 1","most useful fact 2"]}.',
         ]
     )
+    if isinstance(primary_evidence, list) and primary_evidence:
+        lines.extend(
+            [
+                "Primary evidence:",
+                json.dumps(primary_evidence, ensure_ascii=False, indent=2),
+            ]
+        )
+    if test_hint:
+        lines.append(f"- Preferred focused test target: {test_hint}")
+    else:
+        lines.append("- No focused test target was inferred. If you need a test, choose the closest existing source-family test file and explain that choice in a handoff if unsure.")
+    if failure_mode == "missing_detail":
+        lines.append("- This ticket is detail-oriented. Prefer enriching already-kept candidates with substantive role detail before considering broader filtering changes.")
+    else:
+        lines.append("- Do not add detail enrichment unless the ticket's target outcome explicitly requires it.")
     return "\n".join(lines) + "\n"
 
 
@@ -934,6 +1045,7 @@ def main() -> int:
 
         files_touched = detect_files_touched(pre_coder_snapshot, snapshot_workspace_files(WORK_ROOT))
         tests_touched_or_run = extract_tests_touched_or_run(stdout_log_path, files_touched)
+        structured_handoff = extract_structured_handoff(stdout_log_path, last_message_path)
         runtime_error_signatures = extract_runtime_error_signatures(attempt_record)
         ready_signals = detect_ready_for_rediscovery_signals(
             stdout_log_path=stdout_log_path,
@@ -945,13 +1057,18 @@ def main() -> int:
         )
         attempt_record["files_touched"] = files_touched
         attempt_record["tests_touched_or_run"] = tests_touched_or_run
+        if structured_handoff is not None:
+            attempt_record["coding_handoff"] = structured_handoff
         attempt_record["runtime_error_signatures"] = runtime_error_signatures
 
         if completed_returncode not in (None, 0) and "coding_error" not in attempt_record:
             attempt_record["coding_error"] = f"repair run exited with code {completed_returncode}"
             attempt_blocked = True
+        if structured_handoff is not None:
+            attempt_record["coding_error"] = structured_handoff.get("reason") or "repair child exited with structured handoff for the next attempt"
+            attempt_blocked = True
 
-        ready_for_rediscovery = attempt_blocked and ready_signals["ready_for_rediscovery"]
+        ready_for_rediscovery = attempt_blocked and ready_signals["ready_for_rediscovery"] and structured_handoff is None
 
         if ready_for_rediscovery:
             attempt_record["coding_completion_state"] = (
@@ -961,6 +1078,8 @@ def main() -> int:
             attempt_record["coding_success_signals"] = ready_signals
             attempt_record.pop("coding_error", None)
             attempt_blocked = False
+        elif structured_handoff is not None:
+            attempt_record["coding_completion_state"] = "blocked_handoff"
         elif attempt_blocked:
             attempt_record["coding_completion_state"] = (
                 "blocked_idle_no_progress" if "idle" in str(attempt_record.get("coding_error", "")) else "blocked_timeout_no_progress"

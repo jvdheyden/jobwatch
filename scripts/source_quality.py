@@ -727,6 +727,139 @@ def review_source_with_llm(
     }
 
 
+REPAIR_TEST_HINTS_BY_SOURCE = {
+    "IBM Research": "tests/integration/test_discover_followup_sources.py",
+}
+
+REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
+    "getro_api": "tests/integration/test_discover_followup_sources.py",
+    "ibm_api": "tests/integration/test_discover_followup_sources.py",
+    "personio_page": "tests/integration/test_discover_followup_sources.py",
+    "workable_api": "tests/integration/test_discover_followup_sources.py",
+    "iacr_jobs": "tests/integration/test_discover_iacr_jobs.py",
+}
+
+
+def infer_repair_test_hint(source: dict[str, Any]) -> str:
+    source_name = normalize_whitespace(str(source.get("source", "")))
+    if source_name in REPAIR_TEST_HINTS_BY_SOURCE:
+        return REPAIR_TEST_HINTS_BY_SOURCE[source_name]
+    discovery_mode = normalize_whitespace(str(source.get("discovery_mode", "")))
+    return REPAIR_TEST_HINTS_BY_DISCOVERY_MODE.get(discovery_mode, "")
+
+
+def _reviewer_defect_text(defect: dict[str, Any]) -> str:
+    return normalize_whitespace(
+        str(defect.get("observed") or defect.get("repair_hint") or defect.get("expected") or defect.get("type", ""))
+    )
+
+
+def _failure_mode_from_check(check: dict[str, Any]) -> str:
+    return {
+        "canary_present": "missing_canary",
+        "detail_depth": "missing_detail",
+        "duplicate_jobs": "duplication",
+        "listing_kind": "candidate_noise",
+        "url_allowlist": "bad_url",
+    }.get(str(check.get("name", "")), "validator_failure")
+
+
+def _failure_mode_from_defect(defect: dict[str, Any]) -> str:
+    defect_type = normalize_for_matching(str(defect.get("type", "")))
+    if defect_type == "bad_url":
+        return "bad_url"
+    if defect_type == "canary_missing":
+        return "missing_canary"
+    if defect_type == "duplication":
+        return "duplication"
+    if defect_type == "partial_description":
+        return "missing_detail"
+    if defect_type in {"navigation_noise", "wrong_content"}:
+        return "candidate_noise"
+    if defect_type == "missing_field":
+        return "validator_failure"
+
+    observed = normalize_for_matching(_reviewer_defect_text(defect))
+    if any(
+        marker in observed
+        for marker in ("no descriptive notes", "raw sample text is empty", "cannot be spot-checked", "no substantive", "no detail")
+    ):
+        return "missing_detail"
+    if any(
+        marker in observed
+        for marker in ("not plausibly aligned", "not aligned with", "not a postdoctoral", "not a research role", "not a job", "navigation", "noise")
+    ):
+        return "candidate_noise"
+    if "duplicate" in observed:
+        return "duplication"
+    if "canary" in observed and "missing" in observed:
+        return "missing_canary"
+    if "url" in observed and any(marker in observed for marker in ("bad", "wrong", "invalid", "off-domain")):
+        return "bad_url"
+    return "unknown"
+
+
+def _determine_failure_mode(failing_checks: list[dict[str, Any]], blocking_defects: list[dict[str, Any]]) -> str:
+    if failing_checks:
+        return _failure_mode_from_check(failing_checks[0])
+    for defect in blocking_defects:
+        failure_mode = _failure_mode_from_defect(defect)
+        if failure_mode != "unknown":
+            return failure_mode
+    return "unknown"
+
+
+def _collect_primary_evidence(failing_checks: list[dict[str, Any]], blocking_defects: list[dict[str, Any]]) -> list[str]:
+    evidence: list[str] = []
+    for check in failing_checks[:2]:
+        details = truncate_text(str(check.get("details", "")), 180)
+        if details:
+            evidence.append(f"{check.get('name', 'validator')}: {details}")
+    for defect in blocking_defects[:3]:
+        details = truncate_text(_reviewer_defect_text(defect), 180)
+        if details:
+            evidence.append(f"{defect.get('type', 'other')}: {details}")
+
+    deduped: list[str] = []
+    for item in evidence:
+        if item not in deduped:
+            deduped.append(item)
+    return deduped[:3]
+
+
+def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: str) -> str:
+    canary_clause = " Preserve the canary in the extracted candidates." if canary_title or canary_url else ""
+    if failure_mode == "candidate_noise":
+        return "Fresh discovery artifact removes implausible candidates for this source while keeping only plausible track matches." + canary_clause
+    if failure_mode == "missing_detail":
+        return "Fresh discovery artifact keeps the relevant candidates and adds substantive extracted role detail in notes or detail fields." + canary_clause
+    if failure_mode == "missing_canary":
+        return "Fresh discovery artifact includes the canary candidate with the expected title or URL."
+    if failure_mode == "bad_url":
+        return "Fresh discovery artifact emits candidate URLs that point to the correct job detail pages for this source." + canary_clause
+    if failure_mode == "duplication":
+        return "Fresh discovery artifact contains each job at most once after source-specific deduplication and merge handling." + canary_clause
+    if failure_mode == "validator_failure":
+        return "Fresh discovery artifact satisfies the failing deterministic validator for this source." + canary_clause
+    return "Fresh discovery artifact addresses the primary evidence in the repair ticket with the narrowest source-specific fix." + canary_clause
+
+
+def _suggested_strategy_for_failure_mode(failure_mode: str) -> str:
+    if failure_mode == "candidate_noise":
+        return "tighten source-specific keep filter"
+    if failure_mode == "missing_detail":
+        return "enrich kept candidates"
+    if failure_mode == "missing_canary":
+        return "fix source-specific enumeration or keep logic"
+    if failure_mode == "bad_url":
+        return "fix source-specific URL extraction"
+    if failure_mode == "duplication":
+        return "fix candidate deduplication or merge logic"
+    if failure_mode == "validator_failure":
+        return "fix parser field extraction or validator mismatch"
+    return "inspect likely file and make the narrowest source-specific fix consistent with the primary evidence"
+
+
 def build_repair_ticket(
     track: str,
     source: dict[str, Any],
@@ -745,6 +878,8 @@ def build_repair_ticket(
     if not failing_checks and not blocking_defects:
         return None
 
+    failure_mode = _determine_failure_mode(failing_checks, blocking_defects)
+    primary_evidence = _collect_primary_evidence(failing_checks, blocking_defects)
     summary = ""
     defect_types: list[str] = []
     if failing_checks:
@@ -772,6 +907,15 @@ def build_repair_ticket(
         "defect_types": defect_types,
         "failing_checks": [check["name"] for check in failing_checks],
         "reviewer_defects": blocking_defects,
+        "failure_mode": failure_mode,
+        "primary_evidence": primary_evidence,
+        "target_outcome": _build_target_outcome(
+            failure_mode,
+            canary_title=canary_title,
+            canary_url=canary_url,
+        ),
+        "suggested_strategy": _suggested_strategy_for_failure_mode(failure_mode),
+        "test_hint": infer_repair_test_hint(source),
         "likely_file": "scripts/discover_jobs.py",
         "success_condition": success_condition,
         "non_goals": [
