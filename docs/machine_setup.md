@@ -5,6 +5,7 @@ Run `bash scripts/setup_machine.sh` after cloning the repo. That creates:
 - `.env.local` for machine-local paths and binaries
 - `.schedule.local` for local scheduled jobs
 - `.scheduler/` for generated cron and launchd artifacts
+- `.scheduler/bwrap-userns-restrict` on Linux when `bwrap` is on `PATH`
 
 In a normal terminal, the setup script prompts for any missing machine-local values.
 
@@ -12,6 +13,8 @@ In a normal terminal, the setup script prompts for any missing machine-local val
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `CODEX_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is.
+
+On Linux, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces. The setup script only generates the artifact; install it manually under `/etc/apparmor.d/` if your machine needs it.
 
 In non-interactive mode, the script does not prompt. `CODEX_BIN` must already be supplied via `--codex-bin`, the environment, existing `.env.local`, or `PATH`.
 

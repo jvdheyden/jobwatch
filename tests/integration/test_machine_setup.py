@@ -273,6 +273,60 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
 
 
+def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    apparmor_profile = scheduler_dir / "bwrap-userns-restrict"
+    canonical_bwrap = tmp_job_agent_root / "tools" / "bubblewrap" / "bin" / "bwrap"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_executable(canonical_bwrap, "#!/bin/bash\nexit 0\n")
+    _write_symlink(fake_bin_dir / "bwrap", canonical_bwrap)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Linux",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    profile_text = apparmor_profile.read_text()
+    assert "abi <abi/4.0>," in profile_text
+    assert f"{canonical_bwrap} flags=(unconfined)" in profile_text
+    assert "userns create," in profile_text
+
+
+def test_setup_machine_skips_bwrap_apparmor_profile_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    apparmor_profile = scheduler_dir / "bwrap-userns-restrict"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_executable(fake_bin_dir / "bwrap", "#!/bin/bash\nexit 0\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+    assert not apparmor_profile.exists()
+
+
 def test_run_scheduled_jobs_runs_due_tracks_once_per_stamp(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
