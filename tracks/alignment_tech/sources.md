@@ -21,13 +21,13 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| Coefficient Giving | https://jobs.ashbyhq.com/coefficientgiving | ashby_api | 2026-04-06 |
-| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | 2026-04-06 |
-| Deutsche Wildtier Stiftung | https://www.deutschewildtierstiftung.de/ueber-uns/stellenangebote | html | 2026-04-06 |
-| Bergwaldprojekt | https://www.bergwaldprojekt.de/ueber-uns/stellen | html | 2026-04-06 |
-| Waking Up | https://apply.workable.com/waking-up-1/ | workable_api | 2026-04-06 |
-| Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | getro_api | 2026-04-06 |
-| Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | personio_page | 2026-04-06 |
+| Coefficient Giving | https://jobs.ashbyhq.com/coefficientgiving | ashby_api | 2026-04-09 |
+| YC Startups | https://www.ycombinator.com/jobs/role/software-engineer | yc_jobs_board | 2026-04-09 |
+| Deutsche Wildtier Stiftung | https://www.deutschewildtierstiftung.de/ueber-uns/stellenangebote | html | 2026-04-09 |
+| Bergwaldprojekt | https://www.bergwaldprojekt.de/ueber-uns/stellen | html | 2026-04-09 |
+| Waking Up | https://apply.workable.com/waking-up-1/ | workable_api | 2026-04-09 |
+| Spirit Tech Collective Jobs | https://jobs.spirit-tech-collective.com/jobs | getro_api | 2026-04-09 |
+| Albert Schweitzer Stiftung | https://albert-schweitzer-stiftung.jobs.personio.de/ | personio_page | 2026-04-09 |
 | E.O. Wilson Biodiversity Foundation | https://eowilsonfoundation.org/about-us/careers/ | html | 2026-04-07 |
 
 ## Check every month

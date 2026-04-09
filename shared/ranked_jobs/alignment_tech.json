@@ -1,50 +1,5 @@
 {
   "track": "alignment_tech",
-  "generated_at": "2026-04-07T07:13:33Z",
-  "jobs": [
-    {
-      "job_key": "enveritas | backend software engineer",
-      "company": "Enveritas",
-      "title": "Backend Software Engineer",
-      "url": "https://enveritas.org/jobs/backend-software-eng/#10d7adef8us",
-      "fit_score": 8.9,
-      "date_seen": "2026-04-03",
-      "date_seen_page": "Alignment Tech Job Digest 2026-04-03",
-      "last_seen": "2026-04-03",
-      "times_seen": 1
-    },
-    {
-      "job_key": "spade agriculture | full stack engineer",
-      "company": "SPADE Agriculture",
-      "title": "Full Stack Engineer",
-      "url": "https://drive.google.com/file/d/1nOLxCZJuKNJAOvopil4dxUTppuRnHqtn/view",
-      "fit_score": 7.2,
-      "date_seen": "2026-04-03",
-      "date_seen_page": "Alignment Tech Job Digest 2026-04-03",
-      "last_seen": "2026-04-03",
-      "times_seen": 1
-    },
-    {
-      "job_key": "headspace | senior software engineer mobile",
-      "company": "Headspace",
-      "title": "Senior Software Engineer, Mobile",
-      "url": "https://boards.greenhouse.io/hs/jobs/7767283",
-      "fit_score": 6.1,
-      "date_seen": "2026-04-03",
-      "date_seen_page": "Alignment Tech Job Digest 2026-04-03",
-      "last_seen": "2026-04-03",
-      "times_seen": 1
-    },
-    {
-      "job_key": "gaia inc | senior software engineer javascript stack full stack",
-      "company": "Gaia Inc.",
-      "title": "Senior Software Engineer - Javascript Stack - Full Stack",
-      "url": "https://www.gaia.com/careers/senior-software-engineer-javascript-stack-full-stack",
-      "fit_score": 5.3,
-      "date_seen": "2026-04-03",
-      "date_seen_page": "Alignment Tech Job Digest 2026-04-03",
-      "last_seen": "2026-04-03",
-      "times_seen": 1
-    }
-  ]
+  "generated_at": "2026-04-09T15:11:40Z",
+  "jobs": []
 }

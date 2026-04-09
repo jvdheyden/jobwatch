@@ -11,6 +11,8 @@ In a normal terminal, the setup script prompts for any missing machine-local val
 - `CODEX_BIN` is required. If `codex` is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
 
+On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `CODEX_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is.
+
 In non-interactive mode, the script does not prompt. `CODEX_BIN` must already be supplied via `--codex-bin`, the environment, existing `.env.local`, or `PATH`.
 
 The setup script does not install scheduling. After you have created one or more tracks, add entries to `.schedule.local` using this format:

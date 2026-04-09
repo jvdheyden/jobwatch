@@ -8,6 +8,7 @@ DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
 CODEX_HEARTBEAT_SECS="${CODEX_HEARTBEAT_SECS:-300}"
 CODEX_IDLE_TIMEOUT_SECS="${CODEX_IDLE_TIMEOUT_SECS:-900}"
 CODEX_BIN="${CODEX_BIN:-}"
+PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
@@ -60,13 +61,59 @@ log() {
   echo "[$(timestamp)] $*"
 }
 
-resolve_codex_bin() {
-  if [[ -n "$CODEX_BIN" ]]; then
-    printf '%s\n' "$CODEX_BIN"
+resolve_command_path() {
+  local candidate="${1:-}"
+  if [[ -z "$candidate" ]]; then
+    return 1
+  fi
+  if [[ "$candidate" == */* ]]; then
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+    return 1
+  fi
+  if command -v "$candidate" >/dev/null 2>&1; then
+    command -v "$candidate"
     return 0
   fi
-  if command -v codex >/dev/null 2>&1; then
-    command -v codex
+  return 1
+}
+
+canonicalize_linux_executable_path() {
+  local candidate="${1:-}"
+  local resolved=""
+
+  if [[ -z "$candidate" ]]; then
+    return 1
+  fi
+
+  if [[ "$PLATFORM" != "Linux" ]] || ! command -v readlink >/dev/null 2>&1; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+
+  resolved="$(readlink -f "$candidate" 2>/dev/null || true)"
+  if [[ -n "$resolved" && -x "$resolved" ]]; then
+    printf '%s\n' "$resolved"
+    return 0
+  fi
+
+  printf '%s\n' "$candidate"
+}
+
+resolve_codex_bin() {
+  local candidate=""
+
+  if [[ -n "$CODEX_BIN" ]]; then
+    if ! candidate="$(resolve_command_path "$CODEX_BIN" 2>/dev/null)"; then
+      return 1
+    fi
+    canonicalize_linux_executable_path "$candidate"
+    return 0
+  fi
+  if candidate="$(resolve_command_path codex 2>/dev/null)"; then
+    canonicalize_linux_executable_path "$candidate"
     return 0
   fi
   return 1

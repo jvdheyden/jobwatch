@@ -13,6 +13,13 @@ def _write_executable(path: Path, text: str) -> None:
     path.chmod(0o755)
 
 
+def _write_symlink(path: Path, target: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() or path.is_symlink():
+        path.unlink()
+    path.symlink_to(target)
+
+
 def _run_interactive(*args: str, input_text: str, env: dict[str, str], cwd: Path) -> subprocess.CompletedProcess[str]:
     master_fd, slave_fd = pty.openpty()
     process = subprocess.Popen(
@@ -178,6 +185,92 @@ def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_roo
     env_text = env_file.read_text()
     assert f"export CODEX_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert f"export LOGSEQ_GRAPH_DIR={str(detected_graph_dir)}" in env_text
+
+
+def test_setup_machine_prefers_canonical_codex_path_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    canonical_codex = tmp_job_agent_root / "tools" / "codex" / "bin" / "codex.js"
+    _write_executable(canonical_codex, "#!/bin/bash\nexit 0\n")
+    _write_symlink(fake_bin_dir / "codex", canonical_codex)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Linux",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
+
+
+def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    canonical_codex = tmp_job_agent_root / "tools" / "codex" / "bin" / "codex.js"
+    symlink_codex = fake_bin_dir / "codex"
+    _write_executable(canonical_codex, "#!/bin/bash\nexit 0\n")
+    _write_symlink(symlink_codex, canonical_codex)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert f"export CODEX_BIN={str(symlink_codex)}" in env_text
+
+
+def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_job_agent_root: Path, repo_root: Path) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    canonical_codex = tmp_job_agent_root / "tools" / "codex" / "bin" / "codex.js"
+    _write_executable(canonical_codex, "#!/bin/bash\nexit 0\n")
+    _write_symlink(fake_bin_dir / "codex", canonical_codex)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Linux",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = _run_interactive(
+        "bash",
+        str(repo_root / "scripts" / "setup_machine.sh"),
+        input_text="\n\n",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stdout
+    assert f"CODEX_BIN [{canonical_codex}]:" in result.stdout
+    env_text = env_file.read_text()
+    assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
 
 
 def test_run_scheduled_jobs_runs_due_tracks_once_per_stamp(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

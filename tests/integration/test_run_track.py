@@ -68,6 +68,14 @@ exec "$ROOT/fake_codex.sh" "$@"
     )
 
 
+def _write_symlink_codex(root: Path, target: Path) -> None:
+    path = root / "bin" / "codex"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() or path.is_symlink():
+        path.unlink()
+    path.symlink_to(target)
+
+
 def _successful_discovery_script() -> str:
     return """#!/usr/bin/env python3
 from __future__ import annotations
@@ -265,6 +273,88 @@ def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root:
 
     assert result.returncode == 0, result.stderr
     assert (tmp_job_agent_root / "codex-prompt.txt").exists()
+
+
+def test_run_track_canonicalizes_codex_bin_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    canonical_codex = tmp_job_agent_root / "tools" / "codex" / "bin" / "codex.js"
+    _write_executable(
+        canonical_codex,
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+printf '%s\\n' "$0" > "$ROOT/codex-invoked-as.txt"
+exec "$ROOT/fake_codex.sh" "$@"
+""",
+    )
+    symlink_codex = tmp_job_agent_root / "bin" / "codex"
+    _write_symlink_codex(tmp_job_agent_root, canonical_codex)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_PLATFORM": "Linux",
+        "CODEX_BIN": str(symlink_codex),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_job_agent_root / "codex-invoked-as.txt").read_text().strip() == str(canonical_codex)
+
+
+def test_run_track_keeps_codex_bin_path_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    canonical_codex = tmp_job_agent_root / "tools" / "codex" / "bin" / "codex.js"
+    _write_executable(
+        canonical_codex,
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+printf '%s\\n' "$0" > "$ROOT/codex-invoked-as.txt"
+exec "$ROOT/fake_codex.sh" "$@"
+""",
+    )
+    symlink_codex = tmp_job_agent_root / "bin" / "codex"
+    _write_symlink_codex(tmp_job_agent_root, canonical_codex)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "CODEX_BIN": str(symlink_codex),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_job_agent_root / "codex-invoked-as.txt").read_text().strip() == str(symlink_codex)
 
 
 def test_run_track_times_out_discovery_and_continues_to_codex_fallback(

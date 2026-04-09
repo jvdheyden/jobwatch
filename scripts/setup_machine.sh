@@ -8,6 +8,7 @@ SCHEDULE_FILE="${JOB_AGENT_SCHEDULE_FILE:-$ROOT/.schedule.local}"
 SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$ROOT/.scheduler}"
 PLIST_FILE="$SCHEDULER_DIR/com.jvdh.jobsearch.scheduler.plist"
 CRON_FILE="$SCHEDULER_DIR/cron.entry"
+PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 LOGSEQ_GRAPH_DIR_VALUE=""
 CODEX_BIN_VALUE=""
 ENV_CODEX_BIN_VALUE="${CODEX_BIN:-}"
@@ -50,6 +51,38 @@ resolve_command_path() {
     return 0
   fi
   return 1
+}
+
+canonicalize_linux_executable_path() {
+  local candidate="${1:-}"
+  local resolved=""
+
+  if [[ -z "$candidate" ]]; then
+    return 1
+  fi
+
+  if [[ "$PLATFORM" != "Linux" ]] || ! command -v readlink >/dev/null 2>&1; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+
+  resolved="$(readlink -f "$candidate" 2>/dev/null || true)"
+  if [[ -n "$resolved" && -x "$resolved" ]]; then
+    printf '%s\n' "$resolved"
+    return 0
+  fi
+
+  printf '%s\n' "$candidate"
+}
+
+detect_codex_bin() {
+  local detected=""
+
+  if ! detected="$(resolve_command_path codex 2>/dev/null)"; then
+    return 1
+  fi
+
+  canonicalize_linux_executable_path "$detected"
 }
 
 detect_logseq_graph_dir() {
@@ -173,8 +206,10 @@ fi
 if [[ -z "$CODEX_BIN_VALUE" ]]; then
   CODEX_BIN_VALUE="$existing_codex_bin"
 fi
-if command -v codex >/dev/null 2>&1; then
-  detected_codex_bin="$(command -v codex)"
+if detected_codex_bin="$(detect_codex_bin 2>/dev/null)"; then
+  :
+else
+  detected_codex_bin=""
 fi
 
 if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" ]]; then

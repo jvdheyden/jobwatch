@@ -1,6 +1,6 @@
 {
   "track": "core_crypto",
-  "generated_at": "2026-04-07T06:13:05Z",
+  "generated_at": "2026-04-09T14:47:53Z",
   "jobs": [
     {
       "job_key": "clairvault | cryptography researcher",
@@ -99,6 +99,17 @@
       "date_seen": "2026-03-20",
       "date_seen_page": "Core Crypto Job Digest 2026-03-20",
       "last_seen": "2026-03-20",
+      "times_seen": 1
+    },
+    {
+      "job_key": "durham university uk | post doc in systems hardware ai security or cryptography",
+      "company": "Durham University, UK",
+      "title": "Post-doc in Systems/Hardware/AI Security or Cryptography",
+      "url": "https://durham.taleo.net/careersection/du_ext/jobdetail.ftl?job=26000319&tz=GMT%2B01%3A00&tzname=Europe%2FLondon",
+      "fit_score": 8.3,
+      "date_seen": "2026-04-09",
+      "date_seen_page": "Core Crypto Job Digest 2026-04-09",
+      "last_seen": "2026-04-09",
       "times_seen": 1
     },
     {

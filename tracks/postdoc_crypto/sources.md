@@ -16,7 +16,7 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-07 |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-09 |
 
 ## Check every 3 runs
 
