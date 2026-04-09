@@ -424,3 +424,74 @@ cp "$1" "$STORE"
     cron_text = crontab_store.read_text()
     assert cron_text.count("# BEGIN jobsearch scheduler") == 1
     assert cron_text.count("/scripts/run_scheduled_jobs.sh") == 1
+
+
+def test_install_bwrap_apparmor_installs_generated_profile(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    apparmor_dir = tmp_job_agent_root / "etc" / "apparmor.d"
+    parser_log = tmp_job_agent_root / "apparmor_parser.log"
+    dest_profile = apparmor_dir / "bwrap-userns-restrict"
+    canonical_bwrap = tmp_job_agent_root / "tools" / "bubblewrap" / "bin" / "bwrap"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_executable(canonical_bwrap, "#!/bin/bash\nexit 0\n")
+    _write_symlink(fake_bin_dir / "bwrap", canonical_bwrap)
+    _write_executable(
+        fake_bin_dir / "apparmor_parser",
+        f"""#!/bin/bash
+set -euo pipefail
+echo "$*" >> "{parser_log}"
+""",
+    )
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Linux",
+        "JOB_AGENT_BWRAP_APPARMOR_DEST": str(dest_profile),
+        "JOB_AGENT_BWRAP_APPARMOR_REQUIRE_ROOT": "0",
+        "APPARMOR_PARSER_BIN": str(fake_bin_dir / "apparmor_parser"),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    setup_result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert setup_result.returncode == 0, setup_result.stderr
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_bwrap_apparmor.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+    assert dest_profile.exists()
+
+    profile_text = dest_profile.read_text()
+    assert f"{canonical_bwrap} flags=(unconfined)" in profile_text
+    assert "userns create," in profile_text
+    assert parser_log.read_text().splitlines() == [f"-r {dest_profile}"]
+
+
+def test_install_bwrap_apparmor_is_noop_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    dest_profile = tmp_job_agent_root / "etc" / "apparmor.d" / "bwrap-userns-restrict"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "JOB_AGENT_BWRAP_APPARMOR_DEST": str(dest_profile),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_bwrap_apparmor.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+    assert "Skipping bwrap AppArmor install on non-Linux platform: Darwin" in result.stdout
+    assert not dest_profile.exists()

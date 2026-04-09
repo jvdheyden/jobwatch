@@ -378,5 +378,6 @@ echo "Generated $CRON_FILE"
 echo "Generated $PLIST_FILE"
 if [[ -f "$APPARMOR_PROFILE_FILE" ]]; then
   echo "Generated $APPARMOR_PROFILE_FILE for $detected_bwrap_bin"
+  echo "Run sudo bash scripts/install_bwrap_apparmor.sh if this Linux host enforces AppArmor userns restrictions."
 fi
 echo "Add track entries to $SCHEDULE_FILE, then run scripts/install_scheduler.sh."

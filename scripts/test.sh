@@ -15,6 +15,7 @@ fi
 
 bash -n scripts/run_track.sh
 bash -n scripts/setup_machine.sh
+bash -n scripts/install_bwrap_apparmor.sh
 bash -n scripts/install_scheduler.sh
 bash -n scripts/run_scheduled_jobs.sh
 bash -n scripts/sync_to_logseq.sh
