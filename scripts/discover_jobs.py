@@ -432,6 +432,44 @@ class Coverage:
     candidates: list[Candidate] = field(default_factory=list)
 
 
+def partial_browser_unavailable_coverage(source: SourceConfig, terms: list[str], limitation: str) -> Coverage:
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial",
+        listing_pages_scanned="unknown",
+        search_terms_tried=terms,
+        result_pages_scanned="unknown",
+        direct_job_pages_opened=0,
+        enumerated_jobs=0,
+        matched_jobs=0,
+        limitations=[limitation],
+        candidates=[],
+    )
+
+
+def playwright_import_missing_coverage(source: SourceConfig, terms: list[str], detail: str) -> Coverage:
+    return partial_browser_unavailable_coverage(source, terms, f"Playwright is not installed; {detail}")
+
+
+def playwright_browsers_missing_coverage(source: SourceConfig, terms: list[str], exc: BaseException) -> Coverage | None:
+    message = normalize_whitespace(str(exc))
+    lowered = message.lower()
+    if "executable doesn't exist" not in lowered:
+        return None
+    if "playwright install" not in lowered and "chromium" not in lowered and "chrome-headless-shell" not in lowered:
+        return None
+    return partial_browser_unavailable_coverage(
+        source,
+        terms,
+        "Playwright browser binaries are not installed; run ./.venv/bin/python -m playwright install chromium",
+    )
+
+
 @dataclass
 class BrowserPageResult:
     candidates: list[Candidate]
@@ -4604,23 +4642,7 @@ def discover_asml_browser(source: SourceConfig, terms: list[str], timeout_second
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; ASML browser discovery is scaffolded but inactive"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "ASML browser discovery is scaffolded but inactive")
 
     candidates_by_url: dict[str, Candidate] = {}
     raw_seen_ids: set[str] = set()
@@ -4663,6 +4685,9 @@ def discover_asml_browser(source: SourceConfig, terms: list[str], timeout_second
                 page_num = next_page_num
             browser.close()
     except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, terms, exc)
+        if setup_issue is not None:
+            return setup_issue
         return Coverage(
             source=source.source,
             source_url=source.url,
@@ -4764,59 +4789,49 @@ def discover_trailofbits_browser(source: SourceConfig, terms: list[str], timeout
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; Trail of Bits browser discovery is unavailable"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "Trail of Bits browser discovery is unavailable")
 
     timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
     raw_urls: set[str] = set()
     candidates_by_url: dict[str, Candidate] = {}
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1440, "height": 2200})
-        page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
-        page.wait_for_timeout(2000)
-        links = page.locator('a[href*="apply.workable.com"]')
-        count = links.count()
-        for index in range(count):
-            element = links.nth(index)
-            href = normalize_url_without_fragment(element.get_attribute("href") or "")
-            if not href or href in raw_urls:
-                continue
-            raw_urls.add(href)
-            lines = split_visible_lines(element.inner_text())
-            title = lines[0] if lines else "unknown"
-            searchable_text = " ".join(lines) or title
-            matched_terms = sorted(set(match_terms(searchable_text, terms)))
-            if not should_keep_candidate(title, matched_terms, searchable_text):
-                continue
-            merge_candidate(
-                candidates_by_url,
-                Candidate(
-                    employer=source.source,
-                    title=title,
-                    url=href,
-                    source_url=source.url,
-                    matched_terms=matched_terms,
-                    notes="Enumerated through Trail of Bits career-page Workable links",
-                ),
-            )
-        browser.close()
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 2200})
+            page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
+            page.wait_for_timeout(2000)
+            links = page.locator('a[href*="apply.workable.com"]')
+            count = links.count()
+            for index in range(count):
+                element = links.nth(index)
+                href = normalize_url_without_fragment(element.get_attribute("href") or "")
+                if not href or href in raw_urls:
+                    continue
+                raw_urls.add(href)
+                lines = split_visible_lines(element.inner_text())
+                title = lines[0] if lines else "unknown"
+                searchable_text = " ".join(lines) or title
+                matched_terms = sorted(set(match_terms(searchable_text, terms)))
+                if not should_keep_candidate(title, matched_terms, searchable_text):
+                    continue
+                merge_candidate(
+                    candidates_by_url,
+                    Candidate(
+                        employer=source.source,
+                        title=title,
+                        url=href,
+                        source_url=source.url,
+                        matched_terms=matched_terms,
+                        notes="Enumerated through Trail of Bits career-page Workable links",
+                    ),
+                )
+            browser.close()
+    except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, terms, exc)
+        if setup_issue is not None:
+            return setup_issue
+        raise
 
     limitations = []
     if not raw_urls:
@@ -4844,59 +4859,49 @@ def discover_automattic_browser(source: SourceConfig, terms: list[str], timeout_
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; Automattic browser discovery is unavailable"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "Automattic browser discovery is unavailable")
 
     timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
     raw_urls: set[str] = set()
     candidates_by_url: dict[str, Candidate] = {}
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1440, "height": 2200})
-        page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
-        page.wait_for_timeout(2000)
-        links = page.locator('a[href*="/work-with-us/job/"]')
-        count = links.count()
-        for index in range(count):
-            element = links.nth(index)
-            href = normalize_url_without_fragment(element.get_attribute("href") or "")
-            if not href or href in raw_urls:
-                continue
-            raw_urls.add(href)
-            lines = split_visible_lines(element.inner_text())
-            title = lines[0] if lines else "unknown"
-            searchable_text = " ".join(lines) or title
-            matched_terms = sorted(set(match_terms(searchable_text, terms)))
-            if not should_keep_candidate(title, matched_terms, searchable_text):
-                continue
-            merge_candidate(
-                candidates_by_url,
-                Candidate(
-                    employer=source.source,
-                    title=title,
-                    url=href,
-                    source_url=source.url,
-                    matched_terms=matched_terms,
-                    notes="Enumerated through Automattic jobs-page cards",
-                ),
-            )
-        browser.close()
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 2200})
+            page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
+            page.wait_for_timeout(2000)
+            links = page.locator('a[href*="/work-with-us/job/"]')
+            count = links.count()
+            for index in range(count):
+                element = links.nth(index)
+                href = normalize_url_without_fragment(element.get_attribute("href") or "")
+                if not href or href in raw_urls:
+                    continue
+                raw_urls.add(href)
+                lines = split_visible_lines(element.inner_text())
+                title = lines[0] if lines else "unknown"
+                searchable_text = " ".join(lines) or title
+                matched_terms = sorted(set(match_terms(searchable_text, terms)))
+                if not should_keep_candidate(title, matched_terms, searchable_text):
+                    continue
+                merge_candidate(
+                    candidates_by_url,
+                    Candidate(
+                        employer=source.source,
+                        title=title,
+                        url=href,
+                        source_url=source.url,
+                        matched_terms=matched_terms,
+                        notes="Enumerated through Automattic jobs-page cards",
+                    ),
+                )
+            browser.close()
+    except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, terms, exc)
+        if setup_issue is not None:
+            return setup_issue
+        raise
 
     limitations = []
     if not raw_urls:
@@ -4924,33 +4929,23 @@ def discover_coinbase_browser(source: SourceConfig, terms: list[str], timeout_se
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; Coinbase browser discovery is unavailable"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "Coinbase browser discovery is unavailable")
 
     timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1440, "height": 2200})
-        page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
-        page.wait_for_timeout(10000)
-        title = page.title()
-        body_text = normalize_whitespace(page.locator("body").inner_text())
-        browser.close()
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 2200})
+            page.goto(source.url, wait_until="domcontentloaded", timeout=timeout_ms)
+            page.wait_for_timeout(10000)
+            title = page.title()
+            body_text = normalize_whitespace(page.locator("body").inner_text())
+            browser.close()
+    except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, terms, exc)
+        if setup_issue is not None:
+            return setup_issue
+        raise
 
     if "performing security verification" in body_text.lower() or title.lower() == "just a moment...":
         return Coverage(
@@ -4994,23 +4989,7 @@ def discover_thales_browser(source: SourceConfig, terms: list[str], timeout_seco
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; Thales browser discovery is unavailable"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "Thales browser discovery is unavailable")
 
     candidates_by_url: dict[str, Candidate] = {}
     raw_seen_ids: set[str] = set()
@@ -5075,55 +5054,61 @@ def discover_thales_browser(source: SourceConfig, terms: list[str], timeout_seco
         )
 
     timeout_ms = max(timeout_seconds * 1000, DEFAULT_BROWSER_TIMEOUT_MS)
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1440, "height": 2200})
-        for term in terms:
-            search_url = f"{source.url}?{urlencode({'keywords': term})}"
-            page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
-            accept_thales_cookies(page)
-            page.wait_for_timeout(1000)
-
-            term_pages_scanned = 0
-            term_visible_total = 0
-            term_declared_total: int | None = None
-            term_page_signatures: set[str] = set()
-
-            while True:
-                result = extract_page(page, term)
-                if not result.page_signature or result.page_signature in term_page_signatures:
-                    break
-                term_page_signatures.add(result.page_signature)
-                total_pages_scanned += 1
-                term_pages_scanned += 1
-                term_visible_total += result.visible_results
-                if term_declared_total is None and result.declared_total is not None:
-                    term_declared_total = result.declared_total
-                for raw_id in result.raw_ids:
-                    raw_seen_ids.add(raw_id)
-                for candidate in result.candidates:
-                    merge_candidate(candidates_by_url, candidate)
-                if result.visible_results == 0:
-                    break
-                if term_declared_total is not None and term_visible_total >= term_declared_total:
-                    break
-                next_link = page.locator('a[data-ph-at-id="pagination-next-link"]').first
-                if not next_link.count():
-                    break
-                next_href = next_link.get_attribute("href")
-                if not next_href:
-                    break
-                page.goto(next_href, wait_until="domcontentloaded", timeout=timeout_ms)
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 2200})
+            for term in terms:
+                search_url = f"{source.url}?{urlencode({'keywords': term})}"
+                page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
                 accept_thales_cookies(page)
                 page.wait_for_timeout(1000)
 
-            term_summaries.append(f"{term}={term_pages_scanned}p/{term_visible_total}of{term_declared_total or 0}")
-            if term_declared_total is not None and term_visible_total < term_declared_total:
-                limitations.append(
-                    f"Thales browser search for '{term}' surfaced {term_visible_total} of {term_declared_total} results"
-                )
+                term_pages_scanned = 0
+                term_visible_total = 0
+                term_declared_total: int | None = None
+                term_page_signatures: set[str] = set()
 
-        browser.close()
+                while True:
+                    result = extract_page(page, term)
+                    if not result.page_signature or result.page_signature in term_page_signatures:
+                        break
+                    term_page_signatures.add(result.page_signature)
+                    total_pages_scanned += 1
+                    term_pages_scanned += 1
+                    term_visible_total += result.visible_results
+                    if term_declared_total is None and result.declared_total is not None:
+                        term_declared_total = result.declared_total
+                    for raw_id in result.raw_ids:
+                        raw_seen_ids.add(raw_id)
+                    for candidate in result.candidates:
+                        merge_candidate(candidates_by_url, candidate)
+                    if result.visible_results == 0:
+                        break
+                    if term_declared_total is not None and term_visible_total >= term_declared_total:
+                        break
+                    next_link = page.locator('a[data-ph-at-id="pagination-next-link"]').first
+                    if not next_link.count():
+                        break
+                    next_href = next_link.get_attribute("href")
+                    if not next_href:
+                        break
+                    page.goto(next_href, wait_until="domcontentloaded", timeout=timeout_ms)
+                    accept_thales_cookies(page)
+                    page.wait_for_timeout(1000)
+
+                term_summaries.append(f"{term}={term_pages_scanned}p/{term_visible_total}of{term_declared_total or 0}")
+                if term_declared_total is not None and term_visible_total < term_declared_total:
+                    limitations.append(
+                        f"Thales browser search for '{term}' surfaced {term_visible_total} of {term_declared_total} results"
+                    )
+
+            browser.close()
+    except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, terms, exc)
+        if setup_issue is not None:
+            return setup_issue
+        raise
 
     return Coverage(
         source=source.source,
@@ -5148,23 +5133,7 @@ def discover_helsing_browser(source: SourceConfig, terms: list[str], timeout_sec
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; Helsing browser discovery is unavailable"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "Helsing browser discovery is unavailable")
 
     try:
         with sync_playwright() as playwright:
@@ -5175,6 +5144,9 @@ def discover_helsing_browser(source: SourceConfig, terms: list[str], timeout_sec
             result = extract_helsing_jobs(page, source, "catalog", terms, 1)
             browser.close()
     except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, terms, exc)
+        if setup_issue is not None:
+            return setup_issue
         return Coverage(
             source=source.source,
             source_url=source.url,
@@ -5247,23 +5219,7 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
     except ImportError:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="partial",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=["Playwright is not installed; browser-mode discovery is scaffolded but inactive"],
-            candidates=[],
-        )
+        return playwright_import_missing_coverage(source, terms, "browser-mode discovery is scaffolded but inactive")
     strategy = BROWSER_STRATEGIES.get(source.source)
     if not strategy:
         return Coverage(
@@ -5371,6 +5327,9 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                     limitations.extend(enrichment.limitations)
             browser.close()
     except Exception as exc:  # pragma: no cover - defensive output for live runs
+        setup_issue = playwright_browsers_missing_coverage(source, effective_terms, exc)
+        if setup_issue is not None:
+            return setup_issue
         return Coverage(
             source=source.source,
             source_url=source.url,

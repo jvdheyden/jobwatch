@@ -275,6 +275,45 @@ def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root:
     assert (tmp_job_agent_root / "codex-prompt.txt").exists()
 
 
+def test_run_track_prefers_repo_venv_python_for_discovery(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(
+        tmp_job_agent_root / ".venv" / "bin" / "python",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+printf '%s\n' "$0 $*" > "$ROOT/python-invoked.txt"
+exec python3 "$@"
+""",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert str(tmp_job_agent_root / ".venv" / "bin" / "python") in (tmp_job_agent_root / "python-invoked.txt").read_text().strip()
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert f"Using discovery Python interpreter: {tmp_job_agent_root / '.venv' / 'bin' / 'python'}" in log_text
+
+
 def test_run_track_canonicalizes_codex_bin_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)

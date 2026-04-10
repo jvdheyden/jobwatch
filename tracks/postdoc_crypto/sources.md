@@ -16,14 +16,14 @@ Cadence note:
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
-| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-09 |
+| IACR Jobs | https://www.iacr.org/jobs/ | iacr_jobs | 2026-04-10 |
 
 ## Check every 3 runs
 
 | source | url | discovery_mode | last_checked |
 | --- | --- | --- | --- |
 | Google | https://www.google.com/about/careers/applications/jobs/results | browser | 2026-04-04 |
-| IBM Research | https://www.ibm.com/careers/search | ibm_api | 2026-04-07 |
+| IBM Research | https://www.ibm.com/careers/search | ibm_api | 2026-04-10 |
 | Meta | https://www.metacareers.com/jobs | browser | 2026-04-04 |
 
 ## Check every month

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+from types import ModuleType
+
 import discover_jobs
 
 
@@ -73,3 +76,48 @@ def test_extract_asml_jobs_extracts_and_filters_visible_result_cards():
     assert candidate.url == "https://www.asml.com/en/careers/find-your-job/cryptography-engineer-j00330001"
     assert candidate.matched_terms == ["cryptography", "security"]
     assert candidate.notes == "ASML browser enumeration page=1; team=Security"
+
+
+class _RaisingChromium:
+    def launch(self, headless: bool = True):
+        del headless
+        raise RuntimeError(
+            "BrowserType.launch: Executable doesn't exist at /tmp/chromium/chrome\n"
+            "Looks like Playwright was just installed or updated.\n"
+            "Please run the following command to download new browsers:\n"
+            "playwright install"
+        )
+
+
+class _PlaywrightContext:
+    def __enter__(self):
+        return type("FakePlaywright", (), {"chromium": _RaisingChromium()})()
+
+    def __exit__(self, exc_type, exc, tb):
+        del exc_type, exc, tb
+        return False
+
+
+def test_discover_trailofbits_browser_reports_missing_browser_binaries_as_partial(monkeypatch):
+    playwright_module = ModuleType("playwright")
+    playwright_module.__path__ = []  # type: ignore[attr-defined]
+    sync_api_module = ModuleType("playwright.sync_api")
+    sync_api_module.sync_playwright = lambda: _PlaywrightContext()
+    playwright_module.sync_api = sync_api_module  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "playwright", playwright_module)
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", sync_api_module)
+
+    source = discover_jobs.SourceConfig(
+        source="Trail of Bits",
+        url="https://trailofbits.com/careers/",
+        discovery_mode="trailofbits_browser",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+
+    result = discover_jobs.discover_source(source, ["cryptography"], timeout_seconds=20)
+
+    assert result.status == "partial"
+    assert result.limitations == [
+        "Playwright browser binaries are not installed; run ./.venv/bin/python -m playwright install chromium"
+    ]

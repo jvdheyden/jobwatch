@@ -80,6 +80,22 @@ resolve_command_path() {
   return 1
 }
 
+resolve_python_bin() {
+  local venv_python="$ROOT/.venv/bin/python"
+
+  if [[ -x "$venv_python" ]]; then
+    printf '%s\n' "$venv_python"
+    return 0
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    command -v python3
+    return 0
+  fi
+
+  return 1
+}
+
 canonicalize_linux_executable_path() {
   local candidate="${1:-}"
   local resolved=""
@@ -123,6 +139,13 @@ if ! CODEX_BIN="$(resolve_codex_bin)"; then
   log "codex binary not found; set CODEX_BIN or add codex to PATH"
   exit 127
 fi
+
+if ! PYTHON_BIN="$(resolve_python_bin)"; then
+  log "python3 not found and repo-local virtualenv is missing"
+  exit 127
+fi
+
+log "Using discovery Python interpreter: $PYTHON_BIN"
 
 LAST_BG_PID=""
 
@@ -261,7 +284,7 @@ trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG" "$COD
 log "Starting $TRACK daily run"
 log "Discovery phase started"
 
-python3 "$ROOT/scripts/discover_jobs.py" \
+"$PYTHON_BIN" "$ROOT/scripts/discover_jobs.py" \
   --track "$TRACK" \
   --today "$TODAY" \
   --due-only \
