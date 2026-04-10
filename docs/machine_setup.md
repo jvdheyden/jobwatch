@@ -1,6 +1,13 @@
 # Machine Setup
 
-Run `bash scripts/setup_machine.sh` after cloning the repo. That creates:
+For first-time setup, run `bash scripts/bootstrap_machine.sh` after cloning the repo.
+
+That will:
+
+- create machine-local config via `scripts/setup_machine.sh`
+- bootstrap the repo-local virtualenv via `scripts/bootstrap_venv.sh`
+
+If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh` directly. That creates:
 
 - `.env.local` for machine-local paths and binaries
 - `.schedule.local` for local scheduled jobs

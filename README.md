@@ -8,13 +8,19 @@ This repository runs a Codex-assisted job-search workflow with per-track discove
    - Python 3
    - the Codex CLI on your `PATH`, or know the absolute path to the `codex` binary
    - on Linux, `bwrap` if you want Codex sandboxing backed by Bubblewrap
-2. From the repo root, create the machine-local config:
+2. From the repo root, bootstrap the checkout for local use:
+
+```bash
+bash scripts/bootstrap_machine.sh
+```
+
+This writes machine-local config, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
+
+If you only need to regenerate machine-local config later, run:
 
 ```bash
 bash scripts/setup_machine.sh
 ```
-
-This writes `.env.local`, `.schedule.local`, and generated scheduler artifacts under `.scheduler/`.
 
 3. If you are on Linux, install the generated AppArmor profile for `bwrap`:
 

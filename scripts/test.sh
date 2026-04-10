@@ -14,6 +14,7 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
 fi
 
 bash -n scripts/run_track.sh
+bash -n scripts/bootstrap_machine.sh
 bash -n scripts/setup_machine.sh
 bash -n scripts/install_bwrap_apparmor.sh
 bash -n scripts/install_scheduler.sh

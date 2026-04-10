@@ -412,6 +412,132 @@ fi
     assert "Chromium: skipped (--no-chromium)" in result.stdout
 
 
+def test_bootstrap_machine_runs_setup_and_bootstrap_then_prints_linux_followups(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    log_file = tmp_job_agent_root / "bootstrap-machine.log"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(
+        setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'setup_machine\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        bootstrap_venv_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_MACHINE_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PLATFORM": "Linux",
+    }
+
+    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    assert result.returncode == 0, result.stderr
+    assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
+    assert f"Bootstrapped machine config and repo-local virtualenv for {tmp_job_agent_root}" in result.stdout
+    assert "Next: bash scripts/install_scheduler.sh" in result.stdout
+    assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
+
+
+def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(setup_script, "#!/bin/bash\nset -euo pipefail\n")
+    _write_executable(bootstrap_venv_script, "#!/bin/bash\nset -euo pipefail\n")
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PLATFORM": "Darwin",
+    }
+
+    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    assert result.returncode == 0, result.stderr
+    assert "Next: bash scripts/install_scheduler.sh" in result.stdout
+    assert "install_bwrap_apparmor" not in result.stdout
+
+
+def test_bootstrap_machine_stops_if_setup_machine_fails(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    log_file = tmp_job_agent_root / "bootstrap-machine.log"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(
+        setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'setup_machine\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+exit 12
+""",
+    )
+    _write_executable(
+        bootstrap_venv_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_MACHINE_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+    }
+
+    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    assert result.returncode == 12
+    assert log_file.read_text().splitlines() == ["setup_machine"]
+
+
+def test_bootstrap_machine_stops_if_bootstrap_venv_fails(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    log_file = tmp_job_agent_root / "bootstrap-machine.log"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(
+        setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'setup_machine\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        bootstrap_venv_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+exit 23
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_MACHINE_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+    }
+
+    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    assert result.returncode == 23
+    assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
+
+
 def test_run_scheduled_jobs_runs_due_tracks_once_per_stamp(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
