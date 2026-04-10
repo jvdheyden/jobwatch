@@ -327,6 +327,91 @@ def test_setup_machine_skips_bwrap_apparmor_profile_on_non_linux(tmp_job_agent_r
     assert not apparmor_profile.exists()
 
 
+def test_bootstrap_venv_installs_playwright_browser_by_default(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    requirements_file = tmp_job_agent_root / "requirements-dev.txt"
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    log_file = tmp_job_agent_root / "bootstrap.log"
+    fake_python = tmp_job_agent_root / "bin" / "python3"
+
+    requirements_file.write_text("pytest==9.0.2\nplaywright==1.58.0\n")
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_venv.sh").read_text())
+    _write_executable(
+        fake_python,
+        """#!/bin/bash
+set -euo pipefail
+LOG="${BOOTSTRAP_LOG:?missing BOOTSTRAP_LOG}"
+printf 'base_python %s\\n' "$*" >> "$LOG"
+if [[ "${1:-}" == "-m" && "${2:-}" == "venv" ]]; then
+  target="${3:?missing venv target}"
+  mkdir -p "$target/bin"
+  cat > "$target/bin/python" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+printf 'venv_python %s\\n' "$*" >> "${BOOTSTRAP_LOG:?missing BOOTSTRAP_LOG}"
+EOF
+  chmod +x "$target/bin/python"
+fi
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_LOG": str(log_file),
+        "PYTHON_BIN": str(fake_python),
+    }
+
+    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    assert result.returncode == 0, result.stderr
+    assert log_file.read_text().splitlines() == [
+        f"base_python -m venv {tmp_job_agent_root / '.venv'}",
+        "venv_python -m pip install --upgrade pip",
+        f"venv_python -m pip install -r {requirements_file}",
+        "venv_python -m playwright install chromium",
+    ]
+    assert "Chromium: installed via Playwright" in result.stdout
+
+
+def test_bootstrap_venv_no_chromium_skips_playwright_browser_install(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    requirements_file = tmp_job_agent_root / "requirements-dev.txt"
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    log_file = tmp_job_agent_root / "bootstrap.log"
+    fake_python = tmp_job_agent_root / "bin" / "python3"
+
+    requirements_file.write_text("pytest==9.0.2\nplaywright==1.58.0\n")
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_venv.sh").read_text())
+    _write_executable(
+        fake_python,
+        """#!/bin/bash
+set -euo pipefail
+LOG="${BOOTSTRAP_LOG:?missing BOOTSTRAP_LOG}"
+printf 'base_python %s\\n' "$*" >> "$LOG"
+if [[ "${1:-}" == "-m" && "${2:-}" == "venv" ]]; then
+  target="${3:?missing venv target}"
+  mkdir -p "$target/bin"
+  cat > "$target/bin/python" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+printf 'venv_python %s\\n' "$*" >> "${BOOTSTRAP_LOG:?missing BOOTSTRAP_LOG}"
+EOF
+  chmod +x "$target/bin/python"
+fi
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_LOG": str(log_file),
+        "PYTHON_BIN": str(fake_python),
+    }
+
+    result = run_cmd("bash", str(bootstrap_script), "--no-chromium", env=env, cwd=tmp_job_agent_root)
+    assert result.returncode == 0, result.stderr
+    assert log_file.read_text().splitlines() == [
+        f"base_python -m venv {tmp_job_agent_root / '.venv'}",
+        "venv_python -m pip install --upgrade pip",
+        f"venv_python -m pip install -r {requirements_file}",
+    ]
+    assert "Chromium: skipped (--no-chromium)" in result.stdout
+
+
 def test_run_scheduled_jobs_runs_due_tracks_once_per_stamp(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
