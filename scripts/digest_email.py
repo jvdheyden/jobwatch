@@ -236,12 +236,13 @@ def _render_ranked_overview(ranked: dict[str, Any] | None, *, limit: int) -> lis
         return lines
 
     for index, job in enumerate(shown_jobs, start=1):
-        times_seen = job["times_seen"]
-        seen_text = f" | Seen: {times_seen}x" if times_seen is not None else ""
+        date_line = f"   Date seen: {job['date_seen']}"
+        if job["last_seen"] != job["date_seen"]:
+            date_line = f"{date_line} | Last seen: {job['last_seen']}"
         lines.extend(
             [
                 f"{index}. {_format_score(job['fit_score'])}/10 - {job['title']} - {job['company']}",
-                f"   First seen: {job['date_seen']} | Last seen: {job['last_seen']}{seen_text}",
+                date_line,
             ]
         )
         if job["url"]:

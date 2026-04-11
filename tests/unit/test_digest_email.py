@@ -16,7 +16,7 @@ def _ranked_payload(track: str = "core_crypto", count: int = 3) -> dict:
                 "url": f"https://example.com/jobs/{index}",
                 "fit_score": 10 - index / 10,
                 "date_seen": f"2026-03-{index:02d}",
-                "last_seen": "2026-03-29",
+                "last_seen": f"2026-03-{index:02d}",
                 "times_seen": index,
             }
             for index in range(1, count + 1)
@@ -33,12 +33,15 @@ def test_render_digest_email_combines_new_jobs_and_ranked_overview(load_json_fix
     assert "New jobs\n1. Cryptographer - LayerZero Labs" in rendered.body
     assert "Fit: 9/10 | Recommendation: apply_now" in rendered.body
     assert "Ranked overview (top 2 of 2)" in rendered.body
+    assert "Date seen: 2026-03-01" in rendered.body
+    assert rendered.attachment_text is not None
+    assert "Seen:" not in rendered.body
+    assert "Seen:" not in rendered.attachment_text
     assert "Sources checked: 1 complete, 0 partial, 0 failed." in rendered.body
     assert "[[" not in rendered.body
     assert "Seen jobs to append" not in rendered.body
     assert "Source notes" not in rendered.body
     assert rendered.attachment_filename == "ranked-overview-core_crypto.md"
-    assert rendered.attachment_text is not None
     assert "# Ranked Overview - Core Crypto" in rendered.attachment_text
 
 
@@ -82,6 +85,18 @@ def test_render_digest_email_caps_ranked_overview_and_attaches_full_overview(loa
     assert rendered.attachment_text is not None
     assert "Ranked overview (top 12 of 12)" in rendered.attachment_text
     assert "Role 12 - Company 12" in rendered.attachment_text
+
+
+def test_render_digest_email_shows_last_seen_only_when_different(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+    ranked = _ranked_payload(count=1)
+    ranked["jobs"][0]["last_seen"] = "2026-03-29"
+
+    rendered = render_digest_email(digest, ranked)
+
+    assert "Date seen: 2026-03-01 | Last seen: 2026-03-29" in rendered.body
+    assert rendered.attachment_text is not None
+    assert "Date seen: 2026-03-01 | Last seen: 2026-03-29" in rendered.attachment_text
 
 
 def test_render_digest_email_rejects_bad_ranked_limit(load_json_fixture):
