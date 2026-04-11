@@ -308,6 +308,60 @@ If you do create a dedicated per-track plist, use a generic naming scheme only w
 
 Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`. Reload the launch agent.
 
+### 5a. Delivery preferences and local config handholding
+
+After files are generated, ask which delivery methods the user wants for this track.
+
+Explain the options clearly:
+- local artifacts only: always available; `run_track.sh` leaves JSON and Markdown files in the repo
+- Logseq sync: run with `--delivery logseq`; requires `LOGSEQ_GRAPH_DIR`
+- email delivery: run with `--delivery email`; requires SMTP variables
+- both Logseq and email: pass both delivery flags
+
+Use these manual-run examples:
+
+```bash
+bash scripts/run_track.sh --track {track_slug}
+bash scripts/run_track.sh --track {track_slug} --delivery logseq
+bash scripts/run_track.sh --track {track_slug} --delivery email
+bash scripts/run_track.sh --track {track_slug} --delivery logseq --delivery email
+```
+
+For Logseq:
+- Check whether `.env.local` already has `LOGSEQ_GRAPH_DIR`.
+- If it is missing and the user wants Logseq, help them identify the graph root path.
+- Prefer running `bash scripts/setup_machine.sh --logseq-graph-dir <absolute-path>` or adding `export LOGSEQ_GRAPH_DIR=<absolute-path>` to `.env.local`.
+- Do not inspect the Logseq graph contents during setup.
+
+For email:
+- Never ask the user to paste SMTP passwords or app passwords into chat.
+- Ensure `.env.local` has commented SMTP placeholders by running or recommending `bash scripts/setup_machine.sh`.
+- Tell the user to edit `.env.local` locally and uncomment/fill:
+  - `JOB_AGENT_SMTP_HOST`
+  - `JOB_AGENT_SMTP_PORT`
+  - `JOB_AGENT_SMTP_FROM`
+  - `JOB_AGENT_SMTP_TO`
+  - `JOB_AGENT_SMTP_USERNAME`
+  - `JOB_AGENT_SMTP_PASSWORD`
+  - `JOB_AGENT_SMTP_TLS`
+- After the user has filled those values locally and the first digest JSON exists, suggest a dry run first:
+
+```bash
+./.venv/bin/python scripts/send_digest_email.py --track {track_slug} --date YYYY-MM-DD --dry-run
+```
+
+Then test real delivery only when the user confirms the local SMTP config is ready.
+
+Scheduling caveat:
+- `.schedule.local` entries can include delivery flags after the track slug.
+- Use local-artifacts-only scheduling when no delivery flags are present:
+  `daily 08:00 track {track_slug}`
+- Use scheduled delivery when requested:
+  `daily 08:00 track {track_slug} --delivery logseq`
+  `daily 08:00 track {track_slug} --delivery email`
+  `daily 08:00 track {track_slug} --delivery logseq --delivery email`
+- If email delivery is scheduled, remind the user that SMTP values must be filled in `.env.local` before the scheduled run.
+
 ### 5. Validation
 
 After scaffolding, run:
@@ -340,6 +394,7 @@ Report:
 - what files were created or changed
 - whether `discover-sources` was used, and which returned sources were kept
 - which sources were included and with which `discovery_mode`
+- which delivery methods the user selected, and which local config values still need to be filled
 - which validation commands passed
 - which newly integrated sources passed the quality gate
 - which sources were deferred instead of escalated, and why

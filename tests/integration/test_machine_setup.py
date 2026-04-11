@@ -83,8 +83,17 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert f"export JOB_AGENT_ROOT={str(tmp_job_agent_root)}" in env_text
     assert f"export CODEX_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert "# Optional: Logseq graph root for digest publication." in env_text
+    assert "# Optional: SMTP settings for email delivery." in env_text
+    assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" in env_text
+    assert "# export JOB_AGENT_SMTP_PORT=587" in env_text
+    assert "# export JOB_AGENT_SMTP_FROM=jobs@example.com" in env_text
+    assert "# export JOB_AGENT_SMTP_TO=you@example.com" in env_text
+    assert "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com" in env_text
+    assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
+    assert "# export JOB_AGENT_SMTP_TLS=starttls" in env_text
     assert schedule_file.exists()
     assert "daily 08:00 track core_crypto" in schedule_file.read_text()
+    assert "daily 08:00 track core_crypto --delivery logseq --delivery email" in schedule_file.read_text()
     cron_text = (scheduler_dir / "cron.entry").read_text()
     assert cron_text.startswith("# BEGIN jobsearch scheduler\n* * * * * /bin/bash ")
     assert (scheduler_dir / "com.jvdh.jobsearch.scheduler.plist").exists()
@@ -94,6 +103,50 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     second = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
     assert second.returncode == 0, second.stderr
     assert schedule_file.read_text() == "daily 08:00 track demo\n"
+
+
+def test_setup_machine_preserves_existing_smtp_values(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    env_file.write_text(
+        "\n".join(
+            [
+                "export JOB_AGENT_SMTP_HOST=smtp.test.invalid",
+                "export JOB_AGENT_SMTP_PORT=2525",
+                "export JOB_AGENT_SMTP_FROM=jobs@test.invalid",
+                "export JOB_AGENT_SMTP_TO=user@test.invalid",
+                "export JOB_AGENT_SMTP_USERNAME=smtp-user",
+                "export JOB_AGENT_SMTP_PASSWORD=smtp-secret",
+                "export JOB_AGENT_SMTP_TLS=none",
+                "",
+            ]
+        )
+    )
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert "export JOB_AGENT_SMTP_HOST=smtp.test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_PORT=2525" in env_text
+    assert "export JOB_AGENT_SMTP_FROM=jobs@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_TO=user@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_USERNAME=smtp-user" in env_text
+    assert "export JOB_AGENT_SMTP_PASSWORD=smtp-secret" in env_text
+    assert "export JOB_AGENT_SMTP_TLS=none" in env_text
+    assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" not in env_text
 
 
 def test_setup_machine_fails_noninteractive_without_codex(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -571,6 +624,36 @@ echo "$*" >> "$ROOT/invocations.log"
     third = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=third_env, cwd=repo_root)
     assert third.returncode == 0, third.stderr
     assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo", "--track demo"]
+
+
+def test_run_scheduled_jobs_passes_delivery_options(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    schedule_file.write_text("daily 08:00 track demo --delivery email --delivery logseq\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_TIME": "08:00",
+        "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:00",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == [
+        "--track demo --delivery email --delivery logseq"
+    ]
 
 
 def test_run_scheduled_jobs_is_noop_with_empty_schedule(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

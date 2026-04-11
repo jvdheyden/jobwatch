@@ -18,6 +18,7 @@ In a normal terminal, the setup script prompts for any missing machine-local val
 
 - `CODEX_BIN` is required. If `codex` is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
+- SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill them locally if you want email delivery.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `CODEX_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is.
 
@@ -37,6 +38,8 @@ The setup script does not install scheduling. After you have created one or more
 
 ```text
 daily 08:00 track core_crypto
+daily 08:00 track core_crypto --delivery logseq
+daily 08:00 track core_crypto --delivery email
 ```
 
 Then install the platform scheduler with `bash scripts/install_scheduler.sh`.
@@ -45,3 +48,5 @@ Then install the platform scheduler with `bash scripts/install_scheduler.sh`.
 - On macOS, that installs a LaunchAgent that runs the same shared scheduler script every minute.
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
+
+Email delivery is optional. Fill the `JOB_AGENT_SMTP_*` values in `.env.local` locally; do not put SMTP passwords in tracked files or chat transcripts.

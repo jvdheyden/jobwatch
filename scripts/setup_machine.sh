@@ -14,6 +14,20 @@ LOGSEQ_GRAPH_DIR_VALUE=""
 CODEX_BIN_VALUE=""
 ENV_CODEX_BIN_VALUE="${CODEX_BIN:-}"
 ENV_LOGSEQ_GRAPH_DIR_VALUE="${LOGSEQ_GRAPH_DIR:-}"
+SMTP_HOST_VALUE=""
+SMTP_PORT_VALUE=""
+SMTP_FROM_VALUE=""
+SMTP_TO_VALUE=""
+SMTP_USERNAME_VALUE=""
+SMTP_PASSWORD_VALUE=""
+SMTP_TLS_VALUE=""
+ENV_SMTP_HOST_VALUE="${JOB_AGENT_SMTP_HOST:-}"
+ENV_SMTP_PORT_VALUE="${JOB_AGENT_SMTP_PORT:-}"
+ENV_SMTP_FROM_VALUE="${JOB_AGENT_SMTP_FROM:-}"
+ENV_SMTP_TO_VALUE="${JOB_AGENT_SMTP_TO:-}"
+ENV_SMTP_USERNAME_VALUE="${JOB_AGENT_SMTP_USERNAME:-}"
+ENV_SMTP_PASSWORD_VALUE="${JOB_AGENT_SMTP_PASSWORD:-}"
+ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 
 usage() {
   cat <<EOF
@@ -221,6 +235,13 @@ ORIGINAL_PATH="$PATH"
 existing_path="$ORIGINAL_PATH"
 existing_codex_bin=""
 existing_logseq_graph_dir=""
+existing_smtp_host=""
+existing_smtp_port=""
+existing_smtp_from=""
+existing_smtp_to=""
+existing_smtp_username=""
+existing_smtp_password=""
+existing_smtp_tls=""
 detected_codex_bin=""
 detected_logseq_graph_dir=""
 detected_bwrap_bin=""
@@ -233,6 +254,13 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_path="${PATH:-$ORIGINAL_PATH}"
   existing_codex_bin="${CODEX_BIN:-}"
   existing_logseq_graph_dir="${LOGSEQ_GRAPH_DIR:-}"
+  existing_smtp_host="${JOB_AGENT_SMTP_HOST:-}"
+  existing_smtp_port="${JOB_AGENT_SMTP_PORT:-}"
+  existing_smtp_from="${JOB_AGENT_SMTP_FROM:-}"
+  existing_smtp_to="${JOB_AGENT_SMTP_TO:-}"
+  existing_smtp_username="${JOB_AGENT_SMTP_USERNAME:-}"
+  existing_smtp_password="${JOB_AGENT_SMTP_PASSWORD:-}"
+  existing_smtp_tls="${JOB_AGENT_SMTP_TLS:-}"
   PATH="$ORIGINAL_PATH"
 fi
 
@@ -264,6 +292,14 @@ if detected_bwrap_bin="$(detect_bwrap_bin 2>/dev/null)"; then
 else
   detected_bwrap_bin=""
 fi
+
+SMTP_HOST_VALUE="${ENV_SMTP_HOST_VALUE:-$existing_smtp_host}"
+SMTP_PORT_VALUE="${ENV_SMTP_PORT_VALUE:-$existing_smtp_port}"
+SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
+SMTP_TO_VALUE="${ENV_SMTP_TO_VALUE:-$existing_smtp_to}"
+SMTP_USERNAME_VALUE="${ENV_SMTP_USERNAME_VALUE:-$existing_smtp_username}"
+SMTP_PASSWORD_VALUE="${ENV_SMTP_PASSWORD_VALUE:-$existing_smtp_password}"
+SMTP_TLS_VALUE="${ENV_SMTP_TLS_VALUE:-$existing_smtp_tls}"
 
 if [[ -z "$CODEX_BIN_VALUE" ]]; then
   if is_interactive; then
@@ -304,6 +340,43 @@ mkdir -p "$SCHEDULER_DIR/state" "$ROOT/logs"
   else
     echo "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq"
   fi
+  echo "# Optional: SMTP settings for email delivery."
+  echo "# Keep real SMTP secrets in this gitignored local file; do not paste passwords into chat."
+  if [[ -n "$SMTP_HOST_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_HOST=%s\n' "$(shell_escape "$SMTP_HOST_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_HOST=smtp.example.com"
+  fi
+  if [[ -n "$SMTP_PORT_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_PORT=%s\n' "$(shell_escape "$SMTP_PORT_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_PORT=587"
+  fi
+  if [[ -n "$SMTP_FROM_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_FROM=%s\n' "$(shell_escape "$SMTP_FROM_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_FROM=jobs@example.com"
+  fi
+  if [[ -n "$SMTP_TO_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_TO=%s\n' "$(shell_escape "$SMTP_TO_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_TO=you@example.com"
+  fi
+  if [[ -n "$SMTP_USERNAME_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_USERNAME=%s\n' "$(shell_escape "$SMTP_USERNAME_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com"
+  fi
+  if [[ -n "$SMTP_PASSWORD_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_PASSWORD=%s\n' "$(shell_escape "$SMTP_PASSWORD_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_PASSWORD=app-password"
+  fi
+  if [[ -n "$SMTP_TLS_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_TLS=%s\n' "$(shell_escape "$SMTP_TLS_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_TLS=starttls"
+  fi
 } >"$ENV_FILE"
 
 if [[ -n "$detected_bwrap_bin" ]]; then
@@ -315,9 +388,10 @@ fi
 if [[ ! -f "$SCHEDULE_FILE" ]]; then
   cat >"$SCHEDULE_FILE" <<EOF
 # Machine-local scheduler entries.
-# Format: daily HH:MM track <track-slug>
+# Format: daily HH:MM track <track-slug> [--delivery logseq|email]...
 # Example:
 # daily 08:00 track core_crypto
+# daily 08:00 track core_crypto --delivery logseq --delivery email
 EOF
 fi
 

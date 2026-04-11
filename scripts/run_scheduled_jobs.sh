@@ -49,14 +49,46 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
     continue
   fi
 
-  cadence=""
-  scheduled_time=""
-  job_type=""
-  job_arg=""
-  extra=""
-  read -r cadence scheduled_time job_type job_arg extra <<<"$line"
+  fields=()
+  read -r -a fields <<<"$line"
 
-  if [[ "$cadence" != "daily" || ! "$scheduled_time" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ || -z "$job_type" || -z "$job_arg" || -n "$extra" ]]; then
+  if [[ ${#fields[@]} -lt 4 ]]; then
+    echo "Invalid schedule entry: $line" >&2
+    STATUS=1
+    continue
+  fi
+
+  cadence="${fields[0]}"
+  scheduled_time="${fields[1]}"
+  job_type="${fields[2]}"
+  job_arg="${fields[3]}"
+  delivery_args=()
+  valid_entry=1
+
+  if [[ "$cadence" != "daily" || ! "$scheduled_time" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ || -z "$job_type" || -z "$job_arg" ]]; then
+    valid_entry=0
+  fi
+
+  field_index=4
+  while [[ $valid_entry -eq 1 && $field_index -lt ${#fields[@]} ]]; do
+    if [[ "${fields[$field_index]}" != "--delivery" || $((field_index + 1)) -ge ${#fields[@]} ]]; then
+      valid_entry=0
+      break
+    fi
+
+    delivery_target="${fields[$((field_index + 1))]}"
+    case "$delivery_target" in
+      logseq|email)
+        delivery_args+=("--delivery" "$delivery_target")
+        ;;
+      *)
+        valid_entry=0
+        ;;
+    esac
+    field_index=$((field_index + 2))
+  done
+
+  if [[ $valid_entry -ne 1 ]]; then
     echo "Invalid schedule entry: $line" >&2
     STATUS=1
     continue
@@ -76,7 +108,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
       ;;
   esac
 
-  state_key="$(printf '%s-%s' "$job_type" "$job_arg" | tr -cs 'A-Za-z0-9._-' '_')"
+  state_key="$(printf '%s-%s-%s' "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
   state_file="$STATE_DIR/$state_key.stamp"
 
   if [[ -f "$state_file" ]] && [[ "$(cat "$state_file")" == "$CURRENT_STAMP" ]]; then
@@ -85,7 +117,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 
   printf '%s\n' "$CURRENT_STAMP" >"$state_file"
   echo "Running scheduled track '$job_arg' for $CURRENT_STAMP"
-  if /bin/bash "$ROOT/scripts/run_track.sh" --track "$job_arg" --delivery email --delivery logseq; then
+  if /bin/bash "$ROOT/scripts/run_track.sh" --track "$job_arg" "${delivery_args[@]}"; then
     :
   else
     cmd_status=$?
