@@ -285,18 +285,19 @@ Add `[override]` after the source name to replace the track-wide terms for that 
 
 #### `AGENTS.md`
 
-Use `tracks/core_crypto/AGENTS.md` as the base template.
+Use `.agents/skills/set-up/templates/track_AGENTS.md` as the base template.
 
-Copy its structure, then replace all track-specific values:
-- change the title and track slug
-- replace every `core_crypto` artifact path, ranked-state path, and script argument with `{track_slug}`
-- replace the candidate name with the current user name
-- rewrite the fit language so it matches the new track's search area instead of applied cryptography
+Copy its structure, then replace all template placeholders:
+- replace `{track_display_name}` with the final track display name
+- replace `{track_slug}` with the normalized track slug everywhere it appears
+- replace `{user_name}` with the current user name
+- replace `{fit_language}` with a short track-specific description of the role types, fit bar, constraints, and red flags from `prefs.md`
 - keep the same workflow structure unless the user explicitly wants a different one
 
 Important:
-- Do not leave any `core_crypto` path behind in the generated file
-- Do not leave crypto-specific fit text in a non-crypto track
+- Do not use a real user track as the template.
+- Do not leave any unreplaced `{...}` placeholder in the generated file.
+- Do not leave domain-specific fit text from another track in the generated file.
 - Keep the run boundaries, same-day rerun behavior, JSON digest flow, and ranked-overview rebuild steps aligned with the current shared workflow
 
 ### 6. Delivery preferences and local config handholding

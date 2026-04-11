@@ -36,6 +36,7 @@ fi
   tests/unit/test_digest_json.py \
   tests/unit/test_render_digest.py \
   tests/unit/test_send_digest_email.py \
+  tests/unit/test_setup_skill_template.py \
   tests/unit/test_machine_resolution.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \
