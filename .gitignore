@@ -20,15 +20,22 @@ tests/tmp/
 # Generated logs
 logs/
 
-# Generated artifacts and digests
-artifacts/
+# Local user track data
+tracks/*
+!tracks/test_workflow/
+!tracks/test_workflow/**
 tracks/*/digests/
 
-# generated output
+# Generated artifacts and digests
+artifacts/
+
+# Generated local state
 shared/seen_jobs.md
+shared/ranked_jobs/*
+!shared/ranked_jobs/test_workflow.json
 ranked_overview.md
 
-# keep test workflow
+# Keep test workflow fixtures
 !artifacts/digests
 artifacts/digests/*
 !artifacts/digests/test_workflow
