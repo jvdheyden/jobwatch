@@ -60,6 +60,16 @@ To run a track immediately:
 bash scripts/run_track.sh --track <track-slug>
 ```
 
+By default, this leaves the local JSON and Markdown artifacts in the repository and does not deliver them anywhere else.
+
+Optional delivery targets can be requested per run:
+
+```bash
+bash scripts/run_track.sh --track <track-slug> --delivery logseq
+bash scripts/run_track.sh --track <track-slug> --delivery email
+bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery email
+```
+
 ## Email Digest
 
 Daily digest emails are rendered from the structured digest JSON and ranked overview JSON, not from the Logseq/Markdown output.

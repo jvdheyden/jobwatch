@@ -25,6 +25,21 @@ echo "sync $*" >> "$ROOT/sync.log"
 """,
     )
     _write_executable(
+        root / "scripts" / "send_digest_email.py",
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+(root / "email.log").write_text("email " + " ".join(sys.argv[1:]) + "\\n")
+raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_EMAIL_STATUS", "0")))
+""",
+    )
+    _write_executable(
         root / "fake_codex.sh",
         """#!/bin/bash
 set -euo pipefail
@@ -33,7 +48,9 @@ TRACK="${JOB_AGENT_TRACK:?missing JOB_AGENT_TRACK}"
 TODAY="${JOB_AGENT_TODAY:?missing JOB_AGENT_TODAY}"
 cat > "$ROOT/codex-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
+mkdir -p "$ROOT/artifacts/digests/$TRACK"
 printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
+printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 """,
     )
 
@@ -238,13 +255,178 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Wrote discovery artifact" in log_text
     assert "Codex phase started" in log_text
     assert "Codex phase finished successfully" in log_text
-    assert "Sync phase started" in log_text
-    assert "Sync phase finished successfully" in log_text
+    assert "No delivery targets requested; leaving local artifacts only" in log_text
+    assert "Delivery phase started" not in log_text
     assert "Finished demo daily run" in log_text
+    assert not (tmp_job_agent_root / "sync.log").exists()
+    assert not (tmp_job_agent_root / "email.log").exists()
 
     caffeinate_args = (tmp_job_agent_root / "caffeinate-args.txt").read_text()
     assert "-dimsu" in caffeinate_args
     assert "--discovery-timeout-secs" in caffeinate_args
+    assert "--delivery" not in caffeinate_args
+
+
+def test_run_track_logseq_delivery_runs_sync_and_preserves_caffeinate_args(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "logseq",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Delivery phase started: logseq" in log_text
+    assert "Delivery phase finished successfully: logseq" in log_text
+    assert "No delivery targets requested" not in log_text
+    assert (tmp_job_agent_root / "sync.log").read_text() == "sync --track demo\n"
+
+    caffeinate_args = (tmp_job_agent_root / "caffeinate-args.txt").read_text()
+    assert "--delivery" in caffeinate_args
+    assert "logseq" in caffeinate_args
+
+
+def test_run_track_email_delivery_invokes_email_sender(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Delivery phase started: email" in log_text
+    assert "Delivery phase finished successfully: email" in log_text
+    assert (tmp_job_agent_root / "email.log").read_text() == "email --track demo --date 2030-01-15\n"
+    assert not (tmp_job_agent_root / "sync.log").exists()
+
+
+def test_run_track_runs_multiple_deliveries_in_cli_order(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--delivery",
+        "logseq",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert log_text.index("Delivery phase started: email") < log_text.index("Delivery phase started: logseq")
+    assert (tmp_job_agent_root / "email.log").exists()
+    assert (tmp_job_agent_root / "sync.log").exists()
+
+
+def test_run_track_rejects_unknown_delivery(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "slack",
+        env=os.environ | {"JOB_AGENT_ROOT": str(tmp_job_agent_root)},
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 2
+    assert "Usage:" in result.stderr
+
+
+def test_run_track_fails_when_requested_delivery_fails(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_FAKE_EMAIL_STATUS": "17",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 17, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Codex phase finished successfully" in log_text
+    assert "Delivery phase started: email" in log_text
+    assert "Delivery phase failed: email status 17" in log_text
+    assert "Finished demo daily run" not in log_text
 
 
 def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

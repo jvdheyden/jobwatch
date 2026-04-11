@@ -64,7 +64,7 @@ JOB_AGENT_ROOT="$ROOT" \
 JOB_AGENT_TODAY="$TODAY" \
 JOB_AGENT_JOURNAL_DATE="$JOURNAL_DATE" \
 LOGSEQ_GRAPH_DIR="$GRAPH_DIR" \
-/bin/bash "$ROOT/scripts/run_track.sh" --track "$TRACK" --timeout-secs 120
+/bin/bash "$ROOT/scripts/run_track.sh" --track "$TRACK" --delivery logseq --timeout-secs 120
 
 for path in \
   "$ARTIFACT_DIR/$TODAY.json" \
@@ -91,7 +91,7 @@ rg -q '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
 rg -q "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
 rg -q "Discovery phase started" "$RUN_LOG"
 rg -q "Codex phase started" "$RUN_LOG"
-rg -q "Sync phase finished successfully" "$RUN_LOG"
+rg -q "Delivery phase finished successfully: logseq" "$RUN_LOG"
 rg -q "Finished $TRACK daily run" "$RUN_LOG"
 
 echo "Generic track workflow test passed."

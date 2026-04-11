@@ -2,6 +2,7 @@
 set -euo pipefail
 
 TRACK=""
+DELIVERY_TARGETS=()
 TIMEOUT_SECS="${TIMEOUT_SECS:-2700}"
 DISCOVERY_TIMEOUT_SECS="${DISCOVERY_TIMEOUT_SECS:-1800}"
 DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
@@ -12,21 +13,44 @@ PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
-  echo "Usage: $0 --track <slug> [--timeout-secs <seconds>] [--discovery-timeout-secs <seconds>]" >&2
+  echo "Usage: $0 --track <slug> [--delivery logseq|email]... [--timeout-secs <seconds>] [--discovery-timeout-secs <seconds>]" >&2
   exit 2
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --track)
+      if [[ $# -lt 2 ]]; then
+        usage
+      fi
       TRACK="${2:-}"
       shift 2
       ;;
+    --delivery)
+      if [[ $# -lt 2 ]]; then
+        usage
+      fi
+      case "${2:-}" in
+        logseq|email)
+          DELIVERY_TARGETS+=("$2")
+          ;;
+        *)
+          usage
+          ;;
+      esac
+      shift 2
+      ;;
     --timeout-secs)
+      if [[ $# -lt 2 ]]; then
+        usage
+      fi
       TIMEOUT_SECS="${2:-}"
       shift 2
       ;;
     --discovery-timeout-secs)
+      if [[ $# -lt 2 ]]; then
+        usage
+      fi
       DISCOVERY_TIMEOUT_SECS="${2:-}"
       shift 2
       ;;
@@ -48,6 +72,7 @@ DISCOVERY_DIR="$ROOT/artifacts/discovery/$TRACK"
 DISCOVERY_ARTIFACT="$DISCOVERY_DIR/$TODAY.json"
 DISCOVERY_LATEST="$DISCOVERY_DIR/latest.json"
 DAILY_DIGEST="$DIGEST_DIR/$TODAY.md"
+STRUCTURED_DIGEST="$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 LOG_FILE="$LOG_DIR/$TRACK-$TODAY.log"
 
 mkdir -p "$DIGEST_DIR" "$DISCOVERY_DIR" "$LOG_DIR"
@@ -261,11 +286,12 @@ start_idle_watchdog() {
 
 if [[ -z "${JOB_AGENT_CAFFEINATED:-}" ]]; then
   if CAFFEINATE_BIN="$(command -v caffeinate 2>/dev/null)"; then
+    REEXEC_ARGS=(--track "$TRACK" --timeout-secs "$TIMEOUT_SECS" --discovery-timeout-secs "$DISCOVERY_TIMEOUT_SECS")
+    for delivery_target in "${DELIVERY_TARGETS[@]}"; do
+      REEXEC_ARGS+=(--delivery "$delivery_target")
+    done
     log "Re-executing $TRACK run under caffeinate via $CAFFEINATE_BIN"
-    exec env JOB_AGENT_CAFFEINATED=1 "$CAFFEINATE_BIN" -dimsu /bin/bash "$0" \
-      --track "$TRACK" \
-      --timeout-secs "$TIMEOUT_SECS" \
-      --discovery-timeout-secs "$DISCOVERY_TIMEOUT_SECS"
+    exec env JOB_AGENT_CAFFEINATED=1 "$CAFFEINATE_BIN" -dimsu /bin/bash "$0" "${REEXEC_ARGS[@]}"
   fi
   log "caffeinate unavailable; continuing without wake prevention"
 else
@@ -413,12 +439,44 @@ fi
 
 log "Codex phase finished successfully"
 
-if [[ -f "$DAILY_DIGEST" ]]; then
-  log "Sync phase started"
-  /bin/bash "$ROOT/scripts/sync_to_logseq.sh" --track "$TRACK"
-  log "Sync phase finished successfully"
+if [[ ${#DELIVERY_TARGETS[@]} -eq 0 ]]; then
+  log "No delivery targets requested; leaving local artifacts only"
 else
-  log "No digest at $DAILY_DIGEST; skipping Logseq sync"
+  for delivery_target in "${DELIVERY_TARGETS[@]}"; do
+    log "Delivery phase started: $delivery_target"
+    case "$delivery_target" in
+      logseq)
+        if [[ -f "$DAILY_DIGEST" ]]; then
+          if /bin/bash "$ROOT/scripts/sync_to_logseq.sh" --track "$TRACK"; then
+            log "Delivery phase finished successfully: logseq"
+          else
+            delivery_status=$?
+            log "Delivery phase failed: logseq status $delivery_status"
+            exit "$delivery_status"
+          fi
+        else
+          log "No digest at $DAILY_DIGEST; skipping logseq delivery"
+        fi
+        ;;
+      email)
+        if [[ -f "$STRUCTURED_DIGEST" ]]; then
+          if JOB_AGENT_ROOT="$ROOT" "$PYTHON_BIN" "$ROOT/scripts/send_digest_email.py" --track "$TRACK" --date "$TODAY"; then
+            log "Delivery phase finished successfully: email"
+          else
+            delivery_status=$?
+            log "Delivery phase failed: email status $delivery_status"
+            exit "$delivery_status"
+          fi
+        else
+          log "No structured digest at $STRUCTURED_DIGEST; skipping email delivery"
+        fi
+        ;;
+      *)
+        log "Unsupported delivery target: $delivery_target"
+        exit 2
+        ;;
+    esac
+  done
 fi
 
 log "Finished $TRACK daily run"
