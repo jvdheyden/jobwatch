@@ -16,9 +16,9 @@ When explaining code, prefer call diagrams and (if relevant) state diagrams.
 
 ## Skill mirroring
 - Canonical skill files live in `.agents/skills/`.
-- After changing any skill, run `./.venv/bin/python scripts/sync_claude_skills.py` to refresh the generated mirrors in `.claude/skills/`.
+- After changing any skill, run `bash scripts/sync_claude_skills.sh` to refresh the generated mirrors in `.claude/skills/`.
 - Never edit `.claude/skills/` directly unless explicitly asked.
-- Before finishing any skill change, run `./.venv/bin/python scripts/sync_claude_skills.py --check`.
+- Before finishing any skill change, run `bash scripts/sync_claude_skills.sh --check`.
 
 ## Testing and verification
 - Use the repo-local Python virtualenv at `./.venv` for Python tests and helper scripts.

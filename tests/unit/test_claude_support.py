@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 
 
@@ -22,8 +21,8 @@ def test_claude_imports_exist_for_repo_agents(repo_root: Path) -> None:
 def test_claude_skill_mirrors_are_current(repo_root: Path) -> None:
     result = subprocess.run(
         [
-            sys.executable,
-            str(repo_root / "scripts" / "sync_claude_skills.py"),
+            "bash",
+            str(repo_root / "scripts" / "sync_claude_skills.sh"),
             "--check",
         ],
         check=False,
