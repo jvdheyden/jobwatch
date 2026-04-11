@@ -44,6 +44,11 @@ If useful, also use:
 14. `../../scripts/discover_jobs.py`
 15. `../../scripts/render_digest.py`
 
+Post-processing scripts are stable commands. During normal runs, do not read
+`../../scripts/render_digest.py` or `../../scripts/update_ranked_overview.py`
+unless one of the commands fails or the digest schema changed. Run them using
+the workflow commands below.
+
 ## Scope
 
 Only search the sources listed in `./sources.md`.

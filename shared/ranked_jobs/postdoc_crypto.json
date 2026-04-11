@@ -1,17 +1,5 @@
 {
   "track": "postdoc_crypto",
-  "generated_at": "2026-04-10T06:17:47Z",
-  "jobs": [
-    {
-      "job_key": "school of computer science shanghai jiao tong university shanghai | phd and postdoctoral researchers in post quantum cryptography mpc and quantum algorithms",
-      "company": "School of Computer Science, Shanghai Jiao Tong University, Shanghai.",
-      "title": "PhD and Postdoctoral Researchers in post-quantum cryptography, MPC, and quantum algorithms.",
-      "url": "https://www.iacr.org/jobs/item/4168",
-      "fit_score": 8.2,
-      "date_seen": "2026-03-31",
-      "date_seen_page": "Postdoc Crypto Job Digest 2026-03-31",
-      "last_seen": "2026-03-31",
-      "times_seen": 1
-    }
-  ]
+  "generated_at": "2026-04-11T06:21:25Z",
+  "jobs": []
 }

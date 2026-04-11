@@ -96,6 +96,8 @@ Concerns:
 
 Overall judgment:
 {{2-3 sentence summary}}
+```
+
 Then provide the roles in ranked order.
 
 ## Digest guidance

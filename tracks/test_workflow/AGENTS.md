@@ -13,6 +13,11 @@ This track exists only to exercise the generic multi-track runner end-to-end wit
 5. `../../artifacts/digests/test_workflow/YYYY-MM-DD.json`, if it exists for today
 6. `./digests/YYYY-MM-DD.md`, if it already exists for today
 
+Post-processing scripts are stable commands. During normal runs, do not read
+`../../scripts/render_digest.py` or `../../scripts/update_ranked_overview.py`
+unless one of the commands fails or the digest schema changed. Run them using
+the workflow commands below.
+
 ## Workflow
 
 1. Consume today's discovery artifact for `test_workflow`.

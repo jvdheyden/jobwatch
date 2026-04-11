@@ -1,6 +1,6 @@
 {
   "track": "public_service",
-  "generated_at": "2026-04-10T06:30:00Z",
+  "generated_at": "2026-04-11T06:28:24Z",
   "jobs": [
     {
       "job_key": "verfassungsschutz | referenten referentinnen m w d in der cyber und spionageabwehr",
@@ -55,6 +55,39 @@
       "date_seen": "2026-04-09",
       "date_seen_page": "Public Service Job Digest 2026-04-09",
       "last_seen": "2026-04-09",
+      "times_seen": 1
+    },
+    {
+      "job_key": "bsi | digitale talente w m d bsi 2026 028",
+      "company": "BSI",
+      "title": "Digitale Talente (w/m/d) BSI-2026-028",
+      "url": "https://www.service.bund.de/IMPORTE/Stellenangebote/editor/BVA-BSI/2026/04/6458562.html",
+      "fit_score": 6.8,
+      "date_seen": "2026-04-11",
+      "date_seen_page": "Public Service Job Digest 2026-04-11",
+      "last_seen": "2026-04-11",
+      "times_seen": 1
+    },
+    {
+      "job_key": "helsing | security engineer",
+      "company": "Helsing",
+      "title": "Security Engineer",
+      "url": "https://helsing.ai/jobs/4813919101",
+      "fit_score": 6.6,
+      "date_seen": "2026-04-11",
+      "date_seen_page": "Public Service Job Digest 2026-04-11",
+      "last_seen": "2026-04-11",
+      "times_seen": 1
+    },
+    {
+      "job_key": "rheinmetall it solutions gmbh | senior expert network security architecture m w d",
+      "company": "Rheinmetall IT Solutions GmbH",
+      "title": "Senior Expert Network & Security Architecture (m/w/d)",
+      "url": "https://www.rheinmetall.com/de/job/senior_expert_network___security_architecture__m_w_d_/778061",
+      "fit_score": 6.3,
+      "date_seen": "2026-04-11",
+      "date_seen_page": "Public Service Job Digest 2026-04-11",
+      "last_seen": "2026-04-11",
       "times_seen": 1
     }
   ]
