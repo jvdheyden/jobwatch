@@ -22,7 +22,7 @@ If you only need to regenerate machine-local config later, run:
 bash scripts/setup_machine.sh
 ```
 
-3. If you are on Linux, install the generated AppArmor profile for `bwrap`:
+3. If you are on Ubuntu, install the generated AppArmor profile for `bwrap`:
 
 ```bash
 sudo bash scripts/install_bwrap_apparmor.sh
