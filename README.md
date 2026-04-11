@@ -4,16 +4,11 @@ This repository runs a Codex-assisted job-search workflow with per-track discove
 
 Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step:
 
-- local artifacts only: no delivery flag
-- Logseq sync: `--delivery logseq`
-- email delivery: `--delivery email`
-- both: pass both delivery flags
-
 ## New User Setup
 
-1. Install the base prerequisites:
+1. Requirements:
    - Python 3
-   - the Codex CLI on your `PATH`, or know the absolute path to the `codex` binary
+   - the Codex CLI 
    - on Linux, `bwrap` if you want Codex sandboxing backed by Bubblewrap
 2. From the repo root, bootstrap the checkout for local use:
 
@@ -64,6 +59,12 @@ daily 08:00 track core_crypto --delivery logseq --delivery email
 ```
 
 The first form produces local artifacts only. Add delivery flags only after the matching local config is ready.
+
+- local artifacts only: no delivery flag
+- Logseq sync: `--delivery logseq`
+- email delivery: `--delivery email`
+- both: pass both delivery flags
+
 
 6. Install the scheduler:
 

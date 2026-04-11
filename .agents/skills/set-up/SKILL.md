@@ -79,7 +79,14 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
 - Reuse suggested cadence buckets and search terms from `discover-sources` as defaults when they fit.
 - Do not turn this branch into source integration. Deep validation and coding escalation still happen later.
 
-### 4. Normalize and confirm config
+### 4. Normalize, confirm, and optionally integrate sources
+
+Step 4 has one required path and two optional integration paths:
+- `4a` is the normal setup path and must happen before files are generated.
+- `4b` is only for a user-requested coding handoff for one specific source.
+- `4c` is only for a user-requested quality pass across multiple newly added, probed sources.
+
+#### 4a. Normalize and confirm config
 
 - Normalize the slug before writing files.
 - Treat the final source list as coming from the user, from `discover-sources`, or from both.
@@ -108,7 +115,7 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
 
 Before generating files, summarize the normalized config and confirm it.
 
-### 4b. Optional source-integration escalation
+#### 4b. Optional source-integration escalation
 
 Use this branch only when the user wants source integration now for a specific source.
 
@@ -149,7 +156,7 @@ If the coding handoff is not requested or does not succeed:
 - keep the source on the track only if an existing mode is still somewhat usable
 - otherwise leave it out and note it as follow-up work
 
-### 4c. Source-quality triage for setup-time integration
+#### 4c. Source-quality triage for setup-time integration
 
 Use this branch when setup includes multiple newly added sources and the user wants a better-than-scaffolding integration pass.
 
@@ -308,7 +315,7 @@ If you do create a dedicated per-track plist, use a generic naming scheme only w
 
 Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`. Reload the launch agent.
 
-### 5a. Delivery preferences and local config handholding
+### 6. Delivery preferences and local config handholding
 
 After files are generated, ask which delivery methods the user wants for this track.
 
@@ -362,7 +369,7 @@ Scheduling caveat:
   `daily 08:00 track {track_slug} --delivery logseq --delivery email`
 - If email delivery is scheduled, remind the user that SMTP values must be filled in `.env.local` before the scheduled run.
 
-### 5. Validation
+### 7. Validation
 
 After scaffolding, run:
 
@@ -388,7 +395,7 @@ If setup included source integration with a canary, also run:
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
 
-### 6. Final response
+### 8. Final response
 
 Report:
 - what files were created or changed
