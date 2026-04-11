@@ -28,7 +28,9 @@ logs/
 # Local user track data
 tracks/*
 !tracks/test_workflow/
-!tracks/test_workflow/**
+!tracks/test_workflow/AGENTS.md
+!tracks/test_workflow/prefs.md
+!tracks/test_workflow/sources.md
 tracks/*/digests/
 
 # Generated artifacts and digests
@@ -37,14 +39,4 @@ artifacts/
 # Generated local state
 shared/seen_jobs.md
 shared/ranked_jobs/*
-!shared/ranked_jobs/test_workflow.json
 ranked_overview.md
-
-# Keep test workflow fixtures
-!artifacts/digests
-artifacts/digests/*
-!artifacts/digests/test_workflow
-!artifacts/discovery
-artifacts/discovery/*
-!artifacts/discovery/test_workflow
-!tracks/test_workflow/ranked_overview.md

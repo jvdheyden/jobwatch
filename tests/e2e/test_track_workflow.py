@@ -13,3 +13,5 @@ def test_test_workflow_track_runs_end_to_end(repo_root, run_cmd):
 
     assert result.returncode == 0, result.stderr
     assert "Generic track workflow test passed." in result.stdout
+    assert "tests/tmp/test_workflow/root/artifacts/discovery/test_workflow/2030-01-15.json" in result.stdout
+    assert "tests/tmp/test_workflow/root/tracks/test_workflow/ranked_overview.md" in result.stdout

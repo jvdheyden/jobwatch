@@ -9,28 +9,29 @@ JOURNAL_DATE="${JOB_AGENT_JOURNAL_DATE:-$(date +%Y_%m_%d)}"
 PORT="${TEST_WORKFLOW_PORT:-18765}"
 FIXTURE_DIR="$ROOT/tests/fixtures/test_workflow"
 TEST_DIR="$ROOT/tests/tmp/test_workflow"
-GRAPH_DIR="$TEST_DIR/logseq"
-RUN_LOG="$ROOT/logs/$TRACK-$TODAY.log"
-ARTIFACT_DIR="$ROOT/artifacts/discovery/$TRACK"
-STRUCTURED_DIGEST_DIR="$ROOT/artifacts/digests/$TRACK"
+TEST_ROOT="$TEST_DIR/root"
+GRAPH_DIR="$TEST_ROOT/logseq"
+RUN_LOG="$TEST_ROOT/logs/$TRACK-$TODAY.log"
+ARTIFACT_DIR="$TEST_ROOT/artifacts/discovery/$TRACK"
+STRUCTURED_DIGEST_DIR="$TEST_ROOT/artifacts/digests/$TRACK"
 STRUCTURED_DIGEST_PATH="$STRUCTURED_DIGEST_DIR/$TODAY.json"
-DIGEST_PATH="$ROOT/tracks/$TRACK/digests/$TODAY.md"
-OVERVIEW_PATH="$ROOT/tracks/$TRACK/ranked_overview.md"
-STATE_PATH="$ROOT/shared/ranked_jobs/$TRACK.json"
+DIGEST_PATH="$TEST_ROOT/tracks/$TRACK/digests/$TODAY.md"
+OVERVIEW_PATH="$TEST_ROOT/tracks/$TRACK/ranked_overview.md"
+STATE_PATH="$TEST_ROOT/shared/ranked_jobs/$TRACK.json"
 DIGEST_PAGE="$GRAPH_DIR/pages/Test Workflow Job Digest $TODAY.md"
 OVERVIEW_PAGE="$GRAPH_DIR/pages/Test Workflow Ranked Overview.md"
 JOURNAL_PATH="$GRAPH_DIR/journals/$JOURNAL_DATE.md"
-SOURCES_PATH="$ROOT/tracks/$TRACK/sources.md"
-SOURCES_BACKUP="$TEST_DIR/sources.md.backup"
+SOURCES_PATH="$TEST_ROOT/tracks/$TRACK/sources.md"
 
-cleanup() {
-  if [[ -f "$SOURCES_BACKUP" ]]; then
-    cp "$SOURCES_BACKUP" "$SOURCES_PATH"
-    rm -f "$SOURCES_BACKUP"
-  fi
-}
-
-mkdir -p "$TEST_DIR"
+rm -rf "$TEST_ROOT"
+mkdir -p "$TEST_ROOT/tracks" "$TEST_ROOT/shared" "$TEST_ROOT/logs"
+cp -R "$ROOT/scripts" "$TEST_ROOT/scripts"
+cp -R "$ROOT/tracks/$TRACK" "$TEST_ROOT/tracks/$TRACK"
+cp "$ROOT/shared/digest_schema.md" "$TEST_ROOT/shared/digest_schema.md"
+cp "$ROOT/shared/digest_template.md" "$TEST_ROOT/shared/digest_template.md"
+if [[ -d "$ROOT/.venv" ]]; then
+  ln -s "$ROOT/.venv" "$TEST_ROOT/.venv"
+fi
 mkdir -p "$ARTIFACT_DIR" "$STRUCTURED_DIGEST_DIR" "$(dirname "$DIGEST_PATH")"
 find "$ARTIFACT_DIR" -maxdepth 1 -type f -name '*.json' -delete
 find "$STRUCTURED_DIGEST_DIR" -maxdepth 1 -type f -name '*.json' -delete
@@ -38,9 +39,6 @@ find "$(dirname "$DIGEST_PATH")" -maxdepth 1 -type f -name '*.md' -delete
 rm -f "$RUN_LOG" "$OVERVIEW_PATH" "$STATE_PATH"
 rm -rf "$GRAPH_DIR"
 
-trap cleanup EXIT
-
-cp "$SOURCES_PATH" "$SOURCES_BACKUP"
 LOCAL_BOARD_URL="$(python3 - "$FIXTURE_DIR/test_workflow_board.html" <<'PY'
 from pathlib import Path
 import sys
@@ -60,11 +58,11 @@ path.write_text(text)
 PY
 
 CODEX_BIN="$ROOT/tests/e2e/fake_codex.sh" \
-JOB_AGENT_ROOT="$ROOT" \
+JOB_AGENT_ROOT="$TEST_ROOT" \
 JOB_AGENT_TODAY="$TODAY" \
 JOB_AGENT_JOURNAL_DATE="$JOURNAL_DATE" \
 LOGSEQ_GRAPH_DIR="$GRAPH_DIR" \
-/bin/bash "$ROOT/scripts/run_track.sh" --track "$TRACK" --delivery logseq --timeout-secs 120
+/bin/bash "$TEST_ROOT/scripts/run_track.sh" --track "$TRACK" --delivery logseq --timeout-secs 120
 
 for path in \
   "$ARTIFACT_DIR/$TODAY.json" \
