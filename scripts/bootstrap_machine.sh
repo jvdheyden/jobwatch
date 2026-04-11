@@ -13,7 +13,8 @@ Bootstrap this checkout for first-time local use.
 
 This script:
 1. Generates machine-local config via scripts/setup_machine.sh
-2. Bootstraps the repo-local virtualenv via scripts/bootstrap_venv.sh
+2. Creates local profile placeholders under profile/
+3. Bootstraps the repo-local virtualenv via scripts/bootstrap_venv.sh
 
 It does not install the scheduler or the optional Linux AppArmor profile.
 EOF
@@ -35,7 +36,8 @@ done
 /bin/bash "$SCRIPT_DIR/setup_machine.sh"
 /bin/bash "$SCRIPT_DIR/bootstrap_venv.sh"
 
-echo "Bootstrapped machine config and repo-local virtualenv for $ROOT"
+echo "Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for $ROOT"
+echo "Fill profile/cv.md and profile/prefs_global.md locally; optionally place a PDF CV in profile/."
 echo "Next: ask Codex to set up a search track; the setup agent can configure delivery, scheduling, and scheduler install."
 if [[ "$PLATFORM" == "Linux" ]]; then
   echo "Optional on Linux hosts that enforce AppArmor userns restrictions:"

@@ -5,6 +5,7 @@ For first-time setup, run `bash scripts/bootstrap_machine.sh` after cloning the 
 That will:
 
 - create machine-local config via `scripts/setup_machine.sh`
+- create local profile placeholders under `profile/`
 - bootstrap the repo-local virtualenv via `scripts/bootstrap_venv.sh`
 
 If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh` directly. That creates:
@@ -13,6 +14,9 @@ If you only need to refresh the generated machine-local config later, run `bash 
 - `.schedule.local` for local scheduled jobs
 - `.scheduler/` for generated cron and launchd artifacts
 - `.scheduler/bwrap-userns-restrict` on Linux when `bwrap` is on `PATH`
+- `profile/cv.md` and `profile/prefs_global.md` if they do not already exist
+
+The `profile/` directory is local user data and is ignored by Git. `profile/cv.md` is the primary agent-readable CV context. `profile/prefs_global.md` stores durable cross-track preferences. You can also place a PDF CV in `profile/`; the setup agent can use it to draft `profile/cv.md` when the Markdown CV is still the default placeholder.
 
 In a normal terminal, the setup script prompts for any missing machine-local values.
 
@@ -35,6 +39,8 @@ The installer copies the generated profile into `/etc/apparmor.d/bwrap-userns-re
 In non-interactive mode, the script does not prompt. `CODEX_BIN` must already be supplied via `--codex-bin`, the environment, existing `.env.local`, or `PATH`.
 
 The track setup agent normally asks about delivery and scheduling after it creates a track. When you choose scheduled runs, it writes `.schedule.local` with `scripts/configure_schedule.py` and installs the platform scheduler with `bash scripts/install_scheduler.sh`.
+
+Track setup creates track-specific preferences in `tracks/<track>/prefs.md`. Those preferences are separate from `profile/prefs_global.md` and can override global preferences for that track.
 
 For manual maintenance, use the helper instead of editing `.schedule.local` by hand:
 

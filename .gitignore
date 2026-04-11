@@ -17,6 +17,11 @@ tests/tmp/
 .schedule.local
 .scheduler/
 
+# Local user profile data
+/profile/
+/cv.md
+*.pdf
+
 # Generated logs
 logs/
 

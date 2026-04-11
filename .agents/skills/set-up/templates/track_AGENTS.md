@@ -25,7 +25,7 @@ Optimize for precision over recall. A short list of strong matches is better tha
 
 Read these files in order before starting:
 
-1. `../../cv.md`
+1. `../../profile/cv.md`
 2. `../../profile/prefs_global.md`
 3. `./prefs.md`
 4. `./sources.md`

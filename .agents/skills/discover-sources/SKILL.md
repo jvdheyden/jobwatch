@@ -33,7 +33,7 @@ Assume `set-up` has already gathered the user's preferences. Use those preferenc
 
 Read, when available:
 - `tracks/{track_slug}/prefs.md`
-- `cv.md`
+- `profile/cv.md`
 - `profile/prefs_global.md`
 - the user's stated setup preferences:
   - track display name or search area

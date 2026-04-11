@@ -2,10 +2,17 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT="${JOB_AGENT_ROOT:-$REPO_ROOT}"
 ENV_FILE="${JOB_AGENT_ENV_FILE:-$ROOT/.env.local}"
 SCHEDULE_FILE="${JOB_AGENT_SCHEDULE_FILE:-$ROOT/.schedule.local}"
 SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$ROOT/.scheduler}"
+PROFILE_DIR="${JOB_AGENT_PROFILE_DIR:-$ROOT/profile}"
+PROFILE_TEMPLATE_DIR="$REPO_ROOT/.agents/skills/set-up/templates/profile"
+PROFILE_CV_TEMPLATE="$PROFILE_TEMPLATE_DIR/cv.md"
+PROFILE_PREFS_TEMPLATE="$PROFILE_TEMPLATE_DIR/prefs_global.md"
+PROFILE_CV_FILE="$PROFILE_DIR/cv.md"
+PROFILE_PREFS_FILE="$PROFILE_DIR/prefs_global.md"
 PLIST_FILE="$SCHEDULER_DIR/com.jvdh.jobsearch.scheduler.plist"
 CRON_FILE="$SCHEDULER_DIR/cron.entry"
 APPARMOR_PROFILE_FILE="$SCHEDULER_DIR/bwrap-userns-restrict"
@@ -33,7 +40,7 @@ usage() {
   cat <<EOF
 Usage: $0 [--codex-bin <path>] [--logseq-graph-dir <path>]
 
-Create or refresh machine-local scheduler config for this checkout.
+Create or refresh machine-local scheduler config and profile placeholders for this checkout.
 In a terminal, the script prompts for any missing required values.
 In non-interactive mode, CODEX_BIN must be supplied or discoverable.
 This script does not install cron or launchd. After adding entries to
@@ -326,7 +333,20 @@ if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" && is_interactive ]]; then
   LOGSEQ_GRAPH_DIR_VALUE="$(prompt_for_logseq_graph_dir "$detected_logseq_graph_dir")"
 fi
 
-mkdir -p "$SCHEDULER_DIR/state" "$ROOT/logs"
+mkdir -p "$SCHEDULER_DIR/state" "$ROOT/logs" "$PROFILE_DIR"
+
+profile_cv_status="preserved"
+profile_prefs_status="preserved"
+
+if [[ ! -f "$PROFILE_CV_FILE" ]]; then
+  cp "$PROFILE_CV_TEMPLATE" "$PROFILE_CV_FILE"
+  profile_cv_status="created"
+fi
+
+if [[ ! -f "$PROFILE_PREFS_FILE" ]]; then
+  cp "$PROFILE_PREFS_TEMPLATE" "$PROFILE_PREFS_FILE"
+  profile_prefs_status="created"
+fi
 
 {
   echo "# Machine-local configuration for this checkout."
@@ -452,6 +472,10 @@ cat >"$PLIST_FILE" <<EOF
 EOF
 
 echo "Wrote $ENV_FILE"
+echo "Prepared local profile directory at $PROFILE_DIR"
+echo "$profile_cv_status $PROFILE_CV_FILE"
+echo "$profile_prefs_status $PROFILE_PREFS_FILE"
+echo "Fill profile/cv.md and profile/prefs_global.md locally; optionally place a PDF CV in profile/ for setup assistance."
 echo "Prepared $SCHEDULE_FILE"
 echo "Generated $CRON_FILE"
 echo "Generated $PLIST_FILE"

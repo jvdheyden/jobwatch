@@ -16,7 +16,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
 bash scripts/bootstrap_machine.sh
 ```
 
-This writes machine-local config, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
+This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
 
 Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
 
@@ -24,6 +24,13 @@ Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.
 - `CODEX_BIN`
 - optional `LOGSEQ_GRAPH_DIR`
 - commented `JOB_AGENT_SMTP_*` placeholders for email delivery
+
+Local profile data lives in `profile/`, which is also gitignored. Setup creates default placeholders:
+
+- `profile/cv.md`: the primary agent-readable CV context
+- `profile/prefs_global.md`: durable preferences that apply across tracks
+
+Before or during your first track setup, replace those placeholders with your own information. You can also copy a PDF CV into `profile/`; if `profile/cv.md` is still the default, the setup agent can help turn the PDF into Markdown. The Markdown CV remains the canonical file the agent reads.
 
 If you only need to regenerate machine-local config later, run:
 
@@ -48,6 +55,8 @@ Set up a new search track for privacy engineering roles in Germany.
 ```
 
 The setup flow creates the track files, asks which delivery methods you want, configures scheduling if requested, and validates the track.
+
+Track-specific preferences live in `tracks/<track-slug>/prefs.md`. They are still required even when `profile/cv.md` and `profile/prefs_global.md` are filled, because each track can have narrower goals, keywords, constraints, and red flags.
 
 5. Let the setup agent configure delivery and scheduling.
 

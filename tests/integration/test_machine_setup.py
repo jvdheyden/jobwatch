@@ -65,6 +65,7 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
     scheduler_dir = tmp_job_agent_root / ".scheduler"
+    profile_dir = tmp_job_agent_root / "profile"
     fake_bin_dir = tmp_job_agent_root / "bin"
     _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
 
@@ -92,6 +93,10 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com" in env_text
     assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
     assert "# export JOB_AGENT_SMTP_TLS=starttls" in env_text
+    assert (profile_dir / "cv.md").exists()
+    assert (profile_dir / "prefs_global.md").exists()
+    assert "JOB_AGENT_PROFILE_TEMPLATE: cv.md" in (profile_dir / "cv.md").read_text()
+    assert "JOB_AGENT_PROFILE_TEMPLATE: prefs_global.md" in (profile_dir / "prefs_global.md").read_text()
     assert schedule_file.exists()
     schedule_text = schedule_file.read_text()
     assert "# daily HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
@@ -106,6 +111,32 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     second = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
     assert second.returncode == 0, second.stderr
     assert schedule_file.read_text() == "daily 08:00 track demo\n"
+
+
+def test_setup_machine_preserves_existing_profile_files(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    profile_dir = tmp_job_agent_root / "profile"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    profile_dir.mkdir(parents=True)
+    (profile_dir / "cv.md").write_text("# Existing CV\n\nDo not replace.\n")
+    (profile_dir / "prefs_global.md").write_text("# Existing Preferences\n\nDo not replace.\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+    assert (profile_dir / "cv.md").read_text() == "# Existing CV\n\nDo not replace.\n"
+    assert (profile_dir / "prefs_global.md").read_text() == "# Existing Preferences\n\nDo not replace.\n"
 
 
 def test_setup_machine_preserves_existing_smtp_values(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -618,7 +649,11 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
     assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
-    assert f"Bootstrapped machine config and repo-local virtualenv for {tmp_job_agent_root}" in result.stdout
+    assert (
+        f"Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for {tmp_job_agent_root}"
+        in result.stdout
+    )
+    assert "Fill profile/cv.md and profile/prefs_global.md locally" in result.stdout
     assert "Next: ask Codex to set up a search track" in result.stdout
     assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
 

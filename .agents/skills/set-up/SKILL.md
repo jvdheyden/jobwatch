@@ -15,6 +15,40 @@ Default assumption:
 
 ## Workflow
 
+### Before track setup. Check local profile readiness
+
+Before creating or expanding a track, check the local profile files:
+
+- `profile/cv.md`
+- `profile/prefs_global.md`
+
+These files are local user data and are ignored by Git. If either file is missing, run or recommend:
+
+```bash
+bash scripts/setup_machine.sh
+```
+
+Treat a profile file as still default if it contains `JOB_AGENT_PROFILE_TEMPLATE`.
+
+For `profile/cv.md`:
+- If it is filled, use it as the primary CV context.
+- If it is still default, check whether a PDF CV already exists in `profile/`.
+- If a PDF CV exists and `pdftotext` is available, use it to draft a concise Markdown CV in `profile/cv.md`, then ask the user to review and correct it before relying on it.
+- If no PDF CV exists, ask the user to place a PDF CV in `profile/` or manually fill `profile/cv.md`.
+- Do not ask the user to paste a full CV into chat unless they explicitly choose that route.
+
+For `profile/prefs_global.md`:
+- If it is filled, treat it as durable cross-track preference context.
+- If it is still default, handhold the user to fill it with global preferences:
+  - preferred locations and work mode
+  - role seniority and durable role-shape preferences
+  - hard constraints and dealbreakers
+  - recurring red flags
+  - compensation or practical constraints, if any
+- Track-specific `tracks/{track_slug}/prefs.md` still gets created separately and can override global preferences.
+
+If the user chooses to defer profile cleanup, continue from the track brief but explicitly note that ranking and source discovery may be weaker until `profile/cv.md` and `profile/prefs_global.md` are filled.
+
 ### 1. Gather the minimum `prefs.md` brief first
 
 Start by collecting only the minimum information needed to draft `prefs.md`.
@@ -32,7 +66,7 @@ Ask for:
 Hard gate:
 - Do not call `../discover-sources/SKILL.md` until this minimum brief is captured in the conversation or already exists in `tracks/{track_slug}/prefs.md`.
 - Track name or slug alone is not enough.
-- Do not infer a source list from `cv.md`, `profile/prefs_global.md`, or the track name alone.
+- Do not infer a source list from `profile/cv.md`, `profile/prefs_global.md`, or the track name alone.
 - If the minimum brief is not available yet, stay in question-asking mode.
 
 ### 2. Ask for known companies and job boards
@@ -409,6 +443,7 @@ Report:
 - what files were created or changed
 - whether `discover-sources` was used, and which returned sources were kept
 - which sources were included and with which `discovery_mode`
+- whether `profile/cv.md` and `profile/prefs_global.md` were filled, default, or deferred
 - which delivery methods the user selected, and which local config values still need to be filled
 - whether scheduling was configured, with cadence, local time, and scheduler install status
 - which validation commands passed
