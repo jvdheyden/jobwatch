@@ -617,7 +617,7 @@ def build_coder_prompt(
     primary_evidence = repair_ticket.get("primary_evidence", [])
     lines = [
         f"Repair the {source} source integration from the repository root in mode: repo_dev.",
-        "Follow the repository AGENTS.md for mode routing, then follow .agents/skills/coding/SKILL.md.",
+        "Follow the repository AGENTS.md for mode routing, then use the project skill `coding`.",
         "Aim for one focused repair attempt for this source only.",
         f"Track: {track}",
         f"Source: {source}",

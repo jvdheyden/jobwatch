@@ -29,6 +29,7 @@ logs/
 tracks/*
 !tracks/test_workflow/
 !tracks/test_workflow/AGENTS.md
+!tracks/test_workflow/CLAUDE.md
 !tracks/test_workflow/prefs.md
 !tracks/test_workflow/sources.md
 tracks/*/digests/

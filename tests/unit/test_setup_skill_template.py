@@ -10,9 +10,13 @@ def test_setup_skill_uses_generic_tracked_agents_template(repo_root: Path) -> No
 
     assert "tracks/core_crypto/AGENTS.md" not in skill_text
     assert "Use `.agents/skills/set-up/templates/track_AGENTS.md` as the base template." in skill_text
+    assert "tracks/{track_slug}/CLAUDE.md" in skill_text
+    assert "contains exactly `@AGENTS.md`" in skill_text
     assert template_path.exists()
     assert "../../profile/cv.md" in template_text
     assert "../../cv.md" not in template_text
+    assert "Use the project skill `find-jobs`." in template_text
+    assert "Use the project skill `rank-jobs`." in template_text
 
     for placeholder in ("{track_display_name}", "{track_slug}", "{user_name}", "{fit_language}"):
         assert placeholder in template_text

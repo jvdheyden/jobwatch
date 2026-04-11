@@ -23,6 +23,8 @@ bash -n scripts/sync_to_logseq.sh
 bash -n scripts/test_track_workflow.sh
 bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/configure_schedule.py
+"$PYTHON_BIN" -m py_compile scripts/sync_claude_skills.py
+"$PYTHON_BIN" scripts/sync_claude_skills.py --check
 
 PYTEST_ARGS=("$@")
 if [[ ${#PYTEST_ARGS[@]} -eq 0 ]]; then
@@ -37,6 +39,7 @@ fi
   tests/unit/test_render_digest.py \
   tests/unit/test_send_digest_email.py \
   tests/unit/test_setup_skill_template.py \
+  tests/unit/test_claude_support.py \
   tests/unit/test_machine_resolution.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \

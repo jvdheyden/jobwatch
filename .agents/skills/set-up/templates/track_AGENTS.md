@@ -39,8 +39,8 @@ Read these files in order before starting:
 
 If useful, also use:
 
-12. `../../.agents/skills/find-jobs/SKILL.md`
-13. `../../.agents/skills/rank-jobs/SKILL.md`
+12. Use the project skill `find-jobs`.
+13. Use the project skill `rank-jobs`.
 14. `../../scripts/discover_jobs.py`
 15. `../../scripts/render_digest.py`
 
@@ -92,11 +92,11 @@ For each run:
 4. During a normal scheduled run, treat the fresh artifact as the default discovery input for due-source coverage and candidate enumeration.
 5. Do not rerun `../../scripts/discover_jobs.py` yourself during a normal scheduled pass unless the artifact is missing, stale, inconsistent with the due-source set, or you were explicitly asked to debug discovery.
 6. Search only the due sources from `./sources.md`.
-7. Use `find-jobs` to collect plausible new roles and structured coverage notes.
+7. Use the project skill `find-jobs` to collect plausible new roles and structured coverage notes.
 8. If the fresh artifact is missing, stale, incomplete for the due-source set, or inconsistent with the track inputs, fall back to live discovery for the affected sources only.
 9. Treat a source as fully checked only if the coverage notes include status, listing pages scanned, search terms tried, result pages scanned, direct job pages opened, and limitations.
 10. If a source exposes native search, do not mark it complete unless the coverage notes show that native search was actually used, or a deterministic scripted discovery artifact shows that the full source was enumerated and the full term set was applied.
-11. Use `rank-jobs` to score and prioritize them.
+11. Use the project skill `rank-jobs` to score and prioritize them.
 12. Create or update today's structured digest artifact at `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` using `../../shared/digest_schema.md` as the source-of-truth schema.
 13. Render today's markdown digest by running `../../scripts/render_digest.py --track {track_slug} --date YYYY-MM-DD`.
 14. Add newly reported roles to `../../shared/seen_jobs.md`.

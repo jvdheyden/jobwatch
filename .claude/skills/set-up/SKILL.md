@@ -1,3 +1,6 @@
+<!-- GENERATED FILE: source of truth is .agents/skills/set-up/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
+
 ---
 name: set-up
 description: Set up a new search track for the job-agent.

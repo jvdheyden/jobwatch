@@ -10,8 +10,8 @@ This repository supports four kinds of work:
 Mode selection:
 - If the prompt explicitly says to run a track workflow, produce a digest, process discovery artifacts, or names `tracks/<track>/AGENTS.md`, treat the task as a track run.
 - In track-run mode, follow the scheduled or user prompt first, then the relevant `tracks/<track>/AGENTS.md`.
-- If the prompt asks to create, scaffold, initialize, or set up a new search track, or names `.agents/skills/set-up/SKILL.md`, treat the task as track setup.
-- In track-setup mode, follow `.agents/skills/set-up/SKILL.md`.
+- If the prompt asks to create, scaffold, initialize, or set up a new search track, or names the project skill `set-up`, treat the task as track setup.
+- In track-setup mode, use the project skill `set-up`.
 - If the prompt clearly asks to add, evaluate, confirm, or look up a named employer or official source for an existing track, treat it as existing-track source curation. Examples include prompts like `add <company> as a source to <track>` or `evaluate <company> for <track>`.
 - Existing-track source curation is narrow: use it for adding or evaluating a named source for an existing track, not for broad source discovery, removals, cadence changes, or search-term edits.
 - In existing-track source-curation mode:
@@ -21,6 +21,6 @@ Mode selection:
   - infer a conservative `discovery_mode` from the URL or board family, defaulting to `html` when unclear
   - prepare a normalized source entry suitable for `sources.md`
   - if the source looks straightforward, treat the prompt as permission to update the track config
-  - if support looks uncertain or weak, do not auto-escalate; instead suggest optional source-integration escalation following `.agents/skills/set-up/SKILL.md` section `4b`
-- Otherwise, treat the task as repo development and read `.agents/skills/coding/SKILL.md`.
+  - if support looks uncertain or weak, do not auto-escalate; instead suggest optional source-integration escalation using the project skill `set-up`, section `4b`
+- Otherwise, treat the task as repo development and use the project skill `coding`.
 - Only ask the user which mode they want if the request is genuinely ambiguous.

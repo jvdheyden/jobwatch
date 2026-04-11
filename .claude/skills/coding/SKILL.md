@@ -1,3 +1,6 @@
+<!-- GENERATED FILE: source of truth is .agents/skills/coding/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
+
 ---
 name: coding
 description: Coding agent for this repo.
