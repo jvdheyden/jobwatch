@@ -34,15 +34,25 @@ The installer copies the generated profile into `/etc/apparmor.d/bwrap-userns-re
 
 In non-interactive mode, the script does not prompt. `CODEX_BIN` must already be supplied via `--codex-bin`, the environment, existing `.env.local`, or `PATH`.
 
-The setup script does not install scheduling. After you have created one or more tracks, add entries to `.schedule.local` using this format:
+The track setup agent normally asks about delivery and scheduling after it creates a track. When you choose scheduled runs, it writes `.schedule.local` with `scripts/configure_schedule.py` and installs the platform scheduler with `bash scripts/install_scheduler.sh`.
 
-```text
-daily 08:00 track core_crypto
-daily 08:00 track core_crypto --delivery logseq
-daily 08:00 track core_crypto --delivery email
+For manual maintenance, use the helper instead of editing `.schedule.local` by hand:
+
+```bash
+./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence daily --time 08:00
+./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence weekly --weekday mon --time 08:00 --delivery logseq
+./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence monthly --month-day 1 --time 08:00 --delivery email
 ```
 
-Then install the platform scheduler with `bash scripts/install_scheduler.sh`.
+Supported schedule file forms are:
+
+```text
+daily HH:MM track <track-slug> [--delivery logseq|email]...
+weekly mon HH:MM track <track-slug> [--delivery logseq|email]...
+monthly 1 HH:MM track <track-slug> [--delivery logseq|email]...
+```
+
+After changing schedules manually with the helper, install or refresh the platform scheduler with `bash scripts/install_scheduler.sh`.
 
 - On Linux, that updates your user crontab with one generic entry that runs `scripts/run_scheduled_jobs.sh` every minute.
 - On macOS, that installs a LaunchAgent that runs the same shared scheduler script every minute.

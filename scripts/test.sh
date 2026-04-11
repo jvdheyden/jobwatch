@@ -22,6 +22,7 @@ bash -n scripts/run_scheduled_jobs.sh
 bash -n scripts/sync_to_logseq.sh
 bash -n scripts/test_track_workflow.sh
 bash -n tests/e2e/fake_codex.sh
+"$PYTHON_BIN" -m py_compile scripts/configure_schedule.py
 
 PYTEST_ARGS=("$@")
 if [[ ${#PYTEST_ARGS[@]} -eq 0 ]]; then

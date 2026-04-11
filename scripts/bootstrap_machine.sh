@@ -36,7 +36,7 @@ done
 /bin/bash "$SCRIPT_DIR/bootstrap_venv.sh"
 
 echo "Bootstrapped machine config and repo-local virtualenv for $ROOT"
-echo "Next: bash scripts/install_scheduler.sh"
+echo "Next: ask Codex to set up a search track; the setup agent can configure delivery, scheduling, and scheduler install."
 if [[ "$PLATFORM" == "Linux" ]]; then
   echo "Optional on Linux hosts that enforce AppArmor userns restrictions:"
   echo "  sudo bash scripts/install_bwrap_apparmor.sh"

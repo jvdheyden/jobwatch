@@ -2,7 +2,7 @@
 
 This repository runs a Codex-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email.
 
-Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step:
+Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step.
 
 ## New User Setup
 
@@ -47,32 +47,19 @@ Example prompt:
 Set up a new search track for privacy engineering roles in Germany.
 ```
 
-The setup flow creates the track files, validates the track, then asks which delivery methods you want: local artifacts only, Logseq, email, or both.
+The setup flow creates the track files, asks which delivery methods you want, configures scheduling if requested, and validates the track.
 
-5. Add one or more schedule entries to `.schedule.local`, for example:
+5. Let the setup agent configure delivery and scheduling.
 
-```text
-daily 08:00 track core_crypto
-daily 08:00 track core_crypto --delivery logseq
-daily 08:00 track core_crypto --delivery email
-daily 08:00 track core_crypto --delivery logseq --delivery email
-```
+The setup agent asks whether you want scheduled runs, how often they should run, and at what local time. It then writes `.schedule.local` with `scripts/configure_schedule.py` and installs the shared scheduler with `bash scripts/install_scheduler.sh`.
 
-The first form produces local artifacts only. Add delivery flags only after the matching local config is ready.
+Supported schedule choices:
 
-- local artifacts only: no delivery flag
-- Logseq sync: `--delivery logseq`
-- email delivery: `--delivery email`
-- both: pass both delivery flags
+- daily at `HH:MM`
+- weekly on `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, or `sun` at `HH:MM`
+- monthly on day `1` through `31` at `HH:MM`
 
-
-6. Install the scheduler:
-
-```bash
-bash scripts/install_scheduler.sh
-```
-
-On Linux this updates your user crontab with the shared per-minute dispatcher. On macOS it installs the corresponding LaunchAgent.
+On Linux, scheduler install updates your user crontab with the shared per-minute dispatcher. On macOS, it installs the corresponding LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
 
 ## Manual Run
 
@@ -91,6 +78,19 @@ bash scripts/run_track.sh --track <track-slug> --delivery logseq
 bash scripts/run_track.sh --track <track-slug> --delivery email
 bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery email
 ```
+
+## Scheduled Runs
+
+The setup agent normally manages `.schedule.local`. For manual maintenance, use the helper rather than editing scheduler syntax by hand:
+
+```bash
+./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence daily --time 08:00
+./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence weekly --weekday mon --time 08:00 --delivery logseq
+./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence monthly --month-day 1 --time 08:00 --delivery email
+bash scripts/install_scheduler.sh
+```
+
+`configure_schedule.py` keeps one active schedule entry per track, replaces that track's old entry, and preserves other scheduled tracks.
 
 ## Email Digest
 
@@ -132,7 +132,7 @@ or by editing `.env.local` locally:
 export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq
 ```
 
-Then run with `--delivery logseq`.
+Then run `scripts/run_track.sh` with `--delivery logseq`.
 
 ## Development Checks
 

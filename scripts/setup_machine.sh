@@ -37,7 +37,8 @@ Create or refresh machine-local scheduler config for this checkout.
 In a terminal, the script prompts for any missing required values.
 In non-interactive mode, CODEX_BIN must be supplied or discoverable.
 This script does not install cron or launchd. After adding entries to
-$SCHEDULE_FILE, run scripts/install_scheduler.sh.
+$SCHEDULE_FILE with scripts/configure_schedule.py or the setup agent, run
+scripts/install_scheduler.sh.
 EOF
 }
 
@@ -388,10 +389,14 @@ fi
 if [[ ! -f "$SCHEDULE_FILE" ]]; then
   cat >"$SCHEDULE_FILE" <<EOF
 # Machine-local scheduler entries.
-# Format: daily HH:MM track <track-slug> [--delivery logseq|email]...
+# Prefer scripts/configure_schedule.py or the setup agent over hand-editing.
+# Formats:
+# daily HH:MM track <track-slug> [--delivery logseq|email]...
+# weekly mon HH:MM track <track-slug> [--delivery logseq|email]...
+# monthly 1 HH:MM track <track-slug> [--delivery logseq|email]...
 # Example:
 # daily 08:00 track core_crypto
-# daily 08:00 track core_crypto --delivery logseq --delivery email
+# weekly mon 08:00 track core_crypto --delivery logseq --delivery email
 EOF
 fi
 
@@ -454,4 +459,4 @@ if [[ -f "$APPARMOR_PROFILE_FILE" ]]; then
   echo "Generated $APPARMOR_PROFILE_FILE for $detected_bwrap_bin"
   echo "Run sudo bash scripts/install_bwrap_apparmor.sh if this Linux host enforces AppArmor userns restrictions."
 fi
-echo "Add track entries to $SCHEDULE_FILE, then run scripts/install_scheduler.sh."
+echo "Use scripts/configure_schedule.py or the setup agent to add track entries, then run scripts/install_scheduler.sh."

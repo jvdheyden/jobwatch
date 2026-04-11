@@ -49,7 +49,6 @@ Ask for:
   - `Check every month`
 - track-wide search terms, if already known
 - source-specific search terms, including whether any source should use `[override]`, if already known
-- whether the user wants a launchd plist now, and if so, at what local time. By default schedule the agent for this to track to run along with other already scheduled agents for other tracks.
 
 ### 3. Optional source discovery
 
@@ -202,7 +201,6 @@ Create:
 - `tracks/{track_slug}/sources.md`
 - `tracks/{track_slug}/AGENTS.md`
 - `tracks/{track_slug}/digests/`
-- optionally update `scripts/com.jvdh.tracks-job-agent.plist`
 
 Do not hand-write `tracks/{track_slug}/ranked_overview.md` or `shared/ranked_jobs/{track_slug}.json`.
 Let `scripts/update_ranked_overview.py --track {track_slug}` initialize those.
@@ -301,23 +299,9 @@ Important:
 - Do not leave crypto-specific fit text in a non-crypto track
 - Keep the run boundaries, same-day rerun behavior, JSON digest flow, and ranked-overview rebuild steps aligned with the current shared workflow
 
-#### Optional launchd plist
-
-If the user wants scheduled runs along with the other tracks, update `scripts/com.jvdh.tracks-job-agent.plist` to add the new `run_track.sh --track {track_slug}` invocation to the shared schedule.
-
-Only create a dedicated per-track plist if the user explicitly asks for a separate schedule or separate logs.
-
-Change:
-- the shared plist's `ProgramArguments` to include `--track {track_slug}`
-- schedule time if the user wants the shared schedule changed
-
-If you do create a dedicated per-track plist, use a generic naming scheme only when it actually represents multiple tracks. Do not create a new per-track plist by default just because a new track was added.
-
-Do not change the shared runner shape. The plist should still call `scripts/run_track.sh`. Reload the launch agent.
-
 ### 6. Delivery preferences and local config handholding
 
-After files are generated, ask which delivery methods the user wants for this track.
+After files are generated, ask which delivery methods and schedule the user wants for this track.
 
 Explain the options clearly:
 - local artifacts only: always available; `run_track.sh` leaves JSON and Markdown files in the repo
@@ -359,15 +343,37 @@ For email:
 
 Then test real delivery only when the user confirms the local SMTP config is ready.
 
-Scheduling caveat:
-- `.schedule.local` entries can include delivery flags after the track slug.
-- Use local-artifacts-only scheduling when no delivery flags are present:
-  `daily 08:00 track {track_slug}`
-- Use scheduled delivery when requested:
-  `daily 08:00 track {track_slug} --delivery logseq`
-  `daily 08:00 track {track_slug} --delivery email`
-  `daily 08:00 track {track_slug} --delivery logseq --delivery email`
+For scheduling:
+- Ask whether the user wants scheduled runs for this track now.
+- If not, do not edit `.schedule.local`; tell the user manual runs are available with the examples above.
+- If yes, ask for cadence and time:
+  - daily: local `HH:MM`
+  - weekly: weekday as `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, or `sun`, plus local `HH:MM`
+  - monthly: day `1` through `31`, plus local `HH:MM`
+- Do not ask the user to hand-edit `.schedule.local`.
+- Generate or update `.schedule.local` with `scripts/configure_schedule.py`, passing delivery flags that match the selected delivery methods.
+- Then install the shared platform scheduler with `bash scripts/install_scheduler.sh`.
+
+Use these schedule commands:
+
+```bash
+./.venv/bin/python scripts/configure_schedule.py --track {track_slug} --cadence daily --time HH:MM
+./.venv/bin/python scripts/configure_schedule.py --track {track_slug} --cadence weekly --weekday mon --time HH:MM
+./.venv/bin/python scripts/configure_schedule.py --track {track_slug} --cadence monthly --month-day 1 --time HH:MM
+```
+
+Append delivery flags when requested:
+
+```bash
+--delivery logseq
+--delivery email
+--delivery logseq --delivery email
+```
+
+Scheduling caveats:
+- One active schedule entry per track is the default; `scripts/configure_schedule.py` replaces an existing entry for the same track and preserves other tracks.
 - If email delivery is scheduled, remind the user that SMTP values must be filled in `.env.local` before the scheduled run.
+- If `bash scripts/install_scheduler.sh` needs approval to update crontab or launchd, request that approval and then continue.
 
 ### 7. Validation
 
@@ -377,20 +383,21 @@ After scaffolding, run:
 2. `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --due-only --pretty`
 3. `./.venv/bin/python scripts/update_ranked_overview.py --track {track_slug}`
 
-If you updated the shared plist or created a dedicated plist, also run:
+If scheduled runs were configured, also run:
 
-4. `plutil -lint scripts/com.jvdh.tracks-job-agent.plist` for the shared scheduler, or lint the dedicated plist path if you explicitly created one
+4. The selected `./.venv/bin/python scripts/configure_schedule.py ...` command
+5. `bash scripts/install_scheduler.sh`
 
 If setup required changes to shared code such as `scripts/discover_jobs.py`, also run:
 
-5. `scripts/test.sh`
+6. `scripts/test.sh`
 
 If setup included source integration with a canary, also run:
 
-6. For each newly added or materially changed source that was actually probed and has a canary:
+7. For each newly added or materially changed source that was actually probed and has a canary:
    `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
-7. For at most the top 2 `repair_needed` sources by default:
+8. For at most the top 2 `repair_needed` sources by default:
    `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
@@ -402,6 +409,7 @@ Report:
 - whether `discover-sources` was used, and which returned sources were kept
 - which sources were included and with which `discovery_mode`
 - which delivery methods the user selected, and which local config values still need to be filled
+- whether scheduling was configured, with cadence, local time, and scheduler install status
 - which validation commands passed
 - which newly integrated sources passed the quality gate
 - which sources were deferred instead of escalated, and why

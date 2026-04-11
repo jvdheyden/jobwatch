@@ -4,6 +4,7 @@ import os
 import pty
 import select
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -92,8 +93,10 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
     assert "# export JOB_AGENT_SMTP_TLS=starttls" in env_text
     assert schedule_file.exists()
-    assert "daily 08:00 track core_crypto" in schedule_file.read_text()
-    assert "daily 08:00 track core_crypto --delivery logseq --delivery email" in schedule_file.read_text()
+    schedule_text = schedule_file.read_text()
+    assert "# daily HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
+    assert "# weekly mon HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
+    assert "# monthly 1 HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
     cron_text = (scheduler_dir / "cron.entry").read_text()
     assert cron_text.startswith("# BEGIN jobsearch scheduler\n* * * * * /bin/bash ")
     assert (scheduler_dir / "com.jvdh.jobsearch.scheduler.plist").exists()
@@ -147,6 +150,123 @@ def test_setup_machine_preserves_existing_smtp_values(tmp_job_agent_root: Path, 
     assert "export JOB_AGENT_SMTP_PASSWORD=smtp-secret" in env_text
     assert "export JOB_AGENT_SMTP_TLS=none" in env_text
     assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" not in env_text
+
+
+def test_configure_schedule_creates_daily_entry(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+
+    result = run_cmd(
+        sys.executable,
+        str(repo_root / "scripts" / "configure_schedule.py"),
+        "--track",
+        "demo",
+        "--cadence",
+        "daily",
+        "--time",
+        "08:00",
+        "--schedule-file",
+        str(schedule_file),
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert schedule_file.read_text().splitlines()[-1] == "daily 08:00 track demo"
+
+
+def test_configure_schedule_replaces_track_and_preserves_others(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    schedule_file.write_text(
+        "\n".join(
+            [
+                "# existing schedules",
+                "daily 08:00 track demo",
+                "daily 09:00 track other --delivery email",
+                "weekly fri 10:00 track demo --delivery logseq",
+                "",
+            ]
+        )
+    )
+
+    result = run_cmd(
+        sys.executable,
+        str(repo_root / "scripts" / "configure_schedule.py"),
+        "--track",
+        "demo",
+        "--cadence",
+        "monthly",
+        "--month-day",
+        "15",
+        "--time",
+        "07:30",
+        "--delivery",
+        "logseq",
+        "--delivery",
+        "email",
+        "--schedule-file",
+        str(schedule_file),
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert schedule_file.read_text().splitlines() == [
+        "# existing schedules",
+        "daily 09:00 track other --delivery email",
+        "",
+        "monthly 15 07:30 track demo --delivery logseq --delivery email",
+    ]
+
+
+def test_configure_schedule_creates_weekly_entry_with_delivery(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+
+    result = run_cmd(
+        sys.executable,
+        str(repo_root / "scripts" / "configure_schedule.py"),
+        "--track",
+        "demo",
+        "--cadence",
+        "weekly",
+        "--weekday",
+        "mon",
+        "--time",
+        "08:00",
+        "--delivery",
+        "email",
+        "--schedule-file",
+        str(schedule_file),
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "weekly mon 08:00 track demo --delivery email" in schedule_file.read_text()
+
+
+def test_configure_schedule_rejects_invalid_weekly_schedule(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+
+    result = run_cmd(
+        sys.executable,
+        str(repo_root / "scripts" / "configure_schedule.py"),
+        "--track",
+        "demo",
+        "--cadence",
+        "weekly",
+        "--time",
+        "08:00",
+        "--schedule-file",
+        str(schedule_file),
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 2
+    assert "weekly schedules require --weekday" in result.stderr
+    assert not schedule_file.exists()
 
 
 def test_setup_machine_fails_noninteractive_without_codex(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -499,7 +619,7 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     assert result.returncode == 0, result.stderr
     assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
     assert f"Bootstrapped machine config and repo-local virtualenv for {tmp_job_agent_root}" in result.stdout
-    assert "Next: bash scripts/install_scheduler.sh" in result.stdout
+    assert "Next: ask Codex to set up a search track" in result.stdout
     assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
 
 
@@ -521,7 +641,7 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
 
     result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
-    assert "Next: bash scripts/install_scheduler.sh" in result.stdout
+    assert "Next: ask Codex to set up a search track" in result.stdout
     assert "install_bwrap_apparmor" not in result.stdout
 
 
@@ -654,6 +774,108 @@ echo "$*" >> "$ROOT/invocations.log"
     assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == [
         "--track demo --delivery email --delivery logseq"
     ]
+
+
+def test_run_scheduled_jobs_runs_weekly_only_on_matching_weekday(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    schedule_file.write_text("weekly mon 08:00 track demo --delivery email\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_TIME": "08:00",
+        "JOB_AGENT_SCHEDULE_WEEKDAY": "mon",
+        "JOB_AGENT_SCHEDULE_STAMP": "2030-01-14-08:00",
+    }
+
+    first = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
+    second = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=env | {"JOB_AGENT_SCHEDULE_WEEKDAY": "tue", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:00"},
+        cwd=repo_root,
+    )
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo --delivery email"]
+
+
+def test_run_scheduled_jobs_runs_monthly_only_on_matching_day(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    schedule_file.write_text("monthly 15 08:00 track demo --delivery logseq\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_TIME": "08:00",
+        "JOB_AGENT_SCHEDULE_MONTH_DAY": "15",
+        "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:00",
+    }
+
+    first = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
+    second = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=env | {"JOB_AGENT_SCHEDULE_MONTH_DAY": "16", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-16-08:00"},
+        cwd=repo_root,
+    )
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo --delivery logseq"]
+
+
+def test_run_scheduled_jobs_rejects_invalid_schedule_entry(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    schedule_file.write_text("weekly someday 08:00 track demo\n")
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_TIME": "08:00",
+        "JOB_AGENT_SCHEDULE_WEEKDAY": "mon",
+        "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:00",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
+
+    assert result.returncode == 1
+    assert "Invalid schedule entry: weekly someday 08:00 track demo" in result.stderr
+    assert not (tmp_job_agent_root / "invocations.log").exists()
 
 
 def test_run_scheduled_jobs_is_noop_with_empty_schedule(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

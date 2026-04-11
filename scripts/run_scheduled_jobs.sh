@@ -21,6 +21,8 @@ STATE_DIR="${JOB_AGENT_SCHEDULER_STATE_DIR:-$SCHEDULER_DIR/state}"
 LOCK_DIR="$SCHEDULER_DIR/run.lock"
 CURRENT_TIME="${JOB_AGENT_SCHEDULE_TIME:-$(date +%H:%M)}"
 CURRENT_STAMP="${JOB_AGENT_SCHEDULE_STAMP:-$(date +%F-%H:%M)}"
+CURRENT_WEEKDAY_RAW="${JOB_AGENT_SCHEDULE_WEEKDAY:-$(LC_ALL=C date +%a)}"
+CURRENT_MONTH_DAY="${JOB_AGENT_SCHEDULE_MONTH_DAY:-$(date +%d)}"
 STATUS=0
 
 trim_line() {
@@ -30,6 +32,49 @@ trim_line() {
   value="${value%"${value##*[![:space:]]}"}"
   printf '%s\n' "$value"
 }
+
+normalize_weekday() {
+  local value="$1"
+  value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+  case "$value" in
+    mon|monday) printf 'mon\n' ;;
+    tue|tues|tuesday) printf 'tue\n' ;;
+    wed|wednesday) printf 'wed\n' ;;
+    thu|thur|thurs|thursday) printf 'thu\n' ;;
+    fri|friday) printf 'fri\n' ;;
+    sat|saturday) printf 'sat\n' ;;
+    sun|sunday) printf 'sun\n' ;;
+    *) return 1 ;;
+  esac
+}
+
+is_valid_month_day() {
+  local value="$1"
+  case "$value" in
+    ""|*[!0-9]*)
+      return 1
+      ;;
+  esac
+  value="${value#0}"
+  [[ -n "$value" && "$value" -ge 1 && "$value" -le 31 ]]
+}
+
+canonical_month_day() {
+  local value="$1"
+  value="${value#0}"
+  printf '%s\n' "$value"
+}
+
+if ! CURRENT_WEEKDAY="$(normalize_weekday "$CURRENT_WEEKDAY_RAW")"; then
+  echo "Invalid current weekday: $CURRENT_WEEKDAY_RAW" >&2
+  exit 2
+fi
+
+if ! is_valid_month_day "$CURRENT_MONTH_DAY"; then
+  echo "Invalid current month day: $CURRENT_MONTH_DAY" >&2
+  exit 2
+fi
+CURRENT_MONTH_DAY="$(canonical_month_day "$CURRENT_MONTH_DAY")"
 
 mkdir -p "$STATE_DIR" "$ROOT/logs"
 
@@ -59,17 +104,70 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
   fi
 
   cadence="${fields[0]}"
-  scheduled_time="${fields[1]}"
-  job_type="${fields[2]}"
-  job_arg="${fields[3]}"
+  scheduled_time=""
+  scheduled_weekday=""
+  scheduled_month_day=""
+  job_type=""
+  job_arg=""
   delivery_args=()
+  field_index=0
   valid_entry=1
+  due_entry=0
 
-  if [[ "$cadence" != "daily" || ! "$scheduled_time" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ || -z "$job_type" || -z "$job_arg" ]]; then
+  case "$cadence" in
+    daily)
+      if [[ ${#fields[@]} -lt 4 ]]; then
+        valid_entry=0
+      else
+        scheduled_time="${fields[1]}"
+        job_type="${fields[2]}"
+        job_arg="${fields[3]}"
+        field_index=4
+        if [[ "$scheduled_time" == "$CURRENT_TIME" ]]; then
+          due_entry=1
+        fi
+      fi
+      ;;
+    weekly)
+      if [[ ${#fields[@]} -lt 5 ]]; then
+        valid_entry=0
+      else
+        if scheduled_weekday="$(normalize_weekday "${fields[1]}")"; then
+          scheduled_time="${fields[2]}"
+          job_type="${fields[3]}"
+          job_arg="${fields[4]}"
+          field_index=5
+          if [[ "$scheduled_weekday" == "$CURRENT_WEEKDAY" && "$scheduled_time" == "$CURRENT_TIME" ]]; then
+            due_entry=1
+          fi
+        else
+          valid_entry=0
+        fi
+      fi
+      ;;
+    monthly)
+      if [[ ${#fields[@]} -lt 5 ]] || ! is_valid_month_day "${fields[1]}"; then
+        valid_entry=0
+      else
+        scheduled_month_day="$(canonical_month_day "${fields[1]}")"
+        scheduled_time="${fields[2]}"
+        job_type="${fields[3]}"
+        job_arg="${fields[4]}"
+        field_index=5
+        if [[ "$scheduled_month_day" == "$CURRENT_MONTH_DAY" && "$scheduled_time" == "$CURRENT_TIME" ]]; then
+          due_entry=1
+        fi
+      fi
+      ;;
+    *)
+      valid_entry=0
+      ;;
+  esac
+
+  if [[ $valid_entry -eq 1 && ( ! "$scheduled_time" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ || -z "$job_type" || -z "$job_arg" ) ]]; then
     valid_entry=0
   fi
 
-  field_index=4
   while [[ $valid_entry -eq 1 && $field_index -lt ${#fields[@]} ]]; do
     if [[ "${fields[$field_index]}" != "--delivery" || $((field_index + 1)) -ge ${#fields[@]} ]]; then
       valid_entry=0
@@ -94,7 +192,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
     continue
   fi
 
-  if [[ "$scheduled_time" != "$CURRENT_TIME" ]]; then
+  if [[ "$due_entry" -ne 1 ]]; then
     continue
   fi
 
@@ -108,7 +206,17 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
       ;;
   esac
 
-  state_key="$(printf '%s-%s-%s' "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+  case "$cadence" in
+    daily)
+      state_key="$(printf '%s-%s-%s' "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+      ;;
+    weekly)
+      state_key="$(printf '%s-%s-%s-%s-%s' "$cadence" "$scheduled_weekday" "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+      ;;
+    monthly)
+      state_key="$(printf '%s-%s-%s-%s-%s' "$cadence" "$scheduled_month_day" "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+      ;;
+  esac
   state_file="$STATE_DIR/$state_key.stamp"
 
   if [[ -f "$state_file" ]] && [[ "$(cat "$state_file")" == "$CURRENT_STAMP" ]]; then
