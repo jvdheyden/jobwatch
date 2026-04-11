@@ -31,8 +31,10 @@ fi
 "$PYTHON_BIN" -m pytest \
   tests/unit/test_discover_jobs_config.py \
   tests/unit/test_discover_jobs_progress.py \
+  tests/unit/test_digest_email.py \
   tests/unit/test_digest_json.py \
   tests/unit/test_render_digest.py \
+  tests/unit/test_send_digest_email.py \
   tests/unit/test_machine_resolution.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \

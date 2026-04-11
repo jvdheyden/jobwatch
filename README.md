@@ -60,6 +60,30 @@ To run a track immediately:
 bash scripts/run_track.sh --track <track-slug>
 ```
 
+## Email Digest
+
+Daily digest emails are rendered from the structured digest JSON and ranked overview JSON, not from the Logseq/Markdown output.
+
+Preview an email without sending it:
+
+```bash
+./.venv/bin/python scripts/send_digest_email.py --track <track-slug> --date YYYY-MM-DD --dry-run
+```
+
+To send through SMTP, set:
+
+```bash
+export JOB_AGENT_SMTP_HOST=smtp.example.com
+export JOB_AGENT_SMTP_PORT=587
+export JOB_AGENT_SMTP_FROM=jobs@example.com
+export JOB_AGENT_SMTP_TO=you@example.com
+export JOB_AGENT_SMTP_USERNAME=jobs@example.com
+export JOB_AGENT_SMTP_PASSWORD=app-password
+export JOB_AGENT_SMTP_TLS=starttls
+```
+
+Then run the same command without `--dry-run`.
+
 ## Development Checks
 
 To run the repo test suite:
