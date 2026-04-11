@@ -57,7 +57,8 @@ text = text.replace("http://127.0.0.1:18765/test_workflow_board.html", local_boa
 path.write_text(text)
 PY
 
-CODEX_BIN="$ROOT/tests/e2e/fake_codex.sh" \
+JOB_AGENT_PROVIDER="codex" \
+JOB_AGENT_BIN="$ROOT/tests/e2e/fake_codex.sh" \
 JOB_AGENT_ROOT="$TEST_ROOT" \
 JOB_AGENT_TODAY="$TODAY" \
 JOB_AGENT_JOURNAL_DATE="$JOURNAL_DATE" \

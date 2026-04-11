@@ -375,6 +375,29 @@ def test_build_reviewer_command_forces_low_reasoning_effort():
     ]
 
 
+def test_build_reviewer_command_supports_claude_print_mode(monkeypatch):
+    monkeypatch.setenv("JOB_AGENT_CLAUDE_PERMISSION_MODE", "acceptEdits")
+    monkeypatch.delenv("JOB_AGENT_CLAUDE_REVIEWER_ALLOWED_TOOLS", raising=False)
+
+    command = source_quality.build_reviewer_command(
+        Path("/tmp/jobsearch"),
+        Path("/usr/local/bin/claude"),
+        provider="claude",
+    )
+
+    assert command == [
+        "/usr/local/bin/claude",
+        "-p",
+        "--no-session-persistence",
+        "--output-format",
+        "text",
+        "--permission-mode",
+        "acceptEdits",
+        "--allowedTools",
+        "Read,Glob,Grep,LS",
+    ]
+
+
 def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fields(monkeypatch):
     source = {
         "source": "Example Source",

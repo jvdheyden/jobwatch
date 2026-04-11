@@ -53,6 +53,22 @@ printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 """,
     )
+    _write_executable(
+        root / "fake_claude.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+TRACK="${JOB_AGENT_TRACK:?missing JOB_AGENT_TRACK}"
+TODAY="${JOB_AGENT_TODAY:?missing JOB_AGENT_TODAY}"
+printf '%s\\n' "$@" > "$ROOT/claude-args.txt"
+cat > "$ROOT/claude-prompt.txt"
+mkdir -p "$ROOT/tracks/$TRACK/digests"
+mkdir -p "$ROOT/artifacts/digests/$TRACK"
+printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
+printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
+printf '{"type":"result","subtype":"success","result":"done"}\\n'
+""",
+    )
 
 
 def _write_fake_caffeinate(root: Path) -> None:
@@ -455,6 +471,48 @@ def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root:
 
     assert result.returncode == 0, result.stderr
     assert (tmp_job_agent_root / "codex-prompt.txt").exists()
+
+
+def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_PROVIDER": "claude",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_claude.sh"),
+        "CODEX_BIN": str(tmp_job_agent_root / "missing_codex_should_not_be_used.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    args_text = (tmp_job_agent_root / "claude-args.txt").read_text()
+    prompt_text = (tmp_job_agent_root / "claude-prompt.txt").read_text()
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+
+    assert "-p" in args_text
+    assert "--output-format" in args_text
+    assert "stream-json" in args_text
+    assert "--verbose" in args_text
+    assert "--allowedTools" in args_text
+    assert "Run today's demo workflow from the repository root in mode: track_run." in prompt_text
+    assert "A discovery artifact for today's scheduled run has already been written" in prompt_text
+    assert "Claude phase started" in log_text
+    assert "Claude phase finished successfully" in log_text
 
 
 def test_run_track_prefers_repo_venv_python_for_discovery(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

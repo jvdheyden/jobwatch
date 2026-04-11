@@ -83,6 +83,8 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
 
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_ROOT={str(tmp_job_agent_root)}" in env_text
+    assert "export JOB_AGENT_PROVIDER=codex" in env_text
+    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert f"export CODEX_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert "# Optional: Logseq graph root for digest publication." in env_text
     assert "# Optional: SMTP settings for email delivery." in env_text
@@ -318,7 +320,7 @@ def test_setup_machine_fails_noninteractive_without_codex(tmp_job_agent_root: Pa
 
     result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
     assert result.returncode == 1
-    assert "CODEX_BIN is required in non-interactive mode" in result.stderr
+    assert "JOB_AGENT_BIN is required in non-interactive mode" in result.stderr
     assert not env_file.exists()
 
 
@@ -349,9 +351,11 @@ def test_setup_machine_interactively_prompts_for_missing_codex(tmp_job_agent_roo
     )
 
     assert result.returncode == 0, result.stdout
-    assert "CODEX_BIN (required):" in result.stdout
+    assert "JOB_AGENT_BIN for codex (required):" in result.stdout
     assert "LOGSEQ_GRAPH_DIR (optional, blank to skip):" in result.stdout
     env_text = env_file.read_text()
+    assert "export JOB_AGENT_PROVIDER=codex" in env_text
+    assert f"export JOB_AGENT_BIN={str(fake_codex)}" in env_text
     assert f"export CODEX_BIN={str(fake_codex)}" in env_text
     assert "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq" in env_text
 
@@ -384,9 +388,10 @@ def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_roo
     )
 
     assert result.returncode == 0, result.stdout
-    assert f"CODEX_BIN [{fake_bin_dir / 'codex'}]:" in result.stdout
+    assert f"JOB_AGENT_BIN for codex [{fake_bin_dir / 'codex'}]:" in result.stdout
     assert f"LOGSEQ_GRAPH_DIR (optional, Enter to use {detected_graph_dir}, type skip to leave unset):" in result.stdout
     env_text = env_file.read_text()
+    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert f"export CODEX_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert f"export LOGSEQ_GRAPH_DIR={str(detected_graph_dir)}" in env_text
 
@@ -414,6 +419,7 @@ def test_setup_machine_prefers_canonical_codex_path_on_linux(tmp_job_agent_root:
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
+    assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
     assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
 
 
@@ -441,6 +447,7 @@ def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
+    assert f"export JOB_AGENT_BIN={str(symlink_codex)}" in env_text
     assert f"export CODEX_BIN={str(symlink_codex)}" in env_text
 
 
@@ -472,8 +479,9 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     )
 
     assert result.returncode == 0, result.stdout
-    assert f"CODEX_BIN [{canonical_codex}]:" in result.stdout
+    assert f"JOB_AGENT_BIN for codex [{canonical_codex}]:" in result.stdout
     env_text = env_file.read_text()
+    assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
     assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
 
 
@@ -528,6 +536,44 @@ def test_setup_machine_skips_bwrap_apparmor_profile_on_non_linux(tmp_job_agent_r
 
     result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
+    assert not apparmor_profile.exists()
+
+
+def test_setup_machine_supports_claude_provider_without_codex_compat_or_bwrap(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    apparmor_profile = scheduler_dir / "bwrap-userns-restrict"
+    _write_executable(fake_bin_dir / "claude", "#!/bin/bash\nexit 0\n")
+    _write_executable(fake_bin_dir / "bwrap", "#!/bin/bash\nexit 0\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Linux",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "setup_machine.sh"),
+        "--provider",
+        "claude",
+        env=env,
+        cwd=repo_root,
+    )
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert "export JOB_AGENT_PROVIDER=claude" in env_text
+    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'claude')}" in env_text
+    assert "CODEX_BIN" not in env_text
     assert not apparmor_profile.exists()
 
 
@@ -654,7 +700,7 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
         in result.stdout
     )
     assert "Fill profile/cv.md and profile/prefs_global.md locally" in result.stdout
-    assert "Next: ask Codex to set up a search track" in result.stdout
+    assert "Next: ask your configured agent to set up a search track" in result.stdout
     assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
 
 
@@ -676,7 +722,7 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
 
     result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
-    assert "Next: ask Codex to set up a search track" in result.stdout
+    assert "Next: ask your configured agent to set up a search track" in result.stdout
     assert "install_bwrap_apparmor" not in result.stdout
 
 

@@ -13,20 +13,21 @@ If you only need to refresh the generated machine-local config later, run `bash 
 - `.env.local` for machine-local paths and binaries
 - `.schedule.local` for local scheduled jobs
 - `.scheduler/` for generated cron and launchd artifacts
-- `.scheduler/bwrap-userns-restrict` on Linux when `bwrap` is on `PATH`
+- `.scheduler/bwrap-userns-restrict` on Linux when the provider is Codex and `bwrap` is on `PATH`
 - `profile/cv.md` and `profile/prefs_global.md` if they do not already exist
 
 The `profile/` directory is local user data and is ignored by Git. `profile/cv.md` is the primary agent-readable CV context. `profile/prefs_global.md` stores durable cross-track preferences. You can also place a PDF CV in `profile/`; the setup agent can use it to draft `profile/cv.md` when the Markdown CV is still the default placeholder.
 
 In a normal terminal, the setup script prompts for any missing machine-local values.
 
-- `CODEX_BIN` is required. If `codex` is already on `PATH`, the script offers that detected binary as the default.
+- `JOB_AGENT_PROVIDER` selects `codex` or `claude`; it defaults to `codex`.
+- `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
 - SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill them locally if you want email delivery.
 
-On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `CODEX_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is.
+On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN` and the compatibility `CODEX_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude paths are written as detected.
 
-On Linux, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces.
+On Linux with `JOB_AGENT_PROVIDER=codex`, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces. Claude setups do not generate Codex/bwrap AppArmor guidance.
 
 To install and reload that generated profile on Linux, run:
 
@@ -36,7 +37,24 @@ sudo bash scripts/install_bwrap_apparmor.sh
 
 The installer copies the generated profile into `/etc/apparmor.d/bwrap-userns-restrict` and reloads it with `apparmor_parser -r`.
 
-In non-interactive mode, the script does not prompt. `CODEX_BIN` must already be supplied via `--codex-bin`, the environment, existing `.env.local`, or `PATH`.
+In non-interactive mode, the script does not prompt. `JOB_AGENT_BIN` must already be supplied via `--agent-bin`, the environment, existing `.env.local`, or the selected provider binary must be on `PATH`. `--codex-bin` remains a Codex-only compatibility alias for `--agent-bin`.
+
+Provider examples:
+
+```bash
+bash scripts/setup_machine.sh --provider codex --agent-bin /absolute/path/to/codex
+bash scripts/setup_machine.sh --provider claude --agent-bin /absolute/path/to/claude
+```
+
+For Claude Code, authenticate locally before scheduled runs:
+
+```bash
+claude -p 'Respond with exactly: ok'
+```
+
+If that command reports `Not logged in`, run Claude Code login in an interactive terminal first. Scheduled Claude automation uses noninteractive `claude -p` with scoped allowed tools and normal project context loading; it does not use `--bare` by default.
+
+Migration note: existing Codex-only `.env.local` files that export `CODEX_BIN` continue to work when `JOB_AGENT_PROVIDER` is unset or set to `codex`. New setup output prefers `JOB_AGENT_PROVIDER` and `JOB_AGENT_BIN`.
 
 The track setup agent normally asks about delivery and scheduling after it creates a track. When you choose scheduled runs, it writes `.schedule.local` with `scripts/configure_schedule.py` and installs the platform scheduler with `bash scripts/install_scheduler.sh`.
 

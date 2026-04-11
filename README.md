@@ -1,6 +1,6 @@
 # Job Agent
 
-This repository runs a Codex-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email.
+This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email. Scheduled automation supports Codex CLI and Claude Code CLI.
 
 Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step.
 
@@ -8,8 +8,9 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
 
 1. Requirements:
    - Python 3
-   - the Codex CLI 
-   - on Linux, `bwrap` if you want Codex sandboxing backed by Bubblewrap
+   - either the Codex CLI or Claude Code CLI
+   - for Claude, run Claude Code login locally before scheduled runs
+   - on Linux with Codex, `bwrap` if you want Codex sandboxing backed by Bubblewrap
 2. From the repo root, bootstrap the checkout for local use:
 
 ```bash
@@ -21,7 +22,9 @@ This writes machine-local config, creates local profile placeholders, bootstraps
 Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
 
 - `JOB_AGENT_ROOT`
-- `CODEX_BIN`
+- `JOB_AGENT_PROVIDER`
+- `JOB_AGENT_BIN`
+- for Codex compatibility, `CODEX_BIN`
 - optional `LOGSEQ_GRAPH_DIR`
 - commented `JOB_AGENT_SMTP_*` placeholders for email delivery
 
@@ -38,7 +41,7 @@ If you only need to regenerate machine-local config later, run:
 bash scripts/setup_machine.sh
 ```
 
-3. If you are on Ubuntu, install the generated AppArmor profile for `bwrap`:
+3. If you are on Ubuntu and using Codex with `bwrap`, install the generated AppArmor profile:
 
 ```bash
 sudo bash scripts/install_bwrap_apparmor.sh
@@ -46,7 +49,7 @@ sudo bash scripts/install_bwrap_apparmor.sh
 
 Skip this on macOS. On Linux, this is only needed on hosts where AppArmor restricts unprivileged user namespaces.
 
-4. Run the setup agent to create your first search track. In Codex, ask for a new track setup from the repo root. The track-setup workflow is defined in [`AGENTS.md`](./AGENTS.md) and [`.agents/skills/set-up/SKILL.md`](./.agents/skills/set-up/SKILL.md).
+4. Run the setup agent to create your first search track. In Codex or Claude Code, ask for a new track setup from the repo root. The track-setup workflow is defined in [`AGENTS.md`](./AGENTS.md) and [`.agents/skills/set-up/SKILL.md`](./.agents/skills/set-up/SKILL.md).
 
 Example prompt:
 
@@ -87,6 +90,24 @@ bash scripts/run_track.sh --track <track-slug> --delivery logseq
 bash scripts/run_track.sh --track <track-slug> --delivery email
 bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery email
 ```
+
+## Agent Provider
+
+The default provider is Codex:
+
+```bash
+export JOB_AGENT_PROVIDER=codex
+export JOB_AGENT_BIN=/absolute/path/to/codex
+```
+
+To use Claude Code for scheduled runs and repair/eval automation:
+
+```bash
+export JOB_AGENT_PROVIDER=claude
+export JOB_AGENT_BIN=/absolute/path/to/claude
+```
+
+`scripts/setup_machine.sh --provider claude` writes those values when `claude` is discoverable on `PATH`. Claude runs use `claude -p` noninteractively with scoped allowed tools and normal project context loading; `--bare` is not used by default. Codex users can keep existing `CODEX_BIN` for now, but new config should prefer `JOB_AGENT_PROVIDER` and `JOB_AGENT_BIN`.
 
 ## Scheduled Runs
 

@@ -18,7 +18,11 @@ CRON_FILE="$SCHEDULER_DIR/cron.entry"
 APPARMOR_PROFILE_FILE="$SCHEDULER_DIR/bwrap-userns-restrict"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 LOGSEQ_GRAPH_DIR_VALUE=""
-CODEX_BIN_VALUE=""
+AGENT_PROVIDER_VALUE=""
+AGENT_BIN_VALUE=""
+CODEX_BIN_ALIAS_VALUE=""
+ENV_AGENT_PROVIDER_VALUE="${JOB_AGENT_PROVIDER:-}"
+ENV_AGENT_BIN_VALUE="${JOB_AGENT_BIN:-}"
 ENV_CODEX_BIN_VALUE="${CODEX_BIN:-}"
 ENV_LOGSEQ_GRAPH_DIR_VALUE="${LOGSEQ_GRAPH_DIR:-}"
 SMTP_HOST_VALUE=""
@@ -38,11 +42,11 @@ ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 
 usage() {
   cat <<EOF
-Usage: $0 [--codex-bin <path>] [--logseq-graph-dir <path>]
+Usage: $0 [--provider codex|claude] [--agent-bin <path>] [--codex-bin <path>] [--logseq-graph-dir <path>]
 
 Create or refresh machine-local scheduler config and profile placeholders for this checkout.
 In a terminal, the script prompts for any missing required values.
-In non-interactive mode, CODEX_BIN must be supplied or discoverable.
+In non-interactive mode, JOB_AGENT_BIN must be supplied or the selected provider binary must be discoverable.
 This script does not install cron or launchd. After adding entries to
 $SCHEDULE_FILE with scripts/configure_schedule.py or the setup agent, run
 scripts/install_scheduler.sh.
@@ -98,14 +102,46 @@ canonicalize_linux_executable_path() {
   printf '%s\n' "$candidate"
 }
 
-detect_codex_bin() {
+validate_agent_provider() {
+  case "${1:-}" in
+    codex|claude)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+agent_default_binary_name() {
+  case "$1" in
+    codex)
+      printf 'codex\n'
+      ;;
+    claude)
+      printf 'claude\n'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+detect_agent_bin() {
+  local provider="$1"
+  local default_bin=""
   local detected=""
 
-  if ! detected="$(resolve_command_path codex 2>/dev/null)"; then
+  default_bin="$(agent_default_binary_name "$provider")"
+  if ! detected="$(resolve_command_path "$default_bin" 2>/dev/null)"; then
     return 1
   fi
 
-  canonicalize_linux_executable_path "$detected"
+  if [[ "$provider" == "codex" ]]; then
+    canonicalize_linux_executable_path "$detected"
+  else
+    printf '%s\n' "$detected"
+  fi
 }
 
 detect_bwrap_bin() {
@@ -165,18 +201,22 @@ prompt_line() {
   printf '%s\n' "$value"
 }
 
-prompt_for_codex_bin() {
-  local default_value="${1:-}"
+prompt_for_agent_bin() {
+  local provider="${1:-codex}"
+  local default_value="${2:-}"
   local entered=""
   local candidate=""
   local resolved=""
+  local default_binary=""
+
+  default_binary="$(agent_default_binary_name "$provider")"
 
   while true; do
     if [[ -n "$default_value" ]]; then
-      entered="$(prompt_line "CODEX_BIN [$default_value]: ")"
+      entered="$(prompt_line "JOB_AGENT_BIN for $provider [$default_value]: ")"
       candidate="${entered:-$default_value}"
     else
-      entered="$(prompt_line "CODEX_BIN (required): ")"
+      entered="$(prompt_line "JOB_AGENT_BIN for $provider (required): ")"
       candidate="$entered"
     fi
 
@@ -186,7 +226,7 @@ prompt_for_codex_bin() {
       return 0
     fi
 
-    echo "CODEX_BIN must point to an executable codex binary." >&2
+    echo "JOB_AGENT_BIN must point to an executable $default_binary binary." >&2
   done
 }
 
@@ -220,8 +260,22 @@ prompt_for_logseq_graph_dir() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --provider)
+      AGENT_PROVIDER_VALUE="${2:?missing value for --provider}"
+      shift 2
+      ;;
+    --agent-bin)
+      AGENT_BIN_VALUE="${2:?missing value for --agent-bin}"
+      shift 2
+      ;;
     --codex-bin)
-      CODEX_BIN_VALUE="${2:?missing value for --codex-bin}"
+      CODEX_BIN_ALIAS_VALUE="${2:?missing value for --codex-bin}"
+      if [[ -z "$AGENT_BIN_VALUE" ]]; then
+        AGENT_BIN_VALUE="$CODEX_BIN_ALIAS_VALUE"
+      fi
+      if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
+        AGENT_PROVIDER_VALUE="codex"
+      fi
       shift 2
       ;;
     --logseq-graph-dir)
@@ -241,6 +295,8 @@ done
 
 ORIGINAL_PATH="$PATH"
 existing_path="$ORIGINAL_PATH"
+existing_agent_provider=""
+existing_agent_bin=""
 existing_codex_bin=""
 existing_logseq_graph_dir=""
 existing_smtp_host=""
@@ -250,7 +306,7 @@ existing_smtp_to=""
 existing_smtp_username=""
 existing_smtp_password=""
 existing_smtp_tls=""
-detected_codex_bin=""
+detected_agent_bin=""
 detected_logseq_graph_dir=""
 detected_bwrap_bin=""
 
@@ -260,6 +316,8 @@ if [[ -f "$ENV_FILE" ]]; then
   source "$ENV_FILE"
   set -u
   existing_path="${PATH:-$ORIGINAL_PATH}"
+  existing_agent_provider="${JOB_AGENT_PROVIDER:-}"
+  existing_agent_bin="${JOB_AGENT_BIN:-}"
   existing_codex_bin="${CODEX_BIN:-}"
   existing_logseq_graph_dir="${LOGSEQ_GRAPH_DIR:-}"
   existing_smtp_host="${JOB_AGENT_SMTP_HOST:-}"
@@ -272,16 +330,40 @@ if [[ -f "$ENV_FILE" ]]; then
   PATH="$ORIGINAL_PATH"
 fi
 
-if [[ -z "$CODEX_BIN_VALUE" ]]; then
-  CODEX_BIN_VALUE="$ENV_CODEX_BIN_VALUE"
+if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
+  AGENT_PROVIDER_VALUE="$ENV_AGENT_PROVIDER_VALUE"
 fi
-if [[ -z "$CODEX_BIN_VALUE" ]]; then
-  CODEX_BIN_VALUE="$existing_codex_bin"
+if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
+  AGENT_PROVIDER_VALUE="$existing_agent_provider"
 fi
-if detected_codex_bin="$(detect_codex_bin 2>/dev/null)"; then
+if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
+  AGENT_PROVIDER_VALUE="codex"
+fi
+if ! validate_agent_provider "$AGENT_PROVIDER_VALUE"; then
+  echo "JOB_AGENT_PROVIDER must be one of: codex, claude." >&2
+  exit 2
+fi
+if [[ -n "$CODEX_BIN_ALIAS_VALUE" && "$AGENT_PROVIDER_VALUE" != "codex" ]]; then
+  echo "--codex-bin can only be used with --provider codex." >&2
+  exit 2
+fi
+
+if [[ -z "$AGENT_BIN_VALUE" ]]; then
+  AGENT_BIN_VALUE="$ENV_AGENT_BIN_VALUE"
+fi
+if [[ -z "$AGENT_BIN_VALUE" ]]; then
+  AGENT_BIN_VALUE="$existing_agent_bin"
+fi
+if [[ -z "$AGENT_BIN_VALUE" && "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
+  AGENT_BIN_VALUE="$ENV_CODEX_BIN_VALUE"
+fi
+if [[ -z "$AGENT_BIN_VALUE" && "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
+  AGENT_BIN_VALUE="$existing_codex_bin"
+fi
+if detected_agent_bin="$(detect_agent_bin "$AGENT_PROVIDER_VALUE" 2>/dev/null)"; then
   :
 else
-  detected_codex_bin=""
+  detected_agent_bin=""
 fi
 
 if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" ]]; then
@@ -295,7 +377,7 @@ if detected_logseq_graph_dir="$(detect_logseq_graph_dir 2>/dev/null)"; then
 else
   detected_logseq_graph_dir=""
 fi
-if detected_bwrap_bin="$(detect_bwrap_bin 2>/dev/null)"; then
+if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]] && detected_bwrap_bin="$(detect_bwrap_bin 2>/dev/null)"; then
   :
 else
   detected_bwrap_bin=""
@@ -309,23 +391,26 @@ SMTP_USERNAME_VALUE="${ENV_SMTP_USERNAME_VALUE:-$existing_smtp_username}"
 SMTP_PASSWORD_VALUE="${ENV_SMTP_PASSWORD_VALUE:-$existing_smtp_password}"
 SMTP_TLS_VALUE="${ENV_SMTP_TLS_VALUE:-$existing_smtp_tls}"
 
-if [[ -z "$CODEX_BIN_VALUE" ]]; then
+if [[ -z "$AGENT_BIN_VALUE" ]]; then
   if is_interactive; then
-    CODEX_BIN_VALUE="$(prompt_for_codex_bin "$detected_codex_bin")"
-  elif [[ -n "$detected_codex_bin" ]]; then
-    CODEX_BIN_VALUE="$detected_codex_bin"
+    AGENT_BIN_VALUE="$(prompt_for_agent_bin "$AGENT_PROVIDER_VALUE" "$detected_agent_bin")"
+  elif [[ -n "$detected_agent_bin" ]]; then
+    AGENT_BIN_VALUE="$detected_agent_bin"
   else
-    echo "CODEX_BIN is required in non-interactive mode; pass --codex-bin or add codex to PATH." >&2
+    echo "JOB_AGENT_BIN is required in non-interactive mode; pass --agent-bin or add $(agent_default_binary_name "$AGENT_PROVIDER_VALUE") to PATH." >&2
     exit 1
   fi
 fi
 
-if resolve_command_path "$CODEX_BIN_VALUE" >/dev/null 2>&1; then
-  CODEX_BIN_VALUE="$(resolve_command_path "$CODEX_BIN_VALUE")"
+if resolve_command_path "$AGENT_BIN_VALUE" >/dev/null 2>&1; then
+  AGENT_BIN_VALUE="$(resolve_command_path "$AGENT_BIN_VALUE")"
+  if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
+    AGENT_BIN_VALUE="$(canonicalize_linux_executable_path "$AGENT_BIN_VALUE")"
+  fi
 elif is_interactive; then
-  CODEX_BIN_VALUE="$(prompt_for_codex_bin "$detected_codex_bin")"
+  AGENT_BIN_VALUE="$(prompt_for_agent_bin "$AGENT_PROVIDER_VALUE" "$detected_agent_bin")"
 else
-  echo "CODEX_BIN '$CODEX_BIN_VALUE' is not executable or not found on PATH." >&2
+  echo "JOB_AGENT_BIN '$AGENT_BIN_VALUE' is not executable or not found on PATH." >&2
   exit 1
 fi
 
@@ -353,8 +438,13 @@ fi
   echo "# Generated by scripts/setup_machine.sh."
   printf 'export JOB_AGENT_ROOT=%s\n' "$(shell_escape "$ROOT")"
   printf 'export PATH=%s\n' "$(shell_escape "$existing_path")"
-  echo "# Required: executable codex binary for scheduled runs."
-  printf 'export CODEX_BIN=%s\n' "$(shell_escape "$CODEX_BIN_VALUE")"
+  echo "# Required: automation provider and executable agent binary for scheduled runs."
+  printf 'export JOB_AGENT_PROVIDER=%s\n' "$(shell_escape "$AGENT_PROVIDER_VALUE")"
+  printf 'export JOB_AGENT_BIN=%s\n' "$(shell_escape "$AGENT_BIN_VALUE")"
+  if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
+    echo "# Compatibility for older Codex-only scripts; prefer JOB_AGENT_BIN."
+    printf 'export CODEX_BIN=%s\n' "$(shell_escape "$AGENT_BIN_VALUE")"
+  fi
   echo "# Optional: Logseq graph root for digest publication."
   if [[ -n "$LOGSEQ_GRAPH_DIR_VALUE" ]]; then
     printf 'export LOGSEQ_GRAPH_DIR=%s\n' "$(shell_escape "$LOGSEQ_GRAPH_DIR_VALUE")"

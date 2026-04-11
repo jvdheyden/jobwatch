@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
+from agent_provider import resolve_agent_bin, resolve_agent_provider
 from source_quality import (
     DEFAULT_REVIEW_TIMEOUT_SECONDS,
     build_repair_ticket,
@@ -34,18 +34,7 @@ def default_output_path(track: str, source: str, stamp: str) -> Path:
 
 
 def resolve_reviewer_bin(explicit: str | None) -> Path | None:
-    if explicit:
-        return Path(explicit)
-    env_bin = os.environ.get("JOB_AGENT_REVIEWER_BIN")
-    if env_bin:
-        return Path(env_bin)
-    codex_bin = os.environ.get("CODEX_BIN")
-    if codex_bin:
-        return Path(codex_bin)
-    which_codex = shutil.which("codex")
-    if which_codex:
-        return Path(which_codex)
-    return None
+    return resolve_agent_bin(explicit, role="reviewer")
 
 
 def main() -> int:
@@ -63,7 +52,10 @@ def main() -> int:
         default="auto",
         help="Whether to run the LLM reviewer",
     )
-    parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer; defaults to JOB_AGENT_REVIEWER_BIN/CODEX_BIN/codex")
+    parser.add_argument(
+        "--reviewer-bin",
+        help="Binary to invoke for the LLM reviewer; defaults to JOB_AGENT_REVIEWER_BIN/JOB_AGENT_BIN/provider default",
+    )
     parser.add_argument(
         "--timeout-seconds",
         type=int,
@@ -75,7 +67,12 @@ def main() -> int:
     artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)
     output_path = Path(args.output) if args.output else default_output_path(args.track, args.source, args.today)
 
-    reviewer_bin = resolve_reviewer_bin(args.reviewer_bin)
+    try:
+        reviewer_provider = resolve_agent_provider()
+        reviewer_bin = resolve_reviewer_bin(args.reviewer_bin)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     try:
         _, source = load_source_coverage(artifact_path, args.source)
         deterministic = validate_source_coverage(
@@ -102,6 +99,7 @@ def main() -> int:
                 canary_url=args.canary_url,
                 reviewer_bin=reviewer_bin,
                 timeout_seconds=args.timeout_seconds,
+                provider=reviewer_provider,
             )
         else:
             reviewer = {

@@ -16,6 +16,9 @@ from typing import Any, Callable
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
+from agent_provider import build_reviewer_command as build_provider_reviewer_command
+from agent_provider import resolve_agent_provider
+
 
 USER_AGENT = "job-agent-source-quality/0.1"
 DEFAULT_TIMEOUT_SECONDS = 20
@@ -615,21 +618,8 @@ def _build_reviewer_context(
     }
 
 
-def build_reviewer_command(root: Path, reviewer_bin: Path) -> list[str]:
-    return [
-        str(reviewer_bin),
-        "--search",
-        "-a",
-        "never",
-        "exec",
-        "-c",
-        f'model_reasoning_effort="{REVIEWER_REASONING_EFFORT}"',
-        "-C",
-        str(root),
-        "-s",
-        "read-only",
-        "-",
-    ]
+def build_reviewer_command(root: Path, reviewer_bin: Path, provider: str | None = None) -> list[str]:
+    return build_provider_reviewer_command(resolve_agent_provider(provider or "codex"), root, reviewer_bin)
 
 
 def review_source_with_llm(
@@ -641,6 +631,7 @@ def review_source_with_llm(
     canary_url: str,
     reviewer_bin: Path | None,
     timeout_seconds: int,
+    provider: str | None = None,
 ) -> dict[str, Any]:
     if reviewer_bin is None or not reviewer_bin.exists():
         return {
@@ -662,7 +653,10 @@ def review_source_with_llm(
         + canary_instruction
         + json.dumps(context, ensure_ascii=False, indent=2)
     )
-    command = build_reviewer_command(root, reviewer_bin)
+    try:
+        command = build_reviewer_command(root, reviewer_bin, provider)
+    except Exception as exc:
+        return {"status": "blocked", "defects": [], "error": str(exc)}
     try:
         completed = subprocess.run(
             command,

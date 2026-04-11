@@ -38,7 +38,7 @@ done
 
 echo "Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for $ROOT"
 echo "Fill profile/cv.md and profile/prefs_global.md locally; optionally place a PDF CV in profile/."
-echo "Next: ask Codex to set up a search track; the setup agent can configure delivery, scheduling, and scheduler install."
+echo "Next: ask your configured agent to set up a search track; the setup agent can configure delivery, scheduling, and scheduler install."
 if [[ "$PLATFORM" == "Linux" ]]; then
   echo "Optional on Linux hosts that enforce AppArmor userns restrictions:"
   echo "  sudo bash scripts/install_bwrap_apparmor.sh"

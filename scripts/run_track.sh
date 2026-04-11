@@ -6,8 +6,10 @@ DELIVERY_TARGETS=()
 TIMEOUT_SECS="${TIMEOUT_SECS:-2700}"
 DISCOVERY_TIMEOUT_SECS="${DISCOVERY_TIMEOUT_SECS:-1800}"
 DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
-CODEX_HEARTBEAT_SECS="${CODEX_HEARTBEAT_SECS:-300}"
-CODEX_IDLE_TIMEOUT_SECS="${CODEX_IDLE_TIMEOUT_SECS:-900}"
+AGENT_HEARTBEAT_SECS="${AGENT_HEARTBEAT_SECS:-${CODEX_HEARTBEAT_SECS:-300}}"
+AGENT_IDLE_TIMEOUT_SECS="${AGENT_IDLE_TIMEOUT_SECS:-${CODEX_IDLE_TIMEOUT_SECS:-900}}"
+JOB_AGENT_PROVIDER="${JOB_AGENT_PROVIDER:-codex}"
+JOB_AGENT_BIN="${JOB_AGENT_BIN:-}"
 CODEX_BIN="${CODEX_BIN:-}"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -143,25 +145,83 @@ canonicalize_linux_executable_path() {
   printf '%s\n' "$candidate"
 }
 
-resolve_codex_bin() {
-  local candidate=""
+resolve_agent_provider() {
+  local provider="${JOB_AGENT_PROVIDER:-codex}"
+  case "$provider" in
+    codex|claude)
+      printf '%s\n' "$provider"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
 
-  if [[ -n "$CODEX_BIN" ]]; then
+agent_default_binary_name() {
+  case "$1" in
+    codex)
+      printf 'codex\n'
+      ;;
+    claude)
+      printf 'claude\n'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+agent_label() {
+  case "$1" in
+    codex)
+      printf 'Codex\n'
+      ;;
+    claude)
+      printf 'Claude\n'
+      ;;
+    *)
+      printf 'Agent\n'
+      ;;
+  esac
+}
+
+resolve_agent_bin() {
+  local provider="$1"
+  local candidate=""
+  local default_bin=""
+
+  if [[ -n "$JOB_AGENT_BIN" ]]; then
+    if ! candidate="$(resolve_command_path "$JOB_AGENT_BIN" 2>/dev/null)"; then
+      return 1
+    fi
+    canonicalize_linux_executable_path "$candidate"
+    return 0
+  fi
+
+  if [[ "$provider" == "codex" && -n "$CODEX_BIN" ]]; then
     if ! candidate="$(resolve_command_path "$CODEX_BIN" 2>/dev/null)"; then
       return 1
     fi
     canonicalize_linux_executable_path "$candidate"
     return 0
   fi
-  if candidate="$(resolve_command_path codex 2>/dev/null)"; then
+
+  default_bin="$(agent_default_binary_name "$provider")"
+  if candidate="$(resolve_command_path "$default_bin" 2>/dev/null)"; then
     canonicalize_linux_executable_path "$candidate"
     return 0
   fi
   return 1
 }
 
-if ! CODEX_BIN="$(resolve_codex_bin)"; then
-  log "codex binary not found; set CODEX_BIN or add codex to PATH"
+if ! AGENT_PROVIDER="$(resolve_agent_provider)"; then
+  log "invalid JOB_AGENT_PROVIDER '$JOB_AGENT_PROVIDER'; expected codex or claude"
+  exit 2
+fi
+AGENT_LABEL="$(agent_label "$AGENT_PROVIDER")"
+
+if ! AGENT_BIN="$(resolve_agent_bin "$AGENT_PROVIDER")"; then
+  log "$AGENT_LABEL binary not found; set JOB_AGENT_BIN or add $(agent_default_binary_name "$AGENT_PROVIDER") to PATH"
   exit 127
 fi
 
@@ -171,6 +231,7 @@ if ! PYTHON_BIN="$(resolve_python_bin)"; then
 fi
 
 log "Using discovery Python interpreter: $PYTHON_BIN"
+log "Using $AGENT_LABEL provider via $AGENT_BIN"
 
 LAST_BG_PID=""
 
@@ -300,12 +361,12 @@ fi
 
 PROMPT_FILE="$(mktemp "${TMPDIR:-/tmp}/${TRACK}-prompt.XXXXXX")"
 DISCOVERY_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-discovery-timeout.$$"
-CODEX_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-codex-timeout.$$"
-CODEX_IDLE_FLAG="${TMPDIR:-/tmp}/${TRACK}-codex-idle.$$"
-CODEX_ACTIVITY_FILE="${TMPDIR:-/tmp}/${TRACK}-codex-activity.$$"
-CODEX_OUTPUT_PIPE="${TMPDIR:-/tmp}/${TRACK}-codex-output.$$"
-rm -f "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG" "$CODEX_IDLE_FLAG" "$CODEX_ACTIVITY_FILE" "$CODEX_OUTPUT_PIPE"
-trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$CODEX_TIMEOUT_FLAG" "$CODEX_IDLE_FLAG" "$CODEX_ACTIVITY_FILE" "$CODEX_OUTPUT_PIPE"' EXIT
+AGENT_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-timeout.$$"
+AGENT_IDLE_FLAG="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-idle.$$"
+AGENT_ACTIVITY_FILE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-activity.$$"
+AGENT_OUTPUT_PIPE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-output.$$"
+rm -f "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
+trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"' EXIT
 
 log "Starting $TRACK daily run"
 log "Discovery phase started"
@@ -345,7 +406,7 @@ Do not rerun ./scripts/discover_jobs.py during this scheduled pass unless the ar
 EOF
 )
 elif [[ -f "$DISCOVERY_TIMEOUT_FLAG" ]]; then
-  log "Discovery phase timed out after ${DISCOVERY_TIMEOUT_SECS}s; Codex will fall back to live discovery as needed"
+  log "Discovery phase timed out after ${DISCOVERY_TIMEOUT_SECS}s; $AGENT_LABEL will fall back to live discovery as needed"
   if [[ -f "$DISCOVERY_ARTIFACT" ]]; then
     DISCOVERY_PROMPT_BLOCK=$(cat <<EOF
 Today's discovery artifact already exists at ./artifacts/discovery/$TRACK/$TODAY.json, but the fresh scheduled regeneration timed out.
@@ -360,7 +421,7 @@ EOF
 )
   fi
 else
-  log "Discovery artifact generation failed with status $DISCOVERY_STATUS; Codex will fall back to live discovery as needed"
+  log "Discovery artifact generation failed with status $DISCOVERY_STATUS; $AGENT_LABEL will fall back to live discovery as needed"
   if [[ -f "$DISCOVERY_ARTIFACT" ]]; then
     DISCOVERY_PROMPT_BLOCK=$(cat <<EOF
 Today's discovery artifact already exists at ./artifacts/discovery/$TRACK/$TODAY.json, but the fresh scheduled regeneration failed.
@@ -385,59 +446,84 @@ This is a normal scheduled run, not a debugging session.
 Do not inspect ./logs or downstream publication targets such as the configured Logseq graph unless explicitly asked to debug the runner.
 EOF
 
-log "Codex phase started"
-mkfifo "$CODEX_OUTPUT_PIPE"
-printf '%s\n' "$(date +%s)" >"$CODEX_ACTIVITY_FILE"
+run_agent_command() {
+  case "$AGENT_PROVIDER" in
+    codex)
+      "$AGENT_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE"
+      ;;
+    claude)
+      "$AGENT_BIN" \
+        -p \
+        --no-session-persistence \
+        --output-format stream-json \
+        --permission-mode "${JOB_AGENT_CLAUDE_PERMISSION_MODE:-acceptEdits}" \
+        --allowedTools "${JOB_AGENT_CLAUDE_SCHEDULED_ALLOWED_TOOLS:-Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite}" \
+        --verbose \
+        <"$PROMPT_FILE"
+      ;;
+    *)
+      return 2
+      ;;
+  esac
+}
+
+log "$AGENT_LABEL phase started"
+mkfifo "$AGENT_OUTPUT_PIPE"
+printf '%s\n' "$(date +%s)" >"$AGENT_ACTIVITY_FILE"
 (
   while IFS= read -r line || [[ -n "$line" ]]; do
     printf '%s\n' "$line"
-    printf '%s\n' "$(date +%s)" >"$CODEX_ACTIVITY_FILE"
-  done <"$CODEX_OUTPUT_PIPE"
+    printf '%s\n' "$(date +%s)" >"$AGENT_ACTIVITY_FILE"
+  done <"$AGENT_OUTPUT_PIPE"
 ) &
-CODEX_READER_PID=$!
+AGENT_READER_PID=$!
 
-JOB_AGENT_ROOT="$ROOT" \
-JOB_AGENT_TRACK="$TRACK" \
-JOB_AGENT_TODAY="$TODAY" \
-"$CODEX_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE" >"$CODEX_OUTPUT_PIPE" 2>&1 &
-CODEX_PID=$!
-start_timeout_watchdog "$CODEX_PID" "$TIMEOUT_SECS" "Codex" "$CODEX_TIMEOUT_FLAG"
-CODEX_WATCHDOG_PID="$LAST_BG_PID"
-if [[ "$CODEX_HEARTBEAT_SECS" -gt 0 ]]; then
-  start_heartbeat "$CODEX_PID" "$CODEX_HEARTBEAT_SECS" "Codex"
-  CODEX_HEARTBEAT_PID="$LAST_BG_PID"
+(
+  export JOB_AGENT_ROOT="$ROOT"
+  export JOB_AGENT_TRACK="$TRACK"
+  export JOB_AGENT_TODAY="$TODAY"
+  export JOB_AGENT_PROVIDER="$AGENT_PROVIDER"
+  export JOB_AGENT_BIN="$AGENT_BIN"
+  run_agent_command
+) >"$AGENT_OUTPUT_PIPE" 2>&1 &
+AGENT_PID=$!
+start_timeout_watchdog "$AGENT_PID" "$TIMEOUT_SECS" "$AGENT_LABEL" "$AGENT_TIMEOUT_FLAG"
+AGENT_WATCHDOG_PID="$LAST_BG_PID"
+if [[ "$AGENT_HEARTBEAT_SECS" -gt 0 ]]; then
+  start_heartbeat "$AGENT_PID" "$AGENT_HEARTBEAT_SECS" "$AGENT_LABEL"
+  AGENT_HEARTBEAT_PID="$LAST_BG_PID"
 else
-  CODEX_HEARTBEAT_PID=""
+  AGENT_HEARTBEAT_PID=""
 fi
-start_idle_watchdog "$CODEX_PID" "$CODEX_IDLE_TIMEOUT_SECS" "Codex" "$CODEX_ACTIVITY_FILE" "$CODEX_IDLE_FLAG"
-CODEX_IDLE_WATCHDOG_PID="$LAST_BG_PID"
+start_idle_watchdog "$AGENT_PID" "$AGENT_IDLE_TIMEOUT_SECS" "$AGENT_LABEL" "$AGENT_ACTIVITY_FILE" "$AGENT_IDLE_FLAG"
+AGENT_IDLE_WATCHDOG_PID="$LAST_BG_PID"
 
 set +e
-wait "$CODEX_PID"
-CODEX_STATUS=$?
+wait "$AGENT_PID"
+AGENT_STATUS=$?
 set -e
 
-stop_helper "$CODEX_WATCHDOG_PID"
-stop_helper "$CODEX_HEARTBEAT_PID"
-stop_helper "$CODEX_IDLE_WATCHDOG_PID"
-wait "$CODEX_READER_PID" 2>/dev/null || true
+stop_helper "$AGENT_WATCHDOG_PID"
+stop_helper "$AGENT_HEARTBEAT_PID"
+stop_helper "$AGENT_IDLE_WATCHDOG_PID"
+wait "$AGENT_READER_PID" 2>/dev/null || true
 
-if [[ -f "$CODEX_TIMEOUT_FLAG" ]]; then
-  log "Codex phase timed out after ${TIMEOUT_SECS}s"
+if [[ -f "$AGENT_TIMEOUT_FLAG" ]]; then
+  log "$AGENT_LABEL phase timed out after ${TIMEOUT_SECS}s"
   exit 124
 fi
 
-if [[ -f "$CODEX_IDLE_FLAG" ]]; then
-  log "Codex phase went idle after ${CODEX_IDLE_TIMEOUT_SECS}s without new output"
+if [[ -f "$AGENT_IDLE_FLAG" ]]; then
+  log "$AGENT_LABEL phase went idle after ${AGENT_IDLE_TIMEOUT_SECS}s without new output"
   exit 125
 fi
 
-if [[ $CODEX_STATUS -ne 0 ]]; then
-  log "Codex exited with status $CODEX_STATUS"
-  exit "$CODEX_STATUS"
+if [[ $AGENT_STATUS -ne 0 ]]; then
+  log "$AGENT_LABEL exited with status $AGENT_STATUS"
+  exit "$AGENT_STATUS"
 fi
 
-log "Codex phase finished successfully"
+log "$AGENT_LABEL phase finished successfully"
 
 if [[ ${#DELIVERY_TARGETS[@]} -eq 0 ]]; then
   log "No delivery targets requested; leaving local artifacts only"

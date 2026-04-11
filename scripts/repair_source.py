@@ -7,13 +7,13 @@ import argparse
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
 from typing import Any
 
+from agent_provider import build_coder_command, resolve_agent_bin, resolve_agent_provider
 from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, generated_at, source_slug, truncate_text
 
 
@@ -63,15 +63,7 @@ def resolve_repo_python() -> str:
 
 
 def resolve_coder_bin(explicit: str | None) -> Path | None:
-    if explicit:
-        return Path(explicit)
-    env_bin = os.environ.get("CODEX_BIN")
-    if env_bin:
-        return Path(env_bin)
-    which_codex = shutil.which("codex")
-    if which_codex:
-        return Path(which_codex)
-    return None
+    return resolve_agent_bin(explicit, role="coder")
 
 
 def write_summary(
@@ -121,7 +113,49 @@ def _maybe_parse_json_line(line: str) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
+def _text_from_claude_content(content: Any) -> str:
+    fragments: list[str] = []
+    if isinstance(content, str):
+        fragments.append(content)
+    elif isinstance(content, list):
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            text = item.get("text")
+            if isinstance(text, str) and text.strip():
+                fragments.append(text)
+                continue
+            if item.get("type") == "tool_use":
+                name = item.get("name")
+                tool_input = item.get("input")
+                if name == "Bash" and isinstance(tool_input, dict):
+                    command = tool_input.get("command")
+                    if isinstance(command, str) and command.strip():
+                        fragments.append(command)
+    return "\n".join(fragment.strip() for fragment in fragments if fragment.strip())
+
+
+def _claude_event_text(event: dict[str, Any]) -> str:
+    result = event.get("result")
+    if isinstance(result, str) and result.strip():
+        return result.strip()
+
+    message = event.get("message")
+    if isinstance(message, dict):
+        text = _text_from_claude_content(message.get("content"))
+        if text:
+            return text
+
+    text = _text_from_claude_content(event.get("content"))
+    if text:
+        return text
+    return ""
+
+
 def _event_excerpt(event: dict[str, Any], fallback: str) -> str:
+    claude_text = _claude_event_text(event)
+    if claude_text:
+        return truncate_text(claude_text, 400)
     for key in ("message", "text", "content", "output", "summary", "status"):
         value = event.get(key)
         if isinstance(value, str) and value.strip():
@@ -235,12 +269,30 @@ def iter_completed_command_events(stdout_log_path: Path) -> list[dict[str, Any]]
     for event in iter_coder_events(stdout_log_path):
         item = event.get("item")
         if not isinstance(item, dict):
+            message = event.get("message")
+            if isinstance(message, dict):
+                for content_item in message.get("content", []):
+                    if not isinstance(content_item, dict):
+                        continue
+                    if content_item.get("type") != "tool_use" or content_item.get("name") != "Bash":
+                        continue
+                    tool_input = content_item.get("input")
+                    if not isinstance(tool_input, dict):
+                        continue
+                    command = tool_input.get("command")
+                    if isinstance(command, str) and command.strip():
+                        completed.append(
+                            {
+                                "type": "command_execution",
+                                "status": "completed",
+                                "command": command,
+                                "exit_code": 0,
+                                "provider": "claude",
+                            }
+                        )
             continue
-        if item.get("type") != "command_execution":
-            continue
-        if item.get("status") != "completed":
-            continue
-        completed.append(item)
+        if item.get("type") == "command_execution" and item.get("status") == "completed":
+            completed.append(item)
     return completed
 
 
@@ -304,7 +356,7 @@ def detect_ready_for_rediscovery_signals(
 HANDOFF_PREFIX = "REPAIR_HANDOFF:"
 
 
-def _extract_agent_messages(stdout_log_path: Path, last_message_path: Path) -> list[str]:
+def _extract_agent_messages_from_stdout(stdout_log_path: Path) -> list[str]:
     messages: list[str] = []
     for event in iter_coder_events(stdout_log_path):
         item = event.get("item")
@@ -317,11 +369,30 @@ def _extract_agent_messages(stdout_log_path: Path, last_message_path: Path) -> l
             text = event.get("text")
             if isinstance(text, str) and text.strip():
                 messages.append(text.strip())
+            continue
+        text = _claude_event_text(event)
+        if text:
+            messages.append(text.strip())
+    return messages
+
+
+def _extract_agent_messages(stdout_log_path: Path, last_message_path: Path) -> list[str]:
+    messages = _extract_agent_messages_from_stdout(stdout_log_path)
     if last_message_path.exists():
         text = last_message_path.read_text(errors="replace").strip()
         if text:
             messages.append(text)
     return messages
+
+
+def capture_last_message_from_stdout(stdout_log_path: Path, last_message_path: Path) -> None:
+    if last_message_path.exists():
+        return
+    messages = _extract_agent_messages_from_stdout(stdout_log_path)
+    if not messages:
+        return
+    last_message_path.parent.mkdir(parents=True, exist_ok=True)
+    last_message_path.write_text(messages[-1] + "\n")
 
 
 def _normalize_handoff_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -698,6 +769,7 @@ def build_coder_prompt(
 
 def run_coder(
     *,
+    provider: str,
     coder_bin: Path,
     track: str,
     source: str,
@@ -742,21 +814,7 @@ def run_coder(
             "JOB_AGENT_PRIOR_POSTMORTEM": json.dumps(prior_postmortem) if prior_postmortem else "",
         }
     )
-    command = [
-        str(coder_bin),
-        "--search",
-        "-a",
-        "never",
-        "exec",
-        "-C",
-        str(WORK_ROOT),
-        "-s",
-        "workspace-write",
-        "--json",
-        "--output-last-message",
-        str(last_message_path),
-        "-",
-    ]
+    command = build_coder_command(provider, WORK_ROOT, coder_bin, last_message_path)
     stdout_log_path.parent.mkdir(parents=True, exist_ok=True)
     stderr_log_path.parent.mkdir(parents=True, exist_ok=True)
     stdout_handle = stdout_log_path.open("w", encoding="utf-8")
@@ -799,7 +857,10 @@ def main() -> int:
         help="Whether to run the LLM reviewer during each eval pass",
     )
     parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer")
-    parser.add_argument("--coder-bin", help="Binary to invoke for the coding repair run; defaults to CODEX_BIN/codex")
+    parser.add_argument(
+        "--coder-bin",
+        help="Binary to invoke for the coding repair run; defaults to JOB_AGENT_CODER_BIN/JOB_AGENT_BIN/provider default",
+    )
     parser.add_argument(
         "--timeout-seconds",
         type=int,
@@ -815,7 +876,12 @@ def main() -> int:
     fresh_artifact_path = default_fresh_artifact_path(args.track, args.source, args.today)
     eval_output = Path(args.eval_output) if args.eval_output else default_eval_output(args.track, args.source, args.today)
     summary_output = Path(args.summary_output) if args.summary_output else default_summary_output(args.track, args.source, args.today)
-    coder_bin = resolve_coder_bin(args.coder_bin)
+    try:
+        coder_provider = resolve_agent_provider()
+        coder_bin = resolve_coder_bin(args.coder_bin)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
 
     attempts: list[dict[str, Any]] = []
     repair_attempts = 0
@@ -907,6 +973,7 @@ def main() -> int:
         stderr_log_path = default_coder_stderr_log_path(args.track, args.source, args.today, attempt_number)
         last_message_path = default_coder_last_message_path(args.track, args.source, args.today, attempt_number)
         attempt_record["coding_invoked"] = True
+        attempt_record["coding_provider"] = coder_provider
         attempt_record["coding_stdout_log"] = str(stdout_log_path)
         attempt_record["coding_stderr_log"] = str(stderr_log_path)
         attempt_record["coding_last_message_path"] = str(last_message_path)
@@ -936,6 +1003,7 @@ def main() -> int:
                 phase=phase,
             )
             process = run_coder(
+                provider=coder_provider,
                 coder_bin=coder_bin,
                 track=args.track,
                 source=args.source,
@@ -1040,6 +1108,9 @@ def main() -> int:
             stderr_offset,
             last_message_mtime,
         )
+        capture_last_message_from_stdout(stdout_log_path, last_message_path)
+        if last_message_path.exists():
+            attempt_record["coding_last_message_excerpt"] = truncate_text(last_message_path.read_text(errors="replace"), 400)
         attempt_record["coding_exit_code"] = completed_returncode
         attempts.append(attempt_record)
 

@@ -224,6 +224,72 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert "./.venv/bin/python scripts/discover_jobs.py --track public_service --source \"Example Source\" --today 2026-04-02 --pretty" in prompt_text
 
 
+def test_repair_source_runs_claude_coder_with_stream_json(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
+    write_stub_discover_script(tmp_job_agent_root)
+    artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
+    write_example_artifact(artifact_path)
+
+    coder_script = tmp_job_agent_root / "fake_claude_coder.sh"
+    coder_script.write_text(
+        """#!/bin/bash
+set -euo pipefail
+printf '%s\\n' "$@" >"$JOB_AGENT_ROOT/claude-coder-args.txt"
+cat >"$JOB_AGENT_ROOT/claude-prompt.txt"
+touch "$JOB_AGENT_ROOT/fixed.marker"
+cat <<'JSON'
+{"type":"assistant","message":{"content":[{"type":"text","text":"touching fix marker"}]}}
+{"type":"result","subtype":"success","result":"done"}
+JSON
+"""
+    )
+    coder_script.chmod(0o755)
+
+    eval_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.json"
+    summary_output = tmp_job_agent_root / "artifacts" / "evals" / "public_service" / "example_source" / "2026-04-02.repair_loop.json"
+    env = os.environ.copy()
+    env["JOB_AGENT_ROOT"] = str(tmp_job_agent_root)
+    env["JOB_AGENT_PROVIDER"] = "claude"
+
+    result = run_cmd(
+        "python3",
+        str(repo_root / "scripts" / "repair_source.py"),
+        "--track",
+        "public_service",
+        "--source",
+        "Example Source",
+        "--today",
+        "2026-04-02",
+        "--artifact-path",
+        str(artifact_path),
+        "--canary-title",
+        "Privacy Engineer",
+        "--canary-url",
+        "https://jobs.example.com/jobs/999",
+        "--reviewer",
+        "off",
+        "--coder-bin",
+        str(coder_script),
+        "--eval-output",
+        str(eval_output),
+        "--summary-output",
+        str(summary_output),
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(summary_output.read_text())
+    args_text = (tmp_job_agent_root / "claude-coder-args.txt").read_text()
+    assert summary["final_status"] == "pass"
+    assert summary["attempts"][0]["coding_provider"] == "claude"
+    assert summary["attempts"][0]["coding_last_event_type"] == "result"
+    assert "done" in summary["attempts"][0]["coding_last_event_excerpt"]
+    assert "-p" in args_text
+    assert "stream-json" in args_text
+    assert "--verbose" in args_text
+    assert "Execution modes:" in (tmp_job_agent_root / "claude-prompt.txt").read_text()
+
+
 def test_repair_source_stops_at_retry_limit(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
     write_stub_discover_script(tmp_job_agent_root)
     artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
