@@ -1,6 +1,13 @@
 # Job Agent
 
-This repository runs a Codex-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional scheduled runs.
+This repository runs a Codex-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email.
+
+Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step:
+
+- local artifacts only: no delivery flag
+- Logseq sync: `--delivery logseq`
+- email delivery: `--delivery email`
+- both: pass both delivery flags
 
 ## New User Setup
 
@@ -15,6 +22,13 @@ bash scripts/bootstrap_machine.sh
 ```
 
 This writes machine-local config, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
+
+Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
+
+- `JOB_AGENT_ROOT`
+- `CODEX_BIN`
+- optional `LOGSEQ_GRAPH_DIR`
+- commented `JOB_AGENT_SMTP_*` placeholders for email delivery
 
 If you only need to regenerate machine-local config later, run:
 
@@ -38,11 +52,18 @@ Example prompt:
 Set up a new search track for privacy engineering roles in Germany.
 ```
 
+The setup flow creates the track files, validates the track, then asks which delivery methods you want: local artifacts only, Logseq, email, or both.
+
 5. Add one or more schedule entries to `.schedule.local`, for example:
 
 ```text
 daily 08:00 track core_crypto
+daily 08:00 track core_crypto --delivery logseq
+daily 08:00 track core_crypto --delivery email
+daily 08:00 track core_crypto --delivery logseq --delivery email
 ```
+
+The first form produces local artifacts only. Add delivery flags only after the matching local config is ready.
 
 6. Install the scheduler:
 
@@ -80,19 +101,37 @@ Preview an email without sending it:
 ./.venv/bin/python scripts/send_digest_email.py --track <track-slug> --date YYYY-MM-DD --dry-run
 ```
 
-To send through SMTP, set:
+To send through SMTP, edit `.env.local` locally and uncomment/fill the SMTP placeholders:
 
-```bash
-export JOB_AGENT_SMTP_HOST=smtp.example.com
-export JOB_AGENT_SMTP_PORT=587
-export JOB_AGENT_SMTP_FROM=jobs@example.com
-export JOB_AGENT_SMTP_TO=you@example.com
-export JOB_AGENT_SMTP_USERNAME=jobs@example.com
-export JOB_AGENT_SMTP_PASSWORD=app-password
-export JOB_AGENT_SMTP_TLS=starttls
+```text
+JOB_AGENT_SMTP_HOST
+JOB_AGENT_SMTP_PORT
+JOB_AGENT_SMTP_FROM
+JOB_AGENT_SMTP_TO
+JOB_AGENT_SMTP_USERNAME
+JOB_AGENT_SMTP_PASSWORD
+JOB_AGENT_SMTP_TLS
 ```
 
-Then run the same command without `--dry-run`.
+Do not put SMTP passwords in tracked files or chat transcripts. After `.env.local` is filled, run the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
+
+## Logseq Delivery
+
+Logseq delivery copies the rendered daily digest and ranked overview into a Logseq graph.
+
+Set `LOGSEQ_GRAPH_DIR` in `.env.local`, either by rerunning setup:
+
+```bash
+bash scripts/setup_machine.sh --logseq-graph-dir /absolute/path/to/logseq
+```
+
+or by editing `.env.local` locally:
+
+```bash
+export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq
+```
+
+Then run with `--delivery logseq`.
 
 ## Development Checks
 
