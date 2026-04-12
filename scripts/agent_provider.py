@@ -66,11 +66,6 @@ def resolve_agent_bin(
     if agent_bin:
         return Path(agent_bin)
 
-    if resolved_provider == "codex":
-        codex_bin = values.get("CODEX_BIN")
-        if codex_bin:
-            return Path(codex_bin)
-
     default_bin = shutil.which(default_binary_name(resolved_provider), path=values.get("PATH"))
     if default_bin:
         return Path(default_bin)

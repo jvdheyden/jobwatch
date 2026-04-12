@@ -6,11 +6,10 @@ DELIVERY_TARGETS=()
 TIMEOUT_SECS="${TIMEOUT_SECS:-2700}"
 DISCOVERY_TIMEOUT_SECS="${DISCOVERY_TIMEOUT_SECS:-1800}"
 DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
-AGENT_HEARTBEAT_SECS="${AGENT_HEARTBEAT_SECS:-${CODEX_HEARTBEAT_SECS:-300}}"
-AGENT_IDLE_TIMEOUT_SECS="${AGENT_IDLE_TIMEOUT_SECS:-${CODEX_IDLE_TIMEOUT_SECS:-900}}"
+AGENT_HEARTBEAT_SECS="${AGENT_HEARTBEAT_SECS:-300}"
+AGENT_IDLE_TIMEOUT_SECS="${AGENT_IDLE_TIMEOUT_SECS:-900}"
 JOB_AGENT_PROVIDER="${JOB_AGENT_PROVIDER:-codex}"
 JOB_AGENT_BIN="${JOB_AGENT_BIN:-}"
-CODEX_BIN="${CODEX_BIN:-}"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -192,14 +191,6 @@ resolve_agent_bin() {
 
   if [[ -n "$JOB_AGENT_BIN" ]]; then
     if ! candidate="$(resolve_command_path "$JOB_AGENT_BIN" 2>/dev/null)"; then
-      return 1
-    fi
-    canonicalize_linux_executable_path "$candidate"
-    return 0
-  fi
-
-  if [[ "$provider" == "codex" && -n "$CODEX_BIN" ]]; then
-    if ! candidate="$(resolve_command_path "$CODEX_BIN" 2>/dev/null)"; then
       return 1
     fi
     canonicalize_linux_executable_path "$candidate"

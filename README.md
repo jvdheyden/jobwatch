@@ -24,7 +24,6 @@ Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.
 - `JOB_AGENT_ROOT`
 - `JOB_AGENT_PROVIDER`
 - `JOB_AGENT_BIN`
-- for Codex compatibility, `CODEX_BIN`
 - optional `LOGSEQ_GRAPH_DIR`
 - commented `JOB_AGENT_SMTP_*` placeholders for email delivery
 
@@ -107,7 +106,7 @@ export JOB_AGENT_PROVIDER=claude
 export JOB_AGENT_BIN=/absolute/path/to/claude
 ```
 
-`scripts/setup_machine.sh --provider claude` writes those values when `claude` is discoverable on `PATH`. Claude runs use `claude -p` noninteractively with scoped allowed tools and normal project context loading; `--bare` is not used by default. Codex users can keep existing `CODEX_BIN` for now, but new config should prefer `JOB_AGENT_PROVIDER` and `JOB_AGENT_BIN`.
+`scripts/setup_machine.sh --provider claude` writes those values when `claude` is discoverable on `PATH`. Claude runs use `claude -p` noninteractively with scoped allowed tools and normal project context loading; `--bare` is not used by default.
 
 ## Scheduled Runs
 

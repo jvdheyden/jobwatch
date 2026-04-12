@@ -85,7 +85,6 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert f"export JOB_AGENT_ROOT={str(tmp_job_agent_root)}" in env_text
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
-    assert f"export CODEX_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert "# Optional: Logseq graph root for digest publication." in env_text
     assert "# Optional: SMTP settings for email delivery." in env_text
     assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" in env_text
@@ -356,7 +355,6 @@ def test_setup_machine_interactively_prompts_for_missing_codex(tmp_job_agent_roo
     env_text = env_file.read_text()
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
     assert f"export JOB_AGENT_BIN={str(fake_codex)}" in env_text
-    assert f"export CODEX_BIN={str(fake_codex)}" in env_text
     assert "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq" in env_text
 
 
@@ -392,7 +390,6 @@ def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_roo
     assert f"LOGSEQ_GRAPH_DIR (optional, Enter to use {detected_graph_dir}, type skip to leave unset):" in result.stdout
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
-    assert f"export CODEX_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert f"export LOGSEQ_GRAPH_DIR={str(detected_graph_dir)}" in env_text
 
 
@@ -420,7 +417,6 @@ def test_setup_machine_prefers_canonical_codex_path_on_linux(tmp_job_agent_root:
 
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
-    assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
 
 
 def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -448,7 +444,6 @@ def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root
 
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_BIN={str(symlink_codex)}" in env_text
-    assert f"export CODEX_BIN={str(symlink_codex)}" in env_text
 
 
 def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_job_agent_root: Path, repo_root: Path) -> None:
@@ -482,7 +477,6 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     assert f"JOB_AGENT_BIN for codex [{canonical_codex}]:" in result.stdout
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
-    assert f"export CODEX_BIN={str(canonical_codex)}" in env_text
 
 
 def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -539,7 +533,7 @@ def test_setup_machine_skips_bwrap_apparmor_profile_on_non_linux(tmp_job_agent_r
     assert not apparmor_profile.exists()
 
 
-def test_setup_machine_supports_claude_provider_without_codex_compat_or_bwrap(
+def test_setup_machine_supports_claude_provider_without_bwrap(
     tmp_job_agent_root: Path, repo_root: Path, run_cmd
 ) -> None:
     env_file = tmp_job_agent_root / ".env.local"
@@ -573,7 +567,6 @@ def test_setup_machine_supports_claude_provider_without_codex_compat_or_bwrap(
     env_text = env_file.read_text()
     assert "export JOB_AGENT_PROVIDER=claude" in env_text
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'claude')}" in env_text
-    assert "CODEX_BIN" not in env_text
     assert not apparmor_profile.exists()
 
 

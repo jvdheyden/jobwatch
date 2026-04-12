@@ -20,10 +20,8 @@ PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 LOGSEQ_GRAPH_DIR_VALUE=""
 AGENT_PROVIDER_VALUE=""
 AGENT_BIN_VALUE=""
-CODEX_BIN_ALIAS_VALUE=""
 ENV_AGENT_PROVIDER_VALUE="${JOB_AGENT_PROVIDER:-}"
 ENV_AGENT_BIN_VALUE="${JOB_AGENT_BIN:-}"
-ENV_CODEX_BIN_VALUE="${CODEX_BIN:-}"
 ENV_LOGSEQ_GRAPH_DIR_VALUE="${LOGSEQ_GRAPH_DIR:-}"
 SMTP_HOST_VALUE=""
 SMTP_PORT_VALUE=""
@@ -42,7 +40,7 @@ ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 
 usage() {
   cat <<EOF
-Usage: $0 [--provider codex|claude] [--agent-bin <path>] [--codex-bin <path>] [--logseq-graph-dir <path>]
+Usage: $0 [--provider codex|claude] [--agent-bin <path>] [--logseq-graph-dir <path>]
 
 Create or refresh machine-local scheduler config and profile placeholders for this checkout.
 In a terminal, the script prompts for any missing required values.
@@ -268,16 +266,6 @@ while [[ $# -gt 0 ]]; do
       AGENT_BIN_VALUE="${2:?missing value for --agent-bin}"
       shift 2
       ;;
-    --codex-bin)
-      CODEX_BIN_ALIAS_VALUE="${2:?missing value for --codex-bin}"
-      if [[ -z "$AGENT_BIN_VALUE" ]]; then
-        AGENT_BIN_VALUE="$CODEX_BIN_ALIAS_VALUE"
-      fi
-      if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
-        AGENT_PROVIDER_VALUE="codex"
-      fi
-      shift 2
-      ;;
     --logseq-graph-dir)
       LOGSEQ_GRAPH_DIR_VALUE="${2:?missing value for --logseq-graph-dir}"
       shift 2
@@ -297,7 +285,6 @@ ORIGINAL_PATH="$PATH"
 existing_path="$ORIGINAL_PATH"
 existing_agent_provider=""
 existing_agent_bin=""
-existing_codex_bin=""
 existing_logseq_graph_dir=""
 existing_smtp_host=""
 existing_smtp_port=""
@@ -318,7 +305,6 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_path="${PATH:-$ORIGINAL_PATH}"
   existing_agent_provider="${JOB_AGENT_PROVIDER:-}"
   existing_agent_bin="${JOB_AGENT_BIN:-}"
-  existing_codex_bin="${CODEX_BIN:-}"
   existing_logseq_graph_dir="${LOGSEQ_GRAPH_DIR:-}"
   existing_smtp_host="${JOB_AGENT_SMTP_HOST:-}"
   existing_smtp_port="${JOB_AGENT_SMTP_PORT:-}"
@@ -343,22 +329,11 @@ if ! validate_agent_provider "$AGENT_PROVIDER_VALUE"; then
   echo "JOB_AGENT_PROVIDER must be one of: codex, claude." >&2
   exit 2
 fi
-if [[ -n "$CODEX_BIN_ALIAS_VALUE" && "$AGENT_PROVIDER_VALUE" != "codex" ]]; then
-  echo "--codex-bin can only be used with --provider codex." >&2
-  exit 2
-fi
-
 if [[ -z "$AGENT_BIN_VALUE" ]]; then
   AGENT_BIN_VALUE="$ENV_AGENT_BIN_VALUE"
 fi
 if [[ -z "$AGENT_BIN_VALUE" ]]; then
   AGENT_BIN_VALUE="$existing_agent_bin"
-fi
-if [[ -z "$AGENT_BIN_VALUE" && "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
-  AGENT_BIN_VALUE="$ENV_CODEX_BIN_VALUE"
-fi
-if [[ -z "$AGENT_BIN_VALUE" && "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
-  AGENT_BIN_VALUE="$existing_codex_bin"
 fi
 if detected_agent_bin="$(detect_agent_bin "$AGENT_PROVIDER_VALUE" 2>/dev/null)"; then
   :
@@ -441,10 +416,6 @@ fi
   echo "# Required: automation provider and executable agent binary for scheduled runs."
   printf 'export JOB_AGENT_PROVIDER=%s\n' "$(shell_escape "$AGENT_PROVIDER_VALUE")"
   printf 'export JOB_AGENT_BIN=%s\n' "$(shell_escape "$AGENT_BIN_VALUE")"
-  if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
-    echo "# Compatibility for older Codex-only scripts; prefer JOB_AGENT_BIN."
-    printf 'export CODEX_BIN=%s\n' "$(shell_escape "$AGENT_BIN_VALUE")"
-  fi
   echo "# Optional: Logseq graph root for digest publication."
   if [[ -n "$LOGSEQ_GRAPH_DIR_VALUE" ]]; then
     printf 'export LOGSEQ_GRAPH_DIR=%s\n' "$(shell_escape "$LOGSEQ_GRAPH_DIR_VALUE")"

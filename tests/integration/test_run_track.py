@@ -244,7 +244,7 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -290,7 +290,7 @@ def test_run_track_logseq_delivery_runs_sync_and_preserves_caffeinate_args(tmp_j
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -329,7 +329,7 @@ def test_run_track_email_delivery_invokes_email_sender(tmp_job_agent_root: Path,
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -364,7 +364,7 @@ def test_run_track_runs_multiple_deliveries_in_cli_order(tmp_job_agent_root: Pat
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -416,7 +416,7 @@ def test_run_track_fails_when_requested_delivery_fails(tmp_job_agent_root: Path,
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "JOB_AGENT_FAKE_EMAIL_STATUS": "17",
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
@@ -482,7 +482,6 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
         "JOB_AGENT_TODAY": "2030-01-15",
         "JOB_AGENT_PROVIDER": "claude",
         "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_claude.sh"),
-        "CODEX_BIN": str(tmp_job_agent_root / "missing_codex_should_not_be_used.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -531,7 +530,7 @@ exec python3 "$@"
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -574,7 +573,7 @@ exec "$ROOT/fake_codex.sh" "$@"
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
         "JOB_AGENT_PLATFORM": "Linux",
-        "CODEX_BIN": str(symlink_codex),
+        "JOB_AGENT_BIN": str(symlink_codex),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -615,7 +614,7 @@ exec "$ROOT/fake_codex.sh" "$@"
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
         "JOB_AGENT_PLATFORM": "Darwin",
-        "CODEX_BIN": str(symlink_codex),
+        "JOB_AGENT_BIN": str(symlink_codex),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -645,7 +644,7 @@ def test_run_track_times_out_discovery_and_continues_to_codex_fallback(
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -686,8 +685,8 @@ def test_run_track_fails_when_codex_times_out_even_if_codex_exits_zero_on_term(
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
-        "CODEX_IDLE_TIMEOUT_SECS": "30",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "AGENT_IDLE_TIMEOUT_SECS": "30",
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -722,9 +721,9 @@ def test_run_track_aborts_idle_codex_and_logs_heartbeat(tmp_job_agent_root: Path
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
-        "CODEX_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
-        "CODEX_HEARTBEAT_SECS": "1",
-        "CODEX_IDLE_TIMEOUT_SECS": "1",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "AGENT_HEARTBEAT_SECS": "1",
+        "AGENT_IDLE_TIMEOUT_SECS": "1",
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
