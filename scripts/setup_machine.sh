@@ -40,7 +40,7 @@ ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 
 usage() {
   cat <<EOF
-Usage: $0 [--provider codex|claude] [--agent-bin <path>] [--logseq-graph-dir <path>]
+Usage: $0 --agent codex|claude [--agent-bin <path>] [--logseq-graph-dir <path>]
 
 Create or refresh machine-local scheduler config and profile placeholders for this checkout.
 In a terminal, the script prompts for any missing required values.
@@ -49,6 +49,25 @@ This script does not install cron or launchd. After adding entries to
 $SCHEDULE_FILE with scripts/configure_schedule.py or the setup agent, run
 scripts/install_scheduler.sh.
 EOF
+}
+
+agent_guidance() {
+  local script_name
+  local detected=""
+  script_name="$(basename "$0")"
+  if command -v claude >/dev/null 2>&1 && ! command -v codex >/dev/null 2>&1; then
+    detected="claude"
+  elif command -v codex >/dev/null 2>&1 && ! command -v claude >/dev/null 2>&1; then
+    detected="codex"
+  fi
+  cat >&2 <<EOF
+Choose an automation agent:
+  bash scripts/$script_name --agent claude
+  bash scripts/$script_name --agent codex
+EOF
+  if [[ -n "$detected" ]]; then
+    echo "Detected '$detected' on PATH; likely command: bash scripts/$script_name --agent $detected" >&2
+  fi
 }
 
 shell_escape() {
@@ -258,16 +277,31 @@ prompt_for_logseq_graph_dir() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --provider)
-      AGENT_PROVIDER_VALUE="${2:?missing value for --provider}"
+    --agent)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --agent" >&2
+        usage >&2
+        exit 2
+      fi
+      AGENT_PROVIDER_VALUE="$2"
       shift 2
       ;;
     --agent-bin)
-      AGENT_BIN_VALUE="${2:?missing value for --agent-bin}"
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --agent-bin" >&2
+        usage >&2
+        exit 2
+      fi
+      AGENT_BIN_VALUE="$2"
       shift 2
       ;;
     --logseq-graph-dir)
-      LOGSEQ_GRAPH_DIR_VALUE="${2:?missing value for --logseq-graph-dir}"
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --logseq-graph-dir" >&2
+        usage >&2
+        exit 2
+      fi
+      LOGSEQ_GRAPH_DIR_VALUE="$2"
       shift 2
       ;;
     --help|-h)
@@ -323,10 +357,12 @@ if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
   AGENT_PROVIDER_VALUE="$existing_agent_provider"
 fi
 if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
-  AGENT_PROVIDER_VALUE="codex"
+  agent_guidance
+  exit 2
 fi
 if ! validate_agent_provider "$AGENT_PROVIDER_VALUE"; then
-  echo "JOB_AGENT_PROVIDER must be one of: codex, claude." >&2
+  echo "Invalid --agent/JOB_AGENT_PROVIDER '$AGENT_PROVIDER_VALUE'; expected codex or claude." >&2
+  agent_guidance
   exit 2
 fi
 if [[ -z "$AGENT_BIN_VALUE" ]]; then

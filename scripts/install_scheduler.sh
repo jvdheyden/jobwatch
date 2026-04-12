@@ -13,7 +13,8 @@ usage() {
 Usage: $0
 
 Install the machine-local scheduler for this checkout.
-Run scripts/setup_machine.sh first or let this script refresh the generated files.
+Run scripts/setup_machine.sh --agent codex or --agent claude first. This script
+refreshes generated files from the existing machine-local config.
 EOF
 }
 

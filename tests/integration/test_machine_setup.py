@@ -78,7 +78,7 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    first = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    first = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert first.returncode == 0, first.stderr
 
     env_text = env_file.read_text()
@@ -109,7 +109,7 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
 
     schedule_file.write_text("daily 08:00 track demo\n")
 
-    second = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    second = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert second.returncode == 0, second.stderr
     assert schedule_file.read_text() == "daily 08:00 track demo\n"
 
@@ -134,7 +134,7 @@ def test_setup_machine_preserves_existing_profile_files(tmp_job_agent_root: Path
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
     assert (profile_dir / "cv.md").read_text() == "# Existing CV\n\nDo not replace.\n"
     assert (profile_dir / "prefs_global.md").read_text() == "# Existing Preferences\n\nDo not replace.\n"
@@ -170,7 +170,7 @@ def test_setup_machine_preserves_existing_smtp_values(tmp_job_agent_root: Path, 
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
@@ -301,7 +301,31 @@ def test_configure_schedule_rejects_invalid_weekly_schedule(
     assert not schedule_file.exists()
 
 
-def test_setup_machine_fails_noninteractive_without_codex(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+def test_setup_machine_requires_agent_selection_without_existing_config(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "PATH": f"{fake_bin_dir}:/usr/bin:/bin:/usr/sbin:/sbin",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 2
+    assert "Choose an automation agent:" in result.stderr
+    assert "bash scripts/setup_machine.sh --agent claude" in result.stderr
+    assert "bash scripts/setup_machine.sh --agent codex" in result.stderr
+    assert not env_file.exists()
+
+
+def test_setup_machine_fails_noninteractive_without_selected_agent_binary(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
     scheduler_dir = tmp_job_agent_root / ".scheduler"
@@ -317,7 +341,7 @@ def test_setup_machine_fails_noninteractive_without_codex(tmp_job_agent_root: Pa
         "PATH": f"{empty_bin_dir}:/usr/bin:/bin:/usr/sbin:/sbin",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 1
     assert "JOB_AGENT_BIN is required in non-interactive mode" in result.stderr
     assert not env_file.exists()
@@ -344,6 +368,8 @@ def test_setup_machine_interactively_prompts_for_missing_codex(tmp_job_agent_roo
     result = _run_interactive(
         "bash",
         str(repo_root / "scripts" / "setup_machine.sh"),
+        "--agent",
+        "codex",
         input_text=f"{fake_codex}\n\n",
         env=env,
         cwd=repo_root,
@@ -380,6 +406,8 @@ def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_roo
     result = _run_interactive(
         "bash",
         str(repo_root / "scripts" / "setup_machine.sh"),
+        "--agent",
+        "codex",
         input_text="\n\n",
         env=env,
         cwd=repo_root,
@@ -412,7 +440,7 @@ def test_setup_machine_prefers_canonical_codex_path_on_linux(tmp_job_agent_root:
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
@@ -439,7 +467,7 @@ def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
@@ -468,6 +496,8 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     result = _run_interactive(
         "bash",
         str(repo_root / "scripts" / "setup_machine.sh"),
+        "--agent",
+        "codex",
         input_text="\n\n",
         env=env,
         cwd=repo_root,
@@ -500,7 +530,7 @@ def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_r
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
 
     profile_text = apparmor_profile.read_text()
@@ -528,7 +558,7 @@ def test_setup_machine_skips_bwrap_apparmor_profile_on_non_linux(tmp_job_agent_r
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
     assert not apparmor_profile.exists()
 
@@ -557,7 +587,7 @@ def test_setup_machine_supports_claude_provider_without_bwrap(
     result = run_cmd(
         "bash",
         str(repo_root / "scripts" / "setup_machine.sh"),
-        "--provider",
+        "--agent",
         "claude",
         env=env,
         cwd=repo_root,
@@ -662,6 +692,59 @@ def test_bootstrap_machine_runs_setup_and_bootstrap_then_prints_linux_followups(
     setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
     bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
     log_file = tmp_job_agent_root / "bootstrap-machine.log"
+    agent_bin = tmp_job_agent_root / "bin" / "codex"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(
+        setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        bootstrap_venv_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_MACHINE_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PLATFORM": "Linux",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(bootstrap_script),
+        "--agent",
+        "codex",
+        "--agent-bin",
+        str(agent_bin),
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+    assert result.returncode == 0, result.stderr
+    assert log_file.read_text().splitlines() == [
+        f"setup_machine --agent codex --agent-bin {agent_bin}",
+        "bootstrap_venv",
+    ]
+    assert (
+        f"Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for {tmp_job_agent_root}"
+        in result.stdout
+    )
+    assert "Fill profile/cv.md and profile/prefs_global.md locally" in result.stdout
+    assert "Next: ask your configured agent to set up a search track" in result.stdout
+    assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
+
+
+def test_bootstrap_machine_requires_agent_selection(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    log_file = tmp_job_agent_root / "bootstrap-machine.log"
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(
@@ -682,19 +765,14 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     env = os.environ | {
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
-        "JOB_AGENT_PLATFORM": "Linux",
     }
 
     result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
-    assert result.returncode == 0, result.stderr
-    assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
-    assert (
-        f"Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for {tmp_job_agent_root}"
-        in result.stdout
-    )
-    assert "Fill profile/cv.md and profile/prefs_global.md locally" in result.stdout
-    assert "Next: ask your configured agent to set up a search track" in result.stdout
-    assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
+    assert result.returncode == 2
+    assert "Choose an automation agent:" in result.stderr
+    assert "bash scripts/bootstrap_machine.sh --agent claude" in result.stderr
+    assert "bash scripts/bootstrap_machine.sh --agent codex" in result.stderr
+    assert not log_file.exists()
 
 
 def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
@@ -713,7 +791,7 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
         "JOB_AGENT_PLATFORM": "Darwin",
     }
 
-    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
     assert "Next: ask your configured agent to set up a search track" in result.stdout
     assert "install_bwrap_apparmor" not in result.stdout
@@ -747,7 +825,7 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
     }
 
-    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 12
     assert log_file.read_text().splitlines() == ["setup_machine"]
 
@@ -780,7 +858,7 @@ exit 23
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
     }
 
-    result = run_cmd("bash", str(bootstrap_script), env=env, cwd=tmp_job_agent_root)
+    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 23
     assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
 
@@ -998,6 +1076,7 @@ cp "$1" "$STORE"
     env = os.environ | {
         "HOME": str(tmp_job_agent_root / "home"),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PROVIDER": "codex",
         "JOB_AGENT_ENV_FILE": str(env_file),
         "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
         "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
@@ -1049,7 +1128,7 @@ echo "$*" >> "{parser_log}"
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
 
-    setup_result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), env=env, cwd=repo_root)
+    setup_result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert setup_result.returncode == 0, setup_result.stderr
 
     result = run_cmd("bash", str(repo_root / "scripts" / "install_bwrap_apparmor.sh"), env=env, cwd=repo_root)

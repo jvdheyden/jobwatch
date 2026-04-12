@@ -1,6 +1,12 @@
 # Machine Setup
 
-For first-time setup, run `bash scripts/bootstrap_machine.sh` after cloning the repo.
+For first-time setup, choose the automation agent explicitly after cloning the repo:
+
+```bash
+bash scripts/bootstrap_machine.sh --agent claude
+# or
+bash scripts/bootstrap_machine.sh --agent codex
+```
 
 That will:
 
@@ -8,7 +14,7 @@ That will:
 - create local profile placeholders under `profile/`
 - bootstrap the repo-local virtualenv via `scripts/bootstrap_venv.sh`
 
-If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh` directly. That creates:
+If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh --agent claude` or `bash scripts/setup_machine.sh --agent codex` directly. Existing `.env.local` files can also supply the previous `JOB_AGENT_PROVIDER`. That creates:
 
 - `.env.local` for machine-local paths and binaries
 - `.schedule.local` for local scheduled jobs
@@ -18,9 +24,10 @@ If you only need to refresh the generated machine-local config later, run `bash 
 
 The `profile/` directory is local user data and is ignored by Git. `profile/cv.md` is the primary agent-readable CV context. `profile/prefs_global.md` stores durable cross-track preferences. You can also place a PDF CV in `profile/`; the setup agent can use it to draft `profile/cv.md` when the Markdown CV is still the default placeholder.
 
-In a normal terminal, the setup script prompts for any missing machine-local values.
+In a normal terminal, the setup script prompts for missing machine-local values after the agent is selected.
 
-- `JOB_AGENT_PROVIDER` selects `codex` or `claude`; it defaults to `codex`.
+- `--agent codex|claude` selects the automation provider for first-time setup. If omitted and no existing `JOB_AGENT_PROVIDER` is available, setup exits with exact commands to rerun.
+- `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
 - `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
 - SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill them locally if you want email delivery.
@@ -42,8 +49,8 @@ In non-interactive mode, the script does not prompt. `JOB_AGENT_BIN` must alread
 Provider examples:
 
 ```bash
-bash scripts/setup_machine.sh --provider codex --agent-bin /absolute/path/to/codex
-bash scripts/setup_machine.sh --provider claude --agent-bin /absolute/path/to/claude
+bash scripts/setup_machine.sh --agent codex --agent-bin /absolute/path/to/codex
+bash scripts/setup_machine.sh --agent claude --agent-bin /absolute/path/to/claude
 ```
 
 For Claude Code, authenticate locally before scheduled runs:

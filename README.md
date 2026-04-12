@@ -11,10 +11,12 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    - either the Codex CLI or Claude Code CLI
    - for Claude, run Claude Code login locally before scheduled runs
    - on Linux with Codex, `bwrap` if you want Codex sandboxing backed by Bubblewrap
-2. From the repo root, bootstrap the checkout for local use:
+2. From the repo root, choose the automation agent and bootstrap the checkout for local use:
 
 ```bash
-bash scripts/bootstrap_machine.sh
+bash scripts/bootstrap_machine.sh --agent claude
+# or
+bash scripts/bootstrap_machine.sh --agent codex
 ```
 
 This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
@@ -37,7 +39,9 @@ Before or during your first track setup, replace those placeholders with your ow
 If you only need to regenerate machine-local config later, run:
 
 ```bash
-bash scripts/setup_machine.sh
+bash scripts/setup_machine.sh --agent claude
+# or
+bash scripts/setup_machine.sh --agent codex
 ```
 
 3. If you are on Ubuntu and using Codex with `bwrap`, install the generated AppArmor profile:
@@ -92,21 +96,23 @@ bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery emai
 
 ## Agent Provider
 
-The default provider is Codex:
+Select the provider explicitly during setup. The setup scripts write the selected provider and executable path into `.env.local`.
+
+For Codex:
 
 ```bash
 export JOB_AGENT_PROVIDER=codex
 export JOB_AGENT_BIN=/absolute/path/to/codex
 ```
 
-To use Claude Code for scheduled runs and repair/eval automation:
+For Claude Code:
 
 ```bash
 export JOB_AGENT_PROVIDER=claude
 export JOB_AGENT_BIN=/absolute/path/to/claude
 ```
 
-`scripts/setup_machine.sh --provider claude` writes those values when `claude` is discoverable on `PATH`. Claude runs use `claude -p` noninteractively with scoped allowed tools and normal project context loading; `--bare` is not used by default.
+`scripts/setup_machine.sh --agent claude` writes those values when `claude` is discoverable on `PATH`. Claude runs use `claude -p` noninteractively with scoped allowed tools and normal project context loading; `--bare` is not used by default.
 
 ## Scheduled Runs
 
@@ -152,7 +158,9 @@ Logseq delivery copies the rendered daily digest and ranked overview into a Logs
 Set `LOGSEQ_GRAPH_DIR` in `.env.local`, either by rerunning setup:
 
 ```bash
-bash scripts/setup_machine.sh --logseq-graph-dir /absolute/path/to/logseq
+bash scripts/setup_machine.sh --agent claude --logseq-graph-dir /absolute/path/to/logseq
+# or
+bash scripts/setup_machine.sh --agent codex --logseq-graph-dir /absolute/path/to/logseq
 ```
 
 or by editing `.env.local` locally:
