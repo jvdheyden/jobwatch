@@ -24,8 +24,15 @@ from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlparse
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
+
+from sap_odata import (
+    build_sap_odata_list_url,
+    fetch_sap_odata_all,
+    fetch_sap_odata_entity,
+    sap_odata_string_literal,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -923,118 +930,6 @@ def build_bundeswehr_odata_candidate_url(source_url: str, pinst_guid: str) -> st
     return normalize_url_without_fragment(parsed_source._replace(query=urlencode(query_pairs), fragment="").geturl())
 
 
-def sap_odata_string_literal(value: str) -> str:
-    return "'" + (value or "").replace("'", "''") + "'"
-
-
-def build_sap_odata_url(service_root: str, resource_path: str, params: list[tuple[str, str]] | None = None) -> str:
-    url = service_root.rstrip("/") + "/" + resource_path.lstrip("/")
-    if not params:
-        return url
-    return url + "?" + urlencode(params, quote_via=quote)
-
-
-def extract_sap_odata_results(payload: Any) -> list[dict[str, Any]]:
-    if not isinstance(payload, dict):
-        return []
-    value = payload.get("value")
-    if isinstance(value, list):
-        return [item for item in value if isinstance(item, dict)]
-    data = payload.get("d")
-    if isinstance(data, dict):
-        results = data.get("results")
-        if isinstance(results, list):
-            return [item for item in results if isinstance(item, dict)]
-    return []
-
-
-def extract_sap_odata_entity(payload: Any) -> dict[str, Any]:
-    if not isinstance(payload, dict):
-        return {}
-    data = payload.get("d")
-    if isinstance(data, dict):
-        if isinstance(data.get("results"), list):
-            return {}
-        return data
-    return payload
-
-
-def build_sap_odata_count_url(service_root: str, entity_set: str, filter_expression: str) -> str:
-    return build_sap_odata_url(service_root, f"{entity_set}/$count", [("$filter", filter_expression)])
-
-
-def build_sap_odata_list_url(
-    service_root: str,
-    entity_set: str,
-    filter_expression: str,
-    select_fields: tuple[str, ...],
-    top: int,
-    skip: int,
-) -> str:
-    return build_sap_odata_url(
-        service_root,
-        entity_set,
-        [
-            ("$filter", filter_expression),
-            ("$select", ",".join(select_fields)),
-            ("$top", str(top)),
-            ("$skip", str(skip)),
-            ("$format", "json"),
-        ],
-    )
-
-
-def build_sap_odata_entity_url(
-    service_root: str,
-    entity_set: str,
-    key_expression: str,
-    select_fields: tuple[str, ...],
-) -> str:
-    return build_sap_odata_url(
-        service_root,
-        f"{entity_set}({key_expression})",
-        [
-            ("$select", ",".join(select_fields)),
-            ("$format", "json"),
-        ],
-    )
-
-
-def fetch_sap_odata_count(service_root: str, entity_set: str, filter_expression: str, timeout_seconds: int) -> int:
-    count_text = fetch_text(build_sap_odata_count_url(service_root, entity_set, filter_expression), timeout_seconds)
-    return int(normalize_whitespace(count_text))
-
-
-def fetch_sap_odata_page(
-    service_root: str,
-    entity_set: str,
-    filter_expression: str,
-    select_fields: tuple[str, ...],
-    top: int,
-    skip: int,
-    timeout_seconds: int,
-) -> list[dict[str, Any]]:
-    payload = fetch_json(
-        build_sap_odata_list_url(service_root, entity_set, filter_expression, select_fields, top, skip),
-        timeout_seconds,
-    )
-    return extract_sap_odata_results(payload)
-
-
-def fetch_sap_odata_entity(
-    service_root: str,
-    entity_set: str,
-    key_expression: str,
-    select_fields: tuple[str, ...],
-    timeout_seconds: int,
-) -> dict[str, Any]:
-    payload = fetch_json(
-        build_sap_odata_entity_url(service_root, entity_set, key_expression, select_fields),
-        timeout_seconds,
-    )
-    return extract_sap_odata_entity(payload)
-
-
 def extract_visible_text_lines_from_html(html: str) -> list[str]:
     text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", html or "")
     text = re.sub(r"(?i)</?\s*(?:p|div|li|ul|ol|h[1-6]|section|article|tr|td|th|dl|dt|dd)\b[^>]*>", "\n", text)
@@ -1125,6 +1020,18 @@ def bundeswehr_odata_filter_for_category(category: str) -> str:
     )
 
 
+def bundeswehr_odata_category_filter_clause(categories: tuple[str, ...] = BUNDESWEHR_ODATA_OPPORTUNITY_CATEGORIES) -> str:
+    return "(" + " or ".join(f"SearchCategory eq {sap_odata_string_literal(category)}" for category in categories) + ")"
+
+
+def bundeswehr_odata_filter_for_keyword(term: str) -> str:
+    return (
+        f"({bundeswehr_odata_category_filter_clause()} "
+        f"and Langu eq {sap_odata_string_literal(BUNDESWEHR_ODATA_LANGUAGE)} "
+        f"and Keywords eq {sap_odata_string_literal(term)})"
+    )
+
+
 def bundeswehr_odata_detail_key(pinst_guid: str) -> str:
     return (
         f"Langu={sap_odata_string_literal(BUNDESWEHR_ODATA_LANGUAGE)},"
@@ -1177,6 +1084,35 @@ def build_bundeswehr_odata_candidate_notes(row: dict[str, Any]) -> str:
         if value:
             note_parts.append(f"{label}: {value}")
     return "; ".join(note_parts)
+
+
+def build_bundeswehr_odata_candidate(
+    source: SourceConfig,
+    row: dict[str, Any],
+    terms: list[str],
+    forced_terms: tuple[str, ...] = (),
+) -> tuple[Candidate, str, str]:
+    title = clean_bundeswehr_odata_value(row.get("Title")) or "unknown"
+    pinst_guid = clean_bundeswehr_odata_value(row.get("PinstGuid"))
+    candidate_id = pinst_guid or clean_bundeswehr_odata_value(row.get("RefCode")) or slugify_title(title)
+    location = (
+        clean_bundeswehr_odata_value(row.get("BesOrt"))
+        or clean_bundeswehr_odata_value(row.get("Region"))
+        or clean_bundeswehr_odata_value(row.get("Country"))
+        or "unknown"
+    )
+    searchable_text = bundeswehr_odata_searchable_text(row)
+    matched_terms = sorted(set(match_terms(searchable_text, terms) + list(forced_terms)))
+    candidate = Candidate(
+        employer=source.source,
+        title=title,
+        url=build_bundeswehr_odata_candidate_url(source.url, candidate_id),
+        source_url=source.url,
+        location=location,
+        matched_terms=matched_terms,
+        notes=build_bundeswehr_odata_candidate_notes(row),
+    )
+    return candidate, pinst_guid, searchable_text
 
 
 def apply_bundeswehr_odata_detail(candidate: Candidate, detail: dict[str, Any], terms: list[str]) -> bool:
@@ -2817,95 +2753,121 @@ def discover_bundeswehr_profile_catalog_fallback(
 def discover_bundeswehr_odata(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     candidates_by_url: dict[str, Candidate] = {}
     limitations: list[str] = []
-    result_summaries: list[str] = []
+    category_summaries: list[str] = []
+    keyword_summaries: list[str] = []
     listing_pages_scanned = 0
     direct_job_pages_opened = 0
     enumerated_jobs = 0
     detail_failures = 0
+    detail_cache: dict[str, dict[str, Any]] = {}
+    detail_failed_guids: set[str] = set()
+
+    def load_detail(pinst_guid: str) -> dict[str, Any]:
+        nonlocal detail_failures, direct_job_pages_opened
+        if not pinst_guid:
+            return {}
+        if pinst_guid in detail_cache:
+            return detail_cache[pinst_guid]
+        if pinst_guid in detail_failed_guids:
+            return {}
+        try:
+            detail = fetch_sap_odata_entity(
+                BUNDESWEHR_ODATA_SERVICE_ROOT,
+                BUNDESWEHR_ODATA_ENTITY_SET,
+                bundeswehr_odata_detail_key(pinst_guid),
+                BUNDESWEHR_ODATA_DETAIL_SELECT,
+                timeout_seconds,
+                fetch_json,
+            )
+        except Exception:
+            detail_failures += 1
+            detail_failed_guids.add(pinst_guid)
+            return {}
+        direct_job_pages_opened += 1
+        detail_cache[pinst_guid] = detail
+        return detail
 
     for category in BUNDESWEHR_ODATA_OPPORTUNITY_CATEGORIES:
         filter_expression = bundeswehr_odata_filter_for_category(category)
-        declared_total = fetch_sap_odata_count(
+        scan = fetch_sap_odata_all(
             BUNDESWEHR_ODATA_SERVICE_ROOT,
             BUNDESWEHR_ODATA_ENTITY_SET,
             filter_expression,
+            BUNDESWEHR_ODATA_LIST_SELECT,
+            BUNDESWEHR_ODATA_PAGE_SIZE,
             timeout_seconds,
+            fetch_text,
+            fetch_json,
         )
-        category_seen = 0
-        category_pages = 0
-        skip = 0
-        while category_seen < declared_total:
-            rows = fetch_sap_odata_page(
+        listing_pages_scanned += scan.pages_scanned
+        enumerated_jobs += len(scan.rows)
+        category_summaries.append(f"{category}:{scan.pages_scanned}p/{len(scan.rows)}of{scan.declared_total}")
+        if scan.stopped_early:
+            limitations.append(
+                f"Bundeswehr SAP OData category {category} surfaced {len(scan.rows)} of {scan.declared_total} rows."
+            )
+
+        for row in scan.rows:
+            candidate, pinst_guid, searchable_text = build_bundeswehr_odata_candidate(source, row, terms)
+            if not should_keep_service_bund_candidate(candidate.title, candidate.matched_terms, searchable_text):
+                continue
+            detail = load_detail(pinst_guid)
+            if detail:
+                apply_bundeswehr_odata_detail(candidate, detail, terms)
+            merge_candidate(candidates_by_url, candidate)
+
+    for term in terms:
+        try:
+            scan = fetch_sap_odata_all(
                 BUNDESWEHR_ODATA_SERVICE_ROOT,
                 BUNDESWEHR_ODATA_ENTITY_SET,
-                filter_expression,
+                bundeswehr_odata_filter_for_keyword(term),
                 BUNDESWEHR_ODATA_LIST_SELECT,
                 BUNDESWEHR_ODATA_PAGE_SIZE,
-                skip,
                 timeout_seconds,
+                fetch_text,
+                fetch_json,
             )
-            category_pages += 1
-            listing_pages_scanned += 1
-            if not rows:
-                limitations.append(
-                    f"Bundeswehr SAP OData category {category} stopped after {category_seen} of {declared_total} rows."
-                )
-                break
-
-            for row in rows:
-                category_seen += 1
-                enumerated_jobs += 1
-                title = clean_bundeswehr_odata_value(row.get("Title")) or "unknown"
-                pinst_guid = clean_bundeswehr_odata_value(row.get("PinstGuid"))
-                candidate_id = pinst_guid or clean_bundeswehr_odata_value(row.get("RefCode")) or slugify_title(title)
-                location = (
-                    clean_bundeswehr_odata_value(row.get("BesOrt"))
-                    or clean_bundeswehr_odata_value(row.get("Region"))
-                    or clean_bundeswehr_odata_value(row.get("Country"))
-                    or "unknown"
-                )
-                searchable_text = bundeswehr_odata_searchable_text(row)
-                matched_terms = sorted(set(match_terms(searchable_text, terms)))
-                if not should_keep_service_bund_candidate(title, matched_terms, searchable_text):
-                    continue
-
-                candidate = Candidate(
-                    employer=source.source,
-                    title=title,
-                    url=build_bundeswehr_odata_candidate_url(source.url, candidate_id),
-                    source_url=source.url,
-                    location=location,
-                    matched_terms=matched_terms,
-                    notes=build_bundeswehr_odata_candidate_notes(row),
-                )
-                if pinst_guid:
-                    try:
-                        detail = fetch_sap_odata_entity(
-                            BUNDESWEHR_ODATA_SERVICE_ROOT,
-                            BUNDESWEHR_ODATA_ENTITY_SET,
-                            bundeswehr_odata_detail_key(pinst_guid),
-                            BUNDESWEHR_ODATA_DETAIL_SELECT,
-                            timeout_seconds,
-                        )
-                    except Exception:
-                        detail_failures += 1
-                    else:
-                        direct_job_pages_opened += 1
-                        apply_bundeswehr_odata_detail(candidate, detail, terms)
-                merge_candidate(candidates_by_url, candidate)
-
-            if category_seen >= declared_total:
-                break
-            skip += len(rows)
-
-        result_summaries.append(f"{category}:{category_pages}p/{category_seen}of{declared_total}")
-        if category_seen < declared_total:
+        except Exception as exc:
+            keyword_summaries.append(f"{term}:failed")
             limitations.append(
-                f"Bundeswehr SAP OData category {category} surfaced {category_seen} of {declared_total} rows."
+                f"Bundeswehr SAP OData keyword search for '{term}' failed "
+                f"({type(exc).__name__}: {truncate_text(str(exc), 160)})."
             )
+            continue
+
+        listing_pages_scanned += scan.pages_scanned
+        keyword_summaries.append(f"{term}:{scan.pages_scanned}p/{len(scan.rows)}of{scan.declared_total}")
+        if scan.stopped_early:
+            limitations.append(
+                f"Bundeswehr SAP OData keyword search for '{term}' surfaced "
+                f"{len(scan.rows)} of {scan.declared_total} rows."
+            )
+
+        for row in scan.rows:
+            candidate, pinst_guid, _searchable_text = build_bundeswehr_odata_candidate(
+                source,
+                row,
+                terms,
+                forced_terms=(term,),
+            )
+            detail = load_detail(pinst_guid)
+            if detail:
+                apply_bundeswehr_odata_detail(candidate, detail, terms)
+            if not should_keep_service_bund_candidate(
+                candidate.title,
+                candidate.matched_terms,
+                candidate_searchable_text(candidate),
+            ):
+                continue
+            merge_candidate(candidates_by_url, candidate)
 
     if detail_failures:
         limitations.append(f"Bundeswehr SAP OData detail enrichment failed for {detail_failures} matched candidate(s).")
+
+    result_pages_scanned = f"categories[{', '.join(category_summaries)}]"
+    if keyword_summaries:
+        result_pages_scanned += f"; keywords[{', '.join(keyword_summaries)}]"
 
     return Coverage(
         source=source.source,
@@ -2917,7 +2879,7 @@ def discover_bundeswehr_odata(source: SourceConfig, terms: list[str], timeout_se
         status="partial" if limitations else "complete",
         listing_pages_scanned=listing_pages_scanned,
         search_terms_tried=terms,
-        result_pages_scanned=", ".join(result_summaries),
+        result_pages_scanned=result_pages_scanned,
         direct_job_pages_opened=direct_job_pages_opened,
         enumerated_jobs=enumerated_jobs,
         matched_jobs=len(candidates_by_url),
