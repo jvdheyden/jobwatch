@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
 from html import escape
+from urllib.parse import parse_qs, urlparse
 
 import discover_jobs
 
@@ -297,14 +299,194 @@ def test_discover_enbw_phenom_paginates_embedded_search_payload(monkeypatch):
     assert "https://careers.enbw.com/de/de/job/23177/privacy-engineer" in urls
 
 
-def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch):
-    source = discover_jobs.SourceConfig(
+def bundeswehr_source() -> discover_jobs.SourceConfig:
+    return discover_jobs.SourceConfig(
         source="Bundeswehr",
         url="https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded",
         discovery_mode="bundeswehr_jobsuche",
         last_checked=None,
         cadence_group="every_run",
     )
+
+
+def bundeswehr_odata_category_from_url(url: str) -> str:
+    query = parse_qs(urlparse(url).query)
+    filter_expression = query["$filter"][0]
+    assert "Langu eq 'D'" in filter_expression
+    for category in discover_jobs.BUNDESWEHR_ODATA_OPPORTUNITY_CATEGORIES:
+        if f"SearchCategory eq '{category}'" in filter_expression:
+            return category
+    raise AssertionError(f"missing Bundeswehr SearchCategory filter: {url}")
+
+
+def test_sap_odata_url_encodes_filters_and_literals():
+    literal = discover_jobs.sap_odata_string_literal("O'Neil")
+    assert literal == "'O''Neil'"
+
+    url = discover_jobs.build_sap_odata_list_url(
+        "https://example.com/odata/",
+        "Jobs",
+        f"(Name eq {literal})",
+        ("Title", "PinstGuid"),
+        10,
+        20,
+    )
+
+    assert "%24filter=" in url
+    query = parse_qs(urlparse(url).query)
+    assert query["$filter"] == ["(Name eq 'O''Neil')"]
+    assert query["$select"] == ["Title,PinstGuid"]
+    assert query["$top"] == ["10"]
+    assert query["$skip"] == ["20"]
+    assert query["$format"] == ["json"]
+
+
+def test_discover_bundeswehr_jobsuche_uses_sap_odata_with_full_pagination(monkeypatch):
+    source = bundeswehr_source()
+    monkeypatch.setattr(discover_jobs, "BUNDESWEHR_ODATA_PAGE_SIZE", 1)
+    rows_by_category = {
+        "0021": [
+            {
+                "PinstGuid": "GUID-IT",
+                "Title": "Einstellung Offizierin / Offizier im Bereich IT-Architektur",
+                "BesOrt": "Euskirchen",
+                "PostingTxt": "Informationstechnik und IT-Sicherheit im Geschaeftsbereich.",
+                "RefCode": "SE-IT-1",
+                "SearchCategory": "0021",
+                "ApplicationEnd": "30.04.2026",
+                "Arbeitszeit": "Vollzeit",
+            },
+            {
+                "PinstGuid": "GUID-KOCH",
+                "Title": "Koechin / Koch",
+                "BesOrt": "Berlin",
+                "PostingTxt": "Verpflegung und Kuechenorganisation.",
+                "RefCode": "SE-KOCH-1",
+                "SearchCategory": "0021",
+            },
+        ],
+        "0026": [
+            {
+                "PinstGuid": "GUID-CYBER",
+                "Title": "Buerosachbearbeiterin / Buerosachbearbeiter IT-Systempflege",
+                "BesOrt": "Koenigswinter",
+                "PostingTxt": "Cyber/IT und digitale Netze.",
+                "RefCode": "ZIV-IT-1",
+                "SearchCategory": "0026",
+            }
+        ],
+        "0022": [],
+        "0027": [],
+        "0023": [],
+        "0028": [],
+    }
+    details_by_guid = {
+        "GUID-IT": {
+            "PinstGuid": "GUID-IT",
+            "JobDesc": "Sie gestalten IT-Grundschutz und sichere Informationstechnik.",
+            "RequireDesc": "Erfahrung in IT-Sicherheit ist wuenschenswert.",
+            "ContactDesc": "Kontakt ueber das Karrierecenter.",
+        },
+        "GUID-CYBER": {
+            "PinstGuid": "GUID-CYBER",
+            "JobDesc": "Sie betreuen Cyber/IT Verfahren.",
+            "RequireDesc": "Kenntnisse in Netzen und Systempflege.",
+        },
+    }
+    list_requests: list[str] = []
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        assert urlparse(url).path.endswith("/Stellensuche_Set/$count")
+        return str(len(rows_by_category[bundeswehr_odata_category_from_url(url)]))
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        assert timeout_seconds == 5
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        if parsed.path.endswith("/Stellensuche_Set"):
+            list_requests.append(url)
+            category = bundeswehr_odata_category_from_url(url)
+            assert query["$top"] == ["1"]
+            skip = int(query["$skip"][0])
+            rows = rows_by_category[category][skip : skip + 1]
+            return {"d": {"results": rows}}
+
+        match = re.search(r"PinstGuid='([^']+)'", parsed.path)
+        assert match, f"unexpected detail URL: {url}"
+        query = parse_qs(parsed.query)
+        assert query["$format"] == ["json"]
+        assert "JobDesc" in query["$select"][0]
+        return {"d": details_by_guid[match.group(1)]}
+
+    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+
+    coverage = discover_jobs.discover_bundeswehr_jobsuche(
+        source,
+        ["Informationstechnik", "IT-Sicherheit", "Cyber/IT"],
+        timeout_seconds=5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.listing_pages_scanned == 3
+    assert coverage.direct_job_pages_opened == 2
+    assert coverage.enumerated_jobs == 3
+    assert coverage.matched_jobs == 2
+    assert "0021:2p/2of2" in coverage.result_pages_scanned
+    assert "0026:1p/1of1" in coverage.result_pages_scanned
+    assert len(list_requests) == 3
+    urls = {candidate.url for candidate in coverage.candidates}
+    assert urls == {
+        "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html?job=GUID-IT",
+        "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html?job=GUID-CYBER",
+    }
+    candidate = next(candidate for candidate in coverage.candidates if candidate.url.endswith("GUID-IT"))
+    assert candidate.location == "Euskirchen"
+    assert candidate.matched_terms == ["IT-Sicherheit", "Informationstechnik"]
+    assert "RefCode: SE-IT-1" in candidate.notes
+    assert "Job: Sie gestalten IT-Grundschutz" in candidate.notes
+    assert "Requirements: Erfahrung in IT-Sicherheit" in candidate.notes
+
+
+def test_discover_bundeswehr_jobsuche_marks_partial_when_odata_detail_fails(monkeypatch):
+    source = bundeswehr_source()
+    rows_by_category = {category: [] for category in discover_jobs.BUNDESWEHR_ODATA_OPPORTUNITY_CATEGORIES}
+    rows_by_category["0021"] = [
+        {
+            "PinstGuid": "GUID-IT",
+            "Title": "Referentin / Referent Informationstechnik",
+            "BesOrt": "Bonn",
+            "PostingTxt": "IT-Sicherheit und digitale Netze.",
+            "RefCode": "SE-IT-2",
+            "SearchCategory": "0021",
+        }
+    ]
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert urlparse(url).path.endswith("/Stellensuche_Set/$count")
+        return str(len(rows_by_category[bundeswehr_odata_category_from_url(url)]))
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        parsed = urlparse(url)
+        if parsed.path.endswith("/Stellensuche_Set"):
+            return {"d": {"results": rows_by_category[bundeswehr_odata_category_from_url(url)]}}
+        raise TimeoutError("detail unavailable")
+
+    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+
+    coverage = discover_jobs.discover_bundeswehr_jobsuche(source, ["Informationstechnik"], timeout_seconds=5)
+
+    assert coverage.status == "partial"
+    assert coverage.matched_jobs == 1
+    assert coverage.direct_job_pages_opened == 0
+    assert "detail enrichment failed for 1 matched candidate" in coverage.limitations[-1]
+    assert coverage.candidates[0].url.endswith("?job=GUID-IT")
+
+
+def test_discover_bundeswehr_jobsuche_falls_back_to_profile_catalog_when_odata_fails(monkeypatch):
+    source = bundeswehr_source()
     html = """
     <html><body>
       <a class="jobtitle" href="/soldatin-soldat-in-der-informationstechnik-417">Soldatin / Soldat in der Informationstechnik</a>
@@ -327,6 +509,8 @@ def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch)
 
     def fake_fetch_text(url: str, timeout_seconds: int) -> str:
         assert timeout_seconds == 5
+        if url.startswith(discover_jobs.BUNDESWEHR_ODATA_SERVICE_ROOT):
+            raise TimeoutError("gateway unavailable")
         if url == discover_jobs.BUNDESWEHR_JOBSUCHE_URL:
             return html
         if url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417":
@@ -342,6 +526,7 @@ def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch)
     )
 
     assert coverage.status == "partial"
+    assert "SAP OData discovery failed" in coverage.limitations[0]
     assert coverage.direct_job_pages_opened == 1
     assert coverage.enumerated_jobs == 2
     assert coverage.matched_jobs == 1
@@ -354,14 +539,8 @@ def test_discover_bundeswehr_jobsuche_uses_profile_catalog_fallback(monkeypatch)
     assert "Compensation: Besoldung nach dem Soldatengesetz" in candidate.notes
 
 
-def test_discover_bundeswehr_jobsuche_keeps_allowlisted_portal_url_when_detail_fetch_fails(monkeypatch):
-    source = discover_jobs.SourceConfig(
-        source="Bundeswehr",
-        url="https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded",
-        discovery_mode="bundeswehr_jobsuche",
-        last_checked=None,
-        cadence_group="every_run",
-    )
+def test_discover_bundeswehr_profile_fallback_keeps_allowlisted_portal_url_when_detail_fetch_fails(monkeypatch):
+    source = bundeswehr_source()
     html = """
     <html><body>
       <a class="jobtitle" href="/soldatin-soldat-in-der-informationstechnik-417">Soldatin / Soldat in der Informationstechnik</a>
@@ -370,6 +549,8 @@ def test_discover_bundeswehr_jobsuche_keeps_allowlisted_portal_url_when_detail_f
 
     def fake_fetch_text(url: str, timeout_seconds: int) -> str:
         assert timeout_seconds == 5
+        if url.startswith(discover_jobs.BUNDESWEHR_ODATA_SERVICE_ROOT):
+            raise TimeoutError("gateway unavailable")
         if url == discover_jobs.BUNDESWEHR_JOBSUCHE_URL:
             return html
         if url == "https://www.bundeswehrkarriere.de/soldatin-soldat-in-der-informationstechnik-417":
