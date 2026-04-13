@@ -56,6 +56,11 @@ GOOGLE_LOCATION_FILTERS = (
 )
 IBM_RESULTS_PAGE_SIZE = 100
 INFINEON_RESULTS_PAGE_SIZE = 10
+EIGHTFOLD_MAX_PAGES = 10
+EIGHTFOLD_DOMAINS_BY_HOST = {
+    "apply.careers.microsoft.com": "microsoft.com",
+    "jobs.infineon.com": "infineon.com",
+}
 WORKDAY_RESULTS_PAGE_SIZE = 20
 THALES_RESULTS_PAGE_SIZE = 10
 ENBW_RESULTS_PAGE_SIZE = 10
@@ -3605,7 +3610,16 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
     )
 
 
-def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+def eightfold_domain_for_source(source: SourceConfig) -> str:
+    host = urlparse(source.url).netloc.lower()
+    if host in EIGHTFOLD_DOMAINS_BY_HOST:
+        return EIGHTFOLD_DOMAINS_BY_HOST[host]
+    if host.startswith("jobs.") and len(host.split(".")) > 2:
+        return host.removeprefix("jobs.")
+    raise ValueError(f"Could not infer Eightfold domain for {source.url}")
+
+
+def discover_eightfold_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     candidates_by_url: dict[str, Candidate] = {}
     raw_seen_ids: set[str] = set()
     limitations: list[str] = []
@@ -3614,6 +3628,7 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
     total_pages_scanned = 0
     parsed_source = urlparse(source.url)
     base_url = f"{parsed_source.scheme}://{parsed_source.netloc}"
+    domain = eightfold_domain_for_source(source)
 
     for term in terms:
         term_pages_scanned = 0
@@ -3622,7 +3637,7 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
         while True:
             query = urlencode(
                 {
-                    "domain": "infineon.com",
+                    "domain": domain,
                     "query": term,
                     "location": "",
                     "start": start,
@@ -3674,7 +3689,7 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
                         location=location,
                         remote=remote,
                         matched_terms=matched_terms,
-                        notes=f"Enumerated through Infineon PCSx search for '{term}'",
+                        notes=f"Enumerated through Eightfold PCSx search for '{term}'",
                     ),
                 )
 
@@ -3682,6 +3697,11 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
             if len(positions) < INFINEON_RESULTS_PAGE_SIZE:
                 break
             if term_total and start >= term_total:
+                break
+            if term_pages_scanned >= EIGHTFOLD_MAX_PAGES:
+                limitations.append(
+                    f"Eightfold PCSx search for '{term}' hit the page cap ({EIGHTFOLD_MAX_PAGES})"
+                )
                 break
 
         term_summaries.append(f"{term}={term_pages_scanned}p/{term_total}")
@@ -3706,6 +3726,9 @@ def discover_infineon_api(source: SourceConfig, terms: list[str], timeout_second
         limitations=limitations,
         candidates=list(candidates_by_url.values()),
     )
+
+
+discover_infineon_api = discover_eightfold_api
 
 
 def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
@@ -5811,6 +5834,7 @@ DISCOVERY_HANDLERS = {
     "hackernews_jobs": discover_hackernews_jobs,
     "iacr_jobs": discover_iacr_jobs,
     "ibm_api": discover_ibm_api,
+    "eightfold_api": discover_eightfold_api,
     "infineon_api": discover_infineon_api,
     "icims_html": discover_html,
     "leastauthority_careers": discover_leastauthority_careers,

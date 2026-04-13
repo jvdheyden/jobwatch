@@ -1,8 +1,116 @@
 from __future__ import annotations
 
 import json
+from urllib.parse import parse_qs, urlparse
 
 import discover_jobs
+
+
+def test_eightfold_domain_for_source_supports_existing_infineon_mode():
+    source = discover_jobs.SourceConfig(
+        source="Infineon",
+        url="https://jobs.infineon.com/careers",
+        discovery_mode="infineon_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    assert discover_jobs.eightfold_domain_for_source(source) == "infineon.com"
+
+
+def test_discover_eightfold_api_infers_microsoft_domain_and_filters_results(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Microsoft",
+        url="https://apply.careers.microsoft.com/careers",
+        discovery_mode="eightfold_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        query = parse_qs(urlparse(url).query)
+        assert query["domain"] == ["microsoft.com"]
+        assert query["query"] == ["cryptography"]
+        assert query["start"] == ["0"]
+        return {
+            "data": {
+                "count": 2,
+                "positions": [
+                    {
+                        "id": 1970393556857301,
+                        "displayJobId": "200034351",
+                        "name": "Cryptography Engineer",
+                        "locations": ["Ireland, Dublin, Dublin"],
+                        "standardizedLocations": ["Dublin, D, IE"],
+                        "department": "Software Engineering",
+                        "workLocationOption": "onsite",
+                        "positionUrl": "/careers/job/1970393556857301",
+                    },
+                    {
+                        "id": 1970393556856300,
+                        "displayJobId": "200034056",
+                        "name": "Product Marketing Manager - Confidentiality & Encryption",
+                        "locations": ["United States, Washington, Redmond"],
+                        "department": "Product Marketing",
+                        "workLocationOption": "onsite",
+                        "positionUrl": "/careers/job/1970393556856300",
+                    },
+                ],
+            }
+        }
+
+    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+
+    coverage = discover_jobs.discover_eightfold_api(source, ["cryptography"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Cryptography Engineer"
+    assert candidate.url == "https://apply.careers.microsoft.com/careers/job/1970393556857301"
+    assert candidate.location == "Ireland, Dublin, Dublin"
+    assert candidate.matched_terms == ["cryptography"]
+
+
+def test_discover_eightfold_api_reports_page_cap(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Microsoft",
+        url="https://apply.careers.microsoft.com/careers",
+        discovery_mode="eightfold_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        start = int(parse_qs(urlparse(url).query)["start"][0])
+        return {
+            "data": {
+                "count": 99,
+                "positions": [
+                    {
+                        "id": start + index + 1,
+                        "displayJobId": f"job-{start + index + 1}",
+                        "name": f"Cryptography Engineer {start + index + 1}",
+                        "locations": ["Remote"],
+                        "department": "Software Engineering",
+                        "positionUrl": f"/careers/job/{start + index + 1}",
+                    }
+                    for index in range(10)
+                ],
+            }
+        }
+
+    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_jobs, "EIGHTFOLD_MAX_PAGES", 2)
+
+    coverage = discover_jobs.discover_eightfold_api(source, ["cryptography"], timeout_seconds=5)
+
+    assert coverage.status == "partial"
+    assert coverage.listing_pages_scanned == 2
+    assert coverage.enumerated_jobs == 20
+    assert coverage.matched_jobs == 20
+    assert coverage.limitations == ["Eightfold PCSx search for 'cryptography' hit the page cap (2)"]
 
 
 def test_discover_workable_api_filters_and_builds_job_urls(monkeypatch):
