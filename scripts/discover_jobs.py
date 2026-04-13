@@ -10,6 +10,7 @@ are brittle in prompt-only browsing.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import ssl
@@ -812,7 +813,11 @@ def fetch_text(url: str, timeout_seconds: int) -> str:
             context = ssl.create_default_context()
             with urlopen(request, timeout=timeout_seconds, context=context) as response:
                 content_type = response.headers.get_content_charset() or "utf-8"
-                return response.read().decode(content_type, errors="replace")
+                body = response.read()
+                content_encoding = (response.headers.get("Content-Encoding") or "").lower()
+                if "gzip" in content_encoding:
+                    body = gzip.decompress(body)
+                return body.decode(content_type, errors="replace")
         except Exception as exc:
             last_error = exc
             if attempt == 2:
