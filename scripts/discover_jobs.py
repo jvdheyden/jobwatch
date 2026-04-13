@@ -392,6 +392,7 @@ class SourceConfig:
     discovery_mode: str
     last_checked: str | None
     cadence_group: str
+    filters: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -622,6 +623,20 @@ def parse_track_terms(text: str) -> list[str]:
     return parse_bullets(match.group(1))
 
 
+def split_source_directive(content: str) -> tuple[str, str] | None:
+    if "\u2014" in content:
+        source, value = content.split("\u2014", 1)
+    elif " - " in content:
+        source, value = content.split(" - ", 1)
+    else:
+        return None
+    source_name = source.strip()
+    value = value.strip()
+    if not source_name or not value:
+        return None
+    return source_name, value
+
+
 def parse_source_specific_terms(text: str) -> dict[str, SourceTermRule]:
     search_terms_section = extract_section(text, "Search terms")
     match = re.search(
@@ -637,14 +652,10 @@ def parse_source_specific_terms(text: str) -> dict[str, SourceTermRule]:
         stripped = line.strip()
         if not stripped.startswith("- "):
             continue
-        content = stripped[2:]
-        if "\u2014" in content:
-            source, terms = content.split("\u2014", 1)
-        elif " - " in content:
-            source, terms = content.split(" - ", 1)
-        else:
+        directive = split_source_directive(stripped[2:])
+        if not directive:
             continue
-        source_name = source.strip()
+        source_name, terms = directive
         mode = "append"
         if source_name.endswith("[override]"):
             source_name = source_name[: -len("[override]")].strip()
@@ -656,15 +667,55 @@ def parse_source_specific_terms(text: str) -> dict[str, SourceTermRule]:
     return mapping
 
 
+def parse_source_specific_filters(text: str) -> dict[str, dict[str, list[str]]]:
+    search_terms_section = extract_section(text, "Search terms")
+    match = re.search(
+        r"^### Source-specific filters\n(.*?)(?=^### |\Z)",
+        search_terms_section,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return {}
+    section = match.group(1).strip()
+    mapping: dict[str, dict[str, list[str]]] = {}
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("- "):
+            continue
+        directive = split_source_directive(stripped[2:])
+        if not directive:
+            continue
+        source_name, filters_text = directive
+        filters: dict[str, list[str]] = {}
+        for filter_part in filters_text.split("|"):
+            if ":" not in filter_part:
+                continue
+            key, raw_values = filter_part.split(":", 1)
+            key = key.strip().lower()
+            values = [value.strip() for value in raw_values.split(";") if value.strip()]
+            if not key or not values:
+                continue
+            filters.setdefault(key, []).extend(values)
+        if filters:
+            mapping[source_name] = filters
+    return mapping
+
+
 def load_track_config(track: str) -> tuple[list[SourceConfig], list[str], dict[str, SourceTermRule]]:
     path = ROOT / "tracks" / track / "sources.md"
     text = path.read_text()
     every_run = parse_markdown_table(extract_section(text, "Check every run"), "every_run")
     every_3_runs = parse_markdown_table(extract_section(text, "Check every 3 runs"), "every_3_runs")
     every_month = parse_markdown_table(extract_section_optional(text, "Check every month"), "every_month")
+    sources = every_run + every_3_runs + every_month
     track_terms = parse_track_terms(text)
     source_terms = parse_source_specific_terms(text)
-    return every_run + every_3_runs + every_month, track_terms, source_terms
+    source_filters = parse_source_specific_filters(text)
+    for source in sources:
+        filters = source_filters.get(source.source)
+        if filters:
+            source.filters = {key: list(values) for key, values in filters.items()}
+    return sources, track_terms, source_terms
 
 
 def source_due_today(source: SourceConfig, today: date) -> bool:
@@ -4054,10 +4105,40 @@ def discover_bosch_autocomplete(source: SourceConfig, terms: list[str], timeout_
 
 def google_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     params: list[tuple[str, str | int]] = [("q", term)]
-    params.extend(("location", location) for location in GOOGLE_LOCATION_FILTERS)
+    params.extend(("location", location) for location in google_location_filters(source))
+    params.extend(
+        ("degree", normalize_google_degree_filter(degree))
+        for degree in google_degree_filters(source)
+    )
     if page_num > 1:
         params.append(("page", page_num))
     return f"{source.url}?{urlencode(params)}"
+
+
+def google_location_filters(source: SourceConfig) -> list[str]:
+    return source.filters.get("location") or list(GOOGLE_LOCATION_FILTERS)
+
+
+def google_degree_filters(source: SourceConfig) -> list[str]:
+    return source.filters.get("degree") or []
+
+
+def normalize_google_degree_filter(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "", value.lower())
+    aliases = {
+        "phd": "DOCTORATE",
+        "doctorate": "DOCTORATE",
+        "doctoral": "DOCTORATE",
+    }
+    return aliases.get(normalized, value)
+
+
+def google_filter_note(source: SourceConfig) -> str:
+    note_parts = [f"locations={', '.join(google_location_filters(source))}"]
+    degree_filters = google_degree_filters(source)
+    if degree_filters:
+        note_parts.append(f"degree={', '.join(degree_filters)}")
+    return " ".join(note_parts)
 
 
 def meta_search_url(source: SourceConfig, term: str, page_num: int) -> str:
@@ -4367,7 +4448,7 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
                 location=location,
                 matched_terms=matched_terms,
                 notes=(
-                    f"Google browser search q='{term}' locations={', '.join(GOOGLE_LOCATION_FILTERS)} "
+                    f"Google browser search q='{term}' {google_filter_note(source)} "
                     f"page={page_num}; public overview URL synthesized from Google ds:1 payload"
                 ),
             )
@@ -5466,6 +5547,7 @@ def source_to_dict(source: SourceConfig, today: date, track_terms: list[str], so
         "cadence_group": source.cadence_group,
         "due_today": source_due_today(source, today),
         "search_terms": terms,
+        "filters": source.filters,
     }
 
 

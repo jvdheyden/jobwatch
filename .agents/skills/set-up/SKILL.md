@@ -83,6 +83,7 @@ Ask for:
   - `Check every month`
 - track-wide search terms, if already known
 - source-specific search terms, including whether any source should use `[override]`, if already known
+- source-specific native filters, such as location, degree, organization, or job type filters, if already known
 
 ### 3. Optional source discovery
 
@@ -139,6 +140,7 @@ Step 4 has one required path and two optional integration paths:
 - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
 - If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.
 - If track-wide or source-specific search terms were not already provided, derive an initial set from the user's stated preferences and any `discover-sources` suggestions.
+- If source-specific native filters were provided or are clearly needed to control result volume on a broad source, record them in `sources.md` using the source-specific filter section rather than baking them into search terms.
 - If `discover-sources` suggested cadence buckets, use those as defaults unless there is a clearer reason to place the source elsewhere.
 - Only do lightweight validation during setup. Do not search every source exhaustively.
 - If an existing mode is good enough, stop there. Do not escalate into coding work just because a source is imperfect.
@@ -170,10 +172,12 @@ The handoff should include:
 - canary title
 - canary URL if available
 - a short statement of what failed
+- any known native filters that should be applied, especially when the failure is excessive result volume
 - the expected success condition in `scripts/discover_jobs.py`
 
 Expected coding output:
 - minimal support for that source in `scripts/discover_jobs.py`
+- native source-filter support when the board exposes stable filters and noisy volume is the problem
 - one focused automated test
 - validation with `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
 - quality-gate validation with `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
@@ -213,6 +217,8 @@ Instead, rank `repair_needed` sources by:
 1. importance to the track
 2. whether fallback parsing is unusable or too noisy
 3. canary quality and reproducibility
+
+If a source is too noisy because its native filters are not being applied, prefer adding declarative source-filter support over tightening post-extraction filtering.
 
 Default repair budget during setup:
 - escalate at most the top `2` `repair_needed` sources
@@ -309,6 +315,13 @@ Use these in addition to the track-wide terms when the source has native search 
 Add `[override]` after the source name to replace the track-wide terms for that source.
 
 {source-specific terms}
+
+### Source-specific filters
+Use these native filters on searchable sources when the source supports stable URL or API filters.
+
+Write filters as `- Source Name — key: value; value | key: value`.
+
+{source-specific filters or "- none"}
 
 ## Output discipline
 
