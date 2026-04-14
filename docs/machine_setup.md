@@ -83,8 +83,8 @@ monthly 1 HH:MM track <track-slug> [--delivery logseq|email]...
 
 After changing schedules manually with the helper, install or refresh the platform scheduler with `bash scripts/install_scheduler.sh`.
 
-- On Linux, that updates your user crontab with one generic entry that runs `scripts/run_scheduled_jobs.sh` every minute.
-- On macOS, that installs a LaunchAgent that runs the same shared scheduler script every minute.
+- On Linux, that updates your user crontab with one checkout-specific entry that runs `scripts/run_scheduled_jobs.sh` every minute.
+- On macOS, that installs a checkout-specific LaunchAgent that runs the same shared scheduler script every minute.
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
 

@@ -4,9 +4,70 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$ROOT/.scheduler}"
-PLIST_FILE="$SCHEDULER_DIR/com.jvdh.jobsearch.scheduler.plist"
 CRON_FILE="$SCHEDULER_DIR/cron.entry"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
+
+scheduler_instance_id() {
+  local root="$1"
+  local canonical_root=""
+  local base=""
+  local safe_base=""
+  local checksum=""
+
+  if canonical_root="$(cd "$root" 2>/dev/null && pwd -P)"; then
+    :
+  else
+    canonical_root="$root"
+  fi
+
+  base="$(basename "$canonical_root")"
+  safe_base="$(printf '%s' "$base" | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C sed 's/[^a-z0-9]/-/g; s/-\{1,\}/-/g; s/^-//; s/-$//')"
+  safe_base="${safe_base:-checkout}"
+  safe_base="${safe_base:0:48}"
+  checksum="$(printf '%s' "$canonical_root" | cksum | awk '{print $1}')"
+
+  printf '%s-%s\n' "$safe_base" "$checksum"
+}
+
+canonical_root() {
+  local root="$1"
+  local resolved=""
+
+  if resolved="$(cd "$root" 2>/dev/null && pwd -P)"; then
+    printf '%s\n' "$resolved"
+  else
+    printf '%s\n' "$root"
+  fi
+}
+
+shell_escape() {
+  printf '%q' "$1"
+}
+
+file_references_current_root() {
+  local file="$1"
+  local runner_path="$ROOT/scripts/run_scheduled_jobs.sh"
+  local canonical_runner_path="$ROOT_CANONICAL/scripts/run_scheduled_jobs.sh"
+
+  [[ -f "$file" ]] || return 1
+
+  if grep -F "$runner_path" "$file" >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ "$canonical_runner_path" != "$runner_path" ]] && grep -F "$canonical_runner_path" "$file" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  return 1
+}
+
+ROOT_CANONICAL="$(canonical_root "$ROOT")"
+SCHEDULER_INSTANCE_ID="$(scheduler_instance_id "$ROOT")"
+SCHEDULER_LABEL="com.jvdh.jobsearch.scheduler.$SCHEDULER_INSTANCE_ID"
+PLIST_FILE="$SCHEDULER_DIR/$SCHEDULER_LABEL.plist"
+LEGACY_SCHEDULER_LABEL="com.jvdh.jobsearch.scheduler"
+CRON_BEGIN="# BEGIN jobsearch scheduler $SCHEDULER_INSTANCE_ID"
+CRON_END="# END jobsearch scheduler $SCHEDULER_INSTANCE_ID"
 
 usage() {
   cat <<EOF
@@ -19,10 +80,71 @@ EOF
 }
 
 strip_block() {
-  awk '
-    $0 == "# BEGIN jobsearch scheduler" {skip = 1; next}
-    $0 == "# END jobsearch scheduler" {skip = 0; next}
-    !skip {print}
+  local runner_path="$ROOT/scripts/run_scheduled_jobs.sh"
+  local canonical_runner_path="$ROOT_CANONICAL/scripts/run_scheduled_jobs.sh"
+  local runner_path_escaped=""
+  local canonical_runner_path_escaped=""
+
+  runner_path_escaped="$(shell_escape "$runner_path")"
+  canonical_runner_path_escaped="$(shell_escape "$canonical_runner_path")"
+
+  awk \
+    -v begin="$CRON_BEGIN" \
+    -v end="$CRON_END" \
+    -v legacy_begin="# BEGIN jobsearch scheduler" \
+    -v legacy_end="# END jobsearch scheduler" \
+    -v runner_path="$runner_path" \
+    -v canonical_runner_path="$canonical_runner_path" \
+    -v runner_path_escaped="$runner_path_escaped" \
+    -v canonical_runner_path_escaped="$canonical_runner_path_escaped" '
+    function reset_legacy() {
+      legacy_count = 0
+      legacy_refs_current = 0
+    }
+    function print_legacy(    i) {
+      for (i = 1; i <= legacy_count; i++) {
+        print legacy_lines[i]
+      }
+    }
+    in_current && $0 == end {
+      in_current = 0
+      next
+    }
+    in_current {
+      next
+    }
+    in_legacy {
+      legacy_lines[++legacy_count] = $0
+      if (index($0, runner_path) || index($0, canonical_runner_path) || index($0, runner_path_escaped) || index($0, canonical_runner_path_escaped)) {
+        legacy_refs_current = 1
+      }
+      if ($0 == legacy_end) {
+        if (!legacy_refs_current) {
+          print_legacy()
+        }
+        in_legacy = 0
+        reset_legacy()
+      }
+      next
+    }
+    $0 == begin {
+      in_current = 1
+      next
+    }
+    $0 == legacy_begin {
+      in_legacy = 1
+      reset_legacy()
+      legacy_lines[++legacy_count] = $0
+      next
+    }
+    {
+      print
+    }
+    END {
+      if (in_legacy && !legacy_refs_current) {
+        print_legacy()
+      }
+    }
   ' "$1"
 }
 
@@ -74,15 +196,20 @@ case "$PLATFORM" in
     fi
 
     LAUNCH_AGENTS_DIR="${JOB_AGENT_LAUNCH_AGENTS_DIR:-${HOME}/Library/LaunchAgents}"
-    DEST_PLIST="$LAUNCH_AGENTS_DIR/com.jvdh.jobsearch.scheduler.plist"
+    DEST_PLIST="$LAUNCH_AGENTS_DIR/$SCHEDULER_LABEL.plist"
+    LEGACY_DEST_PLIST="$LAUNCH_AGENTS_DIR/$LEGACY_SCHEDULER_LABEL.plist"
     GUI_DOMAIN="gui/$(id -u)"
 
     mkdir -p "$LAUNCH_AGENTS_DIR" "$ROOT/logs"
     cp "$PLIST_FILE" "$DEST_PLIST"
 
+    if file_references_current_root "$LEGACY_DEST_PLIST"; then
+      "$LAUNCHCTL_BIN" bootout "$GUI_DOMAIN" "$LEGACY_DEST_PLIST" >/dev/null 2>&1 || true
+      rm -f "$LEGACY_DEST_PLIST"
+    fi
     "$LAUNCHCTL_BIN" bootout "$GUI_DOMAIN" "$DEST_PLIST" >/dev/null 2>&1 || true
     "$LAUNCHCTL_BIN" bootstrap "$GUI_DOMAIN" "$DEST_PLIST"
-    "$LAUNCHCTL_BIN" kickstart -k "$GUI_DOMAIN/com.jvdh.jobsearch.scheduler" >/dev/null 2>&1 || true
+    "$LAUNCHCTL_BIN" kickstart -k "$GUI_DOMAIN/$SCHEDULER_LABEL" >/dev/null 2>&1 || true
     echo "Installed LaunchAgent at $DEST_PLIST"
     ;;
   *)

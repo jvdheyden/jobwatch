@@ -74,7 +74,7 @@ Supported schedule choices:
 - weekly on `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, or `sun` at `HH:MM`
 - monthly on day `1` through `31` at `HH:MM`
 
-On Linux, scheduler install updates your user crontab with the shared per-minute dispatcher. On macOS, it installs the corresponding LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
+On Linux, scheduler install updates your user crontab with a checkout-specific per-minute dispatcher. On macOS, it installs a checkout-specific LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
 
 ## Manual Run
 

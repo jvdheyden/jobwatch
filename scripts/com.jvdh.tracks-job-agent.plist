@@ -4,7 +4,7 @@
   <!-- Template only. Use scripts/setup_machine.sh and scripts/install_scheduler.sh. -->
   <dict>
     <key>Label</key>
-    <string>com.jvdh.jobsearch.scheduler</string>
+    <string>com.jvdh.jobsearch.scheduler.__JOBSEARCH_SCHEDULER_INSTANCE__</string>
 
     <key>ProgramArguments</key>
     <array>

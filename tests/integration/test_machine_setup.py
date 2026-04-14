@@ -21,6 +21,24 @@ def _write_symlink(path: Path, target: Path) -> None:
     path.symlink_to(target)
 
 
+def _write_fake_crontab(path: Path) -> None:
+    _write_executable(
+        path,
+        """#!/bin/bash
+set -euo pipefail
+STORE="${FAKE_CRONTAB_STORE:?missing FAKE_CRONTAB_STORE}"
+if [[ "${1:-}" == "-l" ]]; then
+  if [[ -f "$STORE" ]]; then
+    cat "$STORE"
+    exit 0
+  fi
+  exit 1
+fi
+cp "$1" "$STORE"
+""",
+    )
+
+
 def _run_interactive(*args: str, input_text: str, env: dict[str, str], cwd: Path) -> subprocess.CompletedProcess[str]:
     master_fd, slave_fd = pty.openpty()
     process = subprocess.Popen(
@@ -104,8 +122,14 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# weekly mon HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
     assert "# monthly 1 HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
     cron_text = (scheduler_dir / "cron.entry").read_text()
-    assert cron_text.startswith("# BEGIN jobsearch scheduler\n* * * * * /bin/bash ")
-    assert (scheduler_dir / "com.jvdh.jobsearch.scheduler.plist").exists()
+    cron_begin = cron_text.splitlines()[0]
+    assert cron_begin.startswith("# BEGIN jobsearch scheduler ")
+    assert cron_begin != "# BEGIN jobsearch scheduler"
+    assert "\n* * * * * /bin/bash " in cron_text
+    plist_files = list(scheduler_dir.glob("com.jvdh.jobsearch.scheduler.*.plist"))
+    assert len(plist_files) == 1
+    assert "<string>com.jvdh.jobsearch.scheduler." in plist_files[0].read_text()
+    assert not (scheduler_dir / "com.jvdh.jobsearch.scheduler.plist").exists()
 
     schedule_file.write_text("daily 08:00 track demo\n")
 
@@ -1056,22 +1080,7 @@ def test_install_scheduler_updates_crontab_without_duplicates(tmp_job_agent_root
     crontab_store = tmp_job_agent_root / "crontab.txt"
     fake_bin_dir = tmp_job_agent_root / "bin"
     _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
-
-    _write_executable(
-        fake_bin_dir / "crontab",
-        """#!/bin/bash
-set -euo pipefail
-STORE="${FAKE_CRONTAB_STORE:?missing FAKE_CRONTAB_STORE}"
-if [[ "${1:-}" == "-l" ]]; then
-  if [[ -f "$STORE" ]]; then
-    cat "$STORE"
-    exit 0
-  fi
-  exit 1
-fi
-cp "$1" "$STORE"
-""",
-    )
+    _write_fake_crontab(fake_bin_dir / "crontab")
 
     env = os.environ | {
         "HOME": str(tmp_job_agent_root / "home"),
@@ -1090,9 +1099,250 @@ cp "$1" "$STORE"
     assert first.returncode == 0, first.stderr
     assert second.returncode == 0, second.stderr
 
+    generated_cron_text = (scheduler_dir / "cron.entry").read_text()
+    generated_begin = generated_cron_text.splitlines()[0]
     cron_text = crontab_store.read_text()
-    assert cron_text.count("# BEGIN jobsearch scheduler") == 1
+    assert generated_begin.startswith("# BEGIN jobsearch scheduler ")
+    assert generated_begin != "# BEGIN jobsearch scheduler"
+    assert cron_text.count(generated_begin) == 1
     assert cron_text.count("/scripts/run_scheduled_jobs.sh") == 1
+
+
+def test_install_scheduler_preserves_other_checkout_cron_block(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    crontab_store = tmp_job_agent_root / "crontab.txt"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    other_root = tmp_job_agent_root.parent / "other-root"
+    other_block = (
+        "# BEGIN jobsearch scheduler other-root-123\n"
+        f"* * * * * /bin/bash {other_root}/scripts/run_scheduled_jobs.sh >>{other_root}/logs/scheduler.out 2>>{other_root}/logs/scheduler.err\n"
+        "# END jobsearch scheduler other-root-123\n"
+    )
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_fake_crontab(fake_bin_dir / "crontab")
+    crontab_store.write_text(other_block)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PROVIDER": "codex",
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "CRONTAB_BIN": str(fake_bin_dir / "crontab"),
+        "FAKE_CRONTAB_STORE": str(crontab_store),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    generated_begin = (scheduler_dir / "cron.entry").read_text().splitlines()[0]
+    cron_text = crontab_store.read_text()
+    assert other_block.strip() in cron_text
+    assert generated_begin in cron_text
+
+
+def test_install_scheduler_replaces_legacy_current_checkout_cron_block(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    crontab_store = tmp_job_agent_root / "crontab.txt"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    legacy_block = (
+        "# BEGIN jobsearch scheduler\n"
+        f"* * * * * /bin/bash {tmp_job_agent_root}/scripts/run_scheduled_jobs.sh >>{tmp_job_agent_root}/logs/scheduler.out 2>>{tmp_job_agent_root}/logs/scheduler.err\n"
+        "# END jobsearch scheduler\n"
+    )
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_fake_crontab(fake_bin_dir / "crontab")
+    crontab_store.write_text(legacy_block)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PROVIDER": "codex",
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "CRONTAB_BIN": str(fake_bin_dir / "crontab"),
+        "FAKE_CRONTAB_STORE": str(crontab_store),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    generated_begin = (scheduler_dir / "cron.entry").read_text().splitlines()[0]
+    cron_text = crontab_store.read_text()
+    assert "# BEGIN jobsearch scheduler\n" not in cron_text
+    assert generated_begin in cron_text
+    assert cron_text.count("/scripts/run_scheduled_jobs.sh") == 1
+
+
+def test_install_scheduler_preserves_other_checkout_legacy_cron_block(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    crontab_store = tmp_job_agent_root / "crontab.txt"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    other_root = tmp_job_agent_root.parent / "other-root"
+    legacy_other_block = (
+        "# BEGIN jobsearch scheduler\n"
+        f"* * * * * /bin/bash {other_root}/scripts/run_scheduled_jobs.sh >>{other_root}/logs/scheduler.out 2>>{other_root}/logs/scheduler.err\n"
+        "# END jobsearch scheduler\n"
+    )
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_fake_crontab(fake_bin_dir / "crontab")
+    crontab_store.write_text(legacy_other_block)
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PROVIDER": "codex",
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "CRONTAB_BIN": str(fake_bin_dir / "crontab"),
+        "FAKE_CRONTAB_STORE": str(crontab_store),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    generated_begin = (scheduler_dir / "cron.entry").read_text().splitlines()[0]
+    cron_text = crontab_store.read_text()
+    assert legacy_other_block.strip() in cron_text
+    assert generated_begin in cron_text
+
+
+def test_install_scheduler_uses_checkout_specific_launchagent_and_removes_current_legacy(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    launch_agents_dir = tmp_job_agent_root / "LaunchAgents"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    launchctl_log = tmp_job_agent_root / "launchctl.log"
+    legacy_plist = launch_agents_dir / "com.jvdh.jobsearch.scheduler.plist"
+    legacy_plist.parent.mkdir(parents=True)
+    legacy_plist.write_text(
+        f"""<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.jvdh.jobsearch.scheduler</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>{tmp_job_agent_root}/scripts/run_scheduled_jobs.sh</string>
+    </array>
+  </dict>
+</plist>
+"""
+    )
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_executable(
+        fake_bin_dir / "launchctl",
+        f"""#!/bin/bash
+set -euo pipefail
+echo "$*" >> "{launchctl_log}"
+""",
+    )
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PROVIDER": "codex",
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "JOB_AGENT_LAUNCH_AGENTS_DIR": str(launch_agents_dir),
+        "LAUNCHCTL_BIN": str(fake_bin_dir / "launchctl"),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    generated_plists = list(launch_agents_dir.glob("com.jvdh.jobsearch.scheduler.*.plist"))
+    assert len(generated_plists) == 1
+    generated_plist = generated_plists[0]
+    label = generated_plist.stem
+    assert label.startswith("com.jvdh.jobsearch.scheduler.")
+    assert f"<string>{label}</string>" in generated_plist.read_text()
+    assert not legacy_plist.exists()
+    launchctl_lines = launchctl_log.read_text().splitlines()
+    assert f"bootout gui/{os.getuid()} {legacy_plist}" in launchctl_lines
+    assert f"bootstrap gui/{os.getuid()} {generated_plist}" in launchctl_lines
+    assert f"kickstart -k gui/{os.getuid()}/{label}" in launchctl_lines
+
+
+def test_install_scheduler_keeps_other_checkout_legacy_launchagent(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    launch_agents_dir = tmp_job_agent_root / "LaunchAgents"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    launchctl_log = tmp_job_agent_root / "launchctl.log"
+    other_root = tmp_job_agent_root.parent / "other-root"
+    legacy_plist = launch_agents_dir / "com.jvdh.jobsearch.scheduler.plist"
+    legacy_plist.parent.mkdir(parents=True)
+    legacy_text = f"""<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.jvdh.jobsearch.scheduler</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>{other_root}/scripts/run_scheduled_jobs.sh</string>
+    </array>
+  </dict>
+</plist>
+"""
+    legacy_plist.write_text(legacy_text)
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    _write_executable(
+        fake_bin_dir / "launchctl",
+        f"""#!/bin/bash
+set -euo pipefail
+echo "$*" >> "{launchctl_log}"
+""",
+    )
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PROVIDER": "codex",
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "JOB_AGENT_LAUNCH_AGENTS_DIR": str(launch_agents_dir),
+        "LAUNCHCTL_BIN": str(fake_bin_dir / "launchctl"),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    generated_plists = list(launch_agents_dir.glob("com.jvdh.jobsearch.scheduler.*.plist"))
+    assert len(generated_plists) == 1
+    assert legacy_plist.read_text() == legacy_text
+    launchctl_lines = launchctl_log.read_text().splitlines()
+    assert f"bootout gui/{os.getuid()} {legacy_plist}" not in launchctl_lines
 
 
 def test_install_bwrap_apparmor_installs_generated_profile(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
