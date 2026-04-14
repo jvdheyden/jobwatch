@@ -61,6 +61,7 @@ ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
 TRACK="${JOB_AGENT_TRACK:?missing JOB_AGENT_TRACK}"
 TODAY="${JOB_AGENT_TODAY:?missing JOB_AGENT_TODAY}"
 printf '%s\\n' "$@" > "$ROOT/claude-args.txt"
+pwd > "$ROOT/claude-cwd.txt"
 cat > "$ROOT/claude-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
@@ -508,6 +509,7 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
     assert "stream-json" in args_text
     assert "--verbose" in args_text
     assert "--allowedTools" in args_text
+    assert (tmp_job_agent_root / "claude-cwd.txt").read_text().strip() == str(tmp_job_agent_root)
     assert "Run today's demo workflow from the repository root in mode: track_run." in prompt_text
     assert "A discovery artifact for today's scheduled run has already been written" in prompt_text
     assert "Claude phase started" in log_text

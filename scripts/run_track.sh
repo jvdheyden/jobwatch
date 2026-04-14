@@ -443,14 +443,17 @@ run_agent_command() {
       "$AGENT_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE"
       ;;
     claude)
-      "$AGENT_BIN" \
-        -p \
-        --no-session-persistence \
-        --output-format stream-json \
-        --permission-mode "${JOB_AGENT_CLAUDE_PERMISSION_MODE:-acceptEdits}" \
-        --allowedTools "${JOB_AGENT_CLAUDE_SCHEDULED_ALLOWED_TOOLS:-Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite}" \
-        --verbose \
-        <"$PROMPT_FILE"
+      (
+        cd "$ROOT"
+        "$AGENT_BIN" \
+          -p \
+          --no-session-persistence \
+          --output-format stream-json \
+          --permission-mode "${JOB_AGENT_CLAUDE_PERMISSION_MODE:-acceptEdits}" \
+          --allowedTools "${JOB_AGENT_CLAUDE_SCHEDULED_ALLOWED_TOOLS:-Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite}" \
+          --verbose \
+          <"$PROMPT_FILE"
+      )
       ;;
     *)
       return 2
