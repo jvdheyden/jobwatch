@@ -40,6 +40,38 @@ raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_EMAIL_STATUS", "0")))
 """,
     )
     _write_executable(
+        root / "scripts" / "update_source_state.py",
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--track", required=True)
+parser.add_argument("--date", required=True)
+parser.add_argument("--artifact", required=True)
+args = parser.parse_args()
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+artifact = json.loads(Path(args.artifact).read_text())
+state_path = root / "tracks" / args.track / "source_state.json"
+state_path.parent.mkdir(parents=True, exist_ok=True)
+if state_path.exists():
+    state = json.loads(state_path.read_text())
+else:
+    state = {"schema_version": 1, "track": args.track, "sources": {}}
+for source in artifact.get("sources", []):
+    if source.get("status") == "complete":
+        state["sources"].setdefault(source["source_id"], {})["last_checked"] = args.date
+state_path.write_text(json.dumps(state, indent=2) + "\\n")
+(root / "source-state-updated.txt").write_text(args.date + "\\n")
+""",
+    )
+    _write_executable(
         root / "fake_codex.sh",
         """#!/bin/bash
 set -euo pipefail
@@ -140,9 +172,10 @@ payload = {
     "generated_at": f"{args.today}T08:00:00Z",
     "mode": "discover",
     "sources": [
-        {
-            "source": "Example Source",
-            "source_url": "https://example.com/jobs",
+            {
+                "source_id": "example_source",
+                "source": "Example Source",
+                "source_url": "https://example.com/jobs",
             "discovery_mode": "html",
             "cadence_group": "every_run",
             "last_checked": None,
@@ -272,11 +305,13 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Wrote discovery artifact" in log_text
     assert "Codex phase started" in log_text
     assert "Codex phase finished successfully" in log_text
+    assert "Source state update finished successfully" in log_text
     assert "No delivery targets requested; leaving local artifacts only" in log_text
     assert "Delivery phase started" not in log_text
     assert "Finished demo daily run" in log_text
     assert not (tmp_job_agent_root / "sync.log").exists()
     assert not (tmp_job_agent_root / "email.log").exists()
+    assert (tmp_job_agent_root / "source-state-updated.txt").read_text() == "2030-01-15\n"
 
     caffeinate_args = (tmp_job_agent_root / "caffeinate-args.txt").read_text()
     assert "-dimsu" in caffeinate_args

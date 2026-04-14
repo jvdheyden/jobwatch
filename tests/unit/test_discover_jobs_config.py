@@ -1,93 +1,66 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from urllib.parse import parse_qs, urlparse
 
+import pytest
+
 import discover_jobs
+from source_config import SourceConfigError
 
 
-def test_parse_source_specific_terms_reads_nested_search_terms_section():
-    text = """
-## Search terms
-
-Use these terms on searchable sources unless a source-specific search-term override says otherwise.
-
-### Track-wide terms
-- cryptography
-
-### Source-specific search terms
-- Example Source — privacy, security
-- Other Source [override] — mpc, garbled circuits
-""".strip()
-
-    mapping = discover_jobs.parse_source_specific_terms(text)
-
-    assert mapping["Example Source"].mode == "append"
-    assert mapping["Example Source"].terms == ["privacy", "security"]
-    assert mapping["Other Source"].mode == "override"
-    assert mapping["Other Source"].terms == ["mpc", "garbled circuits"]
-
-
-def test_parse_source_specific_filters_reads_nested_filter_section():
-    text = """
-## Search terms
-
-### Track-wide terms
-- cryptography
-
-### Source-specific search terms
-- Google — cryptography
-
-### Source-specific filters
-- Google — location: San Francisco, CA, USA; New York, NY, USA | degree: Ph.D.
-- Example Source - organization: Research | job_type: Internship; Full-time
-""".strip()
-
-    mapping = discover_jobs.parse_source_specific_filters(text)
-
-    assert mapping["Google"] == {
-        "location": ["San Francisco, CA, USA", "New York, NY, USA"],
-        "degree": ["Ph.D."],
-    }
-    assert mapping["Example Source"] == {
-        "organization": ["Research"],
-        "job_type": ["Internship", "Full-time"],
-    }
-
-
-def test_load_track_config_reads_optional_monthly_section(tmp_path, monkeypatch):
+def test_load_track_config_reads_json_config_and_state(tmp_path, monkeypatch):
     track_dir = tmp_path / "tracks" / "monthly_demo"
     track_dir.mkdir(parents=True)
-    (track_dir / "sources.md").write_text(
-        """
-# Demo sources
-
-## Check every run
-| source | url | discovery_mode | last_checked |
-| --- | --- | --- | --- |
-| Daily | https://example.com/daily | html | 2026-04-01 |
-
-## Check every 3 runs
-| source | url | discovery_mode | last_checked |
-| --- | --- | --- | --- |
-| Three-day | https://example.com/three | html | 2026-04-01 |
-
-## Check every month
-| source | url | discovery_mode | last_checked |
-| --- | --- | --- | --- |
-| Monthly | https://example.com/monthly | html | 2026-03-15 |
-
-## Search terms
-
-### Track-wide terms
-- cryptography
-
-### Source-specific search terms
-- Monthly [override] — privacy
-
-### Source-specific filters
-- Monthly — location: Berlin, Germany; Munich, Germany | degree: Ph.D.
-""".strip()
+    (track_dir / "sources.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "track": "monthly_demo",
+                "track_terms": ["cryptography"],
+                "sources": [
+                    {
+                        "id": "daily",
+                        "name": "Daily",
+                        "url": "https://example.com/daily",
+                        "discovery_mode": "html",
+                        "cadence_group": "every_run",
+                    },
+                    {
+                        "id": "three_day",
+                        "name": "Three-day",
+                        "url": "https://example.com/three",
+                        "discovery_mode": "html",
+                        "cadence_group": "every_3_runs",
+                    },
+                    {
+                        "id": "monthly",
+                        "name": "Monthly",
+                        "url": "https://example.com/monthly",
+                        "discovery_mode": "html",
+                        "cadence_group": "every_month",
+                        "search_terms": {"mode": "override", "terms": ["privacy"]},
+                        "filters": {"location": ["Berlin, Germany", "Munich, Germany"], "degree": ["Ph.D."]},
+                    },
+                ],
+            }
+        )
+        + "\n"
+    )
+    (track_dir / "source_state.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "track": "monthly_demo",
+                "sources": {
+                    "daily": {"last_checked": "2026-04-01"},
+                    "three_day": {"last_checked": "2026-04-01"},
+                    "monthly": {"last_checked": "2026-03-15"},
+                },
+            }
+        )
+        + "\n"
     )
 
     monkeypatch.setattr(discover_jobs, "ROOT", tmp_path)
@@ -101,14 +74,27 @@ def test_load_track_config_reads_optional_monthly_section(tmp_path, monkeypatch)
         "Monthly": "every_month",
     }
     assert track_terms == ["cryptography"]
-    assert source_terms["Monthly"].mode == "override"
-    assert source_terms["Monthly"].terms == ["privacy"]
+    assert source_terms["monthly"].mode == "override"
+    assert source_terms["monthly"].terms == ["privacy"]
+    last_checked_by_source = {source.source: source.last_checked for source in sources}
+    assert last_checked_by_source["Daily"] == "2026-04-01"
+    assert last_checked_by_source["Monthly"] == "2026-03-15"
     filters_by_source = {source.source: source.filters for source in sources}
     assert filters_by_source["Daily"] == {}
     assert filters_by_source["Monthly"] == {
         "location": ["Berlin, Germany", "Munich, Germany"],
         "degree": ["Ph.D."],
     }
+
+
+def test_load_track_config_fails_without_json_config(tmp_path, monkeypatch):
+    track_dir = tmp_path / "tracks" / "legacy_demo"
+    track_dir.mkdir(parents=True)
+    (track_dir / "sources.md").write_text("# Legacy only\n")
+    monkeypatch.setattr(discover_jobs, "ROOT", tmp_path)
+
+    with pytest.raises(SourceConfigError, match="sources.json"):
+        discover_jobs.load_track_config("legacy_demo")
 
 
 def test_source_to_dict_includes_filters():
@@ -119,6 +105,7 @@ def test_source_to_dict_includes_filters():
         last_checked=None,
         cadence_group="every_3_runs",
         filters={"location": ["Munich, Germany"], "degree": ["Ph.D."]},
+        source_id="google",
     )
 
     payload = discover_jobs.source_to_dict(
@@ -128,6 +115,7 @@ def test_source_to_dict_includes_filters():
         {},
     )
 
+    assert payload["source_id"] == "google"
     assert payload["filters"] == {
         "location": ["Munich, Germany"],
         "degree": ["Ph.D."],

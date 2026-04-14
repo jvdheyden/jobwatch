@@ -21,7 +21,7 @@ Assume the current track provides:
 
 Read those files before searching.
 
-If the current track's source list includes a `last_checked` column, honor the track's cadence rules and treat `last_checked` as track-owned source state. Update only the rows for sources actually checked, and only after a successful normal run.
+If the current track provides `source_state.json`, honor the track's cadence rules and treat `last_checked` as track-owned source state. Do not update source state yourself during a normal scheduled run; the runner updates it from the discovery artifact.
 
 If the track instructions name a discovery artifact path, look for that artifact first.
 

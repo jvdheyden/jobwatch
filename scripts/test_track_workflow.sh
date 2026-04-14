@@ -18,10 +18,11 @@ STRUCTURED_DIGEST_PATH="$STRUCTURED_DIGEST_DIR/$TODAY.json"
 DIGEST_PATH="$TEST_ROOT/tracks/$TRACK/digests/$TODAY.md"
 OVERVIEW_PATH="$TEST_ROOT/tracks/$TRACK/ranked_overview.md"
 STATE_PATH="$TEST_ROOT/shared/ranked_jobs/$TRACK.json"
+SOURCE_STATE_PATH="$TEST_ROOT/tracks/$TRACK/source_state.json"
 DIGEST_PAGE="$GRAPH_DIR/pages/Test Workflow Job Digest $TODAY.md"
 OVERVIEW_PAGE="$GRAPH_DIR/pages/Test Workflow Ranked Overview.md"
 JOURNAL_PATH="$GRAPH_DIR/journals/$JOURNAL_DATE.md"
-SOURCES_PATH="$TEST_ROOT/tracks/$TRACK/sources.md"
+SOURCES_CONFIG_PATH="$TEST_ROOT/tracks/$TRACK/sources.json"
 
 rm -rf "$TEST_ROOT"
 mkdir -p "$TEST_ROOT/tracks" "$TEST_ROOT/shared" "$TEST_ROOT/logs"
@@ -46,16 +47,20 @@ import sys
 print(Path(sys.argv[1]).resolve().as_uri())
 PY
 )"
-python3 - "$SOURCES_PATH" "$LOCAL_BOARD_URL" <<'PY'
+python3 - "$SOURCES_CONFIG_PATH" "$LOCAL_BOARD_URL" <<'PY'
+import json
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
 local_board_url = sys.argv[2]
-text = path.read_text()
-text = text.replace("http://127.0.0.1:18765/test_workflow_board.html", local_board_url)
-path.write_text(text)
+payload = json.loads(path.read_text())
+for source in payload["sources"]:
+    if source["id"] == "local_test_board":
+        source["url"] = local_board_url
+path.write_text(json.dumps(payload, indent=2) + "\n")
 PY
+JOB_AGENT_ROOT="$TEST_ROOT" python3 "$TEST_ROOT/scripts/render_sources_md.py" --track "$TRACK"
 
 JOB_AGENT_PROVIDER="codex" \
 JOB_AGENT_BIN="$ROOT/tests/e2e/fake_codex.sh" \
@@ -73,6 +78,7 @@ for path in \
   "$DIGEST_PATH" \
   "$OVERVIEW_PATH" \
   "$STATE_PATH" \
+  "$SOURCE_STATE_PATH" \
   "$DIGEST_PAGE" \
   "$OVERVIEW_PAGE" \
   "$JOURNAL_PATH"
@@ -87,6 +93,7 @@ rg -q "Cryptography Advisor" "$DIGEST_PATH"
 rg -q "Cryptography Advisor" "$OVERVIEW_PATH"
 rg -q "Cryptography Advisor" "$DIGEST_PAGE"
 rg -q '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
+rg -q "\"last_checked\": \"$TODAY\"" "$SOURCE_STATE_PATH"
 rg -q "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
 rg -q "Discovery phase started" "$RUN_LOG"
 rg -q "Codex phase started" "$RUN_LOG"

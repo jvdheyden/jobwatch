@@ -32,6 +32,8 @@ tracks/*
 !tracks/test_workflow/CLAUDE.md
 !tracks/test_workflow/prefs.md
 !tracks/test_workflow/sources.md
+!tracks/test_workflow/sources.json
+!tracks/test_workflow/source_state.json
 tracks/*/digests/
 
 # Generated artifacts and digests

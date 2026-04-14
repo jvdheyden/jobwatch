@@ -519,6 +519,19 @@ fi
 
 log "$AGENT_LABEL phase finished successfully"
 
+if [[ $DISCOVERY_STATUS -eq 0 && -f "$DISCOVERY_ARTIFACT" ]]; then
+  log "Source state update started"
+  if "$PYTHON_BIN" "$ROOT/scripts/update_source_state.py" --track "$TRACK" --date "$TODAY" --artifact "$DISCOVERY_ARTIFACT"; then
+    log "Source state update finished successfully"
+  else
+    state_status=$?
+    log "Source state update failed with status $state_status"
+    exit "$state_status"
+  fi
+else
+  log "Skipping source state update because no complete fresh discovery artifact is available"
+fi
+
 if [[ ${#DELIVERY_TARGETS[@]} -eq 0 ]]; then
   log "No delivery targets requested; leaving local artifacts only"
 else

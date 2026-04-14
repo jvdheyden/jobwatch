@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "track": "test_workflow",
+  "track_terms": [
+    "cryptography"
+  ],
+  "sources": [
+    {
+      "id": "local_test_board",
+      "name": "Local Test Board",
+      "url": "http://127.0.0.1:18765/test_workflow_board.html",
+      "discovery_mode": "html",
+      "cadence_group": "every_run"
+    }
+  ]
+}

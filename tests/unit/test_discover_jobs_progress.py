@@ -13,6 +13,7 @@ def test_main_progress_logs_to_stderr_without_changing_output(tmp_path, monkeypa
         discovery_mode="html",
         last_checked=None,
         cadence_group="every_run",
+        source_id="example_source",
     )
     coverage = discover_jobs.Coverage(
         source="Example Source",
@@ -28,6 +29,7 @@ def test_main_progress_logs_to_stderr_without_changing_output(tmp_path, monkeypa
         direct_job_pages_opened=0,
         enumerated_jobs=1,
         matched_jobs=1,
+        source_id="example_source",
         candidates=[
             discover_jobs.Candidate(
                 employer="Example Co",
@@ -73,5 +75,6 @@ def test_main_progress_logs_to_stderr_without_changing_output(tmp_path, monkeypa
     assert payload == latest_payload
     assert payload["track"] == "demo"
     assert payload["mode"] == "discover"
+    assert payload["sources"][0]["source_id"] == "example_source"
     assert payload["sources"][0]["source"] == "Example Source"
     assert payload["sources"][0]["matched_jobs"] == 1

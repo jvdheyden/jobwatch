@@ -34,6 +34,7 @@ from sap_odata import (
     fetch_sap_odata_entity,
     sap_odata_string_literal,
 )
+from source_config import SourceConfigError, load_source_state, load_sources_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -453,6 +454,7 @@ class SourceConfig:
     last_checked: str | None
     cadence_group: str
     filters: dict[str, list[str]] = field(default_factory=dict)
+    source_id: str = ""
 
 
 @dataclass
@@ -491,6 +493,7 @@ class Coverage:
     matched_jobs: int
     limitations: list[str] = field(default_factory=list)
     candidates: list[Candidate] = field(default_factory=list)
+    source_id: str = ""
 
 
 def partial_browser_unavailable_coverage(source: SourceConfig, terms: list[str], limitation: str) -> Coverage:
@@ -510,6 +513,7 @@ def partial_browser_unavailable_coverage(source: SourceConfig, terms: list[str],
         matched_jobs=0,
         limitations=[limitation],
         candidates=[],
+        source_id=source.source_id,
     )
 
 
@@ -629,153 +633,30 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def extract_section(text: str, heading: str) -> str:
-    pattern = rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)"
-    match = re.search(pattern, text, flags=re.MULTILINE | re.DOTALL)
-    if not match:
-        raise ValueError(f"Missing section: {heading}")
-    return match.group(1).strip()
-
-
-def extract_section_optional(text: str, heading: str) -> str:
-    pattern = rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)"
-    match = re.search(pattern, text, flags=re.MULTILINE | re.DOTALL)
-    return match.group(1).strip() if match else ""
-
-
-def parse_markdown_table(section: str, cadence_group: str) -> list[SourceConfig]:
-    lines = [line.rstrip() for line in section.splitlines() if line.strip()]
-    if len(lines) < 3:
-        return []
-    headers = [part.strip() for part in lines[0].strip("|").split("|")]
-    sources: list[SourceConfig] = []
-    for line in lines[2:]:
-        if not line.startswith("|"):
-            continue
-        values = [part.strip() for part in line.strip("|").split("|")]
-        row = dict(zip(headers, values))
-        sources.append(
-            SourceConfig(
-                source=row["source"],
-                url=row["url"],
-                discovery_mode=row.get("discovery_mode") or "html",
-                last_checked=row.get("last_checked") or None,
-                cadence_group=cadence_group,
-            )
-        )
-    return sources
-
-
-def parse_bullets(section: str) -> list[str]:
-    bullets: list[str] = []
-    for line in section.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("- "):
-            bullets.append(stripped[2:].strip())
-    return bullets
-
-
-def parse_track_terms(text: str) -> list[str]:
-    section = extract_section(text, "Search terms")
-    match = re.search(r"^### Track-wide terms\n(.*?)(?=^### |\Z)", section, flags=re.MULTILINE | re.DOTALL)
-    if not match:
-        return []
-    return parse_bullets(match.group(1))
-
-
-def split_source_directive(content: str) -> tuple[str, str] | None:
-    if "\u2014" in content:
-        source, value = content.split("\u2014", 1)
-    elif " - " in content:
-        source, value = content.split(" - ", 1)
-    else:
-        return None
-    source_name = source.strip()
-    value = value.strip()
-    if not source_name or not value:
-        return None
-    return source_name, value
-
-
-def parse_source_specific_terms(text: str) -> dict[str, SourceTermRule]:
-    search_terms_section = extract_section(text, "Search terms")
-    match = re.search(
-        r"^### Source-specific search terms\n(.*?)(?=^### |\Z)",
-        search_terms_section,
-        flags=re.MULTILINE | re.DOTALL,
-    )
-    if not match:
-        return {}
-    section = match.group(1).strip()
-    mapping: dict[str, SourceTermRule] = {}
-    for line in section.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("- "):
-            continue
-        directive = split_source_directive(stripped[2:])
-        if not directive:
-            continue
-        source_name, terms = directive
-        mode = "append"
-        if source_name.endswith("[override]"):
-            source_name = source_name[: -len("[override]")].strip()
-            mode = "override"
-        mapping[source_name] = SourceTermRule(
-            terms=[term.strip() for term in terms.split(",") if term.strip()],
-            mode=mode,
-        )
-    return mapping
-
-
-def parse_source_specific_filters(text: str) -> dict[str, dict[str, list[str]]]:
-    search_terms_section = extract_section(text, "Search terms")
-    match = re.search(
-        r"^### Source-specific filters\n(.*?)(?=^### |\Z)",
-        search_terms_section,
-        flags=re.MULTILINE | re.DOTALL,
-    )
-    if not match:
-        return {}
-    section = match.group(1).strip()
-    mapping: dict[str, dict[str, list[str]]] = {}
-    for line in section.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("- "):
-            continue
-        directive = split_source_directive(stripped[2:])
-        if not directive:
-            continue
-        source_name, filters_text = directive
-        filters: dict[str, list[str]] = {}
-        for filter_part in filters_text.split("|"):
-            if ":" not in filter_part:
-                continue
-            key, raw_values = filter_part.split(":", 1)
-            key = key.strip().lower()
-            values = [value.strip() for value in raw_values.split(";") if value.strip()]
-            if not key or not values:
-                continue
-            filters.setdefault(key, []).extend(values)
-        if filters:
-            mapping[source_name] = filters
-    return mapping
-
-
 def load_track_config(track: str) -> tuple[list[SourceConfig], list[str], dict[str, SourceTermRule]]:
-    path = ROOT / "tracks" / track / "sources.md"
-    text = path.read_text()
-    every_run = parse_markdown_table(extract_section(text, "Check every run"), "every_run")
-    every_3_runs = parse_markdown_table(extract_section(text, "Check every 3 runs"), "every_3_runs")
-    every_month = parse_markdown_table(extract_section_optional(text, "Check every month"), "every_month")
-    sources = every_run + every_3_runs + every_month
-    track_terms = parse_track_terms(text)
-    source_terms = parse_source_specific_terms(text)
-    source_filters = parse_source_specific_filters(text)
-    for source in sources:
-        filters = source_filters.get(source.source)
-        if filters:
-            source.filters = {key: list(values) for key, values in filters.items()}
-    return sources, track_terms, source_terms
+    track_dir = ROOT / "tracks" / track
+    config = load_sources_config(track_dir / "sources.json", track)
+    state = load_source_state(track_dir / "source_state.json", track)
+    sources: list[SourceConfig] = []
+    source_terms: dict[str, SourceTermRule] = {}
+    for item in config["sources"]:
+        source = SourceConfig(
+            source=item["name"],
+            url=item["url"],
+            discovery_mode=item["discovery_mode"],
+            last_checked=state.get(item["id"]),
+            cadence_group=item["cadence_group"],
+            filters={key: list(values) for key, values in item.get("filters", {}).items()},
+            source_id=item["id"],
+        )
+        sources.append(source)
+        search_terms = item.get("search_terms")
+        if search_terms:
+            source_terms[item["id"]] = SourceTermRule(
+                terms=list(search_terms["terms"]),
+                mode=search_terms["mode"],
+            )
+    return sources, list(config["track_terms"]), source_terms
 
 
 def source_due_today(source: SourceConfig, today: date) -> bool:
@@ -5868,48 +5749,61 @@ DISCOVERY_HANDLERS = {
 def discover_source(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     handler = DISCOVERY_HANDLERS.get(source.discovery_mode)
     if not handler:
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="failed",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=[f"Unsupported discovery_mode: {source.discovery_mode}"],
-            candidates=[],
+        return attach_source_identity(
+            source,
+            Coverage(
+                source=source.source,
+                source_url=source.url,
+                discovery_mode=source.discovery_mode,
+                cadence_group=source.cadence_group,
+                last_checked=source.last_checked,
+                due_today=False,
+                status="failed",
+                listing_pages_scanned="unknown",
+                search_terms_tried=terms,
+                result_pages_scanned="unknown",
+                direct_job_pages_opened=0,
+                enumerated_jobs=0,
+                matched_jobs=0,
+                limitations=[f"Unsupported discovery_mode: {source.discovery_mode}"],
+                candidates=[],
+            ),
         )
     try:
-        return handler(source, terms, timeout_seconds)
+        return attach_source_identity(source, handler(source, terms, timeout_seconds))
     except Exception as exc:  # pragma: no cover - defensive output for live runs
-        return Coverage(
-            source=source.source,
-            source_url=source.url,
-            discovery_mode=source.discovery_mode,
-            cadence_group=source.cadence_group,
-            last_checked=source.last_checked,
-            due_today=False,
-            status="failed",
-            listing_pages_scanned="unknown",
-            search_terms_tried=terms,
-            result_pages_scanned="unknown",
-            direct_job_pages_opened=0,
-            enumerated_jobs=0,
-            matched_jobs=0,
-            limitations=[f"{type(exc).__name__}: {exc}"],
-            candidates=[],
+        return attach_source_identity(
+            source,
+            Coverage(
+                source=source.source,
+                source_url=source.url,
+                discovery_mode=source.discovery_mode,
+                cadence_group=source.cadence_group,
+                last_checked=source.last_checked,
+                due_today=False,
+                status="failed",
+                listing_pages_scanned="unknown",
+                search_terms_tried=terms,
+                result_pages_scanned="unknown",
+                direct_job_pages_opened=0,
+                enumerated_jobs=0,
+                matched_jobs=0,
+                limitations=[f"{type(exc).__name__}: {exc}"],
+                candidates=[],
+            ),
         )
+
+
+def attach_source_identity(source: SourceConfig, coverage: Coverage) -> Coverage:
+    coverage.source_id = coverage.source_id or source.source_id or source.source
+    return coverage
 
 
 def source_to_dict(source: SourceConfig, today: date, track_terms: list[str], source_term_map: dict[str, SourceTermRule]) -> dict[str, Any]:
-    terms = normalize_terms(track_terms, source_term_map.get(source.source))
+    source_rule = source_term_map.get(source.source_id) or source_term_map.get(source.source)
+    terms = normalize_terms(track_terms, source_rule)
     return {
+        "source_id": source.source_id or source.source,
         "source": source.source,
         "url": source.url,
         "discovery_mode": source.discovery_mode,
@@ -5939,7 +5833,11 @@ def main() -> int:
     args = parser.parse_args()
 
     today = date.fromisoformat(args.today)
-    sources, track_terms, source_term_map = load_track_config(args.track)
+    try:
+        sources, track_terms, source_term_map = load_track_config(args.track)
+    except SourceConfigError as exc:
+        print(f"discover_jobs.py: {exc}", file=sys.stderr)
+        return 2
 
     if args.source:
         wanted = {name.lower() for name in args.source}
@@ -5974,7 +5872,8 @@ def main() -> int:
         coverages: list[Coverage] = []
         total_sources = len(sources)
         for index, source in enumerate(sources, start=1):
-            terms = normalize_terms(track_terms, source_term_map.get(source.source))
+            source_rule = source_term_map.get(source.source_id) or source_term_map.get(source.source)
+            terms = normalize_terms(track_terms, source_rule)
             emit_progress(
                 args.progress,
                 f"Discovering source {index}/{total_sources}: {source.source} (mode={source.discovery_mode})",

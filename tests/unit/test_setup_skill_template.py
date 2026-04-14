@@ -35,14 +35,19 @@ def test_setup_agents_template_keeps_production_workflow_contract(repo_root: Pat
         "../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json",
         "../../artifacts/digests/{track_slug}/YYYY-MM-DD.json",
         "../../shared/ranked_jobs/{track_slug}.json",
+        "./sources.json",
+        "./source_state.json",
         "../../scripts/render_digest.py --track {track_slug} --date YYYY-MM-DD",
         "../../scripts/update_ranked_overview.py --track {track_slug}",
         "Same-Day Reruns",
         "Do not report roles already listed in `../../shared/seen_jobs.md`.",
+        "Do not manually update source state.",
     ]
 
     for fragment in required_fragments:
         assert fragment in template_text
+
+    assert "last_checked` column in `./sources.md`" not in template_text
 
 
 def test_setup_profile_templates_are_tracked_defaults(repo_root: Path) -> None:

@@ -28,21 +28,23 @@ Read these files in order before starting:
 1. `../../profile/cv.md`
 2. `../../profile/prefs_global.md`
 3. `./prefs.md`
-4. `./sources.md`
-5. `../../shared/seen_jobs.md`
-6. `../../shared/digest_schema.md`
-7. `../../shared/digest_template.md`
-8. `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`, if it exists for today
-9. `../../artifacts/discovery/{track_slug}/latest.json`, if it exists and was generated today
-10. `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` for today, if it already exists
-11. `./digests/YYYY-MM-DD.md` for today, if it already exists
+4. `./sources.json`
+5. `./source_state.json`
+6. `./sources.md`
+7. `../../shared/seen_jobs.md`
+8. `../../shared/digest_schema.md`
+9. `../../shared/digest_template.md`
+10. `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`, if it exists for today
+11. `../../artifacts/discovery/{track_slug}/latest.json`, if it exists and was generated today
+12. `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` for today, if it already exists
+13. `./digests/YYYY-MM-DD.md` for today, if it already exists
 
 If useful, also use:
 
-12. Use the project skill `find-jobs`.
-13. Use the project skill `rank-jobs`.
-14. `../../scripts/discover_jobs.py`
-15. `../../scripts/render_digest.py`
+14. Use the project skill `find-jobs`.
+15. Use the project skill `rank-jobs`.
+16. `../../scripts/discover_jobs.py`
+17. `../../scripts/render_digest.py`
 
 Post-processing scripts are stable commands. During normal runs, do not read
 `../../scripts/render_digest.py` or `../../scripts/update_ranked_overview.py`
@@ -51,7 +53,7 @@ the workflow commands below.
 
 ## Scope
 
-Only search the sources listed in `./sources.md`.
+Only search the sources listed in `./sources.json`.
 
 Do not broaden beyond those sources unless explicitly instructed.
 
@@ -66,32 +68,33 @@ Use `./prefs.md` and `../../profile/prefs_global.md` as the source of truth for 
 During a normal scheduled run:
 
 - read only the track inputs above plus today's digest, if it already exists
-- write only today's structured digest artifact in `../../artifacts/digests/{track_slug}/`, today's rendered digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/{track_slug}.json`, `./ranked_overview.md`, and the `last_checked` column in `./sources.md`
+- write only today's structured digest artifact in `../../artifacts/digests/{track_slug}/`, today's rendered digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/{track_slug}.json`, and `./ranked_overview.md`
+- do not edit `./sources.md`, `./sources.json`, or `./source_state.json` during a normal run
 - do not inspect `./logs` or downstream publication targets such as the configured Logseq graph
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
 - if today's discovery artifact exists in `../../artifacts/discovery/{track_slug}/`, consume it directly instead of rerunning `../../scripts/discover_jobs.py`
 
 ## Source Cadence
 
-Use the `last_checked` column in `./sources.md` as the track's source-check state.
+Use `./sources.json` for source definitions and `./source_state.json` for source-check state.
 
-- Check all sources listed under `Check every run`.
-- For sources listed under `Check every 3 runs`, check only rows whose `last_checked` is blank or at least 3 calendar days old.
-- For sources listed under `Check every month`, check only rows whose `last_checked` is blank or from a different calendar month than today.
+- Check all sources with `cadence_group: "every_run"`.
+- For sources with `cadence_group: "every_3_runs"`, check only sources whose `last_checked` state is null or at least 3 calendar days old.
+- For sources with `cadence_group: "every_month"`, check only sources whose `last_checked` state is null or from a different calendar month than today.
 - Treat one scheduled day as one run for cadence purposes.
 - Manual same-day reruns do not advance cadence.
-- After a successful normal run, update `last_checked` in `./sources.md` to today's date only for the sources actually checked on that run with complete coverage records.
+- Do not manually update source state. The runner updates `./source_state.json` from the scheduled discovery artifact after a successful normal run.
 
 ## Workflow
 
 For each run:
 
-1. Read the context files, including the `last_checked` values in `./sources.md`.
-2. Determine which sources are due based on the cadence rules in `./sources.md`.
+1. Read the context files, including source definitions in `./sources.json` and `last_checked` values in `./source_state.json`.
+2. Determine which sources are due based on the cadence rules in `./sources.json` and `./source_state.json`.
 3. Look for today's discovery artifact at `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`. If it is missing, check `../../artifacts/discovery/{track_slug}/latest.json`.
 4. During a normal scheduled run, treat the fresh artifact as the default discovery input for due-source coverage and candidate enumeration.
 5. Do not rerun `../../scripts/discover_jobs.py` yourself during a normal scheduled pass unless the artifact is missing, stale, inconsistent with the due-source set, or you were explicitly asked to debug discovery.
-6. Search only the due sources from `./sources.md`.
+6. Search only the due sources from `./sources.json`.
 7. Use the project skill `find-jobs` to collect plausible new roles and structured coverage notes.
 8. If the fresh artifact is missing, stale, incomplete for the due-source set, or inconsistent with the track inputs, fall back to live discovery for the affected sources only.
 9. Treat a source as fully checked only if the coverage notes include status, listing pages scanned, search terms tried, result pages scanned, direct job pages opened, and limitations.
@@ -101,7 +104,7 @@ For each run:
 13. Render today's markdown digest by running `../../scripts/render_digest.py --track {track_slug} --date YYYY-MM-DD`.
 14. Add newly reported roles to `../../shared/seen_jobs.md`.
 15. Rebuild the persistent ranked overview by running `../../scripts/update_ranked_overview.py --track {track_slug}`.
-16. After the run succeeds, update `last_checked` in `./sources.md` only for the sources actually checked with complete coverage.
+16. Leave source-state updates to the runner. Do not edit `./source_state.json` yourself.
 
 ## Same-Day Reruns
 

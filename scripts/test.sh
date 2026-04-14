@@ -24,6 +24,9 @@ bash -n scripts/test_track_workflow.sh
 bash -n scripts/sync_claude_skills.sh
 bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/configure_schedule.py
+"$PYTHON_BIN" -m py_compile scripts/source_config.py
+"$PYTHON_BIN" -m py_compile scripts/render_sources_md.py
+"$PYTHON_BIN" -m py_compile scripts/update_source_state.py
 bash scripts/sync_claude_skills.sh --check
 
 PYTEST_ARGS=("$@")
@@ -39,6 +42,7 @@ fi
   tests/unit/test_render_digest.py \
   tests/unit/test_send_digest_email.py \
   tests/unit/test_setup_skill_template.py \
+  tests/unit/test_source_config.py \
   tests/unit/test_claude_support.py \
   tests/unit/test_machine_resolution.py \
   tests/unit/test_source_quality.py \

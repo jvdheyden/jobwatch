@@ -106,7 +106,7 @@ Common pattern to preserve: if an employer homepage links directly to an officia
 
 Return both:
 1. a concise human-readable recommendation list
-2. a setup-ready source pack that `set-up` can translate directly into `sources.md`
+2. a setup-ready source pack that `set-up` can translate directly into `sources.json`
 
 Use this structure:
 
@@ -142,7 +142,7 @@ Use this structure:
 - notes: ...
 ```
 
-Use concise `source_name` labels that are ready to drop into `sources.md`.
+Use concise `source_name` labels that are ready to use as source display names in `sources.json`.
 
 If no strong official sources are found, say so clearly and return only the best follow-up options rather than padding the list.
 
