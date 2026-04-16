@@ -14,13 +14,14 @@ This skill is for evaluation and prioritization, not search.
 
 ## Input
 
-Assume the current track provides:
-- the candidate roles
-- the user's CV
-- global preferences
-- track-specific preferences
+Read these files before ranking:
+- `profile/cv.md` — the user's CV
+- `profile/prefs_global.md` — global preferences
+- `tracks/<track>/prefs.md` — track-specific preferences
 
-Use those files as the source of truth for fit.
+The candidate roles come from the discovery artifact or the find-jobs skill output for the current run.
+
+Use these files as the source of truth for fit.
 
 ## Procedure
 
@@ -80,33 +81,48 @@ General rule:
 
 ## Output format
 
-Use this structure:
+Return two JSON arrays matching the digest schema (`shared/digest_schema.md`): `top_matches` for the strongest roles and `other_new_roles` for weaker but notable ones. Omit weak roles unless useful for auditability.
 
-```md
-### {{job_title}} — {{employer}}
-- Link: {{url}}
-- Fit score: {{score}}/10
-- Recommendation: {{apply_now | watch | skip}}
+Both arrays must be ordered from strongest to weakest.
 
-Why it fits:
-- {{reason_1}}
-- {{reason_2}}
-- {{reason_3}}
+### `top_matches[]` entry
 
-Concerns:
-- {{concern_1}}
-- {{concern_2}}
-
-Overall judgment:
-{{2-3 sentence summary}}
+```json
+{
+  "company": "Example Co",
+  "title": "Cryptography Engineer",
+  "listing_url": "https://example.com/jobs/1",
+  "location": "Remote",
+  "remote": "remote",
+  "source": "IACR Jobs",
+  "fit_score": 8.5,
+  "recommendation": "apply_now",
+  "why_match": [
+    "Exact applied-cryptography fit.",
+    "Strong zero-knowledge systems emphasis."
+  ],
+  "concerns": [
+    "Appears Vancouver-based rather than clearly remote."
+  ]
+}
 ```
 
-Then provide the roles in ranked order.
+Required fields: `company`, `title`, `listing_url`, `fit_score`, `recommendation`, `why_match`.
+Optional fields: `job_key`, `alternate_url`, `location`, `remote`, `team_or_domain`, `posted_date`, `updated_date`, `source`, `source_url`, `concerns`.
 
-## Digest guidance
+### `other_new_roles[]` entry
 
-When this ranking is used for a digest:
+```json
+{
+  "company": "Example Co",
+  "title": "Security Engineer",
+  "listing_url": "https://example.com/jobs/2",
+  "location": "Berlin",
+  "fit_score": 6.5,
+  "recommendation": "watch",
+  "short_note": "Broad security role, but embedded-systems focus aligns with track."
+}
+```
 
-- keep only the strongest roles in the main section
-- place weaker but still notable roles separately
-- omit weak roles unless useful for auditability
+Required fields: `company`, `title`, `listing_url`, `fit_score`, `recommendation`, `short_note`.
+Optional fields: `job_key`, `alternate_url`, `location`, `source`.
