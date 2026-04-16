@@ -31,7 +31,7 @@ Read these files in order before starting:
 4. `./sources.json`
 5. `./source_state.json`
 6. `./sources.md`
-7. `../../shared/seen_jobs.md`
+7. `./seen_jobs.json`
 8. `../../shared/digest_schema.md`
 9. `../../shared/digest_template.md`
 10. `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`, if it exists for today
@@ -62,7 +62,7 @@ Use `./prefs.md` and `../../profile/prefs_global.md` as the source of truth for 
 During a normal scheduled run:
 
 - read only the track inputs above plus today's digest, if it already exists
-- write only today's structured digest artifact in `../../artifacts/digests/{track_slug}/`, today's rendered digest in `./digests/`, `../../shared/seen_jobs.md`, `../../shared/ranked_jobs/{track_slug}.json`, and `./ranked_overview.md`
+- write only today's structured digest artifact in `../../artifacts/digests/{track_slug}/` and today's rendered digest in `./digests/`
 - do not edit `./sources.md`, `./sources.json`, or `./source_state.json` during a normal run
 - do not inspect `./logs` or downstream publication targets such as the configured Logseq graph
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
@@ -95,8 +95,7 @@ For each run:
 10. Do not mark a source complete unless the discovery artifact shows the full source was enumerated and the full term set was applied.
 11. Use the project skill `rank-jobs` to score and prioritize them.
 12. Create or update today's structured digest artifact at `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` using `../../shared/digest_schema.md` as the source-of-truth schema.
-13. Add newly reported roles to `../../shared/seen_jobs.md`.
-14. Leave source-state updates, markdown rendering, and ranked-overview rebuilds to the runner. Do not edit `./source_state.json` yourself.
+13. Leave source-state updates, markdown rendering, ranked-overview rebuilds, and seen-jobs updates to the runner. Do not edit `./source_state.json` or `./seen_jobs.json` yourself.
 
 ## Same-Day Reruns
 
@@ -135,8 +134,8 @@ For digest generation, `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` is
 
 ## Deduplication
 
-Do not report roles already listed in `../../shared/seen_jobs.md`.
+Do not report roles already listed in `./seen_jobs.json`.
 
 If unsure whether a role is genuinely new or just reposted, treat it as already seen.
 
-Only append roles to `../../shared/seen_jobs.md` if they were actually written into the digest for this run.
+Do not manually update `./seen_jobs.json`. The runner updates it from the digest artifact after a successful run.

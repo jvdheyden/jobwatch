@@ -55,6 +55,6 @@ Use these native filters on searchable sources when the source supports stable U
 ## Output discipline
 
 - If a source has no relevant role, omit it from the digest.
-- Never report a role already listed in ../../shared/seen_jobs.md
+- Never report a role already listed in ./seen_jobs.json
 - Prefer 3-8 strong matches over a long noisy list.
 - Include direct job links in the digest, not just the company careers page.

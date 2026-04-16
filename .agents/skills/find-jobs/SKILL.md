@@ -14,7 +14,7 @@ This skill is for discovery and extraction, not final ranking.
 Assume the current track provides:
 - a set of allowed sources
 - preferences for what counts as a match
-- a seen-jobs file for deduplication
+- a `seen_jobs.json` file for deduplication
 
 Read those files before searching.
 
@@ -154,11 +154,11 @@ Exclude roles that are clearly:
 
 ## Deduplication
 
-Use the seen-jobs file to avoid repeats.
+Use the track's `seen_jobs.json` to avoid repeats.
 
 Deduplicate twice:
 - when collecting candidate URLs from listings and search results
-- again before final output against the seen-jobs file
+- again before final output against `seen_jobs.json`
 
 Treat roles as duplicates if the employer and substantially the same title already appear, even if the link or posting date changed.
 

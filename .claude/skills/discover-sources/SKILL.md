@@ -156,7 +156,7 @@ If no strong official sources are found, say so clearly and return only the best
 ## Boundaries
 
 - Do not search for individual jobs to report.
-- Do not deduplicate against `shared/seen_jobs.md`.
+- Do not deduplicate against `seen_jobs.json`.
 - Do not write track files.
 - Do not add new scraping support or test `scripts/discover_jobs.py` unless the user explicitly pivots to repo development.
 - If a source looks important but not clearly supported, include it with conservative defaults and note the follow-up need instead of escalating.

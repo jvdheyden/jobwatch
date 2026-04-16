@@ -34,13 +34,13 @@ def test_setup_agents_template_keeps_production_workflow_contract(repo_root: Pat
     required_fragments = [
         "../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json",
         "../../artifacts/digests/{track_slug}/YYYY-MM-DD.json",
-        "../../shared/ranked_jobs/{track_slug}.json",
         "./sources.json",
         "./source_state.json",
-        "markdown rendering, and ranked-overview rebuilds to the runner",
+        "markdown rendering, ranked-overview rebuilds, and seen-jobs updates to the runner",
         "Same-Day Reruns",
-        "Do not report roles already listed in `../../shared/seen_jobs.md`.",
+        "Do not report roles already listed in `./seen_jobs.json`.",
         "Do not manually update source state.",
+        "Do not manually update `./seen_jobs.json`.",
     ]
 
     for fragment in required_fragments:

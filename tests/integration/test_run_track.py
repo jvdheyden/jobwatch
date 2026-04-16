@@ -95,6 +95,25 @@ output_md.write_text(f"# Rendered digest for {args.track} {args.date}\\n")
 """,
     )
     _write_executable(
+        root / "scripts" / "update_seen_jobs.py",
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--track", required=True)
+parser.add_argument("--date", required=True)
+args = parser.parse_args()
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+(root / "seen-jobs-ran.txt").write_text(f"{args.track} {args.date}\\n")
+""",
+    )
+    _write_executable(
         root / "scripts" / "update_ranked_overview.py",
         """#!/usr/bin/env python3
 from __future__ import annotations
@@ -348,8 +367,10 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Codex phase finished successfully" in log_text
     assert "Source state update finished successfully" in log_text
     assert "Markdown digest rendered successfully" in log_text
+    assert "Seen jobs updated successfully" in log_text
     assert "Ranked overview rebuilt successfully" in log_text
     assert (tmp_job_agent_root / "render-digest-ran.txt").read_text() == "demo 2030-01-15\n"
+    assert (tmp_job_agent_root / "seen-jobs-ran.txt").read_text() == "demo 2030-01-15\n"
     assert (tmp_job_agent_root / "ranked-overview-ran.txt").read_text() == "demo\n"
     assert "No delivery targets requested; leaving local artifacts only" in log_text
     assert "Delivery phase started" not in log_text

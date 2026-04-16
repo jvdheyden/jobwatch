@@ -125,14 +125,6 @@ Examples:
 - "Anthropic — mode: greenhouse_api; status: complete; listing pages: 1; search terms: privacy, security; result pages: local_filter=1; direct pages opened: 2; note: scripted discovery enumerated the full board."
 - "Trail of Bits — mode: html; status: complete; listing pages: 1; search terms: none; result pages: none; direct pages opened: 0; note: only a talent pipeline was visible."
 
-## Seen jobs to append
-
-Add the following only if they are not already in `shared/seen_jobs.md`:
-
-- {{employer}} | {{job_title}} | {{location}} | {{link}}
-- {{employer}} | {{job_title}} | {{location}} | {{link}}
-- {{employer}} | {{job_title}} | {{location}} | {{link}}
-
 ## Notes for next run
 
 {{optional_follow_up_notes}}

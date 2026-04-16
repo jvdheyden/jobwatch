@@ -545,6 +545,19 @@ else
   log "No structured digest at $STRUCTURED_DIGEST; skipping markdown rendering"
 fi
 
+if [[ -f "$STRUCTURED_DIGEST" ]]; then
+  log "Updating seen jobs for $TRACK from $STRUCTURED_DIGEST"
+  if "$PYTHON_BIN" "$ROOT/scripts/update_seen_jobs.py" --track "$TRACK" --date "$TODAY"; then
+    log "Seen jobs updated successfully"
+  else
+    seen_status=$?
+    log "Seen jobs update failed with status $seen_status"
+    exit "$seen_status"
+  fi
+else
+  log "No structured digest at $STRUCTURED_DIGEST; skipping seen-jobs update"
+fi
+
 log "Rebuilding ranked overview for $TRACK"
 if "$PYTHON_BIN" "$ROOT/scripts/update_ranked_overview.py" --track "$TRACK"; then
   log "Ranked overview rebuilt successfully"

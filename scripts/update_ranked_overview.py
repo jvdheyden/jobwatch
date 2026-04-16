@@ -122,28 +122,14 @@ def parse_ranked_roles_from_digest(path: Path) -> list[dict[str, object]]:
     return roles
 
 
-def parse_seen_jobs(path: Path) -> list[dict[str, str]]:
-    if not path.exists():
+def _load_seen_jobs_json(path: Path) -> list[dict[str, str]]:
+    payload = json.loads(path.read_text())
+    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
         return []
-
-    rows: list[dict[str, str]] = []
-    for raw_line in path.read_text().splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = [part.strip() for part in line.split(" | ", 4)]
-        if len(parts) != 5:
-            continue
-        rows.append(
-            {
-                "date_seen": parts[0],
-                "company": parts[1],
-                "title": parts[2],
-                "location": parts[3],
-                "url": normalize_url(parts[4]),
-            }
-        )
-    return rows
+    jobs = payload.get("jobs")
+    if not isinstance(jobs, list):
+        return []
+    return jobs
 
 
 def role_sort_key(role: RankedJob) -> tuple[float, str, str, str]:
@@ -176,7 +162,6 @@ def render_markdown(track: str, jobs: list[RankedJob], state_path: Path) -> str:
 
 def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
     digests_dir = ROOT / "tracks" / track / "digests"
-    seen_jobs_path = ROOT / "shared" / "seen_jobs.md"
     state_path = ROOT / "shared" / "ranked_jobs" / f"{track}.json"
     markdown_path = ROOT / "tracks" / track / "ranked_overview.md"
 
@@ -220,18 +205,17 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
             if not record["url"] and role["url"]:
                 record["url"] = role["url"]
 
-    # `shared/seen_jobs.md` is a legacy global file with no track metadata.
-    # Backfilling it into non-core tracks pollutes their ranked overviews.
-    if track == "core_crypto":
-        for seen in parse_seen_jobs(seen_jobs_path):
-            job_key = make_job_key(seen["company"], seen["title"], seen["location"])
+    seen_jobs_path = ROOT / "tracks" / track / "seen_jobs.json"
+    if seen_jobs_path.exists():
+        for seen in _load_seen_jobs_json(seen_jobs_path):
+            job_key = make_job_key(seen["company"], seen["title"], seen.get("location", "unknown"))
             record = records.get(job_key)
             if record is None:
                 records[job_key] = {
                     "job_key": job_key,
                     "company": seen["company"],
                     "title": seen["title"],
-                    "url": seen["url"],
+                    "url": seen.get("url", ""),
                     "fit_score": None,
                     "date_seen": seen["date_seen"],
                     "date_seen_page": digest_page_name(track, seen["date_seen"]),
@@ -247,7 +231,7 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
                 record["date_seen"] = seen["date_seen"]
                 record["date_seen_page"] = digest_page_name(track, seen["date_seen"])
             record["last_seen"] = max(str(record["last_seen"]), seen["date_seen"])
-            if not record["url"] and seen["url"]:
+            if not record["url"] and seen.get("url"):
                 record["url"] = seen["url"]
 
     jobs: list[RankedJob] = []
