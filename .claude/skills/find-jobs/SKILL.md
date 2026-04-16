@@ -105,45 +105,11 @@ If a fact is not visible, write `unknown`.
 
 Do not invent details.
 
-## Official API evidence
-
-When an official first-party careers API or official board API is the source of the candidate data, treat that API response as posting evidence.
-
-This matters most when:
-- the source's job-detail website is blocked by bot protection or WAF
-- the helper artifact already captured source-native API fields
-- the API is first-party and clearly tied to the official careers source
-
-For IBM in this repo:
-- the IBM careers search API is an acceptable evidence source even when the website job-detail page returns an AWS WAF challenge or empty body
-- do not exclude an IBM role solely because the direct website page cannot be fetched
-- use the IBM API fields that are available, such as title, location, remote/hybrid status, seniority/professional level when present, description snippet, source URL, and matched terms
-- mark missing fields as `unknown`
-- note clearly that the website detail page was inaccessible, but do not treat that alone as a reason to drop the role
-
-For Google in this repo:
-- the official Google careers search payload (`ds:1`) is acceptable evidence for discovery and extraction
-- the helper may synthesize a public overview URL from the Google job id and the title slug because the payload's primary URL field points to the apply/sign-in flow
-- do not exclude a Google role solely because the synthesized overview URL might be imperfect or might fail to resolve
-- if a fallback apply/sign-in URL is present in the artifact, treat it as supporting evidence, not as a reason to drop the listing
-- note URL uncertainty clearly when it exists, but keep the role if the payload still provides enough title, location, summary, responsibilities, and requirements evidence to evaluate it
-
-More generally:
-- if an official API provides enough information to judge track relevance, practical viability, and uniqueness, you may keep the role in the candidate set even without direct-page HTML
-- if the official API evidence is too thin to evaluate the role at all, exclude it and say why
-
 ## Inclusion rule
 
 Include a role only if it is a plausible match for the current track based on the current track's preferences.
 
 Use titles and listing snippets only for discovery priority.
-
-Preferred rule:
-- final inclusion should normally be based on the full direct posting
-
-Exception:
-- if the source's official API is the best available first-party evidence and the direct posting is inaccessible due to bot protection, you may base inclusion on the official API evidence instead
-- for IBM, do this by default rather than filtering the role out for missing website access
 
 When in doubt, exclude rather than include.
 
@@ -210,11 +176,5 @@ If a source's artifact coverage shows it could not be accessed or parsed:
 
 - note this briefly in the coverage notes
 - mark the source as `failed`
-
-If the artifact shows the listing or API was accessible but the direct job page was blocked:
-
-- keep candidates that are still evaluable from official API evidence
-- record the website-access limitation in the coverage notes
-- do not collapse those candidates into `failed` discovery just because the detail page could not be opened
 
 If the required coverage fields are missing for a source, treat that source as partial rather than complete.

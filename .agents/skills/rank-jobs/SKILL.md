@@ -59,23 +59,6 @@ Do not overrate a role just because the employer is prestigious.
 
 Treat official first-party API evidence as valid posting evidence when that is the best accessible source.
 
-For IBM in this repo:
-- use the IBM careers API fields directly when ranking roles
-- do not down-rank or discard an IBM role solely because the website job-detail page is blocked by WAF or bot protection
-- score the role from the API-visible evidence: title, location, remote/hybrid status, description snippet, seniority/professional level when present, and any matched terms or notes captured in the discovery artifact
-- note missing details as uncertainty, but do not turn missing website access itself into a separate concern unless it prevents meaningful evaluation
-
-For Google in this repo:
-- use the official Google careers payload evidence directly when ranking roles
-- do not down-rank or discard a Google role solely because the synthesized public overview URL might be wrong or might not resolve cleanly
-- if the artifact provides a best-effort public URL plus an alternate apply/sign-in URL, treat URL uncertainty as a minor note, not as a core fit concern
-- score the role from the payload-visible evidence: title, employer, location, summary, responsibilities, requirements, and matched terms
-- only treat the URL issue as material if the payload is too thin to evaluate the role itself
-
-General rule:
-- missing website HTML is only a ranking concern when it leaves the role too vague to assess
-- if the official API evidence is sufficient to judge fit, rank the role normally
-
 ## Output format
 
 Return two JSON arrays matching the digest schema (`shared/digest_schema.md`): `top_matches` for the strongest roles and `other_new_roles` for weaker but notable ones. Omit weak roles unless useful for auditability.
