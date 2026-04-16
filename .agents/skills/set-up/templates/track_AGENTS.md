@@ -33,17 +33,16 @@ Read these files in order before starting:
 6. `./sources.md`
 7. `./seen_jobs.json`
 8. `../../shared/digest_schema.md`
-9. `../../shared/digest_template.md`
-10. `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`, if it exists for today
-11. `../../artifacts/discovery/{track_slug}/latest.json`, if it exists and was generated today
-12. `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` for today, if it already exists
-13. `./digests/YYYY-MM-DD.md` for today, if it already exists
+9. `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`, if it exists for today
+10. `../../artifacts/discovery/{track_slug}/latest.json`, if it exists and was generated today
+11. `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` for today, if it already exists
+12. `./digests/YYYY-MM-DD.md` for today, if it already exists
 
 If useful, also use:
 
-14. Use the project skill `find-jobs`.
-15. Use the project skill `rank-jobs`.
-16. `../../scripts/discover_jobs.py`
+13. Use the project skill `find-jobs`.
+14. Use the project skill `rank-jobs`.
+15. `../../scripts/discover_jobs.py`
 
 ## Scope
 

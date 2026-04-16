@@ -29,7 +29,6 @@ mkdir -p "$TEST_ROOT/tracks" "$TEST_ROOT/shared" "$TEST_ROOT/logs"
 cp -R "$ROOT/scripts" "$TEST_ROOT/scripts"
 cp -R "$ROOT/tracks/$TRACK" "$TEST_ROOT/tracks/$TRACK"
 cp "$ROOT/shared/digest_schema.md" "$TEST_ROOT/shared/digest_schema.md"
-cp "$ROOT/shared/digest_template.md" "$TEST_ROOT/shared/digest_template.md"
 if [[ -d "$ROOT/.venv" ]]; then
   ln -s "$ROOT/.venv" "$TEST_ROOT/.venv"
 fi

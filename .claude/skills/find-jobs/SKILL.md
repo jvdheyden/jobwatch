@@ -3,7 +3,7 @@
 
 ---
 name: find-jobs
-description: Search official job and career pages for plausible roles matching the current track, extract verified facts only, deduplicate against the seen-jobs file, and return a short high-signal candidate list. Use this skill for discovery and extraction, not for final ranking.
+description: Extract and filter plausible candidate roles from discovery artifacts, deduplicate against seen_jobs.json, and return a short high-signal candidate list with coverage notes. Use this skill for extraction and filtering, not for final ranking.
 ---
 
 # Skill: Find Jobs
@@ -65,24 +65,6 @@ Normalize and deduplicate terms:
 - keep both common phrases and abbreviations when both matter
 - prefer compact, high-signal terms over long natural-language queries
 - avoid terms that are obviously too broad for the track
-
-If the track inputs are sparse, use this fallback set:
-- `cryptography`
-- `cryptographer`
-- `privacy`
-- `security`
-- `protocol`
-- `post-quantum`
-- `PQC`
-- `MPC`
-- `zero-knowledge`
-- `ZK`
-- `FHE`
-- `PETs`
-- `digital identity`
-- `authentication`
-- `smart card`
-- `embedded security`
 
 Use the term set to judge whether the artifact's coverage for a source is complete or partial.
 
