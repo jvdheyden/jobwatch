@@ -44,12 +44,6 @@ If useful, also use:
 14. Use the project skill `find-jobs`.
 15. Use the project skill `rank-jobs`.
 16. `../../scripts/discover_jobs.py`
-17. `../../scripts/render_digest.py`
-
-Post-processing scripts are stable commands. During normal runs, do not read
-`../../scripts/render_digest.py` or `../../scripts/update_ranked_overview.py`
-unless one of the commands fails or the digest schema changed. Run them using
-the workflow commands below.
 
 ## Scope
 
@@ -96,19 +90,17 @@ For each run:
 5. Do not rerun `../../scripts/discover_jobs.py` yourself during a normal scheduled pass unless the artifact is missing, stale, inconsistent with the due-source set, or you were explicitly asked to debug discovery.
 6. Search only the due sources from `./sources.json`.
 7. Use the project skill `find-jobs` to collect plausible new roles and structured coverage notes.
-8. If the fresh artifact is missing, stale, incomplete for the due-source set, or inconsistent with the track inputs, fall back to live discovery for the affected sources only.
+8. If the fresh artifact is missing, stale, incomplete for the due-source set, or inconsistent with the track inputs, mark the affected sources as not checked in the coverage notes and note why.
 9. Treat a source as fully checked only if the coverage notes include status, listing pages scanned, search terms tried, result pages scanned, direct job pages opened, and limitations.
-10. If a source exposes native search, do not mark it complete unless the coverage notes show that native search was actually used, or a deterministic scripted discovery artifact shows that the full source was enumerated and the full term set was applied.
+10. Do not mark a source complete unless the discovery artifact shows the full source was enumerated and the full term set was applied.
 11. Use the project skill `rank-jobs` to score and prioritize them.
 12. Create or update today's structured digest artifact at `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` using `../../shared/digest_schema.md` as the source-of-truth schema.
-13. Render today's markdown digest by running `../../scripts/render_digest.py --track {track_slug} --date YYYY-MM-DD`.
-14. Add newly reported roles to `../../shared/seen_jobs.md`.
-15. Rebuild the persistent ranked overview by running `../../scripts/update_ranked_overview.py --track {track_slug}`.
-16. Leave source-state updates to the runner. Do not edit `./source_state.json` yourself.
+13. Add newly reported roles to `../../shared/seen_jobs.md`.
+14. Leave source-state updates, markdown rendering, and ranked-overview rebuilds to the runner. Do not edit `./source_state.json` yourself.
 
 ## Same-Day Reruns
 
-If today's digest JSON artifact does not exist yet, create it normally and then render the markdown digest from it.
+If today's digest JSON artifact does not exist yet, create it normally. The runner renders the markdown digest from it.
 
 If the first run of the day finds no relevant new roles, still create today's digest and say clearly that no relevant new roles were found.
 
@@ -118,8 +110,8 @@ If today's digest JSON artifact already exists:
 - preserve the existing `runs` array
 - append one new `runs[]` entry with `kind: "update"`
 - include only roles that are newly reportable for this run
-- rerender `./digests/YYYY-MM-DD.md` after updating the JSON
 - do not rewrite or remove earlier same-day runs
+- the runner rerenders `./digests/YYYY-MM-DD.md` after the agent finishes
 
 If no new roles are found on a later run the same day, leave today's digest unchanged.
 
@@ -127,17 +119,15 @@ If no new roles are found on a later run the same day, leave today's digest unch
 
 Return only new roles that are worth {user_name}'s attention.
 
-If no strong new roles are found, say so clearly in the structured digest artifact and rerender the markdown digest.
+If no strong new roles are found, say so clearly in the structured digest artifact.
 
 Do not fabricate missing job details. Use `unknown` when necessary.
 
-On same-day reruns, never hand-edit the markdown digest. Update the JSON source of truth and rerender it.
+On same-day reruns, never hand-edit the markdown digest. Update the JSON source of truth; the runner rerenders it.
 
 The digest must include enough source coverage detail to show what was actually searched. Do not write a source as fully checked if you cannot show the coverage record.
 
-If a source exposes native search and the run did not use it, or cannot show which terms were tried, mark that source as partial and say so in the digest.
-
-If `../../scripts/discover_jobs.py` produced a deterministic discovery artifact for a source, that artifact is acceptable proof of complete coverage when it shows the source's full enumeration strategy and the applied search terms.
+If the discovery artifact cannot show which terms were tried for a source, mark that source as partial and say so in the digest.
 
 For scheduled runs, the artifact paths in `../../artifacts/discovery/{track_slug}/` are the source of truth for discovery. Use `YYYY-MM-DD.json` first and `latest.json` second.
 

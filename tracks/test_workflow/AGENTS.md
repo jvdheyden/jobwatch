@@ -15,16 +15,9 @@ This track exists only to exercise the generic multi-track runner end-to-end wit
 7. `../../artifacts/digests/test_workflow/YYYY-MM-DD.json`, if it exists for today
 8. `./digests/YYYY-MM-DD.md`, if it already exists for today
 
-Post-processing scripts are stable commands. During normal runs, do not read
-`../../scripts/render_digest.py` or `../../scripts/update_ranked_overview.py`
-unless one of the commands fails or the digest schema changed. Run them using
-the workflow commands below.
-
 ## Workflow
 
 1. Consume today's discovery artifact for `test_workflow`.
 2. Write today's structured digest artifact in `../../artifacts/digests/test_workflow/YYYY-MM-DD.json`.
-3. Render `./digests/YYYY-MM-DD.md` by running `../../scripts/render_digest.py --track test_workflow --date YYYY-MM-DD`.
-4. Rebuild the ranked overview by running `../../scripts/update_ranked_overview.py --track test_workflow`.
-5. Do not edit `./sources.md`, `./sources.json`, or `./source_state.json`; source state is updated by the runner.
+3. Do not edit `./sources.md`, `./sources.json`, or `./source_state.json`; source state, markdown rendering, and ranked-overview rebuilds are handled by the runner.
 6. Do not touch any other track.

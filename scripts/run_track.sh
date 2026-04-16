@@ -532,6 +532,28 @@ else
   log "Skipping source state update because no complete fresh discovery artifact is available"
 fi
 
+if [[ -f "$STRUCTURED_DIGEST" ]]; then
+  log "Rendering markdown digest from $STRUCTURED_DIGEST"
+  if "$PYTHON_BIN" "$ROOT/scripts/render_digest.py" --track "$TRACK" --date "$TODAY"; then
+    log "Markdown digest rendered successfully"
+  else
+    render_status=$?
+    log "Markdown digest rendering failed with status $render_status"
+    exit "$render_status"
+  fi
+else
+  log "No structured digest at $STRUCTURED_DIGEST; skipping markdown rendering"
+fi
+
+log "Rebuilding ranked overview for $TRACK"
+if "$PYTHON_BIN" "$ROOT/scripts/update_ranked_overview.py" --track "$TRACK"; then
+  log "Ranked overview rebuilt successfully"
+else
+  ranked_status=$?
+  log "Ranked overview rebuild failed with status $ranked_status"
+  exit "$ranked_status"
+fi
+
 if [[ ${#DELIVERY_TARGETS[@]} -eq 0 ]]; then
   log "No delivery targets requested; leaving local artifacts only"
 else
