@@ -5716,6 +5716,11 @@ from discover.sources.eightfold import discover_infineon_api as discover_infineo
 from discover.sources.eightfold import eightfold_domain_for_source as eightfold_domain_for_source
 from discover.sources.getro import discover_getro_api as discover_getro_api
 from discover.sources.greenhouse import discover_greenhouse_api as discover_greenhouse_api
+from discover.sources.hackernews import discover_hackernews_jobs as discover_hackernews_jobs
+from discover.sources.hackernews import discover_hackernews_whoishiring_api as discover_hackernews_whoishiring_api
+from discover.sources.hackernews import extract_first_external_url_from_html as extract_first_external_url_from_html
+from discover.sources.hackernews import infer_hn_employer as infer_hn_employer
+from discover.sources.hackernews import infer_hn_whoishiring_fields as infer_hn_whoishiring_fields
 from discover.sources.lever import discover_lever_json as discover_lever_json
 from discover.sources.personio import discover_personio_page as discover_personio_page
 from discover.sources.personio import extract_personio_jobs_from_html as extract_personio_jobs_from_html

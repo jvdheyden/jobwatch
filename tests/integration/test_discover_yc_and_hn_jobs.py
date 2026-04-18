@@ -4,6 +4,7 @@ import json
 from html import escape
 
 import discover_jobs
+from discover import http as discover_http
 
 
 def test_discover_yc_jobs_board_extracts_filtered_candidates(monkeypatch):
@@ -101,7 +102,7 @@ def test_discover_hackernews_jobs_extracts_submission_rows_across_pages(monkeypa
             return page_two
         return page_one
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_hackernews_jobs(source, ["cryptography", "security", "privacy"], timeout_seconds=5)
 
@@ -155,7 +156,7 @@ def test_discover_hackernews_whoishiring_api_resolves_latest_story_and_filters_c
         },
     }
 
-    monkeypatch.setattr(discover_jobs, "fetch_json", lambda url, timeout_seconds: payloads[url])
+    monkeypatch.setattr(discover_http, "fetch_json", lambda url, timeout_seconds: payloads[url])
 
     coverage = discover_jobs.discover_hackernews_whoishiring_api(
         source,

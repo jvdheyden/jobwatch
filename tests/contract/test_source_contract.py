@@ -26,6 +26,8 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "eightfold_api": "https://apply.careers.microsoft.com/careers",
         "getro_api": "https://jobs.example-getro.com/jobs",
         "greenhouse_api": "https://job-boards.greenhouse.io/example",
+        "hackernews_jobs": "https://news.ycombinator.com/jobs",
+        "hackernews_whoishiring_api": "https://news.ycombinator.com/user?id=whoishiring",
         "iacr_jobs": "https://www.iacr.org/jobs/",
         "infineon_api": "https://jobs.infineon.com/careers",
         "lever_json": "https://jobs.lever.co/example",
@@ -56,7 +58,11 @@ def _install_fixture(monkeypatch: pytest.MonkeyPatch, fixture_dir: Path, stem: s
         installed = True
     if json_path.exists():
         payload = json.loads(json_path.read_text())
-        monkeypatch.setattr(http, "fetch_json", lambda url, timeout_seconds: payload)
+        monkeypatch.setattr(
+            http,
+            "fetch_json",
+            lambda url, timeout_seconds: payload[url] if isinstance(payload, dict) and url in payload else payload,
+        )
         monkeypatch.setattr(http, "post_json", lambda url, data, timeout_seconds, headers=None: payload)
         installed = True
     if installed:

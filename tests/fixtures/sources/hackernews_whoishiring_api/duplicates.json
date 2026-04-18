@@ -1,0 +1,17 @@
+{
+  "https://hacker-news.firebaseio.com/v0/user/whoishiring.json": {
+    "id": "whoishiring",
+    "submitted": [100]
+  },
+  "https://hacker-news.firebaseio.com/v0/item/100.json": {
+    "id": 100,
+    "type": "story",
+    "title": "Ask HN: Who is hiring? (April 2026)",
+    "kids": [101, 101]
+  },
+  "https://hacker-news.firebaseio.com/v0/item/101.json": {
+    "id": 101,
+    "by": "cipherjobs",
+    "text": "Cipher | Cryptography Engineer | Remote | Full-time | <a href=\"https://example.com/jobs/cryptography-engineer\">Apply</a> Building privacy-preserving systems."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "https://hacker-news.firebaseio.com/v0/user/whoishiring.json": {
+    "id": "whoishiring",
+    "submitted": [200]
+  },
+  "https://hacker-news.firebaseio.com/v0/item/200.json": {
+    "id": 200,
+    "type": "story",
+    "title": "Ask HN: Who wants to be hired? (April 2026)"
+  }
+}
