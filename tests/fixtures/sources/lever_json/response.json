@@ -1,0 +1,20 @@
+[
+  {
+    "text": "Security Engineer",
+    "hostedUrl": "https://jobs.lever.co/example/security-engineer",
+    "descriptionPlain": "Build security engineering systems and applied cryptography tooling.",
+    "categories": {
+      "team": "Engineering",
+      "location": "Remote"
+    }
+  },
+  {
+    "text": "Product Marketing Manager",
+    "hostedUrl": "https://jobs.lever.co/example/product-marketing-manager",
+    "descriptionPlain": "Marketing campaigns.",
+    "categories": {
+      "team": "Marketing",
+      "location": "Remote"
+    }
+  }
+]

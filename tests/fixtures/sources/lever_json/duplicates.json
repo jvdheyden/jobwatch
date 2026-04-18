@@ -1,0 +1,20 @@
+[
+  {
+    "text": "Security Engineer",
+    "hostedUrl": "https://jobs.lever.co/example/security-engineer",
+    "descriptionPlain": "Build security systems.",
+    "categories": {
+      "team": "Engineering",
+      "location": "Remote"
+    }
+  },
+  {
+    "text": "Security Engineer",
+    "hostedUrl": "https://jobs.lever.co/example/security-engineer",
+    "descriptionPlain": "Build applied cryptography systems.",
+    "categories": {
+      "team": "Engineering",
+      "location": "Remote"
+    }
+  }
+]

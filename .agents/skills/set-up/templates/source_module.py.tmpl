@@ -1,0 +1,44 @@
+"""{{ discovery_mode }} discovery provider.
+
+Supported discovery modes:
+- `{{ discovery_mode }}`
+
+Expected source URL shape:
+- {{ source_url_shape }}
+"""
+
+from __future__ import annotations
+
+from discover import helpers, http
+from discover.core import Candidate, Coverage, SourceConfig
+from discover.registry import SourceAdapter
+
+
+def discover_{{ discovery_mode }}(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    # Fetch through discover.http so tests can monkeypatch transport centrally.
+    html = http.fetch_text(source.url, timeout_seconds)
+    candidates_by_url: dict[str, Candidate] = {}
+
+    # TODO: parse real listings and call helpers.merge_candidate().
+    del html
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="local_filter=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=0,
+        matched_jobs=len(candidates_by_url),
+        limitations=[],
+        candidates=list(candidates_by_url.values()),
+    )
+
+
+SOURCE = SourceAdapter(modes=("{{ discovery_mode }}",), discover=discover_{{ discovery_mode }})

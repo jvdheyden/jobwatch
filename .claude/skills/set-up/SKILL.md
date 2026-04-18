@@ -13,7 +13,8 @@ Use this skill to scaffold a new track over the shared job-agent workflow.
 Default assumption:
 - This is a scaffolding task, not a full source-integration task.
 - Reuse the shared scripts in `scripts/`.
-- Do not add new discovery code to `scripts/discover_jobs.py` unless the user explicitly asks for source integration now.
+- Do not add new discovery code unless the user explicitly asks for source integration now.
+- New source-integration code should live in a provider module under `scripts/discover/sources/`; keep `scripts/discover_jobs.py` as the CLI compatibility entrypoint.
 - For source integration, evaluate newly added or materially changed sources; do not reevaluate stable unchanged sources unless the user asks.
 
 ## Workflow
@@ -128,7 +129,7 @@ Step 4 has one required path and two optional integration paths:
 - Normalize the slug before writing files.
 - Treat the final source list as coming from the user, from `discover-sources`, or from both.
 - Infer `discovery_mode` from the source URL when obvious.
-- Prefer existing modes already supported by `scripts/discover_jobs.py`.
+- Prefer existing modes already supported by the discovery provider registry and `scripts/discover_jobs.py`.
 - Common modes worth trying first:
   - `workday_api`
   - `greenhouse_api`
@@ -176,12 +177,14 @@ The handoff should include:
 - canary URL if available
 - a short statement of what failed
 - any known native filters that should be applied, especially when the failure is excessive result volume
-- the expected success condition in `scripts/discover_jobs.py`
+- the expected success condition for the source provider and `scripts/discover_jobs.py` artifact output
 
 Expected coding output:
-- minimal support for that source in `scripts/discover_jobs.py`
+- minimal support for that source in a provider module under `scripts/discover/sources/`
 - native source-filter support when the board exposes stable filters and noisy volume is the problem
-- one focused automated test
+- fixture coverage under `tests/fixtures/sources/{discovery_mode}/`
+- contract validation with `./.venv/bin/python -m pytest tests/contract -k {discovery_mode}`
+- one focused automated integration test when parsing, pagination, URL construction, or filters need source-specific coverage
 - validation with `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
 - quality-gate validation with `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 - if that evaluation returns `repair_needed`, prefer `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]` over ad hoc manual retrying
@@ -524,7 +527,7 @@ If scheduled runs were configured, also run:
 5. The selected `./.venv/bin/python scripts/configure_schedule.py ...` command
 6. `bash scripts/install_scheduler.sh`
 
-If setup required changes to shared code such as `scripts/discover_jobs.py`, also run:
+If setup required changes to shared code such as `scripts/discover/` or `scripts/discover_jobs.py`, also run:
 
 7. `scripts/test.sh`
 

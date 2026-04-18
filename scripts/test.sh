@@ -27,6 +27,7 @@ bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/source_config.py
 "$PYTHON_BIN" -m py_compile scripts/render_sources_md.py
 "$PYTHON_BIN" -m py_compile scripts/update_source_state.py
+"$PYTHON_BIN" -m py_compile scripts/discover/*.py scripts/discover/sources/*.py
 bash scripts/sync_claude_skills.sh --check
 
 PYTEST_ARGS=("$@")
@@ -35,6 +36,7 @@ if [[ ${#PYTEST_ARGS[@]} -eq 0 ]]; then
 fi
 
 "$PYTHON_BIN" -m pytest \
+  tests/contract \
   tests/unit/test_discover_jobs_config.py \
   tests/unit/test_discover_jobs_progress.py \
   tests/unit/test_digest_email.py \
@@ -54,6 +56,7 @@ fi
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_asml_browser.py \
   tests/integration/test_discover_iacr_jobs.py \
+  tests/integration/test_discover_lever_json.py \
   tests/integration/test_discover_meta_browser.py \
   tests/integration/test_discover_pcd_team.py \
   tests/integration/test_discover_public_service_sources.py \

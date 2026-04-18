@@ -565,6 +565,15 @@ class BrowserStrategy:
     max_pages: int = 1
 
 
+from discover.core import BrowserEnrichmentResult as BrowserEnrichmentResult
+from discover.core import BrowserPageResult as BrowserPageResult
+from discover.core import BrowserStrategy as BrowserStrategy
+from discover.core import Candidate as Candidate
+from discover.core import Coverage as Coverage
+from discover.core import SourceConfig as SourceConfig
+from discover.core import SourceTermRule as SourceTermRule
+
+
 class LinkCollector(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
@@ -5699,6 +5708,11 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
     )
 
 
+from discover.sources.iacr import discover_iacr_jobs as discover_iacr_jobs
+from discover.sources.iacr import split_iacr_place as split_iacr_place
+from discover.sources.lever import discover_lever_json as discover_lever_json
+
+
 DISCOVERY_HANDLERS = {
     "ashby_api": discover_ashby_api,
     "automattic_browser": discover_automattic_browser,
@@ -5747,7 +5761,10 @@ DISCOVERY_HANDLERS = {
 
 
 def discover_source(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
-    handler = DISCOVERY_HANDLERS.get(source.discovery_mode)
+    from discover.registry import load_registry
+
+    adapter = load_registry().get(source.discovery_mode)
+    handler = adapter.discover if adapter else DISCOVERY_HANDLERS.get(source.discovery_mode)
     if not handler:
         return attach_source_identity(
             source,
