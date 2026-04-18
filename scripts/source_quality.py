@@ -726,11 +726,32 @@ REPAIR_TEST_HINTS_BY_SOURCE = {
 }
 
 REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
+    "ashby_api": "tests/integration/test_discover_followup_sources.py",
+    "ashby_html": "tests/integration/test_discover_followup_sources.py",
+    "eightfold_api": "tests/integration/test_discover_followup_sources.py",
     "getro_api": "tests/integration/test_discover_followup_sources.py",
+    "greenhouse_api": "tests/integration/test_discover_followup_sources.py",
     "ibm_api": "tests/integration/test_discover_followup_sources.py",
+    "infineon_api": "tests/integration/test_discover_followup_sources.py",
     "personio_page": "tests/integration/test_discover_followup_sources.py",
     "workable_api": "tests/integration/test_discover_followup_sources.py",
+    "workday_api": "tests/integration/test_discover_followup_sources.py",
     "iacr_jobs": "tests/integration/test_discover_iacr_jobs.py",
+}
+
+
+REPAIR_FILES_BY_DISCOVERY_MODE = {
+    "ashby_api": "scripts/discover/sources/ashby.py",
+    "ashby_html": "scripts/discover/sources/ashby.py",
+    "eightfold_api": "scripts/discover/sources/eightfold.py",
+    "getro_api": "scripts/discover/sources/getro.py",
+    "greenhouse_api": "scripts/discover/sources/greenhouse.py",
+    "iacr_jobs": "scripts/discover/sources/iacr.py",
+    "infineon_api": "scripts/discover/sources/eightfold.py",
+    "lever_json": "scripts/discover/sources/lever.py",
+    "personio_page": "scripts/discover/sources/personio.py",
+    "workable_api": "scripts/discover/sources/workable.py",
+    "workday_api": "scripts/discover/sources/workday.py",
 }
 
 
@@ -740,6 +761,11 @@ def infer_repair_test_hint(source: dict[str, Any]) -> str:
         return REPAIR_TEST_HINTS_BY_SOURCE[source_name]
     discovery_mode = normalize_whitespace(str(source.get("discovery_mode", "")))
     return REPAIR_TEST_HINTS_BY_DISCOVERY_MODE.get(discovery_mode, "")
+
+
+def infer_repair_likely_file(source: dict[str, Any]) -> str:
+    discovery_mode = normalize_whitespace(str(source.get("discovery_mode", "")))
+    return REPAIR_FILES_BY_DISCOVERY_MODE.get(discovery_mode, "scripts/discover_jobs.py")
 
 
 def _reviewer_defect_text(defect: dict[str, Any]) -> str:
@@ -910,7 +936,7 @@ def build_repair_ticket(
         ),
         "suggested_strategy": _suggested_strategy_for_failure_mode(failure_mode),
         "test_hint": infer_repair_test_hint(source),
-        "likely_file": "scripts/discover_jobs.py",
+        "likely_file": infer_repair_likely_file(source),
         "success_condition": success_condition,
         "non_goals": [
             "Do not redesign multiple sources at once.",

@@ -1,0 +1,16 @@
+{
+  "jobs": [
+    {
+      "title": "Security Engineer",
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1",
+      "location": {"name": "Remote"},
+      "content": "Build security engineering systems and applied cryptography tooling."
+    },
+    {
+      "title": "Marketing Manager",
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/2",
+      "location": {"name": "Remote"},
+      "content": "Campaign planning."
+    }
+  ]
+}

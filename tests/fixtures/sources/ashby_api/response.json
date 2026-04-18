@@ -1,0 +1,19 @@
+{
+  "data": {
+    "jobBoard": {
+      "teams": [{"id": "eng", "name": "Engineering", "externalName": "Engineering"}],
+      "jobPostings": [
+        {
+          "id": "job-1",
+          "title": "Security Engineer",
+          "teamId": "eng",
+          "locationName": "Remote",
+          "secondaryLocations": [],
+          "workplaceType": "Remote",
+          "employmentType": "Full-time",
+          "compensationTierSummary": ""
+        }
+      ]
+    }
+  }
+}

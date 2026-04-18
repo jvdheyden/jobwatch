@@ -1,0 +1,17 @@
+{
+  "results": {
+    "count": 1,
+    "jobs": [
+      {
+        "id": 1,
+        "title": "Security Engineer",
+        "url": "https://example.com/jobs/security-engineer",
+        "workMode": "remote",
+        "locations": ["Remote"],
+        "skills": ["Security"],
+        "seniority": "senior",
+        "organization": {"name": "Example Org", "topics": ["Security"], "industryTags": ["Software"]}
+      }
+    ]
+  }
+}

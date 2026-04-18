@@ -4,6 +4,137 @@ import json
 from urllib.parse import parse_qs, urlparse
 
 import discover_jobs
+from discover import http as discover_http
+from discover.sources import eightfold as eightfold_provider
+from discover.sources import getro as getro_provider
+
+
+def test_discover_greenhouse_api_filters_and_builds_urls(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Greenhouse",
+        url="https://job-boards.greenhouse.io/example",
+        discovery_mode="greenhouse_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        assert url == "https://boards-api.greenhouse.io/v1/boards/example/jobs?content=true"
+        assert timeout_seconds == 5
+        return {
+            "jobs": [
+                {
+                    "title": "Security Engineer",
+                    "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1",
+                    "location": {"name": "Remote"},
+                    "content": "Applied cryptography and security engineering.",
+                },
+                {
+                    "title": "Marketing Manager",
+                    "absolute_url": "https://job-boards.greenhouse.io/example/jobs/2",
+                    "location": {"name": "Remote"},
+                    "content": "Campaign planning.",
+                },
+            ]
+        }
+
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
+
+    coverage = discover_jobs.discover_greenhouse_api(source, ["security", "cryptography"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Security Engineer"
+    assert candidate.url == "https://job-boards.greenhouse.io/example/jobs/1"
+    assert candidate.location == "Remote"
+    assert candidate.matched_terms == ["security", "cryptography"]
+
+
+def test_discover_workday_api_posts_search_terms_and_builds_detail_urls(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Workday",
+        url="https://example.wd1.myworkdayjobs.com/Example",
+        discovery_mode="workday_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        assert url == "https://example.wd1.myworkdayjobs.com/wday/cxs/example/Example/jobs"
+        assert payload == {"limit": 20, "offset": 0, "searchText": "security"}
+        assert headers == {"Referer": source.url}
+        return {
+            "total": 1,
+            "jobPostings": [
+                {
+                    "title": "Security Engineer",
+                    "externalPath": "/job/123",
+                    "locationsText": "Remote",
+                    "postedOn": "Posted Today",
+                    "bulletFields": ["Security"],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_workday_api(source, ["security"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 1
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.url == "https://example.wd1.myworkdayjobs.com/Example/job/123"
+    assert candidate.location == "Remote"
+    assert candidate.matched_terms == ["security"]
+
+
+def test_discover_ashby_api_uses_non_user_graphql_payload(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Ashby",
+        url="https://jobs.ashbyhq.com/example",
+        discovery_mode="ashby_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
+        assert payload["variables"] == {"organizationHostedJobsPageName": "example"}
+        assert headers == {"Referer": source.url}
+        return {
+            "data": {
+                "jobBoard": {
+                    "teams": [{"id": "eng", "externalName": "Engineering"}],
+                    "jobPostings": [
+                        {
+                            "id": "job-1",
+                            "title": "Security Engineer",
+                            "teamId": "eng",
+                            "locationName": "Remote",
+                            "secondaryLocations": [],
+                            "workplaceType": "Remote",
+                            "employmentType": "Full-time",
+                            "compensationTierSummary": "",
+                        }
+                    ],
+                }
+            }
+        }
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_ashby_api(source, ["security"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 1
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.url == "https://jobs.ashbyhq.com/example/job-1"
+    assert candidate.location == "Remote"
+    assert candidate.remote == "Remote"
 
 
 def test_eightfold_domain_for_source_supports_existing_infineon_mode():
@@ -59,7 +190,7 @@ def test_discover_eightfold_api_infers_microsoft_domain_and_filters_results(monk
             }
         }
 
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_eightfold_api(source, ["cryptography"], timeout_seconds=5)
 
@@ -101,8 +232,8 @@ def test_discover_eightfold_api_reports_page_cap(monkeypatch):
             }
         }
 
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
-    monkeypatch.setattr(discover_jobs, "EIGHTFOLD_MAX_PAGES", 2)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(eightfold_provider, "EIGHTFOLD_MAX_PAGES", 2)
 
     coverage = discover_jobs.discover_eightfold_api(source, ["cryptography"], timeout_seconds=5)
 
@@ -152,7 +283,7 @@ def test_discover_workable_api_filters_and_builds_job_urls(monkeypatch):
             ],
         }
 
-    monkeypatch.setattr(discover_jobs, "post_json", fake_post_json)
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
 
     coverage = discover_jobs.discover_workable_api(
         source,
@@ -241,10 +372,10 @@ def test_discover_getro_api_paginates_collection_results(monkeypatch):
         assert isinstance(payload, dict)
         return responses[payload["page"]]
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
-    monkeypatch.setattr(discover_jobs, "post_json", fake_post_json)
-    monkeypatch.setattr(discover_jobs, "GETRO_RESULTS_PAGE_SIZE", 2)
-    monkeypatch.setattr(discover_jobs, "MAX_GETRO_PAGES", 5)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+    monkeypatch.setattr(getro_provider, "GETRO_RESULTS_PAGE_SIZE", 2)
+    monkeypatch.setattr(getro_provider, "MAX_GETRO_PAGES", 5)
 
     coverage = discover_jobs.discover_getro_api(
         source,
@@ -282,7 +413,7 @@ def test_discover_personio_page_parses_embedded_jobs_payload(monkeypatch):
     )
     html = f"<html><body><script>self.__next_f.push([1,{json.dumps(decoded_chunk)}])</script></body></html>"
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_personio_page(
         source,

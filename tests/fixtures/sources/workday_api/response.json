@@ -1,0 +1,12 @@
+{
+  "total": 1,
+  "jobPostings": [
+    {
+      "title": "Security Engineer",
+      "externalPath": "/job/123",
+      "locationsText": "Remote",
+      "postedOn": "Posted Today",
+      "bulletFields": ["Engineering", "Security"]
+    }
+  ]
+}

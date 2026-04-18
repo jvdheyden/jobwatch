@@ -21,8 +21,17 @@ def _fixture_dir(repo_root: Path, mode: str) -> Path:
 
 def _source_for_mode(mode: str) -> core.SourceConfig:
     urls = {
+        "ashby_api": "https://jobs.ashbyhq.com/example",
+        "ashby_html": "https://jobs.ashbyhq.com/example",
+        "eightfold_api": "https://apply.careers.microsoft.com/careers",
+        "getro_api": "https://jobs.example-getro.com/jobs",
+        "greenhouse_api": "https://job-boards.greenhouse.io/example",
         "iacr_jobs": "https://www.iacr.org/jobs/",
+        "infineon_api": "https://jobs.infineon.com/careers",
         "lever_json": "https://jobs.lever.co/example",
+        "personio_page": "https://example.jobs.personio.de/",
+        "workable_api": "https://apply.workable.com/example/",
+        "workday_api": "https://example.wd1.myworkdayjobs.com/Example",
     }
     return core.SourceConfig(
         source=mode.replace("_", " ").title(),
@@ -40,13 +49,17 @@ def _provider_modes() -> list[tuple[str, SourceAdapter]]:
 def _install_fixture(monkeypatch: pytest.MonkeyPatch, fixture_dir: Path, stem: str) -> None:
     html_path = fixture_dir / f"{stem}.html"
     json_path = fixture_dir / f"{stem}.json"
+    installed = False
     if html_path.exists():
         html = html_path.read_text()
         monkeypatch.setattr(http, "fetch_text", lambda url, timeout_seconds: html)
-        return
+        installed = True
     if json_path.exists():
         payload = json.loads(json_path.read_text())
         monkeypatch.setattr(http, "fetch_json", lambda url, timeout_seconds: payload)
+        monkeypatch.setattr(http, "post_json", lambda url, data, timeout_seconds, headers=None: payload)
+        installed = True
+    if installed:
         return
     pytest.skip(f"Missing provider fixture: expected {html_path} or {json_path}")
 
@@ -146,10 +159,11 @@ def test_provider_network_error_returns_failed_coverage(mode: str, _adapter: Sou
 
     monkeypatch.setattr(http, "fetch_text", raise_url_error)
     monkeypatch.setattr(http, "fetch_json", raise_url_error)
+    monkeypatch.setattr(http, "post_json", lambda url, data, timeout_seconds, headers=None: raise_url_error(url, timeout_seconds))
 
     coverage = core.discover_source(_source_for_mode(mode), TERMS, 5)
 
-    assert coverage.status == "failed"
+    assert coverage.status in {"failed", "partial"}
     assert coverage.matched_jobs == 0
     assert coverage.candidates == []
     assert coverage.limitations

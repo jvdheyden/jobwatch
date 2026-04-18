@@ -1,0 +1,25 @@
+{
+  "data": {
+    "count": 2,
+    "positions": [
+      {
+        "id": 1,
+        "displayJobId": "job-1",
+        "name": "Cryptography Engineer",
+        "locations": ["Remote"],
+        "department": "Software Engineering",
+        "workLocationOption": "remote",
+        "positionUrl": "/careers/job/1"
+      },
+      {
+        "id": 1,
+        "displayJobId": "job-1",
+        "name": "Cryptography Engineer",
+        "locations": ["Remote"],
+        "department": "Cryptography",
+        "workLocationOption": "remote",
+        "positionUrl": "/careers/job/1"
+      }
+    ]
+  }
+}

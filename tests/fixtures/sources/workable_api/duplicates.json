@@ -1,0 +1,21 @@
+{
+  "total": 2,
+  "results": [
+    {
+      "shortcode": "SEC123",
+      "title": "Security Engineer",
+      "location": "Remote",
+      "remote": true,
+      "department": "Engineering",
+      "workplace": "remote"
+    },
+    {
+      "shortcode": "SEC123",
+      "title": "Security Engineer",
+      "location": "Remote",
+      "remote": true,
+      "department": "Security",
+      "workplace": "remote"
+    }
+  ]
+}

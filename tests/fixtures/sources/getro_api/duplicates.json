@@ -1,0 +1,27 @@
+{
+  "results": {
+    "count": 2,
+    "jobs": [
+      {
+        "id": 1,
+        "title": "Security Engineer",
+        "url": "https://example.com/jobs/security-engineer",
+        "workMode": "remote",
+        "locations": ["Remote"],
+        "skills": ["Security"],
+        "seniority": "senior",
+        "organization": {"name": "Example Org", "topics": ["Security"], "industryTags": ["Software"]}
+      },
+      {
+        "id": 1,
+        "title": "Security Engineer",
+        "url": "https://example.com/jobs/security-engineer",
+        "workMode": "remote",
+        "locations": ["Remote"],
+        "skills": ["Cryptography"],
+        "seniority": "senior",
+        "organization": {"name": "Example Org", "topics": ["Cryptography"], "industryTags": ["Software"]}
+      }
+    ]
+  }
+}

@@ -5710,7 +5710,19 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
 
 from discover.sources.iacr import discover_iacr_jobs as discover_iacr_jobs
 from discover.sources.iacr import split_iacr_place as split_iacr_place
+from discover.sources.ashby import discover_ashby_api as discover_ashby_api
+from discover.sources.eightfold import discover_eightfold_api as discover_eightfold_api
+from discover.sources.eightfold import discover_infineon_api as discover_infineon_api
+from discover.sources.eightfold import eightfold_domain_for_source as eightfold_domain_for_source
+from discover.sources.getro import discover_getro_api as discover_getro_api
+from discover.sources.greenhouse import discover_greenhouse_api as discover_greenhouse_api
 from discover.sources.lever import discover_lever_json as discover_lever_json
+from discover.sources.personio import discover_personio_page as discover_personio_page
+from discover.sources.personio import extract_personio_jobs_from_html as extract_personio_jobs_from_html
+from discover.sources.workable import build_workable_job_url as build_workable_job_url
+from discover.sources.workable import discover_workable_api as discover_workable_api
+from discover.sources.workday import build_workday_job_url as build_workday_job_url
+from discover.sources.workday import discover_workday_api as discover_workday_api
 
 
 DISCOVERY_HANDLERS = {

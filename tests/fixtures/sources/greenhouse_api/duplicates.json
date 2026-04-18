@@ -1,0 +1,16 @@
+{
+  "jobs": [
+    {
+      "title": "Security Engineer",
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1",
+      "location": {"name": "Remote"},
+      "content": "Security engineering."
+    },
+    {
+      "title": "Security Engineer",
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1",
+      "location": {"name": "Remote"},
+      "content": "Applied cryptography engineering."
+    }
+  ]
+}
