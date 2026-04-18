@@ -51,7 +51,7 @@ def test_discover_yc_jobs_board_extracts_filtered_candidates(monkeypatch):
         cadence_group="every_3_runs",
     )
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_yc_jobs_board(source, ["cryptography", "security", "privacy"], timeout_seconds=5)
 

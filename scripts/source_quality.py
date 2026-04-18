@@ -736,9 +736,12 @@ REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
     "ibm_api": "tests/integration/test_discover_followup_sources.py",
     "infineon_api": "tests/integration/test_discover_followup_sources.py",
     "personio_page": "tests/integration/test_discover_followup_sources.py",
+    "service_bund_links": "tests/integration/test_discover_service_bund.py",
+    "service_bund_search": "tests/integration/test_discover_service_bund.py",
     "workable_api": "tests/integration/test_discover_followup_sources.py",
     "workday_api": "tests/integration/test_discover_followup_sources.py",
     "iacr_jobs": "tests/integration/test_discover_iacr_jobs.py",
+    "yc_jobs_board": "tests/integration/test_discover_yc_and_hn_jobs.py",
 }
 
 
@@ -754,8 +757,11 @@ REPAIR_FILES_BY_DISCOVERY_MODE = {
     "infineon_api": "scripts/discover/sources/eightfold.py",
     "lever_json": "scripts/discover/sources/lever.py",
     "personio_page": "scripts/discover/sources/personio.py",
+    "service_bund_links": "scripts/discover/sources/service_bund.py",
+    "service_bund_search": "scripts/discover/sources/service_bund.py",
     "workable_api": "scripts/discover/sources/workable.py",
     "workday_api": "scripts/discover/sources/workday.py",
+    "yc_jobs_board": "scripts/discover/sources/yc.py",
 }
 
 

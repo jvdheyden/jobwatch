@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import discover_jobs
+from discover import http as discover_http
 
 
 def test_discover_service_bund_search_uses_native_term_queries_and_pagination(monkeypatch):
@@ -46,7 +47,7 @@ def test_discover_service_bund_search_uses_native_term_queries_and_pagination(mo
             return page_two
         return page_one
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_service_bund_search(
         source,
@@ -81,7 +82,7 @@ def test_discover_service_bund_links_filters_to_real_job_links(monkeypatch):
         cadence_group="every_run",
     )
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_service_bund_links(
         source,

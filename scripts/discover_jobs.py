@@ -5724,10 +5724,16 @@ from discover.sources.hackernews import infer_hn_whoishiring_fields as infer_hn_
 from discover.sources.lever import discover_lever_json as discover_lever_json
 from discover.sources.personio import discover_personio_page as discover_personio_page
 from discover.sources.personio import extract_personio_jobs_from_html as extract_personio_jobs_from_html
+from discover.sources.service_bund import build_service_bund_search_url as build_service_bund_search_url
+from discover.sources.service_bund import discover_service_bund_links as discover_service_bund_links
+from discover.sources.service_bund import discover_service_bund_search as discover_service_bund_search
+from discover.sources.service_bund import should_keep_service_bund_candidate as should_keep_service_bund_candidate
 from discover.sources.workable import build_workable_job_url as build_workable_job_url
 from discover.sources.workable import discover_workable_api as discover_workable_api
 from discover.sources.workday import build_workday_job_url as build_workday_job_url
 from discover.sources.workday import discover_workday_api as discover_workday_api
+from discover.sources.yc import discover_yc_jobs_board as discover_yc_jobs_board
+from discover.sources.yc import extract_yc_jobs_payload as extract_yc_jobs_payload
 
 
 DISCOVERY_HANDLERS = {

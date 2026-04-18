@@ -32,8 +32,14 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "infineon_api": "https://jobs.infineon.com/careers",
         "lever_json": "https://jobs.lever.co/example",
         "personio_page": "https://example.jobs.personio.de/",
+        "service_bund_links": "https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html",
+        "service_bund_search": (
+            "https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html"
+            "?view=processForm&nn=4641514"
+        ),
         "workable_api": "https://apply.workable.com/example/",
         "workday_api": "https://example.wd1.myworkdayjobs.com/Example",
+        "yc_jobs_board": "https://www.ycombinator.com/jobs/role/software-engineer",
     }
     return core.SourceConfig(
         source=mode.replace("_", " ").title(),
