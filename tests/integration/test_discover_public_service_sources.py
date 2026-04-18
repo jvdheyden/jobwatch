@@ -6,6 +6,7 @@ from html import escape
 from urllib.parse import parse_qs, urlparse
 
 import discover_jobs
+from discover import http as discover_http
 
 
 class FakeLink:
@@ -77,7 +78,7 @@ def test_discover_recruitee_inline_extracts_published_quantum_systems_roles(monk
         }
     }
     html = f'<div data-component="PublicApp" data-props="{escape(json.dumps(payload), quote=True)}"></div>'
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_recruitee_inline(
         source,
@@ -765,7 +766,7 @@ def test_discover_rheinmetall_html_extracts_structured_ssr_cards(monkeypatch):
       </div>
     </div>
     """
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_rheinmetall_html(
         source,

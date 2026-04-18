@@ -17,6 +17,7 @@ class SourceAdapter:
     discover: Callable[[SourceConfig, list[str], int], Coverage]
     options_schema: Mapping[str, type] | None = None
     requires: tuple[str, ...] = ()
+    emits_candidates: bool = True
 
 
 _REGISTRY_CACHE: dict[str, SourceAdapter] | None = None

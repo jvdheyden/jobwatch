@@ -99,6 +99,50 @@ def normalize_whitespace(value: str) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
 
 
+def split_visible_lines(value: str) -> list[str]:
+    return [normalize_whitespace(part) for part in value.splitlines() if normalize_whitespace(part)]
+
+
+def extract_visible_text_lines_from_html(html: str) -> list[str]:
+    text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", html or "")
+    text = re.sub(r"(?i)</?\s*(?:p|div|li|ul|ol|h[1-6]|section|article|tr|td|th|dl|dt|dd)\b[^>]*>", "\n", text)
+    text = unescape(HTML_TAG_RE.sub(" ", text))
+    return split_visible_lines(text)
+
+
+def normalize_heading_line(value: str) -> str:
+    return normalize_for_matching(re.sub(r":\s*$", "", normalize_whitespace(value)))
+
+
+def extract_visible_text_section(
+    text: str,
+    headings: tuple[str, ...],
+    stop_headings: tuple[str, ...],
+    ignored_lines: set[str] | None = None,
+) -> str:
+    lines = split_visible_lines(text)
+    target_headings = {normalize_heading_line(heading) for heading in headings}
+    stop_heading_set = {normalize_heading_line(heading) for heading in stop_headings}
+    ignored_lines = ignored_lines or set()
+    collected: list[str] = []
+    collecting = False
+
+    for line in lines:
+        normalized_line = normalize_heading_line(line)
+        if not collecting:
+            if normalized_line in target_headings:
+                collecting = True
+            continue
+        if normalized_line in stop_heading_set:
+            break
+        cleaned = normalize_whitespace(re.sub(r"^[•*\-\u2022]+\s*", "", line))
+        if not cleaned or cleaned in ignored_lines:
+            continue
+        collected.append(cleaned)
+
+    return normalize_whitespace(" ".join(collected))
+
+
 def truncate_text(value: str, limit: int = 240) -> str:
     text = normalize_whitespace(value)
     if len(text) <= limit:

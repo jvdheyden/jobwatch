@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import discover_jobs
+from discover import http as discover_http
 
 
 def test_discover_pcd_team_extracts_job_description_candidate(monkeypatch):
@@ -26,7 +27,7 @@ def test_discover_pcd_team_extracts_job_description_candidate(monkeypatch):
         cadence_group="every_run",
     )
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_pcd_team(
         source,
@@ -71,7 +72,7 @@ def test_discover_pcd_team_treats_what_youll_need_as_qualifications(monkeypatch)
         cadence_group="every_run",
     )
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
 
     coverage = discover_jobs.discover_pcd_team(
         source,

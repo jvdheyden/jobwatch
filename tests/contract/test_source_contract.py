@@ -30,8 +30,16 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "hackernews_whoishiring_api": "https://news.ycombinator.com/user?id=whoishiring",
         "iacr_jobs": "https://www.iacr.org/jobs/",
         "infineon_api": "https://jobs.infineon.com/careers",
+        "leastauthority_careers": "https://leastauthority.com/careers/",
         "lever_json": "https://jobs.lever.co/example",
+        "neclab_jobs": "https://jobs.neclab.eu/",
+        "partisia_site": "https://partisiablockchain.com/",
+        "pcd_team": "https://pcd.team/jd",
         "personio_page": "https://example.jobs.personio.de/",
+        "qedit_inline": "https://qed-it.com/careers",
+        "qusecure_careers": "https://www.qusecure.com/careers/",
+        "recruitee_inline": "https://career.quantum-systems.com/",
+        "rheinmetall_html": "https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote",
         "service_bund_links": "https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html",
         "service_bund_search": (
             "https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html"
@@ -100,7 +108,10 @@ def test_provider_returns_valid_coverage(
     assert coverage.source_url
     assert coverage.discovery_mode == mode
     assert coverage.cadence_group
-    assert coverage.search_terms_tried == TERMS
+    if adapter.emits_candidates:
+        assert coverage.search_terms_tried == TERMS
+    else:
+        assert coverage.search_terms_tried in ([], TERMS)
     assert coverage.result_pages_scanned
     assert coverage.matched_jobs == len(coverage.candidates)
     assert isinstance(coverage.direct_job_pages_opened, int)
@@ -118,6 +129,9 @@ def test_provider_candidates_have_required_fields(
 
     coverage = adapter.discover(_source_for_mode(mode), TERMS, 5)
 
+    if not adapter.emits_candidates:
+        assert coverage.candidates == []
+        return
     assert coverage.candidates, f"{mode} response fixture should produce at least one candidate"
     for candidate in coverage.candidates:
         assert candidate.employer
@@ -156,6 +170,10 @@ def test_provider_duplicate_candidate_urls_are_merged(
     _install_fixture(monkeypatch, _fixture_dir(repo_root, mode), "duplicates")
 
     coverage = adapter.discover(_source_for_mode(mode), TERMS, 5)
+    if not adapter.emits_candidates:
+        assert coverage.candidates == []
+        assert coverage.matched_jobs == 0
+        return
     urls = [candidate.url for candidate in coverage.candidates]
 
     assert urls
