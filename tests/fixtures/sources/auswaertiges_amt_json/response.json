@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "headline": "Security Engineer IT-Sicherheit",
+      "link": "/de/karriere/stellenanzeigen/security-engineer/999999",
+      "text": "Beratung zu Security und Digitalisierung.",
+      "department": ["Berlin"],
+      "date": "01.04.2026",
+      "closingDate": "30.04.2026"
+    },
+    {
+      "headline": "Sachbearbeitung Haushalt",
+      "link": "/de/karriere/stellenanzeigen/haushalt/111111",
+      "text": "Haushaltsangelegenheiten",
+      "department": ["Berlin"]
+    }
+  ]
+}

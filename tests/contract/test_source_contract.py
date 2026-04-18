@@ -23,6 +23,10 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
     urls = {
         "ashby_api": "https://jobs.ashbyhq.com/example",
         "ashby_html": "https://jobs.ashbyhq.com/example",
+        "auswaertiges_amt_json": "https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen",
+        "bnd_career_search": "https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980",
+        "bosch_autocomplete": "https://www.bosch.de/karriere/jobs",
+        "bundeswehr_jobsuche": "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded",
         "eightfold_api": "https://apply.careers.microsoft.com/careers",
         "getro_api": "https://jobs.example-getro.com/jobs",
         "greenhouse_api": "https://job-boards.greenhouse.io/example",
@@ -47,6 +51,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         ),
         "workable_api": "https://apply.workable.com/example/",
         "workday_api": "https://example.wd1.myworkdayjobs.com/Example",
+        "verfassungsschutz_rss": "https://www.verfassungsschutz.de/jobs",
         "yc_jobs_board": "https://www.ycombinator.com/jobs/role/software-engineer",
     }
     return core.SourceConfig(

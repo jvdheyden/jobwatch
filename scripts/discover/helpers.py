@@ -135,12 +135,38 @@ def extract_visible_text_section(
             continue
         if normalized_line in stop_heading_set:
             break
-        cleaned = normalize_whitespace(re.sub(r"^[•*\-\u2022]+\s*", "", line))
+        cleaned = normalize_whitespace(re.sub(r"^[\u2022*\-]+\s*", "", line))
         if not cleaned or cleaned in ignored_lines:
             continue
         collected.append(cleaned)
 
     return normalize_whitespace(" ".join(collected))
+
+
+def extract_visible_text_marker_snippet(
+    text: str,
+    markers: tuple[str, ...],
+    stop_headings: tuple[str, ...],
+    *,
+    max_lines: int = 3,
+) -> str:
+    lines = split_visible_lines(text)
+    stop_heading_set = {normalize_heading_line(heading) for heading in stop_headings}
+    normalized_markers = tuple(normalize_for_matching(marker) for marker in markers)
+    for index, line in enumerate(lines):
+        normalized_line = normalize_for_matching(line)
+        if not any(marker in normalized_line for marker in normalized_markers):
+            continue
+        collected: list[str] = []
+        for candidate_line in lines[index : index + max_lines]:
+            if collected and normalize_heading_line(candidate_line) in stop_heading_set:
+                break
+            cleaned = normalize_whitespace(re.sub(r"^[\u2022*\-]+\s*", "", candidate_line))
+            if cleaned:
+                collected.append(cleaned)
+        if collected:
+            return normalize_whitespace(" ".join(collected))
+    return ""
 
 
 def truncate_text(value: str, limit: int = 240) -> str:

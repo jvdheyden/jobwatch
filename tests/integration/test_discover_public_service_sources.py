@@ -7,6 +7,7 @@ from urllib.parse import parse_qs, urlparse
 
 import discover_jobs
 from discover import http as discover_http
+from discover.sources import bundeswehr as bundeswehr_provider
 
 
 class FakeLink:
@@ -153,7 +154,7 @@ def test_discover_verfassungsschutz_rss_filters_to_relevant_roles(monkeypatch):
             return xml_text
         return detail_pages[url]
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_verfassungsschutz_rss(
         source,
@@ -209,8 +210,8 @@ def test_discover_auswaertiges_amt_json_extracts_structured_listings(monkeypatch
             ]
         }
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", lambda url, timeout_seconds: html)
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_auswaertiges_amt_json(
         source,
@@ -355,7 +356,7 @@ def test_sap_odata_url_encodes_filters_and_literals():
 
 def test_discover_bundeswehr_jobsuche_uses_sap_odata_with_full_pagination(monkeypatch):
     source = bundeswehr_source()
-    monkeypatch.setattr(discover_jobs, "BUNDESWEHR_ODATA_PAGE_SIZE", 1)
+    monkeypatch.setattr(bundeswehr_provider, "BUNDESWEHR_ODATA_PAGE_SIZE", 1)
     rows_by_category = {
         "0021": [
             {
@@ -439,8 +440,8 @@ def test_discover_bundeswehr_jobsuche_uses_sap_odata_with_full_pagination(monkey
         assert "JobDesc" in query["$select"][0]
         return {"d": details_by_guid[match.group(1)]}
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(
         source,
@@ -500,8 +501,8 @@ def test_discover_bundeswehr_jobsuche_marks_partial_when_odata_detail_fails(monk
             return {"d": {"results": rows_by_category[bundeswehr_odata_category_from_url(url)]}}
         raise TimeoutError("detail unavailable")
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(source, ["Informationstechnik"], timeout_seconds=5)
 
@@ -574,8 +575,8 @@ def test_discover_bundeswehr_jobsuche_keyword_pass_extracts_detail_only_matches(
         detail_requests.append(match.group(1))
         return {"d": details_by_guid[match.group(1)]}
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(
         source,
@@ -626,8 +627,8 @@ def test_discover_bundeswehr_jobsuche_keeps_category_results_when_keyword_search
             return {"d": {"results": rows_by_category[bundeswehr_odata_category_from_url(url)]}}
         return {"d": {"PinstGuid": "GUID-IT", "JobDesc": "Informationstechnik fuer digitale Netze."}}
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
-    monkeypatch.setattr(discover_jobs, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(source, ["Informationstechnik"], timeout_seconds=5)
 
@@ -670,7 +671,7 @@ def test_discover_bundeswehr_jobsuche_falls_back_to_profile_catalog_when_odata_f
             return detail_html
         raise AssertionError(f"unexpected fetch: {url}")
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(
         source,
@@ -710,7 +711,7 @@ def test_discover_bundeswehr_profile_fallback_keeps_allowlisted_portal_url_when_
             raise TimeoutError("detail fetch blocked")
         raise AssertionError(f"unexpected fetch: {url}")
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_bundeswehr_jobsuche(
         source,
@@ -858,7 +859,7 @@ def test_discover_bnd_career_search_extracts_native_result_cards(monkeypatch):
         seen_urls.append(url)
         return html
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_bnd_career_search(
         source,

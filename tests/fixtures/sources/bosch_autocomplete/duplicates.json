@@ -1,0 +1,33 @@
+{
+  "found": 2,
+  "hits": [
+    {
+      "document": {
+        "data": {
+          "title": "Security Engineer",
+          "applicationUrl": "https://jobs.bosch.com/security-engineer",
+          "city": "Berlin",
+          "country": "Germany",
+          "company": "Bosch"
+        },
+        "content": {
+          "task": "Build security controls."
+        }
+      }
+    },
+    {
+      "document": {
+        "data": {
+          "title": "Security Engineer",
+          "applicationUrl": "https://jobs.bosch.com/security-engineer",
+          "city": "Berlin",
+          "country": "Germany",
+          "company": "Bosch"
+        },
+        "content": {
+          "task": "Build security controls."
+        }
+      }
+    }
+  ]
+}

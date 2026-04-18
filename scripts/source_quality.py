@@ -728,6 +728,10 @@ REPAIR_TEST_HINTS_BY_SOURCE = {
 REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
     "ashby_api": "tests/integration/test_discover_followup_sources.py",
     "ashby_html": "tests/integration/test_discover_followup_sources.py",
+    "auswaertiges_amt_json": "tests/integration/test_discover_public_service_sources.py",
+    "bnd_career_search": "tests/integration/test_discover_public_service_sources.py",
+    "bosch_autocomplete": "tests/contract/test_source_contract.py",
+    "bundeswehr_jobsuche": "tests/integration/test_discover_public_service_sources.py",
     "eightfold_api": "tests/integration/test_discover_followup_sources.py",
     "getro_api": "tests/integration/test_discover_followup_sources.py",
     "greenhouse_api": "tests/integration/test_discover_followup_sources.py",
@@ -749,6 +753,7 @@ REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
     "workable_api": "tests/integration/test_discover_followup_sources.py",
     "workday_api": "tests/integration/test_discover_followup_sources.py",
     "iacr_jobs": "tests/integration/test_discover_iacr_jobs.py",
+    "verfassungsschutz_rss": "tests/integration/test_discover_public_service_sources.py",
     "yc_jobs_board": "tests/integration/test_discover_yc_and_hn_jobs.py",
 }
 
@@ -756,6 +761,10 @@ REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
 REPAIR_FILES_BY_DISCOVERY_MODE = {
     "ashby_api": "scripts/discover/sources/ashby.py",
     "ashby_html": "scripts/discover/sources/ashby.py",
+    "auswaertiges_amt_json": "scripts/discover/sources/public_service.py",
+    "bnd_career_search": "scripts/discover/sources/public_service.py",
+    "bosch_autocomplete": "scripts/discover/sources/public_service.py",
+    "bundeswehr_jobsuche": "scripts/discover/sources/bundeswehr.py",
     "eightfold_api": "scripts/discover/sources/eightfold.py",
     "getro_api": "scripts/discover/sources/getro.py",
     "greenhouse_api": "scripts/discover/sources/greenhouse.py",
@@ -777,6 +786,7 @@ REPAIR_FILES_BY_DISCOVERY_MODE = {
     "service_bund_search": "scripts/discover/sources/service_bund.py",
     "workable_api": "scripts/discover/sources/workable.py",
     "workday_api": "scripts/discover/sources/workday.py",
+    "verfassungsschutz_rss": "scripts/discover/sources/public_service.py",
     "yc_jobs_board": "scripts/discover/sources/yc.py",
 }
 

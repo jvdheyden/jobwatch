@@ -1,0 +1,33 @@
+{
+  "found": 2,
+  "hits": [
+    {
+      "document": {
+        "data": {
+          "title": "Security Engineer",
+          "applicationUrl": "https://jobs.bosch.com/security-engineer",
+          "city": "Berlin",
+          "country": "Germany",
+          "company": "Bosch",
+          "remote": "hybrid",
+          "jobField": ["Security"]
+        },
+        "content": {
+          "task": "Build security controls for connected systems.",
+          "profile": "Experience in applied security engineering."
+        }
+      }
+    },
+    {
+      "document": {
+        "data": {
+          "title": "Office Manager",
+          "applicationUrl": "https://jobs.bosch.com/office-manager"
+        },
+        "content": {
+          "task": "Coordinate office operations."
+        }
+      }
+    }
+  ]
+}
