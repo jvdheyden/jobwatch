@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
 import digest_json
@@ -32,3 +34,21 @@ def test_invalid_digest_payload_is_rejected(load_json_fixture):
 
     with pytest.raises(digest_json.DigestValidationError):
         digest_json.normalize_digest_payload(payload)
+
+
+def test_filter_recent_ranked_jobs_keeps_jobs_within_cutoff():
+    jobs = [
+        {"company": "Fresh", "last_seen": "2026-04-10"},
+        {"company": "Edge", "last_seen": "2026-03-20"},
+        {"company": "Stale", "last_seen": "2026-03-01"},
+    ]
+
+    kept = digest_json.filter_recent_ranked_jobs(jobs, as_of=date(2026, 4, 18), days=30)
+
+    assert [job["company"] for job in kept] == ["Fresh", "Edge"]
+
+
+def test_filter_recent_ranked_jobs_noop_when_as_of_none():
+    jobs = [{"company": "Old", "last_seen": "2000-01-01"}]
+
+    assert digest_json.filter_recent_ranked_jobs(jobs, as_of=None) == jobs

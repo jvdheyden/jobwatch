@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date
 
 import digest_json
 import update_ranked_overview
@@ -82,3 +83,47 @@ def test_core_crypto_ranked_state_matches_digest(tmp_job_agent_root, load_json_f
     )
 
     assert actual == expected
+
+
+def test_render_markdown_filters_stale_jobs_when_as_of_given(tmp_path):
+    fresh = update_ranked_overview.RankedJob(
+        job_key="fresh",
+        company="Fresh Corp",
+        title="Fresh Role",
+        url="https://example.com/fresh",
+        fit_score=9.0,
+        date_seen="2026-04-10",
+        date_seen_page="Core Crypto Job Digest 2026-04-10",
+        last_seen="2026-04-10",
+        times_seen=1,
+    )
+    stale = update_ranked_overview.RankedJob(
+        job_key="stale",
+        company="Stale Corp",
+        title="Stale Role",
+        url="https://example.com/stale",
+        fit_score=8.0,
+        date_seen="2026-03-01",
+        date_seen_page="Core Crypto Job Digest 2026-03-01",
+        last_seen="2026-03-01",
+        times_seen=1,
+    )
+    state_path = tmp_path / "shared" / "ranked_jobs" / "core_crypto.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.touch()
+
+    try:
+        original_root = update_ranked_overview.ROOT
+        update_ranked_overview.ROOT = tmp_path
+        rendered = update_ranked_overview.render_markdown(
+            "core_crypto",
+            [fresh, stale],
+            state_path,
+            as_of=date(2026, 4, 18),
+        )
+    finally:
+        update_ranked_overview.ROOT = original_root
+
+    assert "Fresh Role" in rendered
+    assert "Stale Role" not in rendered
+    assert "Jobs last seen within 30 days: 1 (of 2 in state)" in rendered

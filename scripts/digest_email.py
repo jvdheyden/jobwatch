@@ -4,11 +4,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 import json
 from typing import Any
 
-from digest_json import DigestValidationError, normalize_digest_payload, track_display_name
+from digest_json import (
+    DigestValidationError,
+    RECENT_CUTOFF_DAYS,
+    filter_recent_ranked_jobs,
+    normalize_digest_payload,
+    track_display_name,
+)
 
 
 DEFAULT_RANKED_LIMIT = 10
@@ -80,6 +87,8 @@ def render_digest_email(
     ranked_payload: dict[str, Any] | None = None,
     *,
     ranked_limit: int = DEFAULT_RANKED_LIMIT,
+    as_of: date | None = None,
+    recent_days: int = RECENT_CUTOFF_DAYS,
 ) -> RenderedDigestEmail:
     if ranked_limit < 1:
         raise DigestEmailError("ranked_limit must be at least 1")
@@ -92,6 +101,11 @@ def render_digest_email(
     track = digest["track"]
     display_name = track_display_name(track)
     ranked = normalize_ranked_payload(ranked_payload, expected_track=track)
+    if ranked is not None:
+        ranked = {
+            **ranked,
+            "jobs": filter_recent_ranked_jobs(ranked["jobs"], as_of=as_of, days=recent_days),
+        }
     new_roles = _new_roles(digest)
     status_counts = _source_status_counts(digest)
     subject = _render_subject(display_name, new_roles)

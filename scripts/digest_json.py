@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import json
 import re
@@ -12,6 +12,25 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = 1
+RECENT_CUTOFF_DAYS = 30
+
+
+def filter_recent_ranked_jobs(
+    jobs: list[dict[str, Any]],
+    *,
+    as_of: date | None,
+    days: int = RECENT_CUTOFF_DAYS,
+) -> list[dict[str, Any]]:
+    """Return jobs whose `last_seen` is within `days` of `as_of`.
+
+    When `as_of` is None, returns the list unchanged (no filter).
+    Jobs with missing or non-date `last_seen` values sort above YYYY-MM-DD
+    strings and are therefore kept.
+    """
+    if as_of is None:
+        return list(jobs)
+    cutoff = (as_of - timedelta(days=days)).isoformat()
+    return [job for job in jobs if str(job.get("last_seen", "")) >= cutoff]
 
 
 class DigestValidationError(ValueError):

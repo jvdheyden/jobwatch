@@ -55,7 +55,12 @@ def main() -> int:
     try:
         digest_payload = load_json_payload(digest_path)
         ranked_payload = load_json_payload(ranked_path) if ranked_path.exists() else None
-        rendered = render_digest_email(digest_payload, ranked_payload, ranked_limit=args.ranked_limit)
+        rendered = render_digest_email(
+            digest_payload,
+            ranked_payload,
+            ranked_limit=args.ranked_limit,
+            as_of=date.fromisoformat(args.date),
+        )
     except DigestEmailError as exc:
         print(f"send_digest_email.py: {exc}", file=sys.stderr)
         return 1

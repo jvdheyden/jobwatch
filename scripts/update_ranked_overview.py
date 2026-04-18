@@ -8,10 +8,17 @@ import json
 import re
 import unicodedata
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
-from digest_json import digest_artifact_path, digest_page_name, extract_ranked_roles, load_digest_payload
+from digest_json import (
+    RECENT_CUTOFF_DAYS,
+    digest_artifact_path,
+    digest_page_name,
+    extract_ranked_roles,
+    filter_recent_ranked_jobs,
+    load_digest_payload,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -137,20 +144,36 @@ def role_sort_key(role: RankedJob) -> tuple[float, str, str, str]:
     return (-score, role.date_seen, role.company.lower(), role.title.lower())
 
 
-def render_markdown(track: str, jobs: list[RankedJob], state_path: Path) -> str:
+def render_markdown(
+    track: str,
+    jobs: list[RankedJob],
+    state_path: Path,
+    *,
+    as_of: date | None = None,
+    recent_days: int = RECENT_CUTOFF_DAYS,
+) -> str:
+    job_dicts = [asdict(job) for job in jobs]
+    visible_keys = {j["job_key"] for j in filter_recent_ranked_jobs(job_dicts, as_of=as_of, days=recent_days)}
+    visible = [job for job in jobs if job.job_key in visible_keys]
+
+    total_label = (
+        f"Jobs last seen within {recent_days} days: {len(visible)} (of {len(jobs)} in state)"
+        if as_of is not None
+        else f"Total jobs: {len(jobs)}"
+    )
     lines = [
         f"# Ranked Overview — {track_display_name(track)}",
         "",
         f"Generated: {datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')}",
         f"Source of truth: `{state_path.relative_to(ROOT)}`",
-        f"Total jobs: {len(jobs)}",
+        total_label,
         f"Tags: [[job digest {track}]]",
         "",
         "| Fit score | Company | Title | Listing URL | Date seen |",
         "| --- | --- | --- | --- | --- |",
     ]
 
-    for job in jobs:
+    for job in visible:
         score = f"{job.fit_score:g}" if job.fit_score is not None else "—"
         listing = f"[link]({job.url})" if job.url else "—"
         date_seen = f"[[{job.date_seen_page}]]"
@@ -269,7 +292,7 @@ def main() -> int:
         "jobs": [asdict(job) for job in jobs],
     }
     state_path.write_text(json.dumps(state_payload, indent=2, ensure_ascii=False) + "\n")
-    markdown_path.write_text(render_markdown(args.track, jobs, state_path))
+    markdown_path.write_text(render_markdown(args.track, jobs, state_path, as_of=date.today()))
     return 0
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
 from digest_email import DigestEmailError, render_digest_email
@@ -104,3 +106,40 @@ def test_render_digest_email_rejects_bad_ranked_limit(load_json_fixture):
 
     with pytest.raises(DigestEmailError, match="ranked_limit"):
         render_digest_email(digest, _ranked_payload(), ranked_limit=0)
+
+
+def test_render_digest_email_filters_stale_ranked_jobs_when_as_of_given(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+    ranked = {
+        "track": "core_crypto",
+        "generated_at": "2026-04-18T09:00:00Z",
+        "jobs": [
+            {
+                "company": "Fresh Corp",
+                "title": "Fresh Role",
+                "url": "https://example.com/fresh",
+                "fit_score": 9.0,
+                "date_seen": "2026-04-10",
+                "last_seen": "2026-04-10",
+                "times_seen": 1,
+            },
+            {
+                "company": "Stale Corp",
+                "title": "Stale Role",
+                "url": "https://example.com/stale",
+                "fit_score": 8.0,
+                "date_seen": "2026-03-01",
+                "last_seen": "2026-03-01",
+                "times_seen": 1,
+            },
+        ],
+    }
+
+    rendered = render_digest_email(digest, ranked, as_of=date(2026, 4, 18))
+
+    assert "Fresh Role - Fresh Corp" in rendered.body
+    assert "Stale Role - Stale Corp" not in rendered.body
+    assert "Ranked overview (top 1 of 1)" in rendered.body
+    assert rendered.attachment_text is not None
+    assert "Fresh Role - Fresh Corp" in rendered.attachment_text
+    assert "Stale Role - Stale Corp" not in rendered.attachment_text
