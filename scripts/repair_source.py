@@ -685,6 +685,17 @@ def build_coder_prompt(
     target_outcome = str(repair_ticket.get("target_outcome", "") or repair_ticket.get("success_condition", ""))
     suggested_strategy = str(repair_ticket.get("suggested_strategy", "") or "inspect the likely file and make the narrowest fix")
     test_hint = str(repair_ticket.get("test_hint", "") or "")
+    likely_file = str(repair_ticket.get("likely_file", "") or "scripts/discover_jobs.py")
+    if likely_file == "scripts/discover_jobs.py":
+        missing_path_guidance = (
+            "- If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed "
+            "in scripts/discover_jobs.py and wire it into the existing discovery dispatch."
+        )
+    else:
+        missing_path_guidance = (
+            f"- If no source-specific path exists yet, implement the minimal source-specific parser or strategy in {likely_file} "
+            "and wire it through the discovery registry or scripts/discover_jobs.py facade exports as needed."
+        )
     primary_evidence = repair_ticket.get("primary_evidence", [])
     lines = [
         f"Repair the {source} source integration from the repository root in mode: repo_dev.",
@@ -724,13 +735,13 @@ def build_coder_prompt(
             f"- Target outcome: {target_outcome}",
             f"- Suggested strategy: {suggested_strategy}",
             "Constraints:",
-            "- Unless the repair ticket clearly indicates a validator bug, make the functional fix in scripts/discover_jobs.py.",
-            "- Start by inspecting the source-specific parser path in scripts/discover_jobs.py and any existing source-specific tests before broader investigation.",
-            f"- Start in scripts/discover_jobs.py and look first for source-specific functions or helpers named after {source} (for example discover/extract/advance helpers) or the relevant HTML/browser parser used by this source.",
+            f"- Unless the repair ticket clearly indicates a validator bug, make the functional fix in {likely_file}.",
+            f"- Start by inspecting the source-specific parser path in {likely_file} and any existing source-specific tests before broader investigation.",
+            f"- Start in {likely_file} and look first for source-specific functions or helpers named after {source} (for example discover/extract/advance helpers) or the relevant HTML/browser parser used by this source.",
             "- If a source-specific function or strategy already exists, patch that path instead of exploring unrelated files.",
-            "- If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed in scripts/discover_jobs.py and wire it into the existing discovery dispatch.",
+            missing_path_guidance,
             "- Within the first local pass, decide whether you are in quick_fix_mode or handoff_mode. Do not continue exploratory reading once you can state a credible patch hypothesis or a credible blocker.",
-            "- Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py.",
+            f"- Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in {likely_file}.",
             "- Only change another file when required for a focused test, a directly related helper, or when the repair ticket clearly indicates a validator bug.",
             "- Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch.",
             "- Do not modify unrelated sources or track configuration.",

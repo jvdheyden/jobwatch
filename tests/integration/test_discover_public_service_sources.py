@@ -283,7 +283,7 @@ def test_discover_enbw_phenom_paginates_embedded_search_payload(monkeypatch):
         payload = page_two_payload if "from=1" in url else page_one_payload
         return f"<script>phApp.ddo = {json.dumps(payload)};</script>"
 
-    monkeypatch.setattr(discover_jobs, "fetch_text", fake_fetch_text)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
     coverage = discover_jobs.discover_enbw_phenom(
         source,

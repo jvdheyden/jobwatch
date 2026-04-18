@@ -1,0 +1,28 @@
+{
+  "hits": {
+    "total": {"value": 2},
+    "hits": [
+      {
+        "_id": "1",
+        "_source": {
+          "title": "Security Engineer",
+          "url": "https://careers.ibm.com/job/security-engineer",
+          "description": "Build security controls for cloud products.",
+          "field_keyword_19": "Berlin, Germany",
+          "field_keyword_17": "Hybrid",
+          "field_keyword_08": "Security",
+          "field_keyword_18": "Professional"
+        }
+      },
+      {
+        "_id": "2",
+        "_source": {
+          "title": "Office Manager",
+          "url": "https://careers.ibm.com/job/office-manager",
+          "description": "Coordinate office operations.",
+          "field_keyword_19": "Berlin, Germany"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "hits": {
+    "total": {"value": 2},
+    "hits": [
+      {
+        "_id": "1",
+        "_source": {
+          "title": "Security Engineer",
+          "url": "https://careers.ibm.com/job/security-engineer",
+          "description": "Build security controls.",
+          "field_keyword_19": "Berlin, Germany"
+        }
+      },
+      {
+        "_id": "1",
+        "_source": {
+          "title": "Security Engineer",
+          "url": "https://careers.ibm.com/job/security-engineer",
+          "description": "Build security controls.",
+          "field_keyword_19": "Berlin, Germany"
+        }
+      }
+    ]
+  }
+}

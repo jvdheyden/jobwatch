@@ -189,7 +189,7 @@ def test_build_repair_ticket_prefers_blocking_deterministic_failure():
     assert ticket["target_outcome"].startswith("Fresh discovery artifact removes implausible candidates")
     assert ticket["suggested_strategy"] == "tighten source-specific keep filter"
     assert ticket["test_hint"] == ""
-    assert ticket["likely_file"] == "scripts/discover_jobs.py"
+    assert ticket["likely_file"] == "scripts/discover/sources/generic_html.py"
 
 
 def test_build_repair_ticket_maps_reviewer_only_other_noise_to_candidate_noise():

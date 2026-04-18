@@ -8,6 +8,9 @@ import time
 from pathlib import Path
 
 
+GENERIC_HTML_PROVIDER = "scripts/discover/sources/generic_html.py"
+
+
 def write_stub_discover_script(root: Path) -> None:
     scripts_dir = root / "scripts"
     scripts_dir.mkdir(parents=True, exist_ok=True)
@@ -199,17 +202,24 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert summary["attempts"][1]["eval_final_status"] == "pass"
     assert summary["active_artifact_path"].endswith("2026-04-02.discovery.json")
     assert json.loads(eval_output.read_text())["final_status"] == "pass"
-    assert "make the functional fix in scripts/discover_jobs.py" in prompt_text
+    assert f"make the functional fix in {GENERIC_HTML_PROVIDER}" in prompt_text
     assert "Execution modes:" in prompt_text
     assert "quick_fix_mode" in prompt_text
     assert "handoff_mode" in prompt_text
     assert "Failure mode:" in prompt_text
     assert "Target outcome:" in prompt_text
     assert "Suggested strategy:" in prompt_text
-    assert "Start by inspecting the source-specific parser path in scripts/discover_jobs.py and any existing source-specific tests before broader investigation." in prompt_text
+    assert (
+        f"Start by inspecting the source-specific parser path in {GENERIC_HTML_PROVIDER} "
+        "and any existing source-specific tests before broader investigation."
+    ) in prompt_text
     assert "look first for source-specific functions or helpers named after Example Source" in prompt_text
-    assert "If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed in scripts/discover_jobs.py" in prompt_text
-    assert "Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in scripts/discover_jobs.py." in prompt_text
+    assert (
+        f"If no source-specific path exists yet, implement the minimal source-specific parser or strategy in {GENERIC_HTML_PROVIDER}"
+    ) in prompt_text
+    assert (
+        f"Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in {GENERIC_HTML_PROVIDER}."
+    ) in prompt_text
     assert "Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch." in prompt_text
     assert "REPAIR_HANDOFF:" in prompt_text
     assert "No focused test target was inferred." in prompt_text
@@ -433,7 +443,7 @@ fi
     assert first_postmortem["tests_touched_or_run"] == []
     assert first_postmortem["runtime_error_signatures"] == []
     assert first_postmortem["likely_next_step"] == (
-        "Resume in scripts/discover_jobs.py and make a focused patch or focused test update before more investigation."
+        f"Resume in {GENERIC_HTML_PROVIDER} and make a focused patch or focused test update before more investigation."
     )
     assert "Prior blocked attempt context:" not in first_prompt
     assert "Prior blocked attempt context:" in second_prompt
@@ -454,7 +464,8 @@ def test_repair_source_proceeds_to_rediscovery_after_idle_with_success_signals(t
 set -euo pipefail
 cat >/dev/null
 touch "$JOB_AGENT_ROOT/fixed.marker"
-touch "$JOB_AGENT_ROOT/scripts/discover_jobs.py"
+mkdir -p "$JOB_AGENT_ROOT/scripts/discover/sources"
+touch "$JOB_AGENT_ROOT/scripts/discover/sources/generic_html.py"
 echo '{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/zsh -lc '\''python3 scripts/discover_jobs.py --track public_service --source \"Example Source\" --today 2026-04-02 --pretty'\''","aggregated_output":"ok","exit_code":0,"status":"completed"}}'
 trap 'exit 0' TERM
 sleep 30
@@ -579,7 +590,7 @@ sleep 30
     assert postmortem["tests_touched_or_run"] == []
     assert postmortem["runtime_error_signatures"] == []
     assert postmortem["likely_next_step"] == (
-        "Resume in scripts/discover_jobs.py and make a focused patch or focused test update before more investigation."
+        f"Resume in {GENERIC_HTML_PROVIDER} and make a focused patch or focused test update before more investigation."
     )
 
 

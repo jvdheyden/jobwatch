@@ -7,6 +7,7 @@ import discover_jobs
 from discover import http as discover_http
 from discover.sources import eightfold as eightfold_provider
 from discover.sources import getro as getro_provider
+from discover.sources import ibm as ibm_provider
 
 
 def test_discover_greenhouse_api_filters_and_builds_urls(monkeypatch):
@@ -441,7 +442,7 @@ def test_discover_ibm_api_filters_ibm_research_generic_noise_and_keeps_canary_de
     )
 
     def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
-        assert url == discover_jobs.IBM_SEARCH_API_URL
+        assert url == ibm_provider.IBM_SEARCH_API_URL
         assert headers == {"Referer": "https://www.ibm.com/"}
         return {
             "hits": {
@@ -502,8 +503,8 @@ def test_discover_ibm_api_filters_ibm_research_generic_noise_and_keeps_canary_de
             }
         }
 
-    monkeypatch.setattr(discover_jobs, "post_json", fake_post_json)
-    monkeypatch.setattr(discover_jobs, "IBM_RESULTS_PAGE_SIZE", 25)
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+    monkeypatch.setattr(ibm_provider, "IBM_RESULTS_PAGE_SIZE", 25)
 
     coverage = discover_jobs.discover_ibm_api(
         source,

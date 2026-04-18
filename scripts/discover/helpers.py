@@ -235,6 +235,38 @@ def extract_json_array_after_marker(text: str, marker: str) -> list[Any] | None:
     return None
 
 
+def extract_json_object_after_marker(text: str, marker: str) -> dict[str, Any] | None:
+    marker_index = text.find(marker)
+    if marker_index == -1:
+        return None
+    start = text.find("{", marker_index + len(marker))
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(text[start : index + 1])
+    return None
+
+
 def infer_remote_status(*values: str) -> str:
     haystack = normalize_for_matching(" ".join(value for value in values if value))
     if "hybrid" in haystack:
