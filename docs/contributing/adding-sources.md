@@ -78,3 +78,24 @@ live canary check through the existing quality workflow:
 
 If the evaluator reports `repair_needed`, use the generated repair ticket to
 make the narrowest provider fix and add a focused regression test.
+
+### When to run the full repair loop
+
+For sources where the failure mode is unclear, where you want the loop to drive
+the fix end-to-end, or where you're bringing up multiple sources at once, run
+the orchestrator instead of editing manually:
+
+```bash
+./.venv/bin/python scripts/repair_source.py \
+  --track <track> \
+  --source "<Source Name>" \
+  --today YYYY-MM-DD \
+  --canary-title "<Expected Title>" \
+  --max-attempts 3
+```
+
+This calls `eval_source_quality.py`, dispatches a coding agent against the
+`repair_ticket`, rediscovers, and re-evaluates — looping until `pass`,
+`blocked`, or `retry_limit`. See
+[`docs/architecture.md`](../architecture.md) (Source repair loop) for the
+sequence diagram and artifact paths.

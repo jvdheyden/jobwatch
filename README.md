@@ -94,6 +94,18 @@ bash scripts/run_track.sh --track <track-slug> --delivery email
 bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery email
 ```
 
+## Source Repair Loop
+
+The setup agent auto-runs the repair loop on the top 2 `repair_needed` sources during initial bring-up of a new track, so most users won't need to invoke it directly. Run it manually when you want to repair sources beyond that budget, when you add a new source to an existing track, or when you want to upgrade lower-importance sources later:
+
+```bash
+./.venv/bin/python scripts/repair_source.py --track <track-slug> --source "<Source Name>" --today YYYY-MM-DD --canary-title "<Expected Title>"
+```
+
+The script orchestrates `eval_source_quality.py` (deterministic validator plus an LLM reviewer) and dispatches a coding agent against the resulting `repair_ticket`, then rediscovers and re-evaluates. It iterates up to `--max-attempts` and exits at `pass`, `blocked`, or `retry_limit`.
+
+Successful repairs land as edits in your working tree. To upstream them, push the branch from your fork and open a PR per [`CONTRIBUTING.md`](./CONTRIBUTING.md). See [`docs/architecture.md`](./docs/architecture.md) for the full repair-loop diagram and artifact layout.
+
 ## Agent Provider
 
 Select the provider explicitly during setup. The setup scripts write the selected provider and executable path into `.env.local`.

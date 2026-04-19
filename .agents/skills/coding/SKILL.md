@@ -104,7 +104,7 @@ Progress tracking rules:
 - Keep checklist items current as work progresses.
 - Update `Progress Log` after meaningful milestones, test runs, blockers, or scope changes.
 - Before ending a turn, quota-limited pause, blocked state, or final response, update `Handoff Notes` with files changed, commands run and results, next concrete step, unresolved risks, and whether `scripts/test.sh` passed, failed, or was not run.
-- If resuming from an existing task, read the relevant `docs/plans/*.md` first and continue from its checklist instead of reconstructing context from chat.
+- If resuming from an existing task, read the relevant `docs/plans/*.md` first and continue from its checklist instead of reconstructing context from chat. If you have a different agent id from the one in the plan, add your agent id to the owner field.
 - If a plan becomes obsolete, mark `Status: complete` or explain why it was superseded.
 
 ## Skill mirroring
