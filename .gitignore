@@ -25,6 +25,9 @@ tests/tmp/
 # Generated logs
 logs/
 
+# Generated plans
+docs/plans/
+
 # Local user track data
 tracks/*
 !tracks/test_workflow/

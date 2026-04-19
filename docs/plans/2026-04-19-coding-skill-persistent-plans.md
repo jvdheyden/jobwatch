@@ -1,8 +1,8 @@
 # Coding Skill Persistent Plans
 
 Status: complete
-Owner: Codex CLI agent; agent_id: unknown
-Last updated: 2026-04-19 10:53 Europe/Berlin
+Owner: Codex CLI agent; agent_id: 019da0de-f5fc-7132-99ce-197dd0ca9c8e
+Last updated: 2026-04-19 10:16 CEST
 
 ## Goal
 
@@ -25,16 +25,21 @@ Update the `$coding` skill so non-trivial repo-development plans are saved as Ma
 
 ## Progress Log
 
-- 2026-04-19 10:48 - Created initial persistent plan and captured the implementation scope.
-- 2026-04-19 10:49 - Updated `.agents/skills/coding/SKILL.md` with persistent plan, progress, handoff, and owner/agent_id rules.
-- 2026-04-19 10:49 - Ran `bash scripts/sync_claude_skills.sh`; generated `.claude/skills/coding/SKILL.md` is synced.
-- 2026-04-19 10:49 - Ran `bash scripts/sync_claude_skills.sh --check`; passed.
-- 2026-04-19 10:52 - Ran `bash scripts/test.sh`; passed with 388 passed, 28 skipped.
-- 2026-04-19 10:53 - Ran `git diff --check`; passed.
+- 2026-04-19 10:05 CEST - Created initial persistent plan and captured the implementation scope.
+- 2026-04-19 10:06 CEST - Updated `.agents/skills/coding/SKILL.md` with persistent plan, progress, handoff, and owner/agent_id rules.
+- 2026-04-19 10:06 CEST - Ran `bash scripts/sync_claude_skills.sh`; generated `.claude/skills/coding/SKILL.md` is synced.
+- 2026-04-19 10:07 CEST - Ran `bash scripts/sync_claude_skills.sh --check`; passed.
+- 2026-04-19 10:09 CEST - Ran `bash scripts/test.sh`; passed with 388 passed, 28 skipped.
+- 2026-04-19 10:10 CEST - Ran `git diff --check`; passed.
+- 2026-04-19 10:10 CEST - Checked runtime environment and found `CODEX_THREAD_ID=019da0de-f5fc-7132-99ce-197dd0ca9c8e`; updated owner metadata and `$coding` guidance.
+- 2026-04-19 10:10 CEST - Re-ran `bash scripts/test.sh` after the `$coding` guidance update; passed with 388 passed, 28 skipped.
+- 2026-04-19 10:11 CEST - Added the exact safe shell check for Codex thread ids: `printf '%s\n' "${CODEX_THREAD_ID:-unknown}"`.
+- 2026-04-19 10:15 CEST - Re-ran `bash scripts/test.sh` after the exact shell-check wording change; passed with 388 passed, 28 skipped.
+- 2026-04-19 10:16 CEST - Added Claude Code cloud-session guidance: check `CLAUDE_CODE_REMOTE_SESSION_ID`; do not treat `CLAUDECODE=1` as a resumable id.
 
 ## Handoff Notes
 
-Implementation is complete. Changed files are `.agents/skills/coding/SKILL.md`, `.claude/skills/coding/SKILL.md`, and this plan file. Final remaining step for any future agent is review/commit.
+Implementation is complete. Changed files are `.agents/skills/coding/SKILL.md`, `.claude/skills/coding/SKILL.md`, and this plan file. The current Codex thread id is recorded in `Owner`. Final remaining step for any future agent is review/commit.
 
 ## Verification
 
@@ -44,4 +49,4 @@ Implementation is complete. Changed files are `.agents/skills/coding/SKILL.md`, 
 
 ## Caveats
 
-- Current runtime did not expose a resumable agent id in the prompt or environment, so this plan records `agent_id: unknown`.
+- The prompt did not expose a resumable id directly, but the shell environment exposed `CODEX_THREAD_ID`.
