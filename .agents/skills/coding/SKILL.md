@@ -63,6 +63,7 @@ Owner requirements:
 - Include the current agent/provider name.
 - Include a concrete resumable agent id when the runtime exposes one.
 - Check common runtime variables first, especially `$CODEX_THREAD_ID` for Codex sessions. A safe shell check is: `printf '%s\n' "${CODEX_THREAD_ID:-unknown}"`.
+- For local Claude Code sessions, read `$CLAUDE_SESSION_ID` by running `echo $CLAUDE_SESSION_ID` (or the safer `printf '%s\n' "${CLAUDE_SESSION_ID:-unknown}"`).
 - For Claude Code cloud sessions, check `$CLAUDE_CODE_REMOTE_SESSION_ID`. A safe shell check is: `printf '%s\n' "${CLAUDE_CODE_REMOTE_SESSION_ID:-unknown}"`. `$CLAUDECODE=1` only means the shell was spawned by Claude Code; it is not a resumable session id.
 - If no resumable id is available, write `agent_id: unknown` rather than omitting the field.
 

@@ -2,7 +2,7 @@
 
 Status: complete
 Owner: Codex CLI agent; agent_id: 019da0de-f5fc-7132-99ce-197dd0ca9c8e
-Last updated: 2026-04-19 10:16 CEST
+Last updated: 2026-04-19 10:19 CEST
 
 ## Goal
 
@@ -36,6 +36,7 @@ Update the `$coding` skill so non-trivial repo-development plans are saved as Ma
 - 2026-04-19 10:11 CEST - Added the exact safe shell check for Codex thread ids: `printf '%s\n' "${CODEX_THREAD_ID:-unknown}"`.
 - 2026-04-19 10:15 CEST - Re-ran `bash scripts/test.sh` after the exact shell-check wording change; passed with 388 passed, 28 skipped.
 - 2026-04-19 10:16 CEST - Added Claude Code cloud-session guidance: check `CLAUDE_CODE_REMOTE_SESSION_ID`; do not treat `CLAUDECODE=1` as a resumable id.
+- 2026-04-19 10:19 CEST - Re-ran `bash scripts/test.sh` after the Claude Code guidance update; passed with 388 passed, 28 skipped.
 
 ## Handoff Notes
 
