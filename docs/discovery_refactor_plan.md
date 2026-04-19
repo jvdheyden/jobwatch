@@ -33,51 +33,53 @@ source-quality workflow.
 
 ## Roadmap
 
+Status note: checked items reflect the refactor state as of 2026-04-19.
+
 ### PR1: Provider Skeleton And First Exemplars
 
-- Create the `scripts/discover/` package, registry, shared helpers, and provider
+- [x] Create the `scripts/discover/` package, registry, shared helpers, and provider
   contract tests.
-- Migrate `iacr_jobs` and `lever_json` as exemplar providers.
-- Keep all unmigrated handlers working through the legacy compatibility facade.
-- Add contributor documentation and update the source-integration skill guidance.
-- Preserve the current discovery artifact schema and CLI behavior.
+- [x] Migrate `iacr_jobs` and `lever_json` as exemplar providers.
+- [x] Keep all unmigrated handlers working through the legacy compatibility facade.
+- [x] Add contributor documentation and update the source-integration skill guidance.
+- [x] Preserve the current discovery artifact schema and CLI behavior.
 
 ### PR2: Reusable ATS Providers
 
-- Migrate reusable board-family handlers such as Greenhouse, Workday, Ashby,
+- [x] Migrate reusable board-family handlers such as Greenhouse, Workday, Ashby,
   Workable, Personio, Getro, and Eightfold.
-- Add fixture coverage for each family.
-- Introduce source-level `options` only when a migrated provider needs
+- [x] Add fixture coverage for each family.
+- [x] Avoid introducing source-level `options` unless a migrated provider needs
   structured configuration that does not fit existing `filters`.
 
 ### PR3: Broad Boards And Structured Match Rules
 
-- Migrate public and broad-board providers such as Hacker News, service.bund,
+- [x] Migrate public and broad-board providers such as Hacker News, service.bund,
   YC Jobs, and IACR follow-ups.
-- Move track-specific filtering logic, where practical, into structured
+- [x] Move track-specific filtering logic, where practical, into structured
   track/source match rules.
-- Avoid executable per-track filter plugins unless a maintained built-in hook is
+- [x] Avoid executable per-track filter plugins unless a maintained built-in hook is
   demonstrably necessary.
 
 ### PR4: Browser-Backed Providers
 
-- Migrate Playwright/browser-backed providers while preserving optional browser
+- [x] Migrate Playwright/browser-backed providers while preserving optional browser
   behavior and current partial-coverage output when Playwright or browser
   binaries are unavailable.
-- Add contract coverage for browser-unavailable behavior.
+- [x] Add contract coverage for browser-unavailable behavior.
 
 ### PR5: Remaining Bespoke Providers
 
-- Migrate the remaining bespoke company/public-service integrations.
-- Update source-quality repair hints to point at provider modules instead of the
+- [x] Migrate the remaining bespoke company/public-service integrations.
+- [x] Update source-quality repair hints to point at provider modules instead of the
   monolithic `discover_jobs.py`.
 
 ### PR6: Stabilize Open-Source Contributor Surface
 
-- Generate `docs/discovery_modes.md` from the registry.
-- Ensure provider docs list supported URL shapes, filters, fixtures, and known
+- [x] Generate `docs/discovery_modes.md` from the registry.
+- [x] Ensure provider docs list supported URL shapes, filters, fixtures, and known
   limitations.
-- Shrink `scripts/discover_jobs.py` to a true thin shim after all handlers and
+- [x] Shrink `scripts/discover_jobs.py` to a true thin shim after all handlers and
   external callers are migrated.
 
 ## PR1 Non-Goals

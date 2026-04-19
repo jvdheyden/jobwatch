@@ -25,10 +25,12 @@ bash -n scripts/sync_claude_skills.sh
 bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/configure_schedule.py
 "$PYTHON_BIN" -m py_compile scripts/source_config.py
+"$PYTHON_BIN" -m py_compile scripts/render_discovery_modes_md.py
 "$PYTHON_BIN" -m py_compile scripts/render_sources_md.py
 "$PYTHON_BIN" -m py_compile scripts/update_source_state.py
 "$PYTHON_BIN" -m py_compile scripts/discover/*.py scripts/discover/sources/*.py
 bash scripts/sync_claude_skills.sh --check
+"$PYTHON_BIN" scripts/render_discovery_modes_md.py --check
 
 PYTEST_ARGS=("$@")
 if [[ ${#PYTEST_ARGS[@]} -eq 0 ]]; then

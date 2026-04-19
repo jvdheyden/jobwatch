@@ -1,12 +1,8 @@
-"""CLI compatibility wrapper for deterministic discovery."""
+"""CLI wrapper for deterministic discovery."""
 
 from __future__ import annotations
 
-
-def main() -> int:
-    from discover_jobs import main as legacy_main
-
-    return legacy_main()
+from discover.runner import main
 
 
 if __name__ == "__main__":
