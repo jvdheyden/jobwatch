@@ -54,6 +54,8 @@ For `profile/prefs_global.md`:
 
 If the user chooses to defer profile cleanup, continue from the track brief but explicitly note that ranking and source discovery may be weaker until `profile/cv.md` and `profile/prefs_global.md` are filled.
 
+When `scripts/setup_machine.sh` is run with `--agent claude`, it also merges a repo-local `SessionStart` hook into `.claude/settings.local.json` that exports `CLAUDE_SESSION_ID`. The `coding` skill reads that variable to record a resumable `agent_id` in plan files. The merge is idempotent and preserves any existing `permissions` or other settings.
+
 ### 1. Gather the minimum `prefs.md` brief first
 
 Start by collecting only the minimum information needed to draft `prefs.md`.
@@ -598,6 +600,7 @@ Report:
 - which sources were included and with which `discovery_mode`
 - whether `match_rules.json` was created, and which broad sources it affects
 - whether `profile/cv.md` and `profile/prefs_global.md` were filled, default, or deferred
+- whether the Claude `SessionStart` hook was installed, already present, or not applicable (only relevant when `--agent claude` was used)
 - which delivery methods the user selected, and which local config values still need to be filled
 - whether scheduling was configured, with cadence, local time, and scheduler install status
 - which validation commands passed

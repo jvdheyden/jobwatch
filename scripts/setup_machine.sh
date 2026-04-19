@@ -601,6 +601,16 @@ if [[ "$LEGACY_PLIST_FILE" != "$PLIST_FILE" ]]; then
 fi
 
 echo "Wrote $ENV_FILE"
+
+if [[ "$AGENT_PROVIDER_VALUE" == "claude" ]]; then
+  CLAUDE_HOOK_PYTHON="${JOB_AGENT_PYTHON:-python3}"
+  if claude_hook_status="$("$CLAUDE_HOOK_PYTHON" "$SCRIPT_DIR/install_claude_session_hook.py" --root "$ROOT" 2>&1)"; then
+    echo "Claude SessionStart hook: $claude_hook_status ($ROOT/.claude/settings.local.json)"
+  else
+    echo "Claude SessionStart hook install failed: $claude_hook_status" >&2
+  fi
+fi
+
 echo "Prepared local profile directory at $PROFILE_DIR"
 echo "$profile_cv_status $PROFILE_CV_FILE"
 echo "$profile_prefs_status $PROFILE_PREFS_FILE"
