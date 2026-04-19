@@ -1,9 +1,33 @@
 ---
 name: coding
-description: Coding agent for this repo.
+description: Coding agent for repo-development work in this open-source job-search agent repository.
 ---
 
 # Coding Instructions
+
+## Repo context
+
+This is an open-source repository for an agent-assisted job-search workflow. The system combines deterministic Python code under `scripts/`, agent skills under `.agents/skills/`, tests under `tests/`, and gitignored per-user local state such as `profile/`, `tracks/<your-track>/`, `artifacts/`, and `logs/`.
+
+Use this skill for **repo development**: changing shared code, tests, skills, scripts, or docs. Do not treat every task like a generic Python edit; first identify which subsystem you are touching and preserve the existing architecture and mode boundaries described in the repo docs.
+
+## Read before editing
+
+Before making non-trivial changes, read the smallest relevant set of docs for the subsystem you are touching:
+
+- `AGENTS.md` for mode routing and repo-level rules
+- `README.md` for the user-facing workflow, setup, scheduling, and delivery
+- `docs/architecture.md` for the high-level system design and component boundaries
+- `CONTRIBUTING.md` for contributor workflow and placement rules
+
+When relevant, also read:
+
+- `docs/discovery_modes.md` if the task touches discovery behavior or provider capabilities
+- `docs/contributing/adding-sources.md` if the task adds or changes a discovery source
+- the relevant skill under `.agents/skills/<skill>/SKILL.md` if the task touches agent behavior
+- existing tests and fixtures in `tests/` for the subsystem you are changing
+
+Do not read the entire repo by default for tiny localized edits. Read enough to understand the affected subsystem and avoid breaking architectural boundaries.
 
 ## Public vs private files
 
