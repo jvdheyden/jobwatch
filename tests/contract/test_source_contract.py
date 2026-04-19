@@ -10,9 +10,19 @@ import pytest
 
 from discover import core, http
 from discover.registry import SourceAdapter, load_registry
+from discover.sources import browser as browser_provider
 
 
 TERMS = ["cryptography", "zero-knowledge", "security"]
+BROWSER_MODES = {
+    "asml_browser",
+    "automattic_browser",
+    "browser",
+    "coinbase_browser",
+    "helsing_browser",
+    "thales_browser",
+    "trailofbits_browser",
+}
 
 
 def _fixture_dir(repo_root: Path, mode: str) -> Path:
@@ -23,10 +33,14 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
     urls = {
         "ashby_api": "https://jobs.ashbyhq.com/example",
         "ashby_html": "https://jobs.ashbyhq.com/example",
+        "asml_browser": "https://www.asml.com/en/careers/find-your-job",
+        "automattic_browser": "https://automattic.com/work-with-us/",
         "auswaertiges_amt_json": "https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen",
         "bnd_career_search": "https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980",
         "bosch_autocomplete": "https://www.bosch.de/karriere/jobs",
+        "browser": "https://www.google.com/about/careers/applications/jobs/results",
         "bundeswehr_jobsuche": "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded",
+        "coinbase_browser": "https://www.coinbase.com/careers",
         "cybernetica_teamdash": "https://cyber.ee/careers/",
         "eightfold_api": "https://apply.careers.microsoft.com/careers",
         "enbw_phenom": "https://careers.enbw.com/en_US/careers",
@@ -34,6 +48,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "greenhouse_api": "https://job-boards.greenhouse.io/example",
         "hackernews_jobs": "https://news.ycombinator.com/jobs",
         "hackernews_whoishiring_api": "https://news.ycombinator.com/user?id=whoishiring",
+        "helsing_browser": "https://helsing.ai/jobs",
         "html": "https://jobs.example.com/",
         "iacr_jobs": "https://www.iacr.org/jobs/",
         "ibm_api": "https://www.ibm.com/careers/search",
@@ -55,14 +70,25 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
             "?view=processForm&nn=4641514"
         ),
         "secunet_jobboard": "https://www.secunet.com/karriere/stellenangebote",
+        "thales_browser": "https://careers.thalesgroup.com/global/en/search-results",
         "thales_html": "https://careers.thalesgroup.com/global/en/search-results",
+        "trailofbits_browser": "https://trailofbits.com/careers/",
         "workable_api": "https://apply.workable.com/example/",
         "workday_api": "https://example.wd1.myworkdayjobs.com/Example",
         "verfassungsschutz_rss": "https://www.verfassungsschutz.de/jobs",
         "yc_jobs_board": "https://www.ycombinator.com/jobs/role/software-engineer",
     }
+    names = {
+        "asml_browser": "ASML",
+        "automattic_browser": "Automattic",
+        "browser": "Google",
+        "coinbase_browser": "Coinbase",
+        "helsing_browser": "Helsing",
+        "thales_browser": "Thales",
+        "trailofbits_browser": "Trail of Bits",
+    }
     return core.SourceConfig(
-        source=mode.replace("_", " ").title(),
+        source=names.get(mode, mode.replace("_", " ").title()),
         url=urls.get(mode, "https://jobs.example.com/example"),
         discovery_mode=mode,
         last_checked=None,
@@ -72,6 +98,29 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
 
 def _provider_modes() -> list[tuple[str, SourceAdapter]]:
     return sorted(load_registry().items())
+
+
+class _RaisingChromium:
+    def launch(self, headless: bool = True):
+        del headless
+        raise RuntimeError(
+            "BrowserType.launch: Executable doesn't exist at /tmp/chromium/chrome\n"
+            "Please run the following command to download new browsers:\n"
+            "playwright install"
+        )
+
+
+class _MissingBrowserContext:
+    def __enter__(self):
+        return type("FakePlaywright", (), {"chromium": _RaisingChromium()})()
+
+    def __exit__(self, exc_type, exc, tb):
+        del exc_type, exc, tb
+        return False
+
+
+def _install_missing_browser(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(browser_provider, "load_sync_playwright", lambda: _MissingBrowserContext)
 
 
 def _install_fixture(monkeypatch: pytest.MonkeyPatch, fixture_dir: Path, stem: str) -> None:
@@ -195,6 +244,9 @@ def test_provider_duplicate_candidate_urls_are_merged(
 
 @pytest.mark.parametrize(("mode", "_adapter"), _provider_modes())
 def test_provider_network_error_returns_failed_coverage(mode: str, _adapter: SourceAdapter, monkeypatch: pytest.MonkeyPatch):
+    if mode in BROWSER_MODES:
+        _install_missing_browser(monkeypatch)
+
     def raise_url_error(url: str, timeout_seconds: int):
         del url, timeout_seconds
         raise URLError("fixture network failure")
@@ -209,3 +261,24 @@ def test_provider_network_error_returns_failed_coverage(mode: str, _adapter: Sou
     assert coverage.matched_jobs == 0
     assert coverage.candidates == []
     assert coverage.limitations
+
+
+@pytest.mark.parametrize(
+    ("mode", "adapter"),
+    [(mode, adapter) for mode, adapter in _provider_modes() if mode in BROWSER_MODES],
+)
+def test_browser_provider_missing_browser_binaries_returns_partial(
+    mode: str,
+    adapter: SourceAdapter,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _install_missing_browser(monkeypatch)
+
+    coverage = adapter.discover(_source_for_mode(mode), TERMS, 5)
+
+    assert coverage.status == "partial"
+    assert coverage.matched_jobs == 0
+    assert coverage.candidates == []
+    assert coverage.limitations == [
+        "Playwright browser binaries are not installed; run ./.venv/bin/python -m playwright install chromium"
+    ]
