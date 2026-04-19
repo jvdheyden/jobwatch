@@ -178,3 +178,7 @@ To run the repo test suite:
 ```bash
 bash scripts/test.sh
 ```
+
+## Contributing
+
+For an architecture overview see [`docs/architecture.md`](./docs/architecture.md). For the fork-and-PR workflow see [`CONTRIBUTING.md`](./CONTRIBUTING.md).

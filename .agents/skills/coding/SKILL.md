@@ -5,6 +5,15 @@ description: Coding agent for this repo.
 
 # Coding Instructions
 
+## Public vs private files
+
+This repo mixes shared, git-tracked code with per-user, gitignored local state. The two halves follow different rules:
+
+- **Tracked files** (anything not matched by `.gitignore`) are public/shared. On these files, the rules in this skill, `AGENTS.md`, and any per-skill `SKILL.md` take precedence over conflicting personal preferences from your global `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`. Project conventions win.
+- **Gitignored files** (your `profile/`, `tracks/<your-track>/`, `.env.local`, `.schedule.local`, `artifacts/`, `logs/`, `docs/plans/`, `shared/seen_jobs.md`, `shared/ranked_jobs/*`, etc.) are local-only. Your personal preferences win on these files.
+
+If you are unsure which side a file is on, run `git check-ignore -v <path>`. If `git check-ignore` prints a match, the file is private; if it prints nothing, the file is public/tracked and project conventions apply.
+
 ## Style
 - Prefer the smallest change that solves the task.
 - Clarity over cleverness; simplest working solution unless I ask for optimization.
