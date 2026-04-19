@@ -14,6 +14,63 @@ description: Coding agent for this repo.
 ## Code understanding
 When explaining code, prefer call diagrams and (if relevant) state diagrams.
 
+## Planning and handoff
+
+When you create a plan for non-trivial repo-development work, save it as Markdown under `docs/plans/` before or alongside implementation.
+
+Use this default path shape:
+
+```text
+docs/plans/YYYY-MM-DD-<short-task-slug>.md
+```
+
+Save a plan for multi-step coding tasks, refactors, source integrations, repair work, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, or when the user explicitly asks not to write a plan.
+
+Each plan file should include:
+
+```md
+# <Task Title>
+
+Status: planned | in_progress | blocked | complete
+Owner: <agent/provider>; agent_id: <resumable id if available, otherwise unknown>
+Last updated: YYYY-MM-DD HH:MM <timezone>
+
+## Goal
+<What the user wants and why>
+
+## Current State
+<Relevant repo facts, files inspected, existing behavior, constraints>
+
+## Implementation Plan
+- [ ] Step 1
+- [ ] Step 2
+
+## Progress Log
+- YYYY-MM-DD HH:MM - <decision, edit, command, result, or blocker>
+
+## Handoff Notes
+<Exactly what the next agent needs to know>
+
+## Verification
+- [ ] <focused check>
+- [ ] `bash scripts/test.sh`, when required
+
+## Caveats
+<Open questions, blockers, flaky tests, known risks>
+```
+
+Owner requirements:
+- Include the current agent/provider name.
+- Include a concrete resumable agent id when the runtime exposes one.
+- If no resumable id is available, write `agent_id: unknown` rather than omitting the field.
+
+Progress tracking rules:
+- Keep checklist items current as work progresses.
+- Update `Progress Log` after meaningful milestones, test runs, blockers, or scope changes.
+- Before ending a turn, quota-limited pause, blocked state, or final response, update `Handoff Notes` with files changed, commands run and results, next concrete step, unresolved risks, and whether `scripts/test.sh` passed, failed, or was not run.
+- If resuming from an existing task, read the relevant `docs/plans/*.md` first and continue from its checklist instead of reconstructing context from chat.
+- If a plan becomes obsolete, mark `Status: complete` or explain why it was superseded.
+
 ## Skill mirroring
 - Canonical skill files live in `.agents/skills/`.
 - After changing any skill, run `bash scripts/sync_claude_skills.sh` to refresh the generated mirrors in `.claude/skills/`.
