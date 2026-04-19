@@ -15,6 +15,7 @@ Default assumption:
 - Reuse the shared scripts in `scripts/`.
 - Do not add new discovery code unless the user explicitly asks for source integration now.
 - New source-integration code should live in a provider module under `scripts/discover/sources/`; keep `scripts/discover_jobs.py` as the CLI compatibility entrypoint.
+- Use `docs/discovery_modes.md` as the generated reference for supported `discovery_mode` values.
 - For source integration, evaluate newly added or materially changed sources; do not reevaluate stable unchanged sources unless the user asks.
 
 ## Workflow
@@ -115,6 +116,8 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
 - Treat the returned source pack as a recommendation, not as final config.
 - Review the proposed sources with the user, let them trim or add to the list, and then continue with normalization.
 - Reuse suggested cadence buckets and search terms from `discover-sources` as defaults when they fit.
+- Use `integration_follow_up` from `discover-sources` to distinguish normal config from partial/follow-up or unsupported sources.
+- Treat `match_rule_suggestion` from `discover-sources` as a draft for broad/noisy sources only; confirm it with the user before writing it.
 - Do not turn this branch into source integration. Deep validation and coding escalation still happen later.
 
 ### 4. Normalize, confirm, and optionally integrate sources
@@ -129,23 +132,35 @@ Step 4 has one required path and two optional integration paths:
 - Normalize the slug before writing files.
 - Treat the final source list as coming from the user, from `discover-sources`, or from both.
 - Infer `discovery_mode` from the source URL when obvious.
-- Prefer existing modes already supported by the discovery provider registry and `scripts/discover_jobs.py`.
+- Prefer modes listed in `docs/discovery_modes.md`, which is generated from the discovery provider registry. Use `scripts/discover_jobs.py` as the stable CLI entrypoint, not as the place to add source logic.
 - Common modes worth trying first:
   - `workday_api`
   - `greenhouse_api`
   - `lever_json`
   - `ashby_api`
   - `ashby_html`
+  - `workable_api`
+  - `getro_api`
+  - `personio_page`
+  - `recruitee_inline`
+  - `service_bund_search`
   - `html`
   - `iacr_jobs`
   - `yc_jobs_board`
   - `hackernews_jobs`
-- Common official board families worth recognizing during normalization include Greenhouse, Lever, Ashby, Workday, and Workable, even when some of them still fall back to `html`.
+- Common official board families worth recognizing during normalization include Greenhouse, Lever, Ashby, Workday, Workable, Getro, Personio, and Recruitee.
 - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
 - If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.
+- Keep user-specific logic in the right track file:
+  - `prefs.md`: human intent, fit criteria, constraints, and geography
+  - `sources.json`: official sources, cadence, search terms, and native source filters
+  - `match_rules.json`: track-specific post-discovery filtering for broad or noisy sources
+  - `scripts/discover/sources/`: reusable source parsing and provider logic
 - If track-wide or source-specific search terms were not already provided, derive an initial set from the user's stated preferences and any `discover-sources` suggestions.
 - If source-specific native filters were provided or are clearly needed to control result volume on a broad source, record them in `sources.json` using the source `filters` object rather than baking them into search terms.
 - If `discover-sources` suggested cadence buckets, use those as defaults unless there is a clearer reason to place the source elsewhere.
+- If `discover-sources` returned `integration_follow_up: none`, treat the source as normal setup input. If it returned `consider_provider`, keep the source only when an existing fallback is acceptable and label it as follow-up. If it returned `unsupported`, leave the source out unless the user explicitly wants to keep it as a follow-up.
+- If a broad or noisy source needs track-specific filtering, write an accepted rule to `match_rules.json` after source IDs are stable. Do not use match rules for ordinary official employer boards, reusable parsing behavior, or native filters that belong in `sources.json`.
 - Only do lightweight validation during setup. Do not search every source exhaustively.
 - If an existing mode is good enough, stop there. Do not escalate into coding work just because a source is imperfect.
 - If a source clearly cannot be covered by an existing mode, tell the user and either:
@@ -185,6 +200,7 @@ Expected coding output:
 - fixture coverage under `tests/fixtures/sources/{discovery_mode}/`
 - contract validation with `./.venv/bin/python -m pytest tests/contract -k {discovery_mode}`
 - one focused automated integration test when parsing, pagination, URL construction, or filters need source-specific coverage
+- generated discovery-mode docs updated and checked with `./.venv/bin/python scripts/render_discovery_modes_md.py --check` if a mode or provider documentation metadata changed
 - validation with `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
 - quality-gate validation with `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 - if that evaluation returns `repair_needed`, prefer `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]` over ad hoc manual retrying
@@ -245,6 +261,7 @@ For each source not selected for repair:
 Create:
 - `tracks/{track_slug}/prefs.md`
 - `tracks/{track_slug}/sources.json`
+- `tracks/{track_slug}/match_rules.json`, only when accepted broad-source filtering rules exist
 - `tracks/{track_slug}/source_state.json`
 - `tracks/{track_slug}/sources.md`
 - `tracks/{track_slug}/AGENTS.md`
@@ -320,6 +337,32 @@ Rules:
 - `cadence_group` is one of `every_run`, `every_3_runs`, or `every_month`.
 - `search_terms.mode` is `append` unless the source should replace track-wide terms with an `override`.
 - Omit `search_terms` and `filters` when they are empty.
+
+#### `match_rules.json`
+
+Create `tracks/{track_slug}/match_rules.json` only when the user accepted track-specific filtering for a broad or noisy source.
+
+```json
+{
+  "schema_version": 1,
+  "track": "{track_slug}",
+  "rules": [
+    {
+      "id": "{short_rule_id}",
+      "source_ids": ["{stable_slugified_source_id}"],
+      "source_names": ["{source display name}"],
+      "keep_if_any_text_term": ["{track-specific evidence term}"],
+      "limitation": "Track filter removed {removed} candidate(s) from this broad source without explicit fit evidence."
+    }
+  ]
+}
+```
+
+Rules:
+- Omit the file entirely when no broad-source filtering rule is needed.
+- Prefer `source_ids` after source IDs are known; use `source_names` only as a compatibility fallback or readability aid.
+- `keep_if_any_text_term` should contain concrete evidence terms from `prefs.md` or the accepted `discover-sources` suggestion.
+- Do not use match rules for normal official employer boards, source parsing, or native filters.
 
 #### `source_state.json`
 
@@ -522,21 +565,27 @@ After scaffolding, run:
 3. `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --due-only --pretty`
 4. `./.venv/bin/python scripts/update_ranked_overview.py --track {track_slug}`
 
+If `match_rules.json` was created and an affected broad source was probed during setup, also run:
+
+5. `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
+
+If the source was not probed during setup, report that the match rule will first be exercised on the next real discovery run.
+
 If scheduled runs were configured, also run:
 
-5. The selected `./.venv/bin/python scripts/configure_schedule.py ...` command
-6. `bash scripts/install_scheduler.sh`
+6. The selected `./.venv/bin/python scripts/configure_schedule.py ...` command
+7. `bash scripts/install_scheduler.sh`
 
-If setup required changes to shared code such as `scripts/discover/` or `scripts/discover_jobs.py`, also run:
+If setup required changes to shared code such as `scripts/discover/`, provider docs metadata, or `scripts/discover_jobs.py`, also run:
 
-7. `scripts/test.sh`
+8. `scripts/test.sh`
 
 If setup included source integration with a canary, also run:
 
-8. For each newly added or materially changed source that was actually probed and has a canary:
+9. For each newly added or materially changed source that was actually probed and has a canary:
    `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
-9. For at most the top 2 `repair_needed` sources by default:
+10. For at most the top 2 `repair_needed` sources by default:
    `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
@@ -547,6 +596,7 @@ Report:
 - what files were created or changed
 - whether `discover-sources` was used, and which returned sources were kept
 - which sources were included and with which `discovery_mode`
+- whether `match_rules.json` was created, and which broad sources it affects
 - whether `profile/cv.md` and `profile/prefs_global.md` were filled, default, or deferred
 - which delivery methods the user selected, and which local config values still need to be filled
 - whether scheduling was configured, with cadence, local time, and scheduler install status
