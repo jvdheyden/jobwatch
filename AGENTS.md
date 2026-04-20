@@ -24,5 +24,4 @@ Mode selection:
   - after changing `sources.json`, run `scripts/render_sources_md.py --track <track>` to refresh the read-only Markdown summary
   - if support looks uncertain or weak, do not auto-escalate; instead suggest optional source-integration escalation using the project skill `set-up`, section `4b`
 - Otherwise, treat the task as repo development. When the task is repo development, invoke the coding skill before making any changes.
-- For repo-development work that adds deterministic support for a new source, add or update a provider under `scripts/discover/sources/` with fixtures and contract tests; do not put new source logic directly in the `scripts/discover_jobs.py` entrypoint.
 - Only ask the user which mode they want if the request is genuinely ambiguous.

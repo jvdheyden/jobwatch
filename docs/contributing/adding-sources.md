@@ -2,7 +2,8 @@
 
 Discovery source support lives behind `discovery_mode` providers. New source
 support should usually be added by creating or extending a provider module under
-`scripts/discover/sources/`, not by editing the `scripts/discover_jobs.py`
+`scripts/discover/sources/` incl. fixtures and 
+contract tests, not by editing the `scripts/discover_jobs.py`
 entrypoint.
 
 ## Choose A Provider Shape
