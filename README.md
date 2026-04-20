@@ -3,6 +3,8 @@ jobwatch helps technical job seekers find relevant roles from direct sources bef
 
 It monitors company career pages and other unaggregated sources you choose, reads the full job description, and matches jobs against your CV and preferences. Instead of noisy keyword alerts, you get a short digest of opportunities that are actually worth your attention.
 
+Example:
+
 ![Example daily digest email showing ranked job matches.](docs/images/digest_email.png)
 
 <!--
@@ -35,17 +37,16 @@ It is probably **not** a good fit if you:
 - do not want to use a CLI tool
 - are on Windows (we support MacOS and most Linux distributions)
 
+<!-- 
 *How much will this cost me in tokens?*
 
 Since most of the functionality is deterministic code, the daily checks will be very cheap (< 100k tokens). One-time set-up might be more expensive due to the need to integrate new sources.
-
+-->
 ## New User Setup
 
 This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email. Scheduled automation supports Codex CLI and Claude Code CLI.
 
 Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step.
-
-### 
 
 1. Requirements:
    - Python 3
