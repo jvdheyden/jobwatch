@@ -27,7 +27,6 @@ For a more detailed set-up guide, see [New User Setup](#new-user-setup).
 
 jobwatch is a good fit if you:
 
-- are looking for technical roles
 - are comfortable using the command line
 - want more control than standard job alerts provide
 
