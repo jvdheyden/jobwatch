@@ -1,10 +1,51 @@
-# Job Agent
+# jobwatch
+jobwatch helps technical job seekers find relevant roles from direct sources before they are buried on large job boards.
+
+It monitors company career pages and other unaggregated sources you choose, reads the full job description, and matches jobs against your CV and preferences. Instead of noisy keyword alerts, you get a short digest of opportunities that are actually worth your attention.
+
+![Example daily digest email showing ranked job matches.](docs/images/digest_email.png)
+
+<!--
+jobwatch finds the roles. Trackers manage the ones you already found; writers draft applications you haven't decided on yet. This is the step before both.
+-->
+### Quick start:
+- `git clone git@github.com:jvdheyden/jobsearch.git && cd "$(basename "$_" .git)"`
+- `bash scripts/bootstrap_machine.sh --agent {claude,codex}`
+- `codex --sandbox workspace-write "Set up a new search track."` or `claude "Set up a new search track."`
+
+For a more detailed set-up guide, see [New User Setup](#new-user-setup).
+
+## Why use it?
+
+- **Find roles earlier:** track company pages and other direct sources, not just aggregators.
+- **Better matching:** evaluate the full job description against your CV and preferences, not just keywords.
+- **Stay focused:** get a concise digest by email or as Markdown.
+
+## Who is it for?
+
+jobwatch is a good fit if you:
+
+- are looking for technical roles
+- are comfortable using the command line
+- want more control than standard job alerts provide
+
+It is probably **not** a good fit if you:
+
+- do not have a ChatGPT or Claude subscription / API key
+- do not want to use a CLI tool
+- are on Windows (we support MacOS and most Linux distributions)
+
+*How much will this cost me in tokens?*
+
+Since most of the functionality is deterministic code, the daily checks will be very cheap (< 100k tokens). One-time set-up might be more expensive due to the need to integrate new sources.
+
+## New User Setup
 
 This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email. Scheduled automation supports Codex CLI and Claude Code CLI.
 
 Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step.
 
-## New User Setup
+### 
 
 1. Requirements:
    - Python 3
@@ -13,68 +54,71 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    - on Linux with Codex, `bwrap` if you want Codex sandboxing backed by Bubblewrap
 2. From the repo root, choose the automation agent and bootstrap the checkout for local use:
 
-```bash
-bash scripts/bootstrap_machine.sh --agent claude
-# or
-bash scripts/bootstrap_machine.sh --agent codex
-```
+   ```bash
+   bash scripts/bootstrap_machine.sh --agent claude
+   # or
+   bash scripts/bootstrap_machine.sh --agent codex
+   ```
 
-This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
+   This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
 
-Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
+   <details><summary>What the bootstrap script writes</summary>
+   Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
 
-- `JOB_AGENT_ROOT`
-- `JOB_AGENT_PROVIDER`
-- `JOB_AGENT_BIN`
-- optional `LOGSEQ_GRAPH_DIR`
-- commented `JOB_AGENT_SMTP_*` placeholders for email delivery
+   - `JOB_AGENT_ROOT`
+   - `JOB_AGENT_PROVIDER`
+   - `JOB_AGENT_BIN`
+   - optional `LOGSEQ_GRAPH_DIR`
+   - commented `JOB_AGENT_SMTP_*` placeholders for email delivery
 
-Local profile data lives in `profile/`, which is also gitignored. Setup creates default placeholders:
+   Local profile data lives in `profile/`, which is also gitignored. Setup creates default placeholders:
 
-- `profile/cv.md`: the primary agent-readable CV context
-- `profile/prefs_global.md`: durable preferences that apply across tracks
+   - `profile/cv.md`: the primary agent-readable CV context
+   - `profile/prefs_global.md`: durable preferences that apply across tracks
 
-Before or during your first track setup, replace those placeholders with your own information. You can also copy a PDF CV into `profile/`; if `profile/cv.md` is still the default, the setup agent can help turn the PDF into Markdown. The Markdown CV remains the canonical file the agent reads.
+   Before or during your first track setup, replace those placeholders with your own information. You can also copy a PDF CV into `profile/`; if `profile/cv.md` is still the default, the setup agent can help turn the PDF into Markdown. The Markdown CV remains the canonical file the agent reads.
 
-If you only need to regenerate machine-local config later, run:
+   If you only need to regenerate machine-local config later, run:
 
-```bash
-bash scripts/setup_machine.sh --agent claude
-# or
-bash scripts/setup_machine.sh --agent codex
-```
+   ```bash
+   bash scripts/setup_machine.sh --agent claude
+   # or
+   bash scripts/setup_machine.sh --agent codex
+   ```
+   </details>
 
 3. If you are on Ubuntu and using Codex with `bwrap`, install the generated AppArmor profile:
 
-```bash
-sudo bash scripts/install_bwrap_apparmor.sh
-```
+   ```bash
+   sudo bash scripts/install_bwrap_apparmor.sh
+   ```
 
-Skip this on macOS. On Linux, this is only needed on hosts where AppArmor restricts unprivileged user namespaces.
+   Skip this on macOS. On Linux, this is only needed on hosts where AppArmor restricts unprivileged user namespaces.
 
 4. Run the setup agent to create your first search track. In Codex or Claude Code, ask for a new track setup from the repo root. The track-setup workflow is defined in [`AGENTS.md`](./AGENTS.md) and [`.agents/skills/set-up/SKILL.md`](./.agents/skills/set-up/SKILL.md).
 
-Example prompt:
+   Example prompt:
 
-```text
-Set up a new search track for privacy engineering roles in Germany.
-```
+   ```text
+   Set up a new search track for privacy engineering roles in Germany.
+   ```
 
-The setup flow creates the track files, asks which delivery methods you want, configures scheduling if requested, and validates the track.
+   The setup flow creates the track files, asks which delivery methods you want, configures scheduling if requested, and validates the track.
 
-Track-specific preferences live in `tracks/<track-slug>/prefs.md`. They are still required even when `profile/cv.md` and `profile/prefs_global.md` are filled, because each track can have narrower goals, keywords, constraints, and red flags.
+   Track-specific preferences live in `tracks/<track-slug>/prefs.md`. They are still required even when `profile/cv.md` and `profile/prefs_global.md` are filled, because each track can have narrower goals, keywords, constraints, and red flags.
 
 5. Let the setup agent configure delivery and scheduling.
 
-The setup agent asks whether you want scheduled runs, how often they should run, and at what local time. It then writes `.schedule.local` with `scripts/configure_schedule.py` and installs the shared scheduler with `bash scripts/install_scheduler.sh`.
+   The setup agent asks whether you want scheduled runs, how often they should run, and at what local time. It then writes `.schedule.local` with `scripts/configure_schedule.py` and installs the shared scheduler with `bash scripts/install_scheduler.sh`.
 
-Supported schedule choices:
+   Supported schedule choices:
 
-- daily at `HH:MM`
-- weekly on `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, or `sun` at `HH:MM`
-- monthly on day `1` through `31` at `HH:MM`
+   - daily at `HH:MM`
+   - weekly on `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, or `sun` at `HH:MM`
+   - monthly on day `1` through `31` at `HH:MM`
 
-On Linux, scheduler install updates your user crontab with a checkout-specific per-minute dispatcher. On macOS, it installs a checkout-specific LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
+   On Linux, scheduler install updates your user crontab with a checkout-specific per-minute dispatcher. On macOS, it installs a checkout-specific LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
+
 
 ## Manual Run
 
@@ -93,6 +137,7 @@ bash scripts/run_track.sh --track <track-slug> --delivery logseq
 bash scripts/run_track.sh --track <track-slug> --delivery email
 bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery email
 ```
+<!--
 
 ## Source Repair Loop
 
@@ -105,6 +150,7 @@ The setup agent auto-runs the repair loop on the top 2 `repair_needed` sources d
 The script orchestrates `eval_source_quality.py` (deterministic validator plus an LLM reviewer) and dispatches a coding agent against the resulting `repair_ticket`, then rediscovers and re-evaluates. It iterates up to `--max-attempts` and exits at `pass`, `blocked`, or `retry_limit`.
 
 Successful repairs land as edits in your working tree. To upstream them, push the branch from your fork and open a PR per [`CONTRIBUTING.md`](./CONTRIBUTING.md). See [`docs/architecture.md`](./docs/architecture.md) for the full repair-loop diagram and artifact layout.
+
 
 ## Agent Provider
 
@@ -183,6 +229,7 @@ export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq
 
 Then run `scripts/run_track.sh` with `--delivery logseq`.
 
+-->
 ## Development Checks
 
 To run the repo test suite:
