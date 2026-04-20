@@ -532,6 +532,32 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
 
 
+def test_setup_machine_installs_codex_project_config(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    codex_config = tmp_job_agent_root / ".codex" / "config.toml"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+
+    config_text = codex_config.read_text(encoding="utf-8")
+    assert "Codex project config: installed" in result.stdout
+    assert "[shell_environment_policy]" in config_text
+    assert f'PATH = "{tmp_job_agent_root / ".venv" / "bin"}:{fake_bin_dir}:' in config_text
+
+
 def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
@@ -621,6 +647,7 @@ def test_setup_machine_supports_claude_provider_without_bwrap(
     assert "export JOB_AGENT_PROVIDER=claude" in env_text
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'claude')}" in env_text
     assert not apparmor_profile.exists()
+    assert not (tmp_job_agent_root / ".codex" / "config.toml").exists()
 
 
 def test_bootstrap_venv_installs_playwright_browser_by_default(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

@@ -17,6 +17,7 @@ That will:
 If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh --agent claude` or `bash scripts/setup_machine.sh --agent codex` directly. Existing `.env.local` files can also supply the previous `JOB_AGENT_PROVIDER`. That creates:
 
 - `.env.local` for machine-local paths and binaries
+- `.codex/config.toml` when the provider is Codex
 - `.schedule.local` for local scheduled jobs
 - `.scheduler/` for generated cron and launchd artifacts
 - `.scheduler/bwrap-userns-restrict` on Linux when the provider is Codex and `bwrap` is on `PATH`
@@ -33,6 +34,8 @@ In a normal terminal, the setup script prompts for missing machine-local values 
 - SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill them locally if you want email delivery.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude paths are written as detected.
+
+For Codex, the setup script also writes `.codex/config.toml` with a managed `shell_environment_policy` that puts this checkout's `.venv/bin` first on `PATH`. This keeps Codex shell commands and patch helpers on the repo-local Python while preserving the rest of the setup-time PATH. If an existing unmanaged `shell_environment_policy` is present, setup leaves it unchanged and reports a conflict instead of overwriting local Codex preferences.
 
 On Linux with `JOB_AGENT_PROVIDER=codex`, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces. Claude setups do not generate Codex/bwrap AppArmor guidance.
 

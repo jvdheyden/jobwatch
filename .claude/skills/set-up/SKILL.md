@@ -56,6 +56,8 @@ If the user chooses to defer profile cleanup, continue from the track brief but 
 
 When `scripts/setup_machine.sh` is run with `--agent claude`, it also merges a repo-local `SessionStart` hook into `.claude/settings.local.json` that exports `CLAUDE_SESSION_ID`. The `coding` skill reads that variable to record a resumable `agent_id` in plan files. The merge is idempotent and preserves any existing `permissions` or other settings.
 
+When `scripts/setup_machine.sh` is run with `--agent codex`, it also writes a repo-local `.codex/config.toml` with a managed `shell_environment_policy` that puts `./.venv/bin` first on `PATH`. The merge is idempotent and preserves unrelated Codex settings. If a user already has an unmanaged `shell_environment_policy`, setup reports a conflict and leaves it unchanged.
+
 ### 1. Gather the minimum `prefs.md` brief first
 
 Start by collecting only the minimum information needed to draft `prefs.md`.
@@ -600,6 +602,7 @@ Report:
 - which sources were included and with which `discovery_mode`
 - whether `match_rules.json` was created, and which broad sources it affects
 - whether `profile/cv.md` and `profile/prefs_global.md` were filled, default, or deferred
+- whether the Codex project config was installed, already present, updated, conflicted, or not applicable (only relevant when `--agent codex` was used)
 - whether the Claude `SessionStart` hook was installed, already present, or not applicable (only relevant when `--agent claude` was used)
 - which delivery methods the user selected, and which local config values still need to be filled
 - whether scheduling was configured, with cadence, local time, and scheduler install status

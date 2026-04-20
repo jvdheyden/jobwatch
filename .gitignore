@@ -21,6 +21,7 @@ tests/tmp/
 /profile/
 /cv.md
 *.pdf
+.codex
 
 # Generated logs
 logs/
@@ -41,8 +42,4 @@ tracks/*/digests/
 
 # Generated artifacts and digests
 artifacts/
-
-# Generated local state
-shared/seen_jobs.md
-shared/ranked_jobs/*
-ranked_overview.md
+shared/ranked_jobs/
