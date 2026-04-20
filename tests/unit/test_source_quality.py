@@ -355,7 +355,7 @@ def test_build_reviewer_context_includes_canary_candidate_outside_cap():
 
 def test_build_reviewer_command_forces_low_reasoning_effort():
     command = source_quality.build_reviewer_command(
-        Path("/tmp/jobsearch"),
+        Path("/tmp/jobwatch"),
         Path("/usr/local/bin/codex"),
     )
 
@@ -368,7 +368,7 @@ def test_build_reviewer_command_forces_low_reasoning_effort():
         "-c",
         'model_reasoning_effort="low"',
         "-C",
-        "/tmp/jobsearch",
+        "/tmp/jobwatch",
         "-s",
         "read-only",
         "-",
@@ -380,7 +380,7 @@ def test_build_reviewer_command_supports_claude_print_mode(monkeypatch):
     monkeypatch.delenv("JOB_AGENT_CLAUDE_REVIEWER_ALLOWED_TOOLS", raising=False)
 
     command = source_quality.build_reviewer_command(
-        Path("/tmp/jobsearch"),
+        Path("/tmp/jobwatch"),
         Path("/usr/local/bin/claude"),
         provider="claude",
     )
@@ -427,7 +427,7 @@ def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fiel
     monkeypatch.setattr(source_quality.subprocess, "run", lambda *args, **kwargs: Completed())
 
     reviewer = source_quality.review_source_with_llm(
-        Path("/tmp/jobsearch"),
+        Path("/tmp/jobwatch"),
         Path("artifacts/discovery/public_service/2026-04-02.json"),
         source,
         canary_title="",

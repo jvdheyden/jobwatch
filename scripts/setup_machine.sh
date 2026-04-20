@@ -60,11 +60,10 @@ scheduler_instance_id() {
 }
 
 SCHEDULER_INSTANCE_ID="$(scheduler_instance_id "$ROOT")"
-SCHEDULER_LABEL="com.jvdh.jobsearch.scheduler.$SCHEDULER_INSTANCE_ID"
+SCHEDULER_LABEL="com.jvdh.jobwatch.scheduler.$SCHEDULER_INSTANCE_ID"
 PLIST_FILE="$SCHEDULER_DIR/$SCHEDULER_LABEL.plist"
-LEGACY_PLIST_FILE="$SCHEDULER_DIR/com.jvdh.jobsearch.scheduler.plist"
-CRON_BEGIN="# BEGIN jobsearch scheduler $SCHEDULER_INSTANCE_ID"
-CRON_END="# END jobsearch scheduler $SCHEDULER_INSTANCE_ID"
+CRON_BEGIN="# BEGIN jobwatch scheduler $SCHEDULER_INSTANCE_ID"
+CRON_END="# END jobwatch scheduler $SCHEDULER_INSTANCE_ID"
 
 usage() {
   cat <<EOF
@@ -595,10 +594,6 @@ cat >"$PLIST_FILE" <<EOF
   </dict>
 </plist>
 EOF
-
-if [[ "$LEGACY_PLIST_FILE" != "$PLIST_FILE" ]]; then
-  rm -f "$LEGACY_PLIST_FILE"
-fi
 
 echo "Wrote $ENV_FILE"
 

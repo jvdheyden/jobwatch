@@ -11,7 +11,7 @@ Example:
 jobwatch finds the roles. Trackers manage the ones you already found; writers draft applications you haven't decided on yet. This is the step before both.
 -->
 ### Quick start:
-- `git clone git@github.com:jvdheyden/jobsearch.git && cd "$(basename "$_" .git)"`
+- `git clone git@github.com:jvdheyden/jobwatch.git && cd "$(basename "$_" .git)"`
 - `bash scripts/bootstrap_machine.sh --agent {claude,codex}`
 - `codex --sandbox workspace-write "Set up a new search track."` or `claude "Set up a new search track."`
 

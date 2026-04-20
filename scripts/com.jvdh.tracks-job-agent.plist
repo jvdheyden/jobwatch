@@ -4,12 +4,12 @@
   <!-- Template only. Use scripts/setup_machine.sh and scripts/install_scheduler.sh. -->
   <dict>
     <key>Label</key>
-    <string>com.jvdh.jobsearch.scheduler.__JOBSEARCH_SCHEDULER_INSTANCE__</string>
+    <string>com.jvdh.jobwatch.scheduler.__JOBWATCH_SCHEDULER_INSTANCE__</string>
 
     <key>ProgramArguments</key>
     <array>
       <string>/bin/bash</string>
-      <string>__JOBSEARCH_ROOT__/scripts/run_scheduled_jobs.sh</string>
+      <string>__JOBWATCH_ROOT__/scripts/run_scheduled_jobs.sh</string>
     </array>
 
     <key>EnvironmentVariables</key>
@@ -21,15 +21,15 @@
     </dict>
 
     <key>WorkingDirectory</key>
-    <string>__JOBSEARCH_ROOT__</string>
+    <string>__JOBWATCH_ROOT__</string>
 
     <key>StartInterval</key>
     <integer>60</integer>
 
     <key>StandardOutPath</key>
-    <string>__JOBSEARCH_ROOT__/logs/scheduler.out</string>
+    <string>__JOBWATCH_ROOT__/logs/scheduler.out</string>
 
     <key>StandardErrorPath</key>
-    <string>__JOBSEARCH_ROOT__/logs/scheduler.err</string>
+    <string>__JOBWATCH_ROOT__/logs/scheduler.err</string>
   </dict>
 </plist>

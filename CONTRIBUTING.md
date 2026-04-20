@@ -1,17 +1,17 @@
 # Contributing
 
-Thanks for your interest in contributing. This repo is the upstream for [jvdheyden/jobsearch](https://github.com/jvdheyden/jobsearch/). Patches land via fork and pull request.
+Thanks for your interest in contributing. This repo is the upstream for [jvdheyden/jobwatch](https://github.com/jvdheyden/jobwatch/). Patches land via fork and pull request.
 
 If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — one diagram of how the agent skills, deterministic scripts, and on-disk artifacts fit together.
 
 ## Fork and bring up a working checkout
 
-1. Fork [`jvdheyden/jobsearch`](https://github.com/jvdheyden/jobsearch/) on GitHub, then clone your fork:
+1. Fork [`jvdheyden/jobwatch`](https://github.com/jvdheyden/jobwatch/) on GitHub, then clone your fork:
 
    ```bash
-   git clone https://github.com/<your-user>/jobsearch.git
-   cd jobsearch
-   git remote add upstream https://github.com/jvdheyden/jobsearch.git
+   git clone https://github.com/<your-user>/jobwatch.git
+   cd jobwatch
+   git remote add upstream https://github.com/jvdheyden/jobwatch.git
    ```
 
 2. Bootstrap a local dev environment. Pick the agent CLI you'll run with:
@@ -58,7 +58,7 @@ Both must pass.
 ## Open a pull request
 
 1. Push your branch to your fork: `git push -u origin <short-topic-slug>`.
-2. Open a PR against `https://github.com/jvdheyden/jobsearch` `master`. The GitHub CLI works well: `gh pr create --base master --head <your-user>:<short-topic-slug>`.
+2. Open a PR against `https://github.com/jvdheyden/jobwatch` `master`. The GitHub CLI works well: `gh pr create --base master --head <your-user>:<short-topic-slug>`.
 3. Describe what changed and why, and confirm `bash scripts/test.sh` passed locally.
 
 ## What never belongs in a PR
