@@ -15,16 +15,28 @@ Render command:
   "schema_version": 1,
   "track": "core_crypto",
   "date": "2026-03-29",
-  "runs": []
+  "runs": [
+    {
+      "kind": "initial",
+      "generated_at": "2026-03-29T08:04:21+01:00"
+    }
+  ]
 }
 ```
 
+`runs` must be a non-empty array. The first run must have `kind: "initial"`.
+
 ## Run shape
 
-Each run must be an object with:
+Each run must be an object.
+
+Required fields:
 
 - `kind`: `initial` or `update`
 - `generated_at`: ISO-like timestamp string
+
+Optional fields:
+
 - `executive_summary`: short paragraph
 - `recommended_actions`: array of bullet strings
 - `top_matches`: array of fully scored, detailed roles
@@ -34,7 +46,11 @@ Each run must be an object with:
 - `notes_for_next_run`: array of bullet strings
 - `discovery_artifacts`: array of artifact paths used for the run
 
-The first run in `runs` must have `kind: "initial"`.
+If an optional array is omitted, the renderer treats it as an empty array. If
+`executive_summary` is omitted or null, the renderer treats it as an empty
+string. For readability, prefer writing all run arrays explicitly, even when
+they are empty.
+
 Same-day reruns append another run object with `kind: "update"`.
 
 ## `top_matches[]`
@@ -44,9 +60,7 @@ Required fields:
 - `company`
 - `title`
 - `listing_url`
-- `fit_score`
 - `recommendation`: `apply_now`, `watch`, or `skip`
-- `why_match`: array of short bullets
 
 Optional fields:
 
@@ -59,7 +73,12 @@ Optional fields:
 - `updated_date`
 - `source`
 - `source_url`
+- `fit_score`: number or null; omitted/null renders as `unknown`
+- `why_match`: array of short bullets; omitted renders as an empty array
 - `concerns`
+
+For useful digests, include `fit_score` and `why_match` whenever the role is
+reportable. Use null only when the score is genuinely unknown.
 
 ## `other_new_roles[]`
 
@@ -68,8 +87,7 @@ Required fields:
 - `company`
 - `title`
 - `listing_url`
-- `fit_score`
-- `recommendation`
+- `recommendation`: `apply_now`, `watch`, or `skip`
 - `short_note`
 
 Optional fields:
@@ -78,6 +96,10 @@ Optional fields:
 - `alternate_url`
 - `location`
 - `source`
+- `fit_score`: number or null; omitted/null renders as `unknown`
+
+For useful digests, include `fit_score` whenever the role is reportable. Use
+null only when the score is genuinely unknown.
 
 ## `filtered_roles[]`
 
@@ -101,12 +123,15 @@ Required fields:
 
 Optional fields:
 
-- `listing_pages_scanned`
-- `search_terms_tried`
-- `result_pages_summary`
-- `direct_job_pages_opened`
-- `limitations`
+- `listing_pages_scanned`: string, number, or null
+- `search_terms_tried`: array of strings; omitted renders as an empty array
+- `result_pages_summary`: string, number, or null
+- `direct_job_pages_opened`: string, number, or null
+- `limitations`: array of strings; omitted renders as an empty array
 - `note`
+
+Use `null` or omit optional string/scalar fields when unknown. Do not use empty
+strings for optional values.
 
 ## Minimal example
 
