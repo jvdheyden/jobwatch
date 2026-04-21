@@ -25,18 +25,18 @@ If you are unsure which side a file is on, run `git check-ignore -v <path>`. If 
 
 ## Behavioral defaults
 - State assumptions explicitly when they affect implementation.
-- If multiple plausible interpretations would lead to materially different implementations, surface them briefly instead of silently choosing.
+- If multiple plausible interpretations would lead to materially different implementations, surface or note them briefly instead of silently choosing.
 - If the task is interactive and ambiguity blocks correct implementation, ask.
 - If the task is unattended or scheduled, choose the most conservative minimal interpretation, state that assumption, and avoid speculative changes.
 
 ## Scope control
 - Preserve existing behavior unless the task requires changing it.
 - Match existing style, even if you would structure it differently.
-- If you notice unrelated issues, mention them; do not fix them unless asked.
+- If you notice unrelated issues, note them; do not fix them unless asked.
 - Prefer minimal diffs.
 - Touch only code required for the task.
 - Do not rename files, move files, or add dependencies unless necessary.
-- Flag any uncertainty instead of guessing.
+- Flag or note any uncertainty instead of guessing.
 - Do not introduce abstractions, flags, or configuration unless the task clearly requires them.
 
 ## Non-interactive pivot
