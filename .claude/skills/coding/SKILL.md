@@ -8,6 +8,46 @@ description: Coding agent for repo-development work in this open-source job-sear
 
 # Coding Instructions
 
+This skill has two halves. The sections above the **Non-interactive pivot** apply to every agent touching this repo's code, whether a human is driving or not. The sections below the pivot apply only to interactive repo-development work.
+
+## Public vs private files
+
+This repo mixes shared, git-tracked code with per-user, gitignored local state. The two halves follow different rules:
+
+- **Tracked files** (anything not matched by `.gitignore`) are public/shared. On these files, the rules in this skill, `AGENTS.md`, and any per-skill `SKILL.md` take precedence over conflicting personal preferences from your global `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`. Project conventions win.
+- **Gitignored files** (your `profile/`, `tracks/<your-track>/`, `.env.local`, `.schedule.local`, `artifacts/`, `logs/`, `docs/plans/`, `shared/seen_jobs.md`, `shared/ranked_jobs/*`, etc.) are local-only. Your personal preferences win on these files.
+
+If you are unsure which side a file is on, run `git check-ignore -v <path>`. If `git check-ignore` prints a match, the file is private; if it prints nothing, the file is public/tracked and project conventions apply.
+
+## Style
+- Prefer the smallest change that solves the task.
+- Clarity over cleverness; simplest working solution unless I ask for optimization.
+- Separate concerns.
+- Do not make unrelated changes.
+- If a simpler approach exists, say so.
+
+## Behavioral defaults
+- State assumptions explicitly when they affect implementation.
+- If multiple plausible interpretations would lead to materially different implementations, surface them briefly instead of silently choosing.
+- If the task is interactive and ambiguity blocks correct implementation, ask.
+- If the task is unattended or scheduled, choose the most conservative minimal interpretation, state that assumption, and avoid speculative changes.
+
+## Scope control
+- Preserve existing behavior unless the task requires changing it.
+- Match existing style, even if you would structure it differently.
+- If you notice unrelated issues, mention them; do not fix them unless asked.
+- Prefer minimal diffs.
+- Touch only code required for the task.
+- Do not rename files, move files, or add dependencies unless necessary.
+- Flag any uncertainty instead of guessing.
+- Do not introduce abstractions, flags, or configuration unless the task clearly requires them.
+
+## Non-interactive pivot
+
+**If you are a non-interactive agent — a subprocess-invoked run, a scheduled job, a Codex `exec` session, a Claude `-p --no-session-persistence` session, or any other single-shot automation — your prompt is the contract. Stop reading here. Only the sections above (public vs private files, style, behavioral defaults, scope control) apply to you. Everything below this pivot applies only to interactive repo-development work where a human is in the loop.**
+
+---
+
 ## Repo context
 
 This is an open-source repository for an agent-assisted job-search workflow. The system combines deterministic Python code under `scripts/`, agent skills under `.agents/skills/`, tests under `tests/`, and gitignored per-user local state such as `profile/`, `tracks/<your-track>/`, `artifacts/`, and `logs/`.
@@ -32,28 +72,6 @@ When relevant, also read:
 
 Do not read the entire repo by default for tiny localized edits. Read enough to understand the affected subsystem and avoid breaking architectural boundaries.
 
-## Public vs private files
-
-This repo mixes shared, git-tracked code with per-user, gitignored local state. The two halves follow different rules:
-
-- **Tracked files** (anything not matched by `.gitignore`) are public/shared. On these files, the rules in this skill, `AGENTS.md`, and any per-skill `SKILL.md` take precedence over conflicting personal preferences from your global `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`. Project conventions win.
-- **Gitignored files** (your `profile/`, `tracks/<your-track>/`, `.env.local`, `.schedule.local`, `artifacts/`, `logs/`, `docs/plans/`, `shared/seen_jobs.md`, `shared/ranked_jobs/*`, etc.) are local-only. Your personal preferences win on these files.
-
-If you are unsure which side a file is on, run `git check-ignore -v <path>`. If `git check-ignore` prints a match, the file is private; if it prints nothing, the file is public/tracked and project conventions apply.
-
-## Style
-- Prefer the smallest change that solves the task.
-- Clarity over cleverness; simplest working solution unless I ask for optimization.
-- Separate concerns.
-- Do not make unrelated changes.
-- If a simpler approach exists, say so.
-
-## Behavioral defaults
-- State assumptions explicitly when they affect implementation.
-- If multiple plausible interpretations would lead to materially different implementations, surface them briefly instead of silently choosing.
-- If the task is interactive and ambiguity blocks correct implementation, ask.
-- If the task is unattended or scheduled, choose the most conservative minimal interpretation, state that assumption, and avoid speculative changes.
-
 ## Code understanding
 When explaining code, prefer call diagrams and (if relevant) state diagrams.
 
@@ -67,7 +85,7 @@ Use this default path shape:
 docs/plans/YYYY-MM-DD-<short-task-slug>.md
 ```
 
-Save a plan for multi-step coding tasks, refactors, source integrations, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, when the user explicitly asks not to write a plan, or when you were dispatched by a scoped harness such as `scripts/source_integration.py` that already captures per-attempt state under `artifacts/evals/<track>/<source_slug>/` (including the eval JSON, per-attempt coder logs, and postmortem) — the harness is the resume vehicle, so an extra plan file adds no reader.
+Save a plan for multi-step coding tasks, refactors, source integrations, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, or when the user explicitly asks not to write a plan.
 
 Each plan file should include:
 
@@ -132,16 +150,6 @@ Progress tracking rules:
 - Run relevant checks during development when helpful.
 - Always run `scripts/test.sh` before finishing, unless the task is explicitly docs-only or the script is not applicable.
 - If tests or checks fail, say so clearly and do not present the task as complete.
-
-## Scope control
-- Preserve existing behavior unless the task requires changing it.
-- Match existing style, even if you would structure it differently.
-- If you notice unrelated issues, mention them; do not fix them unless asked.
-- Prefer minimal diffs.
-- Touch only code required for the task.
-- Do not rename files, move files, or add dependencies unless necessary.
-- Flag any uncertainty instead of guessing.
-- Do not introduce abstractions, flags, or configuration unless the task clearly requires them.
 
 ## Required response contract after code changes
 After making changes, always:

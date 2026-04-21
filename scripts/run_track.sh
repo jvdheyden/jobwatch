@@ -430,7 +430,7 @@ fi
 
 cat >"$PROMPT_FILE" <<EOF
 Run today's $TRACK workflow from the repository root in mode: track_run.
-Follow the repository AGENTS.md for mode routing, then follow tracks/$TRACK/AGENTS.md for the workflow.
+Follow tracks/$TRACK/AGENTS.md for the workflow.
 Use scripted discovery helpers when available.
 $DISCOVERY_PROMPT_BLOCK
 This is a normal scheduled run, not a debugging session.

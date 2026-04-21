@@ -735,8 +735,7 @@ def build_coder_prompt(
         )
     primary_evidence = integration_ticket.get("primary_evidence", [])
     lines = [
-        f"Integrate the {source} source from the repository root in mode: repo_dev.",
-        "Follow the repository AGENTS.md for mode routing, then use the project skill `coding`.",
+        f"You are a non-interactive source-integration coder dispatched by scripts/source_integration.py for the {source} source. This prompt is your contract — follow it literally.",
         "Aim for one focused integration attempt for this source only.",
         f"Track: {track}",
         f"Source: {source}",

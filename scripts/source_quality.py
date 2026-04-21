@@ -726,6 +726,7 @@ def review_source_with_llm(
         "If canary.title and canary.url are both empty, treat the canary as not provided and do not emit canary_missing.\n"
     )
     prompt = (
+        "You are a non-interactive source-quality reviewer. Return JSON only per the contract below.\n"
         "Review this job-source extraction and return JSON only.\n"
         "Allowed defect types: missing_field, wrong_content, navigation_noise, partial_description, canary_missing, bad_url, duplication, other.\n"
         "Allowed severities: blocking, major, minor.\n"
