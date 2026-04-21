@@ -11,12 +11,12 @@ description: Set up a new search track for the job-agent.
 Use this skill to scaffold a new track over the shared job-agent workflow.
 
 Default assumption:
-- This is a scaffolding task, not a full source-integration task.
+- Set-up includes source normalization, preference-derived terms/filters, canary collection, targeted probing, and quality triage for newly added or materially changed sources.
 - Reuse the shared scripts in `scripts/`.
-- Do not add new discovery code unless the user explicitly asks for source integration now.
+- Tune source-specific config before adding discovery code.
 - New source-integration code should live in a provider module under `scripts/discover/sources/`; keep `scripts/discover_jobs.py` as the CLI compatibility entrypoint.
 - Use `docs/discovery_modes.md` as the generated reference for supported `discovery_mode` values.
-- For source integration, evaluate newly added or materially changed sources; do not reevaluate stable unchanged sources unless the user asks.
+- Do not invoke source integration from normal scheduled track runs.
 
 ## Workflow
 
@@ -124,141 +124,59 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
 - Treat `match_rule_suggestion` from `discover-sources` as a draft for broad/noisy sources only; confirm it with the user before writing it.
 - Do not turn this branch into source integration. Deep validation and coding escalation still happen later.
 
-### 4. Normalize, confirm, and optionally integrate sources
+### 4. Normalize, probe, and integrate sources
 
-Step 4 has one required path and two optional integration paths:
-- `4a` is the normal setup path and must happen before files are generated.
-- `4b` is only for a user-requested coding handoff for one specific source.
-- `4c` is only for a user-requested quality pass across multiple newly added, probed sources.
+Source integration is part of setup prioritization. Do not ask the user whether integration should happen as a separate choice; use the source importance, canary availability, and quality results to decide how far to go within the default budget.
 
-#### 4a. Normalize and confirm config
+Use this canonical path:
 
-- Normalize the slug before writing files.
-- Treat the final source list as coming from the user, from `discover-sources`, or from both.
-- Infer `discovery_mode` from the source URL when obvious.
-- Prefer modes listed in `docs/discovery_modes.md`, which is generated from the discovery provider registry. Use `scripts/discover_jobs.py` as the stable CLI entrypoint, not as the place to add source logic.
-- Common modes worth trying first:
-  - `workday_api`
-  - `greenhouse_api`
-  - `lever_json`
-  - `ashby_api`
-  - `ashby_html`
-  - `workable_api`
-  - `getro_api`
-  - `personio_page`
-  - `recruitee_inline`
-  - `service_bund_search`
-  - `html`
-  - `iacr_jobs`
-  - `yc_jobs_board`
-  - `hackernews_jobs`
-- Common official board families worth recognizing during normalization include Greenhouse, Lever, Ashby, Workday, Workable, Getro, Personio, and Recruitee.
-- If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
-- If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.
-- Keep user-specific logic in the right track file:
-  - `prefs.md`: human intent, fit criteria, constraints, and geography
-  - `sources.json`: official sources, cadence, search terms, and native source filters
-  - `match_rules.json`: track-specific post-discovery filtering for broad or noisy sources
-  - `scripts/discover/sources/`: reusable source parsing and provider logic
-- If track-wide or source-specific search terms were not already provided, derive an initial set from the user's stated preferences and any `discover-sources` suggestions.
-- If source-specific native filters were provided or are clearly needed to control result volume on a broad source, record them in `sources.json` using the source `filters` object rather than baking them into search terms.
-- If `discover-sources` suggested cadence buckets, use those as defaults unless there is a clearer reason to place the source elsewhere.
-- If `discover-sources` returned `integration_follow_up: none`, treat the source as normal setup input. If it returned `consider_provider`, keep the source only when an existing fallback is acceptable and label it as follow-up. If it returned `unsupported`, leave the source out unless the user explicitly wants to keep it as a follow-up.
-- If a broad or noisy source needs track-specific filtering, write an accepted rule to `match_rules.json` after source IDs are stable. Do not use match rules for ordinary official employer boards, reusable parsing behavior, or native filters that belong in `sources.json`.
-- Only do lightweight validation during setup. Do not search every source exhaustively.
-- If an existing mode is good enough, stop there. Do not escalate into coding work just because a source is imperfect.
-- If a source clearly cannot be covered by an existing mode, tell the user and either:
-  - leave it out for now, or
-  - keep it in `sources.json` with the best existing mode and note that it needs follow-up integration
+1. Normalize the source list.
+   - Normalize the slug before writing files.
+   - Treat the final source list as coming from the user, from `discover-sources`, or from both.
+   - Infer `discovery_mode` from the source URL when obvious.
+   - Prefer modes listed in `docs/discovery_modes.md`, which is generated from the provider registry. Use `scripts/discover_jobs.py` as the stable CLI entrypoint, not as the place to add source logic.
+   - Common modes worth trying first: `workday_api`, `greenhouse_api`, `lever_json`, `ashby_api`, `ashby_html`, `workable_api`, `getro_api`, `personio_page`, `recruitee_inline`, `service_bund_search`, `html`, `iacr_jobs`, `yc_jobs_board`, `hackernews_jobs`.
+   - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
+   - If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.
+2. Read preference context before finalizing search terms and filters.
+   - Read `profile/cv.md`, `profile/prefs_global.md`, and the draft `tracks/{track_slug}/prefs.md`.
+   - Derive track-wide terms from durable role goals and keep-only criteria.
+   - Derive source-specific `search_terms` from the user's CV vocabulary, target role shapes, sector constraints, and source vocabulary.
+   - Derive source-specific `filters` from location/work-mode preferences, degree requirements, job family, organization, employment type, and other stable native filters.
+3. Keep logic in the right file.
+   - `prefs.md`: human intent, fit criteria, constraints, and geography.
+   - `sources.json`: official source identity, URL, discovery mode, cadence, track terms, source-specific search terms, and native source filters.
+   - `source_state.json`: mutable cadence and integration state, including canaries, priority, attempts, last attempted date, accepted fallback decisions, and next actions.
+   - `match_rules.json`: track-specific post-discovery filtering for broad or noisy sources after source IDs are stable.
+   - `scripts/discover/sources/`: reusable provider parsing, enumeration, pagination, and native-filter support.
+4. Ask for canaries for important sources.
+   - Explain canaries as known current postings that prove the source is covered.
+   - Prefer both title and URL. A title-only canary is acceptable when the source hides URLs.
+   - Store canaries for deferred sources in each source's `source_state.json` `integration` object.
+5. Probe sources with the best existing mode plus inferred config.
+   - Run source-scoped discovery for important newly added sources that have canaries or high track value.
+   - Do not invoke source integration from normal scheduled track runs.
+6. Run source-quality evaluation.
+   - Use `scripts/eval_source_quality.py` for probed sources with canaries.
+   - `pass`: source is ready.
+   - `integration_needed`: inspect the `integration_ticket.suggested_strategy`.
+   - `blocked`: stop treating the source as ready and report the blocker.
+7. Tune config before code.
+   - For `config_terms_override`, update only that source's `search_terms` in `sources.json` with mode `override`, rerender `sources.md`, rediscover, and re-evaluate.
+   - For `config_terms_append`, update only that source's `search_terms` in `sources.json` with mode `append`, rerender, rediscover, and re-evaluate.
+   - For `config_native_filters`, update only that source's `filters` in `sources.json`, rerender, rediscover, and re-evaluate.
+   - For `provider_filter_support`, keep the declarative filters in `sources.json` and invoke source integration to add reusable provider support for those filters.
+   - For `dedicated_provider_logic`, invoke source integration only after the existing mode and config cannot satisfy the canary and quality checks.
+8. Invoke source integration for at most the top 2 sources that still need code.
+   - Rank by importance to the track, whether fallback parsing is unusable or too noisy, canary quality, and reproducibility.
+   - Use `./.venv/bin/python scripts/source_integration.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`.
+   - Treat the source as supported only if the final loop result is `final_status: "pass"`.
+9. Queue remaining pending sources for one-per-day follow-up.
+   - Write each remaining source's mutable follow-up state under `source_state.json` at `sources.<source_id>.integration`.
+   - Include `status: "pending"` or `status: "integration_needed"`, `priority`, `canary`, `attempts`, `last_attempted` when present, `next_action`, and any `suggested_search_terms` or `suggested_filters`.
+   - The follow-up command is `./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --today YYYY-MM-DD`.
 
-Before generating files, summarize the normalized config and confirm it.
-
-#### 4b. Optional source-integration escalation
-
-Use this branch only when the user wants source integration now for a specific source.
-
-Escalate only if all of the following are true:
-- the source is important enough that missing it would materially weaken the track
-- an existing mode was tried or reasonably evaluated first
-- `html` or another fallback does not produce usable results
-- a canary is available, ideally with both title and URL
-
-When those conditions hold, hand off to repo-development coding work governed by the project skill `coding`.
-
-Treat the handoff as a narrow implementation task, not a continuation of setup exploration.
-
-The handoff should include:
-- track slug
-- source name
-- source URL
-- current attempted `discovery_mode`
-- canary title
-- canary URL if available
-- a short statement of what failed
-- any known native filters that should be applied, especially when the failure is excessive result volume
-- the expected success condition for the source provider and `scripts/discover_jobs.py` artifact output
-
-Expected coding output:
-- minimal support for that source in a provider module under `scripts/discover/sources/`
-- native source-filter support when the board exposes stable filters and noisy volume is the problem
-- fixture coverage under `tests/fixtures/sources/{discovery_mode}/`
-- contract validation with `./.venv/bin/python -m pytest tests/contract -k {discovery_mode}`
-- one focused automated integration test when parsing, pagination, URL construction, or filters need source-specific coverage
-- generated discovery-mode docs updated and checked with `./.venv/bin/python scripts/render_discovery_modes_md.py --check` if a mode or provider documentation metadata changed
-- validation with `./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --pretty`
-- quality-gate validation with `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
-- if that evaluation returns `repair_needed`, prefer `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]` over ad hoc manual retrying
-- if shared code changed, `scripts/test.sh`
-
-After the coding handoff succeeds:
-- update `sources.json` with the correct `discovery_mode`
-- treat the source as supported only if the quality-gate result is `final_status: "pass"`
-- mention the new support explicitly in the final response
-
-If the coding handoff is not requested or does not succeed:
-- keep the source on the track only if an existing mode is still somewhat usable
-- otherwise leave it out and note it as follow-up work
-
-#### 4c. Source-quality triage for setup-time integration
-
-Use this branch when setup includes multiple newly added sources and the user wants a better-than-scaffolding integration pass.
-
-Run `scripts/eval_source_quality.py` for each source that meets both conditions:
-- it is newly added to the track or its scraper changed materially during this setup pass
-- it was actually probed with a real `discover_jobs.py` run and has a canary
-
-Do not run the quality gate for:
-- stable unchanged sources already supported in the repo
-- sources that were only scaffolded but not probed
-- broad follow-up sources the user did not ask to integrate now
-
-After running the quality gate, classify each evaluated source:
-- `pass`: source is ready; keep it and report it as supported
-- `repair_needed`: source is a candidate for coding repair
-- `blocked`: stop treating the source as ready; report the blocker explicitly
-
-Do not auto-escalate every `repair_needed` source into coding.
-
-Instead, rank `repair_needed` sources by:
-1. importance to the track
-2. whether fallback parsing is unusable or too noisy
-3. canary quality and reproducibility
-
-If a source is too noisy because its native filters are not being applied, prefer adding declarative source-filter support over tightening post-extraction filtering.
-
-Default repair budget during setup:
-- escalate at most the top `2` `repair_needed` sources
-- you may escalate `3` only if the user clearly asked for a broader integration pass
-- leave the rest as follow-up work instead of turning setup into a long multi-source coding session
-
-For each source selected for repair:
-- hand off to repo-development coding work as described above
-- prefer `scripts/repair_source.py` over ad hoc repeated retrying once an initial `eval_source_quality.py` run returns `repair_needed`
-- treat the source as supported only if the final repair-loop result is `final_status: "pass"`
-
-For each source not selected for repair:
-- keep it only if the fallback mode is still somewhat usable and label it as partial/follow-up
-- otherwise leave it out for now and report why
+Before generating files, summarize the normalized config, inferred source-specific terms/filters, canary status, and any queued integration follow-up.
 
 ### 5. Generate files
 
@@ -589,8 +507,11 @@ If setup included source integration with a canary, also run:
 9. For each newly added or materially changed source that was actually probed and has a canary:
    `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
-10. For at most the top 2 `repair_needed` sources by default:
-   `./.venv/bin/python scripts/repair_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+10. For at most the top 2 `integration_needed` sources that still need code after config tuning:
+   `./.venv/bin/python scripts/source_integration.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+
+11. If sources remain queued for follow-up, validate the queue can select exactly one eligible source:
+   `./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --today YYYY-MM-DD --dry-run`
 
 Treat the source as ready only if the evaluation artifact reports `final_status: "pass"`.
 

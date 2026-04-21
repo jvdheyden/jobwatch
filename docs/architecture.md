@@ -51,8 +51,9 @@ flowchart LR
     Email[send_digest_email.py]:::script
   end
 
-  subgraph SourceHealth["Source repair loop (manual)"]
-    Repair[repair_source.py]:::script
+  subgraph SourceHealth["Source integration loop (manual/setup-driven)"]
+    Integrate[source_integration.py]:::script
+    IntegrateNext[integrate_next_source.py]:::script
     Eval[eval_source_quality.py<br/>+ source_quality.review_source_with_llm]:::script
     Coder[(coder agent: claude or codex<br/>uses coding skill)]:::agent
   end
@@ -65,7 +66,7 @@ flowchart LR
     SeenJobs[(shared/seen_jobs.md)]:::artifact
     RankedOv[(shared/ranked_jobs/, ranked_overview.md)]:::artifact
     LogseqGraph[(LOGSEQ_GRAPH_DIR)]:::artifact
-    EvalArt[(artifacts/evals/&lt;track&gt;/&lt;source&gt;/&lt;date&gt;.json<br/>eval + embedded repair_ticket)]:::artifact
+    EvalArt[(artifacts/evals/&lt;track&gt;/&lt;source&gt;/&lt;date&gt;.json<br/>eval + embedded integration_ticket)]:::artifact
   end
 
   Cron --> Sched
@@ -91,17 +92,21 @@ flowchart LR
   Email -.reads.-> StructDigest
 
   SetUp -.scaffolds.-> SrcState
-  SetUp -.runs eval + repair on top probed sources.-> Repair
+  SetUp -.runs eval + integration on top probed sources.-> Integrate
+  SetUp -.queues remaining sources.-> SrcState
   DiscoverSources -.edits.-> SrcState
   Coding -.edits.-> RunTrack
 
-  Repair --> Eval
+  IntegrateNext -.reads queue from.-> SrcState
+  IntegrateNext --> Eval
+  IntegrateNext --> Integrate
+  Integrate --> Eval
   Eval -.reads.-> DiscArt
   Eval -.writes.-> EvalArt
-  Repair -.reads ticket from.-> EvalArt
-  Repair --> Coder
+  Integrate -.reads ticket from.-> EvalArt
+  Integrate --> Coder
   Coder -.edits.-> Discover
-  Repair --> Discover
+  Integrate --> Discover
 ```
 
 ## Scheduled track run, end to end
@@ -140,53 +145,53 @@ sequenceDiagram
   Track-->>Sched: exit status
 ```
 
-## Source repair loop
+## Source integration loop
 
-Sources break: a job board changes its HTML, an ATS shifts an API field, a canary stops resolving. The repair loop in `scripts/repair_source.py` automates the inner cycle of detecting that a source is broken, dispatching a coding agent to fix it, and re-checking the result.
+New sources should be integrated in layers. First choose the best existing `discovery_mode`; then tune source-specific `search_terms` and native `filters` from the user's CV and preferences; then add provider filter support; only then add dedicated provider parsing or enumeration logic. The source integration loop in `scripts/source_integration.py` automates the coding-and-reevaluation part of that process for one source.
 
-The loop is invoked two ways. During track setup, the `set-up` skill runs `eval_source_quality.py` on newly probed sources with canaries and auto-dispatches `repair_source.py` for the top 2 `repair_needed` sources by default (budget-capped — see `.agents/skills/set-up/SKILL.md` section 4c). Outside setup, run it manually per source for sources beyond that budget, sources added to an existing track later, or lower-importance sources you want to upgrade. It is not triggered from scheduled track runs.
+During track setup, the `set-up` skill probes newly added sources with canaries, tunes config first when results are noisy or too broad, dispatches `source_integration.py` for at most the top 2 sources that still need code, and writes the rest to `tracks/<track>/source_state.json` for one-per-day follow-up via `scripts/integrate_next_source.py`. Outside setup, run `integrate_next_source.py` manually to drain that queue. This loop is not triggered from scheduled track runs.
 
-The reviewer role lives **inside each re-eval cycle**, not as a separate step between fix attempts. `scripts/eval_source_quality.py` runs a deterministic validator (`source_quality.validate_source_coverage`) and an LLM reviewer (`source_quality.review_source_with_llm`) over the discovery output; if defects remain, the eval emits a `repair_ticket` and the next coder attempt fires.
+The reviewer role lives **inside each re-eval cycle**, not as a separate step between attempts. `scripts/eval_source_quality.py` runs a deterministic validator (`source_quality.validate_source_coverage`) and an LLM reviewer (`source_quality.review_source_with_llm`) over the discovery output; if defects remain, the eval emits an `integration_ticket` with a next action such as `config_terms_override`, `config_terms_append`, `config_native_filters`, `provider_filter_support`, or `dedicated_provider_logic`.
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant Dev as Developer
-  participant Repair as repair_source.py
+  participant Integrate as source_integration.py
   participant Eval as eval_source_quality.py<br/>(deterministic + LLM reviewer)
   participant Disc as discover_jobs.py
   participant Coder as Coder agent (claude/codex)<br/>uses coding skill
 
-  Dev->>Repair: repair_source.py --track <slug> --source "<Name>" --today <date> --canary-title "..."
+  Dev->>Integrate: source_integration.py --track <slug> --source "<Name>" --today <date> --canary-title "..."
   loop until pass / blocked / retry_limit
-    Repair->>Eval: evaluate latest discovery artifact
-    Eval-->>Repair: eval JSON + final_status (+ repair_ticket if repair_needed)
+    Integrate->>Eval: evaluate latest discovery artifact
+    Eval-->>Integrate: eval JSON + final_status (+ integration_ticket if integration_needed)
     alt final_status == pass
-      Repair-->>Dev: exit pass
+      Integrate-->>Dev: exit pass
     else final_status == blocked
-      Repair-->>Dev: exit blocked
-    else repair_needed and attempts < max
-      Repair->>Coder: prompt built from repair_ticket<br/>(failure_mode, target_outcome, suggested_strategy, likely_file)
-      Coder-->>Repair: edits in working tree
-      Repair->>Disc: rediscover the source
-      Disc-->>Repair: fresh discovery artifact
+      Integrate-->>Dev: exit blocked
+    else integration_needed and attempts < max
+      Integrate->>Coder: prompt built from integration_ticket<br/>(failure_mode, target_outcome, suggested_strategy, likely_file)
+      Coder-->>Integrate: edits in working tree
+      Integrate->>Disc: rediscover the source
+      Disc-->>Integrate: fresh discovery artifact
     else attempts >= max
-      Repair-->>Dev: exit retry_limit
+      Integrate-->>Dev: exit retry_limit
     end
   end
 ```
 
-### Repair artifacts
+### Source integration artifacts
 
-All repair-loop output lands under `artifacts/evals/<track>/<source_slug>/`:
+All source-integration-loop output lands under `artifacts/evals/<track>/<source_slug>/`:
 
-- `<date>.json` — eval result with embedded `repair_ticket` (the canonical input to the next coder attempt)
-- `<date>.repair_loop.json` — summary of the entire loop (phases, attempts, final status)
+- `<date>.json` — eval result with embedded `integration_ticket` (the canonical input to the next coder attempt)
+- `<date>.source_integration_loop.json` — summary of the entire loop (phases, attempts, final status)
 - `<date>.discovery.json` — fresh discovery artifact captured after a coder attempt
 - `<date>.attempt<N>.coder.stdout.jsonl` / `.stderr.log` / `.last_message.txt` — per-attempt coder logs
 - `<date>.attempt<N>.postmortem.json` — failure analysis written after a blocked attempt; fed back into the next attempt's prompt as prior context
 
-When a repair lands a working fix, push the branch from your fork and open a PR per [`CONTRIBUTING.md`](../CONTRIBUTING.md) — the loop ends at the working-tree fix; upstreaming is the standard fork-and-PR flow.
+When an integration lands a working fix, push the branch from your fork and open a PR per [`CONTRIBUTING.md`](../CONTRIBUTING.md) — the loop ends at the working-tree fix; upstreaming is the standard fork-and-PR flow.
 
 ## Where to read next
 

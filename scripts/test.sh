@@ -28,6 +28,8 @@ bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/render_discovery_modes_md.py
 "$PYTHON_BIN" -m py_compile scripts/render_sources_md.py
 "$PYTHON_BIN" -m py_compile scripts/update_source_state.py
+"$PYTHON_BIN" -m py_compile scripts/source_integration.py
+"$PYTHON_BIN" -m py_compile scripts/integrate_next_source.py
 "$PYTHON_BIN" -m py_compile scripts/discover/*.py scripts/discover/sources/*.py
 bash scripts/sync_claude_skills.sh --check
 "$PYTHON_BIN" scripts/render_discovery_modes_md.py --check
@@ -49,12 +51,13 @@ fi
   tests/unit/test_source_config.py \
   tests/unit/test_claude_support.py \
   tests/unit/test_machine_resolution.py \
+  tests/unit/test_integrate_next_source.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \
   tests/integration/test_machine_setup.py \
   tests/integration/test_run_track.py \
   tests/integration/test_eval_source_quality.py \
-  tests/integration/test_repair_source.py \
+  tests/integration/test_source_integration.py \
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_asml_browser.py \
   tests/integration/test_discover_iacr_jobs.py \

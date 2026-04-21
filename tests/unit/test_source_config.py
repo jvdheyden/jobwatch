@@ -44,7 +44,14 @@ def test_update_source_state_advances_only_complete_sources(tmp_path, monkeypatc
                 "track": "demo",
                 "sources": {
                     "complete_source": {"last_checked": None},
-                    "partial_source": {"last_checked": "2026-04-01"},
+                    "partial_source": {
+                        "last_checked": "2026-04-01",
+                        "integration": {
+                            "status": "pending",
+                            "priority": 10,
+                            "last_attempted": "2026-04-13",
+                        },
+                    },
                 },
             }
         )
@@ -77,3 +84,8 @@ def test_update_source_state_advances_only_complete_sources(tmp_path, monkeypatc
     state = json.loads((track_dir / "source_state.json").read_text())
     assert state["sources"]["complete_source"]["last_checked"] == "2026-04-14"
     assert state["sources"]["partial_source"]["last_checked"] == "2026-04-01"
+    assert state["sources"]["partial_source"]["integration"] == {
+        "status": "pending",
+        "priority": 10,
+        "last_attempted": "2026-04-13",
+    }

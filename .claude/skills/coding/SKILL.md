@@ -46,13 +46,20 @@ If you are unsure which side a file is on, run `git check-ignore -v <path>`. If 
 - Clarity over cleverness; simplest working solution unless I ask for optimization.
 - Separate concerns.
 - Do not make unrelated changes.
+- If a simpler approach exists, say so.
+
+## Behavioral defaults
+- State assumptions explicitly when they affect implementation.
+- If multiple plausible interpretations would lead to materially different implementations, surface them briefly instead of silently choosing.
+- If the task is interactive and ambiguity blocks correct implementation, ask.
+- If the task is unattended or scheduled, choose the most conservative minimal interpretation, state that assumption, and avoid speculative changes.
 
 ## Code understanding
 When explaining code, prefer call diagrams and (if relevant) state diagrams.
 
 ## Planning and handoff
 
-When you create a plan for non-trivial repo-development work, save it as Markdown under `docs/plans/` before or alongside implementation.
+When you create a plan for non-trivial repo-development work, save it as Markdown under `docs/plans/` before or alongside implementation. For multi-step plans, pair each implementation step with a concrete verification check.
 
 Use this default path shape:
 
@@ -60,7 +67,7 @@ Use this default path shape:
 docs/plans/YYYY-MM-DD-<short-task-slug>.md
 ```
 
-Save a plan for multi-step coding tasks, refactors, source integrations, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, when the user explicitly asks not to write a plan, or when you were dispatched by a scoped harness such as `scripts/repair_source.py` that already captures per-attempt state under `artifacts/evals/<track>/<source_slug>/` (including the eval JSON, per-attempt coder logs, and postmortem) — the harness is the resume vehicle, so an extra plan file adds no reader.
+Save a plan for multi-step coding tasks, refactors, source integrations, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, when the user explicitly asks not to write a plan, or when you were dispatched by a scoped harness such as `scripts/source_integration.py` that already captures per-attempt state under `artifacts/evals/<track>/<source_slug>/` (including the eval JSON, per-attempt coder logs, and postmortem) — the harness is the resume vehicle, so an extra plan file adds no reader.
 
 Each plan file should include:
 
@@ -128,9 +135,13 @@ Progress tracking rules:
 
 ## Scope control
 - Preserve existing behavior unless the task requires changing it.
+- Match existing style, even if you would structure it differently.
+- If you notice unrelated issues, mention them; do not fix them unless asked.
 - Prefer minimal diffs.
+- Touch only code required for the task.
 - Do not rename files, move files, or add dependencies unless necessary.
 - Flag any uncertainty instead of guessing.
+- Do not introduce abstractions, flags, or configuration unless the task clearly requires them.
 
 ## Required response contract after code changes
 After making changes, always:

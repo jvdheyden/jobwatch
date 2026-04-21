@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate one source artifact for extraction quality and repair readiness."""
+"""Evaluate one source artifact for extraction quality and integration readiness."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from typing import Any
 from agent_provider import resolve_agent_bin, resolve_agent_provider
 from source_quality import (
     DEFAULT_REVIEW_TIMEOUT_SECONDS,
-    build_repair_ticket,
+    build_integration_ticket,
     generated_at,
-    infer_repair_test_hint,
+    infer_integration_test_hint,
     load_source_coverage,
     review_source_with_llm,
     source_slug,
@@ -130,7 +130,7 @@ def main() -> int:
             },
             "reviewer": {"status": "skipped", "defects": [], "reason": "source loading failed"},
             "final_status": "blocked",
-            "repair_ticket": {
+            "integration_ticket": {
                 "status": "open",
                 "track": args.track,
                 "source": args.source,
@@ -144,8 +144,10 @@ def main() -> int:
                 "failure_mode": "validator_failure",
                 "primary_evidence": [str(exc)],
                 "target_outcome": "Fresh discovery artifact includes this source and satisfies deterministic validation.",
-                "suggested_strategy": "fix parser field extraction or validator mismatch",
-                "test_hint": infer_repair_test_hint({"source": args.source, "discovery_mode": ""}),
+                "suggested_strategy": "dedicated_provider_logic",
+                "suggested_strategy_label": "add or fix provider parsing/enumeration logic",
+                "config_suggestion": {},
+                "test_hint": infer_integration_test_hint({"source": args.source, "discovery_mode": ""}),
                 "likely_file": "scripts/discover_jobs.py",
                 "success_condition": "Source appears in today's discovery artifact and passes deterministic validation.",
                 "non_goals": [
@@ -159,7 +161,7 @@ def main() -> int:
         print(json.dumps(payload, indent=2))
         return 1
 
-    repair_ticket = build_repair_ticket(
+    integration_ticket = build_integration_ticket(
         args.track,
         source,
         deterministic,
@@ -168,8 +170,8 @@ def main() -> int:
         canary_url=args.canary_url,
     )
     final_status = "pass"
-    if repair_ticket:
-        final_status = "repair_needed"
+    if integration_ticket:
+        final_status = "integration_needed"
     if deterministic["confidence"] == "failed" and reviewer.get("status") == "blocked":
         final_status = "blocked"
 
@@ -184,7 +186,7 @@ def main() -> int:
         "deterministic": deterministic,
         "reviewer": reviewer,
         "final_status": final_status,
-        "repair_ticket": repair_ticket,
+        "integration_ticket": integration_ticket,
     }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

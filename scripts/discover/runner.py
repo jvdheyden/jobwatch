@@ -56,7 +56,7 @@ def load_track_config(
             source=item["name"],
             url=item["url"],
             discovery_mode=item["discovery_mode"],
-            last_checked=state.get(item["id"]),
+            last_checked=(state.get(item["id"]) or {}).get("last_checked"),
             cadence_group=item["cadence_group"],
             filters={key: list(values) for key, values in item.get("filters", {}).items()},
             source_id=item["id"],

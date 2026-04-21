@@ -156,7 +156,7 @@ def load_sources_config(path: Path, track: str) -> dict[str, Any]:
     }
 
 
-def load_source_state(path: Path, track: str) -> dict[str, str | None]:
+def load_source_state(path: Path, track: str) -> dict[str, dict[str, Any]]:
     if not path.exists():
         return {}
     payload = read_json_payload(path)
@@ -168,22 +168,32 @@ def load_source_state(path: Path, track: str) -> dict[str, str | None]:
     raw_sources = payload.get("sources")
     if not isinstance(raw_sources, dict):
         raise SourceConfigError(f"{path}.sources must be an object")
-    state: dict[str, str | None] = {}
+    state: dict[str, dict[str, Any]] = {}
     for source_id, raw_state in raw_sources.items():
         if not isinstance(source_id, str) or not source_id.strip():
             raise SourceConfigError(f"{path}.sources keys must be non-empty strings")
         field = f"{path}.sources.{source_id}"
         if not isinstance(raw_state, dict):
             raise SourceConfigError(f"{field} must be an object")
-        state[source_id] = _expect_optional_date(raw_state.get("last_checked"), f"{field}.last_checked")
+        state_entry = dict(raw_state)
+        state_entry["last_checked"] = _expect_optional_date(raw_state.get("last_checked"), f"{field}.last_checked")
+        state[source_id] = state_entry
     return state
 
 
-def source_state_payload(track: str, source_ids: list[str], state: dict[str, str | None]) -> dict[str, Any]:
+def source_state_payload(track: str, source_ids: list[str], state: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    sources: dict[str, dict[str, Any]] = {}
+    for source_id in source_ids:
+        state_entry = dict(state.get(source_id) or {})
+        state_entry["last_checked"] = _expect_optional_date(
+            state_entry.get("last_checked"),
+            f"source_state_payload.sources.{source_id}.last_checked",
+        )
+        sources[source_id] = state_entry
     return {
         "schema_version": 1,
         "track": track,
-        "sources": {source_id: {"last_checked": state.get(source_id)} for source_id in source_ids},
+        "sources": sources,
     }
 
 

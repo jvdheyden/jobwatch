@@ -64,7 +64,7 @@ Use this default path shape:
 docs/plans/YYYY-MM-DD-<short-task-slug>.md
 ```
 
-Save a plan for multi-step coding tasks, refactors, source integrations, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, when the user explicitly asks not to write a plan, or when you were dispatched by a scoped harness such as `scripts/repair_source.py` that already captures per-attempt state under `artifacts/evals/<track>/<source_slug>/` (including the eval JSON, per-attempt coder logs, and postmortem) — the harness is the resume vehicle, so an extra plan file adds no reader.
+Save a plan for multi-step coding tasks, refactors, source integrations, or any task where another agent would need more than the final response to resume safely. You may skip a saved plan for tiny single-step edits, direct command answers, docs-only answers without implementation, when the user explicitly asks not to write a plan, or when you were dispatched by a scoped harness such as `scripts/source_integration.py` that already captures per-attempt state under `artifacts/evals/<track>/<source_slug>/` (including the eval JSON, per-attempt coder logs, and postmortem) — the harness is the resume vehicle, so an extra plan file adds no reader.
 
 Each plan file should include:
 

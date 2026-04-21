@@ -17,7 +17,7 @@ source-quality workflow.
 ## Target Architecture
 
 - `scripts/discover_jobs.py` remains the compatibility entrypoint for scheduled
-  runs, repair workflows, existing tests, and direct CLI use.
+  runs, source-integration workflows, existing tests, and direct CLI use.
 - `scripts/discover/` owns reusable discovery internals: models, HTTP helpers,
   text/URL helpers, provider registry, and source-provider modules.
 - `scripts/discover/sources/<provider>.py` modules implement one source family
@@ -71,7 +71,7 @@ Status note: checked items reflect the refactor state as of 2026-04-19.
 ### PR5: Remaining Bespoke Providers
 
 - [x] Migrate the remaining bespoke company/public-service integrations.
-- [x] Update source-quality repair hints to point at provider modules instead of the
+- [x] Update source-quality integration hints to point at provider modules instead of the
   monolithic `discover_jobs.py`.
 
 ### PR6: Stabilize Open-Source Contributor Surface

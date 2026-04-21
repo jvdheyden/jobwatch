@@ -77,17 +77,17 @@ live canary check through the existing quality workflow:
 ./.venv/bin/python scripts/eval_source_quality.py --track <track> --source "<Source Name>" --today YYYY-MM-DD --canary-title "<Expected Title>"
 ```
 
-If the evaluator reports `repair_needed`, use the generated repair ticket to
+If the evaluator reports `integration_needed`, use the generated source integration ticket to
 make the narrowest provider fix and add a focused regression test.
 
-### When to run the full repair loop
+### When to run the full source integration loop
 
 For sources where the failure mode is unclear, where you want the loop to drive
 the fix end-to-end, or where you're bringing up multiple sources at once, run
 the orchestrator instead of editing manually:
 
 ```bash
-./.venv/bin/python scripts/repair_source.py \
+./.venv/bin/python scripts/source_integration.py \
   --track <track> \
   --source "<Source Name>" \
   --today YYYY-MM-DD \
@@ -96,7 +96,7 @@ the orchestrator instead of editing manually:
 ```
 
 This calls `eval_source_quality.py`, dispatches a coding agent against the
-`repair_ticket`, rediscovers, and re-evaluates — looping until `pass`,
+`integration_ticket`, rediscovers, and re-evaluates — looping until `pass`,
 `blocked`, or `retry_limit`. See
-[`docs/architecture.md`](../architecture.md) (Source repair loop) for the
+[`docs/architecture.md`](../architecture.md) (Source integration loop) for the
 sequence diagram and artifact paths.

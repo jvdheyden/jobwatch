@@ -90,7 +90,7 @@ def main() -> int:
         return 2
 
     for source_id in complete:
-        state[source_id] = args.date
+        state.setdefault(source_id, {})["last_checked"] = args.date
 
     write_json_atomic(state_path, source_state_payload(args.track, source_ids, state))
     print(f"Updated {len(complete)} source state entries in {state_path}")

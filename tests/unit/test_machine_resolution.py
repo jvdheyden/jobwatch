@@ -4,7 +4,7 @@ from pathlib import Path
 
 import agent_provider
 import eval_source_quality
-import repair_source
+import source_integration
 
 
 def _write_executable(path: Path, text: str) -> None:
@@ -33,7 +33,7 @@ def test_resolve_coder_bin_falls_back_to_codex_on_path(tmp_path, monkeypatch) ->
     monkeypatch.delenv("JOB_AGENT_PROVIDER", raising=False)
     monkeypatch.setenv("PATH", str(tmp_path))
 
-    assert repair_source.resolve_coder_bin(None) == fake_codex
+    assert source_integration.resolve_coder_bin(None) == fake_codex
 
 
 def test_resolve_agent_bin_uses_job_agent_bin_before_provider_default(tmp_path, monkeypatch) -> None:

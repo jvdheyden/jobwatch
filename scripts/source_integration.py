@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the source-quality repair loop for one source."""
+"""Run the source-quality integration loop for one source."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_provider import build_coder_command, resolve_agent_bin, resolve_agent_provider
+from source_config import SourceConfigError, load_sources_config
 from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, generated_at, source_slug, truncate_text
 
 
@@ -32,7 +33,7 @@ def default_eval_output(track: str, source: str, stamp: str) -> Path:
 
 
 def default_summary_output(track: str, source: str, stamp: str) -> Path:
-    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.repair_loop.json"
+    return WORK_ROOT / "artifacts" / "evals" / track / source_slug(source) / f"{stamp}.source_integration_loop.json"
 
 
 def default_fresh_artifact_path(track: str, source: str, stamp: str) -> Path:
@@ -78,7 +79,7 @@ def write_summary(
     canary_title: str,
     canary_url: str,
     max_attempts: int,
-    repair_attempts: int,
+    integration_attempts: int,
     attempts: list[dict[str, Any]],
     final_status: str,
     final_eval: dict[str, Any] | None,
@@ -95,7 +96,7 @@ def write_summary(
         "eval_output": str(eval_output),
         "canary": {"title": canary_title, "url": canary_url},
         "max_attempts": max_attempts,
-        "repair_attempts_used": repair_attempts,
+        "integration_attempts_used": integration_attempts,
         "attempts": attempts,
         "phase": phase,
         "final_status": final_status,
@@ -353,7 +354,7 @@ def detect_ready_for_rediscovery_signals(
     }
 
 
-HANDOFF_PREFIX = "REPAIR_HANDOFF:"
+HANDOFF_PREFIX = "SOURCE_INTEGRATION_HANDOFF:"
 
 
 def _extract_agent_messages_from_stdout(stdout_log_path: Path) -> list[str]:
@@ -476,7 +477,7 @@ def classify_failure(
 ) -> str:
     if attempt_record.get("coding_handoff"):
         return "needs_handoff"
-    if "failed to launch coding repair run" in blocked_reason:
+    if "failed to launch coding integration run" in blocked_reason:
         return "blocked_launch"
     if attempt_record.get("rediscovery_exit_code") not in (None, 0) or "rediscovery failed" in blocked_reason:
         return "rediscovery_failure"
@@ -491,7 +492,7 @@ def classify_failure(
     return "blocked_unknown"
 
 
-def select_primary_repair_file(files_touched: list[str], fallback: str) -> str:
+def select_primary_integration_file(files_touched: list[str], fallback: str) -> str:
     for path in files_touched:
         if path.startswith(("scripts/", "tests/", ".agents/")):
             return path
@@ -507,7 +508,7 @@ def build_coding_postmortem(
     source: str,
     today: str,
     attempt_number: int,
-    repair_ticket: dict[str, Any],
+    integration_ticket: dict[str, Any],
     attempt_record: dict[str, Any],
     files_touched: list[str],
     tests_touched_or_run: list[str],
@@ -519,7 +520,7 @@ def build_coding_postmortem(
     ) or (
         attempt_record.get("coding_error")
         or attempt_record.get("error")
-        or "repair attempt ended without a passing rediscovery/eval result"
+        or "integration attempt ended without a passing rediscovery/eval result"
     )
     failure_class = classify_failure(
         blocked_reason=blocked_reason,
@@ -527,8 +528,8 @@ def build_coding_postmortem(
         files_touched=files_touched,
         attempt_record=attempt_record,
     )
-    likely_file = repair_ticket.get("likely_file") or "scripts/discover_jobs.py"
-    primary_file = select_primary_repair_file(
+    likely_file = integration_ticket.get("likely_file") or "scripts/discover_jobs.py"
+    primary_file = select_primary_integration_file(
         files_touched,
         (handoff.get("likely_file") if isinstance(handoff, dict) else "") or likely_file,
     )
@@ -550,7 +551,7 @@ def build_coding_postmortem(
     elif failure_class == "rediscovery_failure":
         likely_next_step = f"Fix the rediscovery/runtime issue in {primary_file}, then rerun source-scoped discovery."
     elif failure_class == "blocked_launch":
-        likely_next_step = "Fix the repair-run launch issue before retrying the source repair."
+        likely_next_step = "Fix the integration-run launch issue before retrying source integration."
     elif failure_class == "nonzero_exit":
         likely_next_step = f"Fix the failing command path in {primary_file}, then rerun the focused validation and source-scoped discovery."
     else:
@@ -564,8 +565,8 @@ def build_coding_postmortem(
         "date": today,
         "attempt_number": attempt_number,
         "blocked_reason": blocked_reason,
-        "repair_ticket_summary": repair_ticket.get("summary", ""),
-        "failing_checks": repair_ticket.get("failing_checks", []),
+        "integration_ticket_summary": integration_ticket.get("summary", ""),
+        "failing_checks": integration_ticket.get("failing_checks", []),
         "failure_class": failure_class,
         "last_meaningful_action": attempt_record.get("coding_last_event_excerpt", ""),
         "last_event_type": attempt_record.get("coding_last_event_type", "unknown"),
@@ -668,6 +669,29 @@ def run_discovery(
     )
 
 
+def load_source_config_context(track: str, source: str) -> dict[str, Any]:
+    track_dir = WORK_ROOT / "tracks" / track
+    try:
+        config = load_sources_config(track_dir / "sources.json", track)
+    except SourceConfigError as exc:
+        return {"error": str(exc)}
+    for item in config["sources"]:
+        if item.get("name") != source:
+            continue
+        return {
+            "source_id": item.get("id", ""),
+            "source": item.get("name", ""),
+            "url": item.get("url", ""),
+            "discovery_mode": item.get("discovery_mode", ""),
+            "track_terms": config.get("track_terms", []),
+            "source_search_terms": item.get("search_terms"),
+            "source_filters": item.get("filters", {}),
+            "sources_json": str(track_dir / "sources.json"),
+            "sources_md": str(track_dir / "sources.md"),
+        }
+    return {"error": f"source {source!r} not found in {track_dir / 'sources.json'}"}
+
+
 def build_coder_prompt(
     *,
     track: str,
@@ -676,16 +700,29 @@ def build_coder_prompt(
     artifact_path: Path,
     fresh_artifact_path: Path,
     eval_output: Path,
-    repair_ticket: dict[str, Any],
+    integration_ticket: dict[str, Any],
     canary_title: str,
     canary_url: str,
     prior_postmortem: dict[str, Any] | None,
 ) -> str:
-    failure_mode = str(repair_ticket.get("failure_mode", "unknown") or "unknown")
-    target_outcome = str(repair_ticket.get("target_outcome", "") or repair_ticket.get("success_condition", ""))
-    suggested_strategy = str(repair_ticket.get("suggested_strategy", "") or "inspect the likely file and make the narrowest fix")
-    test_hint = str(repair_ticket.get("test_hint", "") or "")
-    likely_file = str(repair_ticket.get("likely_file", "") or "scripts/discover_jobs.py")
+    failure_mode = str(integration_ticket.get("failure_mode", "unknown") or "unknown")
+    target_outcome = str(integration_ticket.get("target_outcome", "") or integration_ticket.get("success_condition", ""))
+    suggested_strategy = str(integration_ticket.get("suggested_strategy", "") or "inspect the likely file and make the narrowest fix")
+    test_hint = str(integration_ticket.get("test_hint", "") or "")
+    likely_file = str(integration_ticket.get("likely_file", "") or "scripts/discover_jobs.py")
+    source_config_context = load_source_config_context(track, source)
+    strategy_label = str(integration_ticket.get("suggested_strategy_label", "") or "")
+    config_suggestion = integration_ticket.get("config_suggestion", {})
+    current_evidence = {
+        "search_terms_tried": integration_ticket.get("search_terms_tried", []),
+        "configured_search_terms": source_config_context.get("source_search_terms"),
+        "configured_filters": source_config_context.get("source_filters") or integration_ticket.get("configured_filters", {}),
+        "canary": {"title": canary_title, "url": canary_url},
+        "candidate_counts": integration_ticket.get("candidate_counts", {}),
+        "page_evidence": integration_ticket.get("page_evidence", {}),
+        "reviewer_defects": integration_ticket.get("reviewer_defects", []),
+        "primary_evidence": integration_ticket.get("primary_evidence", []),
+    }
     if likely_file == "scripts/discover_jobs.py":
         missing_path_guidance = (
             "- If no source-specific path exists yet, implement the minimal source-specific parser or strategy needed "
@@ -696,11 +733,11 @@ def build_coder_prompt(
             f"- If no source-specific path exists yet, implement the minimal source-specific parser or strategy in {likely_file} "
             "and wire it through the discovery registry or scripts/discover_jobs.py facade exports as needed."
         )
-    primary_evidence = repair_ticket.get("primary_evidence", [])
+    primary_evidence = integration_ticket.get("primary_evidence", [])
     lines = [
-        f"Repair the {source} source integration from the repository root in mode: repo_dev.",
+        f"Integrate the {source} source from the repository root in mode: repo_dev.",
         "Follow the repository AGENTS.md for mode routing, then use the project skill `coding`.",
-        "Aim for one focused repair attempt for this source only.",
+        "Aim for one focused integration attempt for this source only.",
         f"Track: {track}",
         f"Source: {source}",
         f"Date: {today}",
@@ -725,37 +762,52 @@ def build_coder_prompt(
         )
     lines.extend(
         [
-            "Use this repair ticket as the source of truth:",
-            json.dumps(repair_ticket, ensure_ascii=False, indent=2),
+            "Use this source integration ticket as the source of truth:",
+            json.dumps(integration_ticket, ensure_ascii=False, indent=2),
+            "Current source config:",
+            json.dumps(source_config_context, ensure_ascii=False, indent=2),
+            "Current evidence:",
+            json.dumps(current_evidence, ensure_ascii=False, indent=2),
+            "Layered strategy order:",
+            "1. Inspect the current discovery mode and evaluate whether existing mode support can work.",
+            "2. Tune this source's `search_terms` or native `filters` in `sources.json` when the ticket's suggested strategy is `config_terms_override`, `config_terms_append`, or `config_native_filters`.",
+            "3. Add provider filter support when the config is right but the provider ignores stable native filters.",
+            "4. Add dedicated provider parsing/enumeration logic only when config and generic provider support cannot satisfy the canary and quality checks.",
             "Execution modes:",
             "- quick_fix_mode: if the ticket points to a credible focused fix, inspect only the likely file and preferred focused test target, then patch immediately.",
-            "- handoff_mode: if a focused quick fix is not credible after the first local pass, stop broad investigation and emit a structured handoff for the next repair child.",
+            "- handoff_mode: if a focused quick fix is not credible after the first local pass, stop broad investigation and emit a structured handoff for the next integration child.",
             "Operational guidance:",
             f"- Failure mode: {failure_mode}",
             f"- Target outcome: {target_outcome}",
             f"- Suggested strategy: {suggested_strategy}",
+            f"- Suggested strategy label: {strategy_label}",
+            f"- If the suggested strategy is config tuning, update only this source's `sources.json` entry, run `./.venv/bin/python scripts/render_sources_md.py --track {track}`, then run source-scoped discovery before considering code.",
+            "- If the suggested strategy is provider_filter_support, keep the existing config and add reusable provider support for those configured native filters.",
+            "- If the suggested strategy is dedicated_provider_logic, make the narrowest provider change needed for this source or source family.",
+            "- Config suggestion:",
+            json.dumps(config_suggestion, ensure_ascii=False, indent=2),
             "Constraints:",
-            f"- Unless the repair ticket clearly indicates a validator bug, make the functional fix in {likely_file}.",
+            f"- Unless the source integration ticket clearly indicates config tuning or a validator bug, make the functional fix in {likely_file}.",
             f"- Start by inspecting the source-specific parser path in {likely_file} and any existing source-specific tests before broader investigation.",
             f"- Start in {likely_file} and look first for source-specific functions or helpers named after {source} (for example discover/extract/advance helpers) or the relevant HTML/browser parser used by this source.",
             "- If a source-specific function or strategy already exists, patch that path instead of exploring unrelated files.",
             missing_path_guidance,
             "- Within the first local pass, decide whether you are in quick_fix_mode or handoff_mode. Do not continue exploratory reading once you can state a credible patch hypothesis or a credible blocker.",
             f"- Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in {likely_file}.",
-            "- Only change another file when required for a focused test, a directly related helper, or when the repair ticket clearly indicates a validator bug.",
+            "- Only change another file when required for a focused test, a directly related helper, or when the source integration ticket clearly indicates a validator bug.",
             "- Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch.",
-            "- Do not modify unrelated sources or track configuration.",
+            "- Do not modify unrelated sources. Modify this source's track configuration only when the suggested strategy is config tuning.",
             "- Do not broaden search terms unless the ticket explicitly requires it.",
             "- Do not edit discovery or eval artifacts directly.",
-            "- Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this repair.",
+            "- Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this source integration.",
             "- Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds.",
             f"- After your code change, validate with: ./.venv/bin/python scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",
             "- Use the repo-local virtualenv for Python tests and helper scripts; if it is missing, bootstrap it with `bash scripts/bootstrap_venv.sh` before Python test commands.",
-            "- After your code change, check that the fresh source artifact meets the target outcome and success condition in the repair ticket.",
+            "- After your code change, check that the fresh source artifact meets the target outcome and success condition in the source integration ticket.",
             "- Run only the most relevant focused tests for the changed code before finishing.",
             "- Stop as soon as the focused validation command completes; do not continue into broader verification after that point.",
             f"- The orchestrator owns rediscovery and final eval. It will regenerate {fresh_artifact_path} and rerun scripts/eval_source_quality.py after your fix.",
-            "- If you switch to handoff_mode, do not keep exploring broadly. Gather only the minimum evidence needed to unblock the next repair child and then exit.",
+            "- If you switch to handoff_mode, do not keep exploring broadly. Gather only the minimum evidence needed to unblock the next integration child and then exit.",
             f'- End handoff_mode with a final assistant message exactly starting with {HANDOFF_PREFIX} followed by JSON.',
             '- Use this handoff JSON shape: {"reason":"why a quick fix is not credible now","likely_file":"path to resume in","hypothesis":"best current explanation","next_edit":"single narrow next edit","test_hint":"preferred focused test file","evidence":["most useful fact 1","most useful fact 2"]}.',
         ]
@@ -788,7 +840,7 @@ def run_coder(
     artifact_path: Path,
     fresh_artifact_path: Path,
     eval_output: Path,
-    repair_ticket: dict[str, Any],
+    integration_ticket: dict[str, Any],
     canary_title: str,
     canary_url: str,
     prior_postmortem: dict[str, Any] | None,
@@ -804,7 +856,7 @@ def run_coder(
         artifact_path=artifact_path,
         fresh_artifact_path=fresh_artifact_path,
         eval_output=eval_output,
-        repair_ticket=repair_ticket,
+        integration_ticket=integration_ticket,
         canary_title=canary_title,
         canary_url=canary_url,
         prior_postmortem=prior_postmortem,
@@ -821,7 +873,7 @@ def run_coder(
             "JOB_AGENT_EVAL_ARTIFACT": str(eval_output),
             "JOB_AGENT_CANARY_TITLE": canary_title,
             "JOB_AGENT_CANARY_URL": canary_url,
-            "JOB_AGENT_REPAIR_TICKET": json.dumps(repair_ticket),
+            "JOB_AGENT_INTEGRATION_TICKET": json.dumps(integration_ticket),
             "JOB_AGENT_PRIOR_POSTMORTEM": json.dumps(prior_postmortem) if prior_postmortem else "",
         }
     )
@@ -858,7 +910,7 @@ def main() -> int:
     parser.add_argument("--today", required=True, help="Date stamp in YYYY-MM-DD format")
     parser.add_argument("--artifact-path", help="Path to the discovery artifact; defaults to today's track artifact")
     parser.add_argument("--eval-output", help="Path for the latest eval artifact")
-    parser.add_argument("--summary-output", help="Path for the repair-loop summary artifact")
+    parser.add_argument("--summary-output", help="Path for the source-integration-loop summary artifact")
     parser.add_argument("--canary-title", default="", help="Expected canary title for this source")
     parser.add_argument("--canary-url", default="", help="Expected canary URL for this source")
     parser.add_argument(
@@ -870,7 +922,7 @@ def main() -> int:
     parser.add_argument("--reviewer-bin", help="Binary to invoke for the LLM reviewer")
     parser.add_argument(
         "--coder-bin",
-        help="Binary to invoke for the coding repair run; defaults to JOB_AGENT_CODER_BIN/JOB_AGENT_BIN/provider default",
+        help="Binary to invoke for the coding integration run; defaults to JOB_AGENT_CODER_BIN/JOB_AGENT_BIN/provider default",
     )
     parser.add_argument(
         "--timeout-seconds",
@@ -878,9 +930,9 @@ def main() -> int:
         default=DEFAULT_REVIEW_TIMEOUT_SECONDS,
         help="Timeout for reviewer/raw page fetches during eval",
     )
-    parser.add_argument("--repair-timeout-seconds", type=int, default=600, help="Timeout for each coding repair run")
-    parser.add_argument("--idle-timeout-seconds", type=int, default=90, help="Abort a coding repair attempt if it produces no new output for this many seconds")
-    parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding repair attempts")
+    parser.add_argument("--integration-timeout-seconds", type=int, default=600, help="Timeout for each coding integration run")
+    parser.add_argument("--idle-timeout-seconds", type=int, default=90, help="Abort a coding integration attempt if it produces no new output for this many seconds")
+    parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding integration attempts")
     args = parser.parse_args()
 
     artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)
@@ -895,7 +947,7 @@ def main() -> int:
         return 2
 
     attempts: list[dict[str, Any]] = []
-    repair_attempts = 0
+    integration_attempts = 0
     final_status = "running"
     final_eval: dict[str, Any] | None = None
     phase = "starting"
@@ -913,7 +965,7 @@ def main() -> int:
         canary_title=args.canary_title,
         canary_url=args.canary_url,
         max_attempts=args.max_attempts,
-        repair_attempts=repair_attempts,
+        integration_attempts=integration_attempts,
         attempts=attempts,
         final_status="running",
         final_eval=final_eval,
@@ -943,7 +995,7 @@ def main() -> int:
             "eval_final_status": eval_payload.get("final_status", "blocked"),
             "deterministic_confidence": eval_payload.get("deterministic", {}).get("confidence", "failed"),
             "reviewer_status": eval_payload.get("reviewer", {}).get("status", "unknown"),
-            "repair_ticket_summary": (eval_payload.get("repair_ticket") or {}).get("summary", ""),
+            "integration_ticket_summary": (eval_payload.get("integration_ticket") or {}).get("summary", ""),
             "coding_invoked": False,
             "rediscovery_invoked": False,
         }
@@ -957,29 +1009,29 @@ def main() -> int:
             final_status = "blocked"
             attempts.append(attempt_record)
             break
-        if status != "repair_needed":
+        if status != "integration_needed":
             final_status = "blocked"
             attempt_record["error"] = f"unexpected eval final_status: {status}"
             attempts.append(attempt_record)
             break
-        if repair_attempts >= args.max_attempts:
+        if integration_attempts >= args.max_attempts:
             final_status = "retry_limit"
             attempts.append(attempt_record)
             break
         if coder_bin is None or not coder_bin.exists():
             final_status = "blocked"
-            attempt_record["error"] = "No coding binary available for repair."
+            attempt_record["error"] = "No coding binary available for source integration."
             attempts.append(attempt_record)
             break
 
-        repair_ticket = eval_payload.get("repair_ticket") or {}
-        if not repair_ticket:
+        integration_ticket = eval_payload.get("integration_ticket") or {}
+        if not integration_ticket:
             final_status = "blocked"
-            attempt_record["error"] = "Eval reported repair_needed but produced no repair_ticket."
+            attempt_record["error"] = "Eval reported integration_needed but produced no integration_ticket."
             attempts.append(attempt_record)
             break
 
-        attempt_number = repair_attempts + 1
+        attempt_number = integration_attempts + 1
         stdout_log_path = default_coder_stdout_log_path(args.track, args.source, args.today, attempt_number)
         stderr_log_path = default_coder_stderr_log_path(args.track, args.source, args.today, attempt_number)
         last_message_path = default_coder_last_message_path(args.track, args.source, args.today, attempt_number)
@@ -990,12 +1042,12 @@ def main() -> int:
         attempt_record["coding_last_message_path"] = str(last_message_path)
         attempt_record["coding_started_at"] = generated_at()
         attempt_record["coding_last_event_type"] = "launched"
-        attempt_record["coding_last_event_excerpt"] = "repair child launched"
+        attempt_record["coding_last_event_excerpt"] = "integration child launched"
         attempt_record["coding_idle_timeout_seconds"] = args.idle_timeout_seconds
         pre_coder_snapshot = snapshot_workspace_files(WORK_ROOT)
 
         try:
-            phase = "repairing"
+            phase = "integrating"
             write_summary(
                 summary_output,
                 track=args.track,
@@ -1007,7 +1059,7 @@ def main() -> int:
                 canary_title=args.canary_title,
                 canary_url=args.canary_url,
                 max_attempts=args.max_attempts,
-                repair_attempts=repair_attempts,
+                integration_attempts=integration_attempts,
                 attempts=attempts + [attempt_record],
                 final_status="running",
                 final_eval=final_eval,
@@ -1022,18 +1074,18 @@ def main() -> int:
                 artifact_path=artifact_path,
                 fresh_artifact_path=fresh_artifact_path,
                 eval_output=eval_output,
-                repair_ticket=repair_ticket,
+                integration_ticket=integration_ticket,
                 canary_title=args.canary_title,
                 canary_url=args.canary_url,
                 prior_postmortem=prior_postmortem,
-                timeout_seconds=args.repair_timeout_seconds,
+                timeout_seconds=args.integration_timeout_seconds,
                 stdout_log_path=stdout_log_path,
                 stderr_log_path=stderr_log_path,
                 last_message_path=last_message_path,
             )
         except Exception as exc:
             final_status = "blocked"
-            attempt_record["coding_error"] = f"failed to launch coding repair run: {exc}"
+            attempt_record["coding_error"] = f"failed to launch coding integration run: {exc}"
             attempts.append(attempt_record)
             break
 
@@ -1074,7 +1126,7 @@ def main() -> int:
                 canary_title=args.canary_title,
                 canary_url=args.canary_url,
                 max_attempts=args.max_attempts,
-                repair_attempts=repair_attempts,
+                integration_attempts=integration_attempts,
                 attempts=attempts + [attempt_record],
                 final_status="running",
                 final_eval=final_eval,
@@ -1084,7 +1136,7 @@ def main() -> int:
             if returncode is not None:
                 completed_returncode = returncode
                 break
-            if elapsed_seconds >= args.repair_timeout_seconds:
+            if elapsed_seconds >= args.integration_timeout_seconds:
                 process.terminate()
                 try:
                     process.wait(timeout=5)
@@ -1092,7 +1144,7 @@ def main() -> int:
                     process.kill()
                     process.wait(timeout=5)
                 attempt_blocked = True
-                attempt_record["coding_error"] = f"repair run timed out after {args.repair_timeout_seconds}s"
+                attempt_record["coding_error"] = f"integration run timed out after {args.integration_timeout_seconds}s"
                 completed_returncode = process.returncode
                 break
             if idle_seconds >= args.idle_timeout_seconds:
@@ -1103,13 +1155,13 @@ def main() -> int:
                     process.kill()
                     process.wait(timeout=5)
                 attempt_blocked = True
-                attempt_record["coding_error"] = f"repair run went idle after {args.idle_timeout_seconds}s without new output"
+                attempt_record["coding_error"] = f"integration run went idle after {args.idle_timeout_seconds}s without new output"
                 completed_returncode = process.returncode
                 attempt_record["coding_last_event_type"] = "idle_timeout"
                 break
             time.sleep(POLL_INTERVAL_SECONDS)
 
-        repair_attempts += 1
+        integration_attempts += 1
         stdout_offset, stderr_offset, last_message_mtime, _ = update_attempt_from_logs(
             attempt_record,
             stdout_log_path,
@@ -1132,7 +1184,7 @@ def main() -> int:
         ready_signals = detect_ready_for_rediscovery_signals(
             stdout_log_path=stdout_log_path,
             files_touched=files_touched,
-            likely_file=repair_ticket.get("likely_file") or "scripts/discover_jobs.py",
+            likely_file=integration_ticket.get("likely_file") or "scripts/discover_jobs.py",
             track=args.track,
             source=args.source,
             today=args.today,
@@ -1144,10 +1196,10 @@ def main() -> int:
         attempt_record["runtime_error_signatures"] = runtime_error_signatures
 
         if completed_returncode not in (None, 0) and "coding_error" not in attempt_record:
-            attempt_record["coding_error"] = f"repair run exited with code {completed_returncode}"
+            attempt_record["coding_error"] = f"integration run exited with code {completed_returncode}"
             attempt_blocked = True
         if structured_handoff is not None:
-            attempt_record["coding_error"] = structured_handoff.get("reason") or "repair child exited with structured handoff for the next attempt"
+            attempt_record["coding_error"] = structured_handoff.get("reason") or "integration child exited with structured handoff for the next attempt"
             attempt_blocked = True
 
         ready_for_rediscovery = attempt_blocked and ready_signals["ready_for_rediscovery"] and structured_handoff is None
@@ -1178,7 +1230,7 @@ def main() -> int:
                 source=args.source,
                 today=args.today,
                 attempt_number=attempt_number,
-                repair_ticket=repair_ticket,
+                integration_ticket=integration_ticket,
                 attempt_record=attempt_record,
                 files_touched=files_touched,
                 tests_touched_or_run=tests_touched_or_run,
@@ -1188,7 +1240,7 @@ def main() -> int:
             attempt_record["coding_postmortem_path"] = str(postmortem_path)
             attempt_record["coding_postmortem_summary"] = postmortem["blocked_reason"]
             prior_postmortem = postmortem
-            if repair_attempts >= args.max_attempts:
+            if integration_attempts >= args.max_attempts:
                 final_status = "blocked"
                 break
             continue
@@ -1208,7 +1260,7 @@ def main() -> int:
         attempt_record["rediscovery_stderr"] = truncate_text(rediscovery.stderr, 2000)
 
         if rediscovery.returncode != 0:
-            attempt_record["error"] = "rediscovery failed after coding repair"
+            attempt_record["error"] = "rediscovery failed after coding source integration"
             files_touched = detect_files_touched(pre_coder_snapshot, snapshot_workspace_files(WORK_ROOT))
             tests_touched_or_run = extract_tests_touched_or_run(stdout_log_path, files_touched)
             runtime_error_signatures = extract_runtime_error_signatures(attempt_record)
@@ -1218,7 +1270,7 @@ def main() -> int:
                 source=args.source,
                 today=args.today,
                 attempt_number=attempt_number,
-                repair_ticket=repair_ticket,
+                integration_ticket=integration_ticket,
                 attempt_record=attempt_record,
                 files_touched=files_touched,
                 tests_touched_or_run=tests_touched_or_run,
@@ -1228,7 +1280,7 @@ def main() -> int:
             attempt_record["coding_postmortem_path"] = str(postmortem_path)
             attempt_record["coding_postmortem_summary"] = postmortem["blocked_reason"]
             prior_postmortem = postmortem
-            if repair_attempts >= args.max_attempts:
+            if integration_attempts >= args.max_attempts:
                 final_status = "blocked"
                 break
             continue
@@ -1246,7 +1298,7 @@ def main() -> int:
         canary_title=args.canary_title,
         canary_url=args.canary_url,
         max_attempts=args.max_attempts,
-        repair_attempts=repair_attempts,
+        integration_attempts=integration_attempts,
         attempts=attempts,
         final_status=final_status,
         final_eval=final_eval,

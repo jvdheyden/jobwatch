@@ -7,7 +7,7 @@ from pathlib import Path
 import eval_source_quality
 
 
-def test_eval_source_quality_runs_reviewer_and_writes_repair_ticket(tmp_job_agent_root: Path, run_cmd):
+def test_eval_source_quality_runs_reviewer_and_writes_integration_ticket(tmp_job_agent_root: Path, run_cmd):
     artifact_dir = tmp_job_agent_root / "artifacts" / "discovery" / "public_service"
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / "2026-04-02.json"
@@ -59,7 +59,7 @@ def test_eval_source_quality_runs_reviewer_and_writes_repair_ticket(tmp_job_agen
 set -euo pipefail
 cat >/dev/null
 cat <<'JSON'
-{"defects":[{"type":"partial_description","severity":"major","source":"Example Source","candidate_url":"https://jobs.example.com/jobs/123","canary_title":"Security Engineer","observed":"No descriptive notes were extracted.","expected":"Tasks or profile summary from the posting page.","repair_hint":"Open the detail page and capture at least one short section summary.","repro_step":"Run discover_jobs.py for Example Source and inspect candidate.notes."}]}
+{"defects":[{"type":"partial_description","severity":"major","source":"Example Source","candidate_url":"https://jobs.example.com/jobs/123","canary_title":"Security Engineer","observed":"No descriptive notes were extracted.","expected":"Tasks or profile summary from the posting page.","integration_hint":"Open the detail page and capture at least one short section summary.","repro_step":"Run discover_jobs.py for Example Source and inspect candidate.notes."}]}
 JSON
 """
     )
@@ -97,13 +97,13 @@ JSON
     assert payload["deterministic"]["confidence"] == "low"
     assert payload["reviewer"]["status"] == "completed"
     assert payload["reviewer"]["defects"][0]["type"] == "partial_description"
-    assert payload["final_status"] == "repair_needed"
-    assert payload["repair_ticket"]["status"] == "open"
-    assert payload["repair_ticket"]["summary"] == "No descriptive notes were extracted."
-    assert payload["repair_ticket"]["failure_mode"] == "missing_detail"
-    assert payload["repair_ticket"]["suggested_strategy"] == "enrich kept candidates"
-    assert payload["repair_ticket"]["target_outcome"].startswith("Fresh discovery artifact keeps the relevant candidates")
-    assert payload["repair_ticket"]["primary_evidence"] == [
+    assert payload["final_status"] == "integration_needed"
+    assert payload["integration_ticket"]["status"] == "open"
+    assert payload["integration_ticket"]["summary"] == "No descriptive notes were extracted."
+    assert payload["integration_ticket"]["failure_mode"] == "missing_detail"
+    assert payload["integration_ticket"]["suggested_strategy"] == "dedicated_provider_logic"
+    assert payload["integration_ticket"]["target_outcome"].startswith("Fresh discovery artifact keeps the relevant candidates")
+    assert payload["integration_ticket"]["primary_evidence"] == [
         "partial_description: No descriptive notes were extracted."
     ]
 
@@ -201,4 +201,4 @@ sleep 30
     assert payload["reviewer"]["status"] == "blocked"
     assert "timed out after 1" in payload["reviewer"]["error"]
     assert payload["final_status"] == "pass"
-    assert payload["repair_ticket"] is None
+    assert payload["integration_ticket"] is None

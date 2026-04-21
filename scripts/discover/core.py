@@ -55,6 +55,7 @@ class Coverage:
     limitations: list[str] = field(default_factory=list)
     candidates: list[Candidate] = field(default_factory=list)
     source_id: str = ""
+    filters: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -105,11 +106,13 @@ def partial_browser_unavailable_coverage(source: SourceConfig, terms: list[str],
         limitations=[limitation],
         candidates=[],
         source_id=source.source_id,
+        filters={key: list(values) for key, values in source.filters.items()},
     )
 
 
 def attach_source_identity(source: SourceConfig, coverage: Coverage) -> Coverage:
     coverage.source_id = coverage.source_id or source.source_id or source.source
+    coverage.filters = {key: list(values) for key, values in source.filters.items()}
     return coverage
 
 
@@ -131,6 +134,7 @@ def failed_coverage(source: SourceConfig, terms: list[str], limitation: str) -> 
         limitations=[limitation],
         candidates=[],
         source_id=source.source_id,
+        filters={key: list(values) for key, values in source.filters.items()},
     )
 
 

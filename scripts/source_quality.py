@@ -80,6 +80,7 @@ DETAIL_NOTE_MARKERS = (
     "pay range",
     "salary range",
 )
+HIGH_VOLUME_CANDIDATE_THRESHOLD = 40
 PROVENANCE_NOTE_MARKERS = (
     "enumerated through",
     "static html enumeration",
@@ -268,6 +269,17 @@ def _candidate_has_detail(candidate: dict[str, Any]) -> bool:
     if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
         return True
     return _has_substantive_notes(candidate)
+
+
+def _candidate_has_direct_job_url(source_url: str, candidate: dict[str, Any]) -> bool:
+    candidate_url = normalize_url_without_fragment(candidate.get("url", ""))
+    normalized_source_url = normalize_url_without_fragment(source_url)
+    if not candidate_url or candidate_url == normalized_source_url:
+        return False
+    parsed = urlparse(candidate_url)
+    source_path = urlparse(normalized_source_url).path.rstrip("/")
+    candidate_path = parsed.path.rstrip("/")
+    return bool(candidate_path and candidate_path != source_path and candidate_path != "/")
 
 
 def _raw_detail_categories(raw_text: str) -> set[str]:
@@ -552,6 +564,72 @@ def validate_source_coverage(
     else:
         results.append(ValidatorResult("sparse_extraction", "pass", "info", "At least one candidate carries extracted detail beyond title and URL."))
 
+    matched_jobs = source.get("matched_jobs")
+    enumerated_jobs = source.get("enumerated_jobs")
+    candidate_count = len(candidates)
+    high_volume = candidate_count > HIGH_VOLUME_CANDIDATE_THRESHOLD
+    if isinstance(matched_jobs, int) and matched_jobs > HIGH_VOLUME_CANDIDATE_THRESHOLD:
+        high_volume = True
+    if isinstance(enumerated_jobs, int) and enumerated_jobs > HIGH_VOLUME_CANDIDATE_THRESHOLD * 3:
+        high_volume = True
+    if high_volume:
+        results.append(
+            ValidatorResult(
+                "result_volume",
+                "fail",
+                "blocking",
+                f"Source produced {candidate_count} candidates, matched_jobs={matched_jobs}, enumerated_jobs={enumerated_jobs}; tune source-specific terms or native filters before provider code.",
+            )
+        )
+    else:
+        results.append(ValidatorResult("result_volume", "pass", "info", "Source output volume is within the normal review range."))
+
+    discovery_mode = normalize_whitespace(str(source.get("discovery_mode", ""))).lower()
+    if "browser" in discovery_mode and candidates:
+        browser_problems: list[str] = []
+        result_pages_scanned = normalize_for_matching(str(source.get("result_pages_scanned", "")))
+        limitations_text = normalize_for_matching(" ".join(str(value) for value in source.get("limitations", [])))
+        if source.get("status") != "complete":
+            browser_problems.append(f"status is {source.get('status', 'unknown')}")
+        if canary_title or canary_url:
+            if not any(_candidate_matches_canary(candidate, canary_title, canary_url) for candidate in candidates):
+                browser_problems.append("canary coverage is not proven")
+        if not any(_candidate_has_direct_job_url(source_url, candidate) for candidate in candidates):
+            browser_problems.append("no direct job-detail URLs were extracted")
+        if not any(_candidate_has_detail(candidate) for candidate in candidates):
+            browser_problems.append("candidates lack substantive detail")
+        if len(candidates) >= 10 and not any(marker in result_pages_scanned for marker in ("page", "pagination", "declared", "visible")):
+            browser_problems.append("pagination evidence is missing for multi-result browser output")
+        if any(marker in limitations_text for marker in ("blocked", "captcha", "timeout", "unstable", "failed")):
+            browser_problems.append("limitations indicate unstable browser coverage")
+        if browser_problems:
+            results.append(
+                ValidatorResult(
+                    "browser_fallback_quality",
+                    "fail",
+                    "blocking",
+                    "Browser fallback is not accepted yet: " + "; ".join(browser_problems),
+                )
+            )
+        else:
+            results.append(
+                ValidatorResult(
+                    "browser_fallback_quality",
+                    "pass",
+                    "info",
+                    "Browser fallback has complete status, direct URLs, and substantive candidate detail.",
+                )
+            )
+    elif "browser" in discovery_mode:
+        results.append(
+            ValidatorResult(
+                "browser_fallback_quality",
+                "skip",
+                "info",
+                "No browser candidates to evaluate for fallback acceptance.",
+            )
+        )
+
     blocking = [result for result in results if result.status == "fail"]
     warns = [result for result in results if result.status == "warn"]
     if blocking:
@@ -608,9 +686,12 @@ def _build_reviewer_context(
             "discovery_mode": source.get("discovery_mode"),
             "status": source.get("status"),
             "search_terms_tried": source.get("search_terms_tried", []),
+            "configured_filters": source.get("filters", {}),
             "candidate_count_total": len(candidates),
             "candidate_count_shared": len(reviewer_candidates),
             "candidate_context_truncated": len(reviewer_candidates) < len(candidates),
+            "result_pages_scanned": source.get("result_pages_scanned", ""),
+            "direct_job_pages_opened": source.get("direct_job_pages_opened", 0),
             "candidates": reviewer_candidates,
         },
         "canary": {"title": canary_title, "url": canary_url},
@@ -708,7 +789,7 @@ def review_source_with_llm(
             "canary_title": str(defect.get("canary_title", canary_title)),
             "observed": normalize_whitespace(str(defect.get("observed", defect.get("message", "")))),
             "expected": normalize_whitespace(str(defect.get("expected", ""))),
-            "repair_hint": normalize_whitespace(str(defect.get("repair_hint", defect.get("hint", "")))),
+            "integration_hint": normalize_whitespace(str(defect.get("integration_hint", defect.get("hint", "")))),
             "repro_step": normalize_whitespace(str(defect.get("repro_step", defect.get("path", "")))),
         }
         if not canary_title and not canary_url and normalized_defect["type"] == "canary_missing":
@@ -721,11 +802,11 @@ def review_source_with_llm(
     }
 
 
-REPAIR_TEST_HINTS_BY_SOURCE = {
+INTEGRATION_TEST_HINTS_BY_SOURCE = {
     "IBM Research": "tests/integration/test_discover_followup_sources.py",
 }
 
-REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
+INTEGRATION_TEST_HINTS_BY_DISCOVERY_MODE = {
     "ashby_api": "tests/integration/test_discover_followup_sources.py",
     "ashby_html": "tests/integration/test_discover_followup_sources.py",
     "asml_browser": "tests/integration/test_discover_asml_browser.py",
@@ -770,7 +851,7 @@ REPAIR_TEST_HINTS_BY_DISCOVERY_MODE = {
 }
 
 
-REPAIR_FILES_BY_DISCOVERY_MODE = {
+INTEGRATION_FILES_BY_DISCOVERY_MODE = {
     "ashby_api": "scripts/discover/sources/ashby.py",
     "ashby_html": "scripts/discover/sources/ashby.py",
     "asml_browser": "scripts/discover/sources/browser.py",
@@ -817,31 +898,33 @@ REPAIR_FILES_BY_DISCOVERY_MODE = {
 }
 
 
-def infer_repair_test_hint(source: dict[str, Any]) -> str:
+def infer_integration_test_hint(source: dict[str, Any]) -> str:
     source_name = normalize_whitespace(str(source.get("source", "")))
-    if source_name in REPAIR_TEST_HINTS_BY_SOURCE:
-        return REPAIR_TEST_HINTS_BY_SOURCE[source_name]
+    if source_name in INTEGRATION_TEST_HINTS_BY_SOURCE:
+        return INTEGRATION_TEST_HINTS_BY_SOURCE[source_name]
     discovery_mode = normalize_whitespace(str(source.get("discovery_mode", "")))
-    return REPAIR_TEST_HINTS_BY_DISCOVERY_MODE.get(discovery_mode, "")
+    return INTEGRATION_TEST_HINTS_BY_DISCOVERY_MODE.get(discovery_mode, "")
 
 
-def infer_repair_likely_file(source: dict[str, Any]) -> str:
+def infer_integration_likely_file(source: dict[str, Any]) -> str:
     discovery_mode = normalize_whitespace(str(source.get("discovery_mode", "")))
-    return REPAIR_FILES_BY_DISCOVERY_MODE.get(discovery_mode, "scripts/discover_jobs.py")
+    return INTEGRATION_FILES_BY_DISCOVERY_MODE.get(discovery_mode, "scripts/discover_jobs.py")
 
 
 def _reviewer_defect_text(defect: dict[str, Any]) -> str:
     return normalize_whitespace(
-        str(defect.get("observed") or defect.get("repair_hint") or defect.get("expected") or defect.get("type", ""))
+        str(defect.get("observed") or defect.get("integration_hint") or defect.get("expected") or defect.get("type", ""))
     )
 
 
 def _failure_mode_from_check(check: dict[str, Any]) -> str:
     return {
+        "browser_fallback_quality": "browser_fallback_unaccepted",
         "canary_present": "missing_canary",
         "detail_depth": "missing_detail",
         "duplicate_jobs": "duplication",
         "listing_kind": "candidate_noise",
+        "result_volume": "candidate_noise",
         "url_allowlist": "bad_url",
     }.get(str(check.get("name", "")), "validator_failure")
 
@@ -921,28 +1004,68 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
         return "Fresh discovery artifact emits candidate URLs that point to the correct job detail pages for this source." + canary_clause
     if failure_mode == "duplication":
         return "Fresh discovery artifact contains each job at most once after source-specific deduplication and merge handling." + canary_clause
+    if failure_mode == "browser_fallback_unaccepted":
+        return "Fresh discovery artifact proves the browser fallback is usable: complete status, direct job URLs, substantive detail, stable pagination behavior, and canary coverage." + canary_clause
     if failure_mode == "validator_failure":
         return "Fresh discovery artifact satisfies the failing deterministic validator for this source." + canary_clause
-    return "Fresh discovery artifact addresses the primary evidence in the repair ticket with the narrowest source-specific fix." + canary_clause
+    return "Fresh discovery artifact addresses the primary evidence in the integration ticket with the narrowest source-specific fix." + canary_clause
 
 
-def _suggested_strategy_for_failure_mode(failure_mode: str) -> str:
+def _suggested_strategy(
+    failure_mode: str,
+    *,
+    source: dict[str, Any],
+    failing_checks: list[dict[str, Any]],
+) -> str:
+    failing_check_names = {str(check.get("name", "")) for check in failing_checks}
+    configured_filters = source.get("filters") if isinstance(source.get("filters"), dict) else {}
+    search_terms_tried = source.get("search_terms_tried") if isinstance(source.get("search_terms_tried"), list) else []
+    if "result_volume" in failing_check_names:
+        return "provider_filter_support" if configured_filters else "config_native_filters"
     if failure_mode == "candidate_noise":
-        return "tighten source-specific keep filter"
-    if failure_mode == "missing_detail":
-        return "enrich kept candidates"
+        return "config_terms_override" if search_terms_tried else "dedicated_provider_logic"
     if failure_mode == "missing_canary":
-        return "fix source-specific enumeration or keep logic"
-    if failure_mode == "bad_url":
-        return "fix source-specific URL extraction"
-    if failure_mode == "duplication":
-        return "fix candidate deduplication or merge logic"
-    if failure_mode == "validator_failure":
-        return "fix parser field extraction or validator mismatch"
-    return "inspect likely file and make the narrowest source-specific fix consistent with the primary evidence"
+        return "config_terms_append" if search_terms_tried else "dedicated_provider_logic"
+    if failure_mode == "validator_failure" and configured_filters:
+        return "provider_filter_support"
+    return "dedicated_provider_logic"
 
 
-def build_repair_ticket(
+def _strategy_label(strategy: str) -> str:
+    return {
+        "config_terms_override": "replace source-specific search terms before changing provider code",
+        "config_terms_append": "append source-specific search terms before changing provider code",
+        "config_native_filters": "add native source filters before changing provider code",
+        "provider_filter_support": "teach the provider to honor configured native filters",
+        "dedicated_provider_logic": "add or fix provider parsing/enumeration logic",
+    }.get(strategy, "inspect the source and choose the narrowest integration action")
+
+
+def _config_suggestion(source: dict[str, Any], strategy: str, canary_title: str) -> dict[str, Any]:
+    if strategy not in {"config_terms_override", "config_terms_append", "config_native_filters"}:
+        return {}
+    suggestion: dict[str, Any] = {}
+    if strategy in {"config_terms_override", "config_terms_append"}:
+        terms = [
+            term
+            for term in re.split(r"[^A-Za-z0-9+#.]+", canary_title)
+            if len(term) >= 4 and term.lower() not in {"engineer", "senior", "staff", "role"}
+        ][:4]
+        if not terms:
+            terms = [str(term) for term in source.get("search_terms_tried", [])[:3] if str(term).strip()]
+        if terms:
+            suggestion["search_terms"] = {
+                "mode": "override" if strategy == "config_terms_override" else "append",
+                "terms": terms,
+            }
+    elif strategy == "config_native_filters":
+        suggestion["filters_needed"] = [
+            "Add source-native filters inferred from profile/prefs, such as location, degree, job family, or organization."
+        ]
+    return suggestion
+
+
+def build_integration_ticket(
     track: str,
     source: dict[str, Any],
     deterministic: dict[str, Any],
@@ -961,6 +1084,11 @@ def build_repair_ticket(
         return None
 
     failure_mode = _determine_failure_mode(failing_checks, blocking_defects)
+    suggested_strategy = _suggested_strategy(
+        failure_mode,
+        source=source,
+        failing_checks=failing_checks,
+    )
     primary_evidence = _collect_primary_evidence(failing_checks, blocking_defects)
     summary = ""
     defect_types: list[str] = []
@@ -970,7 +1098,7 @@ def build_repair_ticket(
         defect_types.append(primary["name"])
     elif blocking_defects:
         primary = blocking_defects[0]
-        summary = primary.get("observed") or primary.get("repair_hint") or primary.get("type", "reviewer defect")
+        summary = primary.get("observed") or primary.get("integration_hint") or primary.get("type", "reviewer defect")
         defect_types.append(primary.get("type", "other"))
 
     success_condition = "Deterministic validators all pass"
@@ -983,8 +1111,23 @@ def build_repair_ticket(
         "track": track,
         "source": source.get("source", ""),
         "discovery_mode": source.get("discovery_mode", ""),
+        "source_url": source.get("source_url", ""),
         "canary_title": canary_title,
         "canary_url": canary_url,
+        "search_terms_tried": source.get("search_terms_tried", []),
+        "configured_filters": source.get("filters", {}),
+        "candidate_counts": {
+            "candidates": len(source.get("candidates", []) if isinstance(source.get("candidates"), list) else []),
+            "matched_jobs": source.get("matched_jobs"),
+            "enumerated_jobs": source.get("enumerated_jobs"),
+        },
+        "page_evidence": {
+            "status": source.get("status"),
+            "listing_pages_scanned": source.get("listing_pages_scanned"),
+            "result_pages_scanned": source.get("result_pages_scanned"),
+            "direct_job_pages_opened": source.get("direct_job_pages_opened"),
+            "limitations": source.get("limitations", []),
+        },
         "summary": summary,
         "defect_types": defect_types,
         "failing_checks": [check["name"] for check in failing_checks],
@@ -996,12 +1139,14 @@ def build_repair_ticket(
             canary_title=canary_title,
             canary_url=canary_url,
         ),
-        "suggested_strategy": _suggested_strategy_for_failure_mode(failure_mode),
-        "test_hint": infer_repair_test_hint(source),
-        "likely_file": infer_repair_likely_file(source),
+        "suggested_strategy": suggested_strategy,
+        "suggested_strategy_label": _strategy_label(suggested_strategy),
+        "config_suggestion": _config_suggestion(source, suggested_strategy, canary_title),
+        "test_hint": infer_integration_test_hint(source),
+        "likely_file": infer_integration_likely_file(source),
         "success_condition": success_condition,
         "non_goals": [
             "Do not redesign multiple sources at once.",
-            "Do not broaden track search terms unless the defect explicitly requires it.",
+            "Do not broaden track search terms unless the integration ticket explicitly requires it.",
         ],
     }
