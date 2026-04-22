@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import smtplib
 import ssl
+import subprocess
 import sys
 
 from digest_json import digest_artifact_path
@@ -85,7 +86,7 @@ def main() -> int:
     return 0
 
 
-def load_smtp_config(env: Mapping[str, str]) -> SMTPConfig:
+def load_smtp_config(env: Mapping[str, str], *, execute_password_cmd: bool = True) -> SMTPConfig:
     tls_mode = env.get("JOB_AGENT_SMTP_TLS", "starttls").strip().lower()
     if tls_mode not in {"starttls", "ssl", "none"}:
         raise DigestEmailError("JOB_AGENT_SMTP_TLS must be one of: starttls, ssl, none")
@@ -97,9 +98,21 @@ def load_smtp_config(env: Mapping[str, str]) -> SMTPConfig:
     recipients = _parse_recipients(_required_env(env, "JOB_AGENT_SMTP_TO"))
     username = _optional_env(env, "JOB_AGENT_SMTP_USERNAME")
     password = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD")
+    password_cmd = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD_CMD")
 
-    if bool(username) != bool(password):
-        raise DigestEmailError("JOB_AGENT_SMTP_USERNAME and JOB_AGENT_SMTP_PASSWORD must be set together")
+    if username and not password:
+        if password_cmd:
+            if not execute_password_cmd:
+                raise DigestEmailError("JOB_AGENT_SMTP_PASSWORD_CMD cannot be resolved in this mode")
+            password = _password_from_command(password_cmd)
+        else:
+            raise DigestEmailError(
+                "JOB_AGENT_SMTP_USERNAME requires JOB_AGENT_SMTP_PASSWORD or JOB_AGENT_SMTP_PASSWORD_CMD"
+            )
+    elif not username and (password or password_cmd):
+        raise DigestEmailError(
+            "JOB_AGENT_SMTP_PASSWORD and JOB_AGENT_SMTP_PASSWORD_CMD require JOB_AGENT_SMTP_USERNAME"
+        )
 
     return SMTPConfig(
         host=host,
@@ -153,6 +166,29 @@ def _required_env(env: Mapping[str, str], name: str) -> str:
 def _optional_env(env: Mapping[str, str], name: str) -> str | None:
     value = env.get(name, "").strip()
     return value or None
+
+
+def _password_from_command(command: str) -> str:
+    try:
+        completed = subprocess.run(
+            command,
+            shell=True,
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+    except OSError as exc:
+        raise DigestEmailError(f"JOB_AGENT_SMTP_PASSWORD_CMD failed to start: {exc}") from exc
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        detail = f": {stderr}" if stderr else ""
+        raise DigestEmailError(
+            f"JOB_AGENT_SMTP_PASSWORD_CMD exited with status {completed.returncode}{detail}"
+        )
+    password = completed.stdout.rstrip("\n")
+    if not password:
+        raise DigestEmailError("JOB_AGENT_SMTP_PASSWORD_CMD produced an empty password")
+    return password
 
 
 def _parse_port(value: str) -> int:

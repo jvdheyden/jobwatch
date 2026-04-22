@@ -13,6 +13,17 @@ That will:
 - create machine-local config via `scripts/setup_machine.sh`
 - create local profile placeholders under `profile/`
 - bootstrap the repo-local virtualenv via `scripts/bootstrap_venv.sh`
+- print a final next-step block with the guided setup command
+
+In an interactive terminal, bootstrap asks whether to launch the guided setup agent now; the default answer is yes. In non-interactive mode, it never launches the agent unless you pass `--start-setup-agent`. Use `--no-start-setup-agent` to suppress the prompt in interactive runs.
+
+You can also launch guided setup directly after bootstrap:
+
+```bash
+bash scripts/start_setup_agent.sh --agent claude
+# or
+bash scripts/start_setup_agent.sh --agent codex
+```
 
 If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh --agent claude` or `bash scripts/setup_machine.sh --agent codex` directly. Existing `.env.local` files can also supply the previous `JOB_AGENT_PROVIDER`. That creates:
 
@@ -25,13 +36,15 @@ If you only need to refresh the generated machine-local config later, run `bash 
 
 The `profile/` directory is local user data and is ignored by Git. `profile/cv.md` is the primary agent-readable CV context. `profile/prefs_global.md` stores durable cross-track preferences. You can also place a PDF CV in `profile/`; the setup agent can use it to draft `profile/cv.md` when the Markdown CV is still the default placeholder.
 
+Do not edit `.agents/skills/set-up/templates/profile/*`. Those files are tracked defaults used only when local profile files are missing.
+
 In a normal terminal, the setup script prompts for missing machine-local values after the agent is selected.
 
 - `--agent codex|claude` selects the automation provider for first-time setup. If omitted and no existing `JOB_AGENT_PROVIDER` is available, setup exits with exact commands to rerun.
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
 - `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
-- SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill them locally if you want email delivery.
+- SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill non-secret values locally if you want email delivery. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD` over plaintext passwords.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude paths are written as detected.
 
@@ -68,6 +81,24 @@ The track setup agent normally asks about delivery and scheduling after it creat
 
 Track setup creates track-specific preferences in `tracks/<track>/prefs.md`. Those preferences are separate from `profile/prefs_global.md` and can override global preferences for that track.
 
+During first-track setup, the guided agent:
+
+- fills or defers `profile/cv.md` and `profile/prefs_global.md`
+- collects the minimum track brief before source discovery
+- asks for known companies and official job boards
+- optionally uses `discover-sources` for a concise shortlist
+- probes accepted sources with `scripts/probe_career_source.py` where useful
+- stores canaries and mutable integration state in `tracks/<track>/source_state.json`
+- runs source-quality checks and treats a source as ready only when `eval_source_quality.py` reports `final_status: "pass"`
+- runs `scripts/source_integration.py` for at most the top 2 integration-needed sources, then queues the rest for `scripts/integrate_next_source.py`
+- runs the first local digest before email dry-run testing
+
+If a canary disappears later, refresh it instead of deleting quality checks:
+
+```bash
+./.venv/bin/python scripts/update_source_canary.py --track <track> --source "<Source Name>"
+```
+
 For manual maintenance, use the helper instead of editing `.schedule.local` by hand:
 
 ```bash
@@ -91,4 +122,24 @@ After changing schedules manually with the helper, install or refresh the platfo
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
 
-Email delivery is optional. Fill the `JOB_AGENT_SMTP_*` values in `.env.local` locally; do not put SMTP passwords in tracked files or chat transcripts.
+Email delivery is optional. Fill the non-secret `JOB_AGENT_SMTP_*` values in `.env.local` locally; do not put SMTP passwords in tracked files or chat transcripts.
+
+Preferred password retrieval examples:
+
+```bash
+export JOB_AGENT_SMTP_PASSWORD_CMD='security find-generic-password -s jobwatch-smtp -a jobs@example.com -w'
+export JOB_AGENT_SMTP_PASSWORD_CMD='secret-tool lookup service jobwatch-smtp account jobs@example.com'
+export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'
+```
+
+`JOB_AGENT_SMTP_PASSWORD` is still supported as a legacy/local-only plaintext fallback. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; it is executed only for real sends, not for `--dry-run`.
+
+Email setup sequence:
+
+```bash
+bash scripts/run_track.sh --track <track>
+test -f artifacts/digests/<track>/YYYY-MM-DD.json
+./.venv/bin/python scripts/send_digest_email.py --track <track> --date YYYY-MM-DD --dry-run
+```
+
+Only test a real send or schedule email delivery after the digest exists and the dry run renders correctly.

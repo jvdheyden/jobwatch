@@ -6,10 +6,11 @@ ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 AGENT_VALUE=""
 AGENT_BIN_VALUE=""
+START_SETUP_AGENT=""
 
 usage() {
   cat <<EOF
-Usage: $0 --agent codex|claude [--agent-bin <path>]
+Usage: $0 --agent codex|claude [--agent-bin <path>] [--start-setup-agent|--no-start-setup-agent]
 
 Bootstrap this checkout for first-time local use.
 
@@ -19,6 +20,8 @@ This script:
 3. Bootstraps the repo-local virtualenv via scripts/bootstrap_venv.sh
 
 It does not install the scheduler or the optional Linux AppArmor profile.
+In an interactive terminal, it asks whether to start the guided setup agent.
+In non-interactive mode, it starts the setup agent only with --start-setup-agent.
 EOF
 }
 
@@ -50,6 +53,64 @@ validate_agent() {
   esac
 }
 
+is_interactive() {
+  [[ -t 0 && -t 1 ]]
+}
+
+prompt_start_setup_agent() {
+  local entered=""
+  printf 'Start guided setup now? [Y/n]: ' >&2
+  IFS= read -r entered
+  case "${entered,,}" in
+    n|no)
+      printf 'no\n'
+      ;;
+    *)
+      printf 'yes\n'
+      ;;
+  esac
+}
+
+print_final_guidance() {
+  local start_command="bash scripts/start_setup_agent.sh --agent $AGENT_VALUE"
+  if [[ -n "$AGENT_BIN_VALUE" ]]; then
+    start_command+=" --agent-bin $AGENT_BIN_VALUE"
+  fi
+
+  cat <<EOF
++------------------------------------------------------------+
+| jobwatch bootstrap complete                                |
++------------------------------------------------------------+
+Repo root:
+  $ROOT
+
+Profile files to fill:
+  profile/cv.md
+  profile/prefs_global.md
+
+Optional: place a PDF CV in profile/ and the setup agent can draft
+profile/cv.md when it is still the default placeholder.
+
+Do not edit:
+  .agents/skills/set-up/templates/profile/*
+
+Start guided setup:
+  $start_command
+EOF
+
+  if [[ "$PLATFORM" == "Linux" && "$AGENT_VALUE" == "codex" ]]; then
+    cat <<EOF
+
+Linux/Codex AppArmor, only if this host restricts bwrap user namespaces:
+  sudo bash scripts/install_bwrap_apparmor.sh
+EOF
+  fi
+
+  cat <<EOF
++------------------------------------------------------------+
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)
@@ -69,6 +130,14 @@ while [[ $# -gt 0 ]]; do
       fi
       AGENT_BIN_VALUE="$2"
       shift 2
+      ;;
+    --start-setup-agent)
+      START_SETUP_AGENT="yes"
+      shift
+      ;;
+    --no-start-setup-agent)
+      START_SETUP_AGENT="no"
+      shift
       ;;
     --help|-h)
       usage
@@ -99,10 +168,20 @@ fi
 /bin/bash "$SCRIPT_DIR/setup_machine.sh" "${SETUP_ARGS[@]}"
 /bin/bash "$SCRIPT_DIR/bootstrap_venv.sh"
 
-echo "Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for $ROOT"
-echo "Fill profile/cv.md and profile/prefs_global.md locally; optionally place a PDF CV in profile/."
-echo "Next: ask your configured agent to set up a search track; the setup agent can configure delivery, scheduling, and scheduler install."
-if [[ "$PLATFORM" == "Linux" ]]; then
-  echo "Optional on Linux hosts that enforce AppArmor userns restrictions:"
-  echo "  sudo bash scripts/install_bwrap_apparmor.sh"
+if [[ -z "$START_SETUP_AGENT" ]]; then
+  if is_interactive; then
+    START_SETUP_AGENT="$(prompt_start_setup_agent)"
+  else
+    START_SETUP_AGENT="no"
+  fi
+fi
+
+print_final_guidance
+
+if [[ "$START_SETUP_AGENT" == "yes" ]]; then
+  START_ARGS=(--agent "$AGENT_VALUE")
+  if [[ -n "$AGENT_BIN_VALUE" ]]; then
+    START_ARGS+=(--agent-bin "$AGENT_BIN_VALUE")
+  fi
+  /bin/bash "$SCRIPT_DIR/start_setup_agent.sh" "${START_ARGS[@]}"
 fi

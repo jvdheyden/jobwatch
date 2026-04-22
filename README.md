@@ -13,7 +13,7 @@ jobwatch finds the roles. Trackers manage the ones you already found; writers dr
 ### Quick start:
 - `git clone git@github.com:jvdheyden/jobwatch.git && cd "$(basename "$_" .git)"`
 - `bash scripts/bootstrap_machine.sh --agent {claude,codex}`
-- `codex --sandbox workspace-write "Set up a new search track."` or `claude "Set up a new search track."`
+- `bash scripts/start_setup_agent.sh --agent {claude,codex}`
 
 For a more detailed set-up guide, see [New User Setup](#new-user-setup).
 
@@ -60,7 +60,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/bootstrap_machine.sh --agent codex
    ```
 
-   This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`.
+   This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`. In an interactive terminal, bootstrap offers to start the guided setup agent; in non-interactive runs, pass `--start-setup-agent` to launch it automatically.
 
    <details><summary>What the bootstrap script writes</summary>
    Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
@@ -95,15 +95,15 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
 
    Skip this on macOS. On Linux, this is only needed on hosts where AppArmor restricts unprivileged user namespaces.
 
-4. Run the setup agent to create your first search track. In Codex or Claude Code, ask for a new track setup from the repo root. The track-setup workflow is defined in [`AGENTS.md`](./AGENTS.md) and [`.agents/skills/set-up/SKILL.md`](./.agents/skills/set-up/SKILL.md).
+4. Run the guided setup agent to create your first search track:
 
-   Example prompt:
-
-   ```text
-   Set up a new search track for privacy engineering roles in Germany.
+   ```bash
+   bash scripts/start_setup_agent.sh --agent claude
+   # or
+   bash scripts/start_setup_agent.sh --agent codex
    ```
 
-   The setup flow creates the track files, asks which delivery methods you want, configures scheduling if requested, and validates the track.
+   The setup flow fills local profile files, creates the track files, discovers and validates sources, runs the first local digest before email testing, asks which delivery methods you want, configures scheduling if requested, and validates the track.
 
    Track-specific preferences live in `tracks/<track-slug>/prefs.md`. They are still required even when `profile/cv.md` and `profile/prefs_global.md` are filled, because each track can have narrower goals, keywords, constraints, and red flags.
 
@@ -203,11 +203,11 @@ JOB_AGENT_SMTP_PORT
 JOB_AGENT_SMTP_FROM
 JOB_AGENT_SMTP_TO
 JOB_AGENT_SMTP_USERNAME
-JOB_AGENT_SMTP_PASSWORD
+JOB_AGENT_SMTP_PASSWORD_CMD
 JOB_AGENT_SMTP_TLS
 ```
 
-Do not put SMTP passwords in tracked files or chat transcripts. After `.env.local` is filled, run the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
+Do not put SMTP passwords in tracked files or chat transcripts. `JOB_AGENT_SMTP_PASSWORD` remains a legacy/local-only plaintext fallback, but password-command retrieval is preferred. After `.env.local` is filled and a digest JSON exists, run the dry-run command first, then test the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
 
 ## Logseq Delivery
 

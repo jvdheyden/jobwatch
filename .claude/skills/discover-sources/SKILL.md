@@ -120,11 +120,19 @@ Common pattern to preserve: if an employer homepage links directly to an officia
 
 ## Output contract
 
-Return both:
-1. a concise human-readable recommendation list
-2. a setup-ready source pack that `set-up` can translate directly into `sources.json`
+Return a concise human-readable shortlist by default. Keep internally structured notes for `set-up`, but do not dump full setup-ready records unless the user asks for debug detail.
 
-Use this structure:
+Default user-facing shape:
+
+- Recommended sources: source name, URL, board family, suggested `discovery_mode`, cadence, and one short reason.
+- Dropped sources: source name, URL if known, and the reason it should not be used now.
+- URL corrections: user-supplied URL -> better official URL, with a short explanation.
+- Known caveats: unsupported/partial board families, broad/noisy source warnings, or filters that should be confirmed.
+- Decisions needed: keep/drop/add, cadence changes, native filters, or broad-source match-rule confirmation.
+
+Keep the shortlist concise. Prefer roughly `4-8` recommended primary sources and a smaller follow-up list, not a catalog.
+
+When `set-up` needs structured detail, provide setup-ready records in a collapsible/debug-style section or only on request. Use this structure:
 
 ```md
 ## Primary sources
@@ -143,7 +151,7 @@ Use this structure:
 
 ### ...
 
-## Setup-ready source records
+## Setup-ready source records (debug detail)
 
 ### {source_name}
 - employer: ...
@@ -182,6 +190,7 @@ If no strong official sources are found, say so clearly and return only the best
 - `set-up` should call this skill only after the minimum setup brief is available, the user has been asked for known companies and job boards, and the user wants help finding additional sources.
 - `set-up` owns the final source list, confirmation step, normalization, and file writes.
 - Treat the output as recommended input to normalize, confirm, and write into `sources.json` and, when needed, `match_rules.json`.
+- After this skill returns, `set-up` must continue automatically: ask keep/drop/add, ask cadence changes, infer or confirm filters, and auto-pick canaries unless the user volunteers specific canaries.
 - If the user rejects or trims sources, adapt the shortlist instead of rerunning unnecessary discovery.
 
 ## Boundaries

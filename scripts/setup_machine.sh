@@ -28,6 +28,7 @@ SMTP_FROM_VALUE=""
 SMTP_TO_VALUE=""
 SMTP_USERNAME_VALUE=""
 SMTP_PASSWORD_VALUE=""
+SMTP_PASSWORD_CMD_VALUE=""
 SMTP_TLS_VALUE=""
 ENV_SMTP_HOST_VALUE="${JOB_AGENT_SMTP_HOST:-}"
 ENV_SMTP_PORT_VALUE="${JOB_AGENT_SMTP_PORT:-}"
@@ -35,6 +36,7 @@ ENV_SMTP_FROM_VALUE="${JOB_AGENT_SMTP_FROM:-}"
 ENV_SMTP_TO_VALUE="${JOB_AGENT_SMTP_TO:-}"
 ENV_SMTP_USERNAME_VALUE="${JOB_AGENT_SMTP_USERNAME:-}"
 ENV_SMTP_PASSWORD_VALUE="${JOB_AGENT_SMTP_PASSWORD:-}"
+ENV_SMTP_PASSWORD_CMD_VALUE="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
 ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 
 scheduler_instance_id() {
@@ -353,6 +355,7 @@ existing_smtp_from=""
 existing_smtp_to=""
 existing_smtp_username=""
 existing_smtp_password=""
+existing_smtp_password_cmd=""
 existing_smtp_tls=""
 detected_agent_bin=""
 detected_logseq_graph_dir=""
@@ -373,6 +376,7 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_smtp_to="${JOB_AGENT_SMTP_TO:-}"
   existing_smtp_username="${JOB_AGENT_SMTP_USERNAME:-}"
   existing_smtp_password="${JOB_AGENT_SMTP_PASSWORD:-}"
+  existing_smtp_password_cmd="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
   existing_smtp_tls="${JOB_AGENT_SMTP_TLS:-}"
   PATH="$ORIGINAL_PATH"
 fi
@@ -427,6 +431,7 @@ SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
 SMTP_TO_VALUE="${ENV_SMTP_TO_VALUE:-$existing_smtp_to}"
 SMTP_USERNAME_VALUE="${ENV_SMTP_USERNAME_VALUE:-$existing_smtp_username}"
 SMTP_PASSWORD_VALUE="${ENV_SMTP_PASSWORD_VALUE:-$existing_smtp_password}"
+SMTP_PASSWORD_CMD_VALUE="${ENV_SMTP_PASSWORD_CMD_VALUE:-$existing_smtp_password_cmd}"
 SMTP_TLS_VALUE="${ENV_SMTP_TLS_VALUE:-$existing_smtp_tls}"
 
 if [[ -z "$AGENT_BIN_VALUE" ]]; then
@@ -512,6 +517,17 @@ fi
   else
     echo "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com"
   fi
+  echo "# Preferred: retrieve the SMTP password only when a real email is sent."
+  echo "# Examples:"
+  echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='security find-generic-password -s jobwatch-smtp -a jobs@example.com -w'"
+  echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='secret-tool lookup service jobwatch-smtp account jobs@example.com'"
+  echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'"
+  if [[ -n "$SMTP_PASSWORD_CMD_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_PASSWORD_CMD=%s\n' "$(shell_escape "$SMTP_PASSWORD_CMD_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'"
+  fi
+  echo "# Legacy/local-only plaintext fallback; prefer JOB_AGENT_SMTP_PASSWORD_CMD."
   if [[ -n "$SMTP_PASSWORD_VALUE" ]]; then
     printf 'export JOB_AGENT_SMTP_PASSWORD=%s\n' "$(shell_escape "$SMTP_PASSWORD_VALUE")"
   else

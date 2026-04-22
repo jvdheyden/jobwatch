@@ -177,6 +177,7 @@ def test_setup_machine_preserves_existing_smtp_values(tmp_job_agent_root: Path, 
                 "export JOB_AGENT_SMTP_FROM=jobs@test.invalid",
                 "export JOB_AGENT_SMTP_TO=user@test.invalid",
                 "export JOB_AGENT_SMTP_USERNAME=smtp-user",
+                "export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'",
                 "export JOB_AGENT_SMTP_PASSWORD=smtp-secret",
                 "export JOB_AGENT_SMTP_TLS=none",
                 "",
@@ -202,7 +203,9 @@ def test_setup_machine_preserves_existing_smtp_values(tmp_job_agent_root: Path, 
     assert "export JOB_AGENT_SMTP_FROM=jobs@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_TO=user@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_USERNAME=smtp-user" in env_text
+    assert "export JOB_AGENT_SMTP_PASSWORD_CMD=pass\\ show\\ email/jobwatch-smtp" in env_text
     assert "export JOB_AGENT_SMTP_PASSWORD=smtp-secret" in env_text
+    assert "Legacy/local-only plaintext fallback" in env_text
     assert "export JOB_AGENT_SMTP_TLS=none" in env_text
     assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" not in env_text
 
@@ -781,12 +784,12 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
         f"setup_machine --agent codex --agent-bin {agent_bin}",
         "bootstrap_venv",
     ]
-    assert (
-        f"Bootstrapped machine config, local profile placeholders, and repo-local virtualenv for {tmp_job_agent_root}"
-        in result.stdout
-    )
-    assert "Fill profile/cv.md and profile/prefs_global.md locally" in result.stdout
-    assert "Next: ask your configured agent to set up a search track" in result.stdout
+    assert "jobwatch bootstrap complete" in result.stdout
+    assert f"  {tmp_job_agent_root}" in result.stdout
+    assert "profile/cv.md" in result.stdout
+    assert "profile/prefs_global.md" in result.stdout
+    assert ".agents/skills/set-up/templates/profile/*" in result.stdout
+    assert "bash scripts/start_setup_agent.sh --agent codex" in result.stdout
     assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
 
 
@@ -843,8 +846,230 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
 
     result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
-    assert "Next: ask your configured agent to set up a search track" in result.stdout
+    assert "jobwatch bootstrap complete" in result.stdout
+    assert "bash scripts/start_setup_agent.sh --agent codex" in result.stdout
     assert "install_bwrap_apparmor" not in result.stdout
+
+
+def test_bootstrap_machine_starts_setup_agent_only_when_requested(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    start_setup_script = tmp_job_agent_root / "scripts" / "start_setup_agent.sh"
+    log_file = tmp_job_agent_root / "bootstrap-machine.log"
+    agent_bin = tmp_job_agent_root / "bin" / "codex"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(
+        setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        bootstrap_venv_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        start_setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'start_setup_agent %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_MACHINE_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PLATFORM": "Linux",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(bootstrap_script),
+        "--agent",
+        "codex",
+        "--agent-bin",
+        str(agent_bin),
+        "--start-setup-agent",
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert log_file.read_text().splitlines() == [
+        f"setup_machine --agent codex --agent-bin {agent_bin}",
+        "bootstrap_venv",
+        f"start_setup_agent --agent codex --agent-bin {agent_bin}",
+    ]
+
+
+def test_bootstrap_machine_interactive_prompt_defaults_to_starting_setup(
+    tmp_job_agent_root: Path, repo_root: Path
+) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    start_setup_script = tmp_job_agent_root / "scripts" / "start_setup_agent.sh"
+    log_file = tmp_job_agent_root / "bootstrap-machine.log"
+    agent_bin = tmp_job_agent_root / "bin" / "codex"
+
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(
+        setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        bootstrap_venv_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+    _write_executable(
+        start_setup_script,
+        """#!/bin/bash
+set -euo pipefail
+printf 'start_setup_agent %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+""",
+    )
+
+    env = os.environ | {
+        "BOOTSTRAP_MACHINE_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PLATFORM": "Linux",
+    }
+
+    result = _run_interactive(
+        "bash",
+        str(bootstrap_script),
+        "--agent",
+        "codex",
+        "--agent-bin",
+        str(agent_bin),
+        input_text="\n",
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 0, result.stdout
+    assert "Start guided setup now? [Y/n]:" in result.stdout
+    assert log_file.read_text().splitlines() == [
+        f"setup_machine --agent codex --agent-bin {agent_bin}",
+        "bootstrap_venv",
+        f"start_setup_agent --agent codex --agent-bin {agent_bin}",
+    ]
+
+
+def test_start_setup_agent_runs_codex_with_sanitized_environment(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    fake_bin = tmp_job_agent_root / "bin" / "codex"
+    env_file = tmp_job_agent_root / ".env.local"
+    args_file = tmp_job_agent_root / "codex-args.txt"
+    prompt_file = tmp_job_agent_root / "codex-prompt.txt"
+    password_file = tmp_job_agent_root / "smtp-password.txt"
+    password_cmd_file = tmp_job_agent_root / "smtp-password-cmd.txt"
+    cwd_file = tmp_job_agent_root / "codex-cwd.txt"
+
+    _write_executable(
+        fake_bin,
+        f"""#!/bin/bash
+set -euo pipefail
+printf '%s\\n' "$@" > "{args_file}"
+printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
+printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD-}}" > "{password_file}"
+printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD_CMD-}}" > "{password_cmd_file}"
+pwd > "{cwd_file}"
+""",
+    )
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=codex",
+                f"export JOB_AGENT_BIN={fake_bin}",
+                "export JOB_AGENT_SMTP_PASSWORD=plain-secret",
+                "export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'",
+                "",
+            ]
+        )
+    )
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "start_setup_agent.sh"),
+        env=os.environ | {"JOB_AGENT_ROOT": str(tmp_job_agent_root), "JOB_AGENT_ENV_FILE": str(env_file)},
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    args = args_file.read_text().splitlines()
+    assert "--search" in args
+    assert "-a" in args
+    assert "never" in args
+    assert "-C" in args
+    assert str(tmp_job_agent_root) in args
+    assert "-s" in args
+    assert "workspace-write" in args
+    assert "Use the project skill $set-up" in prompt_file.read_text()
+    assert "scripts/probe_career_source.py" in prompt_file.read_text()
+    assert password_file.read_text() == "\n"
+    assert password_cmd_file.read_text() == "pass show email/jobwatch-smtp\n"
+    assert cwd_file.read_text().strip() == str(tmp_job_agent_root)
+
+
+def test_start_setup_agent_runs_claude_with_setup_safe_tools(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    fake_bin = tmp_job_agent_root / "bin" / "claude"
+    env_file = tmp_job_agent_root / ".env.local"
+    args_file = tmp_job_agent_root / "claude-args.txt"
+    prompt_file = tmp_job_agent_root / "claude-prompt.txt"
+
+    _write_executable(
+        fake_bin,
+        f"""#!/bin/bash
+set -euo pipefail
+printf '%s\\n' "$@" > "{args_file}"
+printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
+""",
+    )
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=claude",
+                f"export JOB_AGENT_BIN={fake_bin}",
+                "",
+            ]
+        )
+    )
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "start_setup_agent.sh"),
+        env=os.environ | {"JOB_AGENT_ROOT": str(tmp_job_agent_root), "JOB_AGENT_ENV_FILE": str(env_file)},
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    args = args_file.read_text().splitlines()
+    assert "--permission-mode" in args
+    assert "acceptEdits" in args
+    assert "--allowedTools" in args
+    assert any("WebSearch" in arg for arg in args)
+    assert any("WebFetch" in arg for arg in args)
+    assert "Use the project skill $set-up" in prompt_file.read_text()
 
 
 def test_bootstrap_machine_stops_if_setup_machine_fails(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

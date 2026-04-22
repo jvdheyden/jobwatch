@@ -213,6 +213,8 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert "Current evidence:" in prompt_text
     assert "Layered strategy order:" in prompt_text
     assert "config_terms_append" in prompt_text
+    assert "prefer a reusable provider module under `scripts/discover/sources/`" in prompt_text
+    assert "Avoid one-off branches in `scripts/discover/sources/generic_html.py`" in prompt_text
     assert "search_terms_tried" in prompt_text
     assert (
         f"Start by inspecting the source-specific parser path in {GENERIC_HTML_PROVIDER} "

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from email.message import EmailMessage
+import json
+import sys
 
 import pytest
 
@@ -45,7 +47,7 @@ def test_load_smtp_config_allows_no_auth_for_local_servers():
 
 
 def test_load_smtp_config_rejects_partial_auth():
-    with pytest.raises(DigestEmailError, match="must be set together"):
+    with pytest.raises(DigestEmailError, match="requires JOB_AGENT_SMTP_PASSWORD or JOB_AGENT_SMTP_PASSWORD_CMD"):
         send_digest_email.load_smtp_config(
             {
                 "JOB_AGENT_SMTP_HOST": "smtp.example.com",
@@ -54,6 +56,80 @@ def test_load_smtp_config_rejects_partial_auth():
                 "JOB_AGENT_SMTP_USERNAME": "user",
             }
         )
+
+
+def test_load_smtp_config_resolves_password_command(monkeypatch):
+    calls: list[str] = []
+
+    class Completed:
+        returncode = 0
+        stdout = "secret with space \n"
+        stderr = ""
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        assert kwargs["shell"] is True
+        assert kwargs["capture_output"] is True
+        return Completed()
+
+    monkeypatch.setattr(send_digest_email.subprocess, "run", fake_run)
+
+    config = send_digest_email.load_smtp_config(
+        {
+            "JOB_AGENT_SMTP_HOST": "smtp.example.com",
+            "JOB_AGENT_SMTP_FROM": "jobs@example.com",
+            "JOB_AGENT_SMTP_TO": "me@example.com",
+            "JOB_AGENT_SMTP_USERNAME": "user",
+            "JOB_AGENT_SMTP_PASSWORD_CMD": "pass show email/jobwatch-smtp",
+        }
+    )
+
+    assert calls == ["pass show email/jobwatch-smtp"]
+    assert config.password == "secret with space "
+
+
+def test_load_smtp_config_rejects_empty_password_command(monkeypatch):
+    class Completed:
+        returncode = 0
+        stdout = "\n"
+        stderr = ""
+
+    monkeypatch.setattr(send_digest_email.subprocess, "run", lambda *_args, **_kwargs: Completed())
+
+    with pytest.raises(DigestEmailError, match="empty password"):
+        send_digest_email.load_smtp_config(
+            {
+                "JOB_AGENT_SMTP_HOST": "smtp.example.com",
+                "JOB_AGENT_SMTP_FROM": "jobs@example.com",
+                "JOB_AGENT_SMTP_TO": "me@example.com",
+                "JOB_AGENT_SMTP_USERNAME": "user",
+                "JOB_AGENT_SMTP_PASSWORD_CMD": "printf '\\n'",
+            }
+        )
+
+
+def test_dry_run_does_not_load_smtp_or_execute_password_command(tmp_path, monkeypatch, load_json_fixture, capsys):
+    root = tmp_path
+    digest_dir = root / "artifacts" / "digests" / "core_crypto"
+    digest_dir.mkdir(parents=True)
+    (digest_dir / "2026-03-29.json").write_text(
+        json.dumps(load_json_fixture("digests/core_crypto_minimal.json")) + "\n"
+    )
+    monkeypatch.setenv("JOB_AGENT_ROOT", str(root))
+    monkeypatch.setenv("JOB_AGENT_SMTP_PASSWORD_CMD", "exit 99")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["send_digest_email.py", "--track", "core_crypto", "--date", "2026-03-29", "--dry-run"],
+    )
+    monkeypatch.setattr(
+        send_digest_email,
+        "load_smtp_config",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not load smtp config")),
+    )
+
+    assert send_digest_email.main() == 0
+    assert "Subject:" in capsys.readouterr().out
 
 
 def test_build_email_message_adds_ranked_attachment():
