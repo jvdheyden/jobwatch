@@ -431,7 +431,6 @@ fi
 cat >"$PROMPT_FILE" <<EOF
 Run today's $TRACK workflow from the repository root in mode: track_run.
 Follow tracks/$TRACK/AGENTS.md for the workflow.
-Use scripted discovery helpers when available.
 $DISCOVERY_PROMPT_BLOCK
 This is a normal scheduled run, not a debugging session.
 Do not inspect ./logs or downstream publication targets such as the configured Logseq graph unless explicitly asked to debug the runner.
