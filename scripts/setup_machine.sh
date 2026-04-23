@@ -615,7 +615,7 @@ echo "Wrote $ENV_FILE"
 
 if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
   CODEX_CONFIG_PYTHON="${JOB_AGENT_PYTHON:-python3}"
-  if codex_config_status="$("$CODEX_CONFIG_PYTHON" "$SCRIPT_DIR/install_codex_project_config.py" --root "$ROOT" --base-path "$existing_path")"; then
+  if codex_config_status="$("$CODEX_CONFIG_PYTHON" "$SCRIPT_DIR/hooks/install_codex_project_config.py" --root "$ROOT" --base-path "$existing_path")"; then
     echo "Codex project config: $codex_config_status ($ROOT/.codex/config.toml)"
   else
     echo "Codex project config install failed" >&2
@@ -624,10 +624,15 @@ fi
 
 if [[ "$AGENT_PROVIDER_VALUE" == "claude" ]]; then
   CLAUDE_HOOK_PYTHON="${JOB_AGENT_PYTHON:-python3}"
-  if claude_hook_status="$("$CLAUDE_HOOK_PYTHON" "$SCRIPT_DIR/install_claude_session_hook.py" --root "$ROOT" 2>&1)"; then
+  if claude_hook_status="$("$CLAUDE_HOOK_PYTHON" "$SCRIPT_DIR/hooks/install_claude_session_hook.py" --root "$ROOT" 2>&1)"; then
     echo "Claude SessionStart hook: $claude_hook_status ($ROOT/.claude/settings.local.json)"
   else
     echo "Claude SessionStart hook install failed: $claude_hook_status" >&2
+  fi
+  if claude_gate_status="$("$CLAUDE_HOOK_PYTHON" "$SCRIPT_DIR/hooks/install_claude_coding_gate_hook.py" --root "$ROOT" 2>&1)"; then
+    echo "Claude coding-gate hook: $claude_gate_status ($ROOT/.claude/settings.local.json)"
+  else
+    echo "Claude coding-gate hook install failed: $claude_gate_status" >&2
   fi
 fi
 

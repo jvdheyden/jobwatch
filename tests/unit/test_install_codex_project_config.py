@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import install_codex_project_config as config
+from hooks import install_codex_project_config as config
 
 
 def test_clean_install_writes_shell_environment_policy(tmp_case_dir: Path) -> None:

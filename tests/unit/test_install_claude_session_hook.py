@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import install_claude_session_hook as hook
+from hooks import install_claude_session_hook as hook
 
 
 def _read(path: Path) -> dict:
