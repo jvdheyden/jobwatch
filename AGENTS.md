@@ -28,3 +28,18 @@ Mode selection:
   - if support looks uncertain or weak, do not auto-escalate; instead suggest source-integration follow-up using the project skill `set-up`, section `4`
 - Otherwise, treat the task as repo development. When the task is repo development, invoke the coding skill before making any changes.
 - Only ask the user which mode they want if the request is genuinely ambiguous.
+
+## Roadmap file rules
+
+When editing `docs/roadmap.md`:
+
+- Treat it as a high-level index of initiatives, not as a design doc, changelog, or scratchpad.
+- Preserve the status vocabulary exactly: `new`, `in progress`, `complete`, `parked`.
+- Preserve item IDs exactly; never renumber them.
+- Keep edits minimal and local; do not rewrite unrelated items for style.
+- Do not delete, merge, split, reprioritize, or archive items unless explicitly instructed.
+- Only change status when the work state clearly changed.
+- Moving an item to `in progress` requires active work and a concrete next step; non-trivial work should also link to a plan doc in `docs/plans/`.
+- Moving an item to `complete` requires that the work is actually done to repo standard.
+- `parked` items must include a short reason and a revisit condition.
+- If you change roadmap status, mention that change explicitly in your final summary.

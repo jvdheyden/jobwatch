@@ -22,6 +22,7 @@ tests/tmp/
 /cv.md
 *.pdf
 .codex
+.claude
 
 # Generated logs
 logs/
