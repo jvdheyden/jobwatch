@@ -18,6 +18,7 @@ def test_load_smtp_config_reads_required_env_and_defaults_port():
             "JOB_AGENT_SMTP_TO": "one@example.com, two@example.com",
             "JOB_AGENT_SMTP_USERNAME": "user",
             "JOB_AGENT_SMTP_PASSWORD": "secret",
+            "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
         }
     )
 
@@ -47,13 +48,29 @@ def test_load_smtp_config_allows_no_auth_for_local_servers():
 
 
 def test_load_smtp_config_rejects_partial_auth():
-    with pytest.raises(DigestEmailError, match="requires JOB_AGENT_SMTP_PASSWORD or JOB_AGENT_SMTP_PASSWORD_CMD"):
+    with pytest.raises(
+        DigestEmailError,
+        match="requires JOB_AGENT_SMTP_PASSWORD_CMD or JOB_AGENT_SECRETS_FILE-backed JOB_AGENT_SMTP_PASSWORD",
+    ):
         send_digest_email.load_smtp_config(
             {
                 "JOB_AGENT_SMTP_HOST": "smtp.example.com",
                 "JOB_AGENT_SMTP_FROM": "jobs@example.com",
                 "JOB_AGENT_SMTP_TO": "me@example.com",
                 "JOB_AGENT_SMTP_USERNAME": "user",
+            }
+        )
+
+
+def test_load_smtp_config_rejects_plaintext_password_without_secrets_file_marker():
+    with pytest.raises(DigestEmailError, match="must come from JOB_AGENT_SECRETS_FILE"):
+        send_digest_email.load_smtp_config(
+            {
+                "JOB_AGENT_SMTP_HOST": "smtp.example.com",
+                "JOB_AGENT_SMTP_FROM": "jobs@example.com",
+                "JOB_AGENT_SMTP_TO": "me@example.com",
+                "JOB_AGENT_SMTP_USERNAME": "user",
+                "JOB_AGENT_SMTP_PASSWORD": "secret",
             }
         )
 

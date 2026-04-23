@@ -44,7 +44,7 @@ In a normal terminal, the setup script prompts for missing machine-local values 
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
 - `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
-- SMTP settings are optional. The script writes commented placeholders to `.env.local`; uncomment and fill non-secret values locally if you want email delivery. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD` over plaintext passwords.
+- SMTP settings are optional. The script writes non-secret SMTP placeholders to `.env.local` plus either an existing `JOB_AGENT_SECRETS_FILE` value or a commented platform-specific suggestion for real secrets stored outside the repo. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; if you need a static password, keep it in the external secrets file instead of `.env.local`.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude paths are written as detected.
 
@@ -122,7 +122,19 @@ After changing schedules manually with the helper, install or refresh the platfo
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
 
-Email delivery is optional. Fill the non-secret `JOB_AGENT_SMTP_*` values in `.env.local` locally; do not put SMTP passwords in tracked files or chat transcripts.
+Email delivery is optional. Fill the non-secret `JOB_AGENT_SMTP_*` values in `.env.local` locally, and keep any real SMTP password outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
+
+Optional external secrets pointer in `.env.local`:
+
+```bash
+# Linux default suggestion:
+export JOB_AGENT_SECRETS_FILE=${XDG_CONFIG_HOME:-$HOME/.config}/jobwatch/secrets.sh
+
+# macOS default suggestion:
+export JOB_AGENT_SECRETS_FILE=$HOME/Library/Application\ Support/jobwatch/secrets.sh
+```
+
+When `JOB_AGENT_SECRETS_FILE` is not already set, setup writes the platform-specific path above as a commented suggestion instead of enabling it automatically. That keeps `JOB_AGENT_SMTP_PASSWORD_CMD` and unauthenticated local SMTP setups from pointing at a missing file by default.
 
 Preferred password retrieval examples:
 
@@ -132,7 +144,13 @@ export JOB_AGENT_SMTP_PASSWORD_CMD='secret-tool lookup service jobwatch-smtp acc
 export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'
 ```
 
-`JOB_AGENT_SMTP_PASSWORD` is still supported as a legacy/local-only plaintext fallback. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; it is executed only for real sends, not for `--dry-run`.
+If you prefer a static password over `JOB_AGENT_SMTP_PASSWORD_CMD`, put it in the external file named by `JOB_AGENT_SECRETS_FILE`:
+
+```bash
+export JOB_AGENT_SMTP_PASSWORD=app-password
+```
+
+Plaintext repo-local `JOB_AGENT_SMTP_PASSWORD` in `.env.local` is no longer supported. `JOB_AGENT_SMTP_PASSWORD_CMD` is executed only for real sends, not for `--dry-run`.
 
 Email setup sequence:
 

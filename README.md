@@ -69,7 +69,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    - `JOB_AGENT_PROVIDER`
    - `JOB_AGENT_BIN`
    - optional `LOGSEQ_GRAPH_DIR`
-   - commented `JOB_AGENT_SMTP_*` placeholders for email delivery
+   - optional `JOB_AGENT_SECRETS_FILE` plus non-secret `JOB_AGENT_SMTP_*` placeholders for email delivery
 
    Local profile data lives in `profile/`, which is also gitignored. Setup creates default placeholders:
 
@@ -195,9 +195,10 @@ Preview an email without sending it:
 ./.venv/bin/python scripts/send_digest_email.py --track <track-slug> --date YYYY-MM-DD --dry-run
 ```
 
-To send through SMTP, edit `.env.local` locally and uncomment/fill the SMTP placeholders:
+To send through SMTP, keep non-secret SMTP config in `.env.local` and either set `JOB_AGENT_SMTP_PASSWORD_CMD` there or point `JOB_AGENT_SECRETS_FILE` at a shell snippet outside the repo that exports the real password:
 
 ```text
+JOB_AGENT_SECRETS_FILE
 JOB_AGENT_SMTP_HOST
 JOB_AGENT_SMTP_PORT
 JOB_AGENT_SMTP_FROM
@@ -207,7 +208,7 @@ JOB_AGENT_SMTP_PASSWORD_CMD
 JOB_AGENT_SMTP_TLS
 ```
 
-Do not put SMTP passwords in tracked files or chat transcripts. `JOB_AGENT_SMTP_PASSWORD` remains a legacy/local-only plaintext fallback, but password-command retrieval is preferred. After `.env.local` is filled and a digest JSON exists, run the dry-run command first, then test the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
+Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts. Plaintext repo-local `JOB_AGENT_SMTP_PASSWORD` is no longer supported; use `JOB_AGENT_SMTP_PASSWORD_CMD` or put `export JOB_AGENT_SMTP_PASSWORD=...` in the external file named by `JOB_AGENT_SECRETS_FILE`. After `.env.local` is filled and a digest JSON exists, run the dry-run command first, then test the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
 
 ## Logseq Delivery
 

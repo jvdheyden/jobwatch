@@ -27,9 +27,10 @@ SMTP_PORT_VALUE=""
 SMTP_FROM_VALUE=""
 SMTP_TO_VALUE=""
 SMTP_USERNAME_VALUE=""
-SMTP_PASSWORD_VALUE=""
 SMTP_PASSWORD_CMD_VALUE=""
 SMTP_TLS_VALUE=""
+SECRETS_FILE_VALUE=""
+SUGGESTED_SECRETS_FILE_VALUE=""
 ENV_SMTP_HOST_VALUE="${JOB_AGENT_SMTP_HOST:-}"
 ENV_SMTP_PORT_VALUE="${JOB_AGENT_SMTP_PORT:-}"
 ENV_SMTP_FROM_VALUE="${JOB_AGENT_SMTP_FROM:-}"
@@ -38,6 +39,7 @@ ENV_SMTP_USERNAME_VALUE="${JOB_AGENT_SMTP_USERNAME:-}"
 ENV_SMTP_PASSWORD_VALUE="${JOB_AGENT_SMTP_PASSWORD:-}"
 ENV_SMTP_PASSWORD_CMD_VALUE="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
 ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
+ENV_SECRETS_FILE_VALUE="${JOB_AGENT_SECRETS_FILE:-}"
 
 scheduler_instance_id() {
   local root="$1"
@@ -105,6 +107,28 @@ shell_escape() {
 
 is_interactive() {
   [[ -t 0 && -t 1 ]]
+}
+
+suggested_secrets_file_path() {
+  case "$PLATFORM" in
+    Linux)
+      if [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
+        printf '%s/jobwatch/secrets.sh\n' "$XDG_CONFIG_HOME"
+        return 0
+      fi
+      if [[ -n "${HOME:-}" ]]; then
+        printf '%s/.config/jobwatch/secrets.sh\n' "$HOME"
+        return 0
+      fi
+      ;;
+    Darwin)
+      if [[ -n "${HOME:-}" ]]; then
+        printf '%s/Library/Application Support/jobwatch/secrets.sh\n' "$HOME"
+        return 0
+      fi
+      ;;
+  esac
+  return 1
 }
 
 resolve_command_path() {
@@ -357,6 +381,7 @@ existing_smtp_username=""
 existing_smtp_password=""
 existing_smtp_password_cmd=""
 existing_smtp_tls=""
+existing_secrets_file=""
 detected_agent_bin=""
 detected_logseq_graph_dir=""
 detected_bwrap_bin=""
@@ -378,6 +403,7 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_smtp_password="${JOB_AGENT_SMTP_PASSWORD:-}"
   existing_smtp_password_cmd="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
   existing_smtp_tls="${JOB_AGENT_SMTP_TLS:-}"
+  existing_secrets_file="${JOB_AGENT_SECRETS_FILE:-}"
   PATH="$ORIGINAL_PATH"
 fi
 
@@ -430,9 +456,20 @@ SMTP_PORT_VALUE="${ENV_SMTP_PORT_VALUE:-$existing_smtp_port}"
 SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
 SMTP_TO_VALUE="${ENV_SMTP_TO_VALUE:-$existing_smtp_to}"
 SMTP_USERNAME_VALUE="${ENV_SMTP_USERNAME_VALUE:-$existing_smtp_username}"
-SMTP_PASSWORD_VALUE="${ENV_SMTP_PASSWORD_VALUE:-$existing_smtp_password}"
 SMTP_PASSWORD_CMD_VALUE="${ENV_SMTP_PASSWORD_CMD_VALUE:-$existing_smtp_password_cmd}"
 SMTP_TLS_VALUE="${ENV_SMTP_TLS_VALUE:-$existing_smtp_tls}"
+SECRETS_FILE_VALUE="${ENV_SECRETS_FILE_VALUE:-$existing_secrets_file}"
+if [[ -z "$SECRETS_FILE_VALUE" ]]; then
+  if SUGGESTED_SECRETS_FILE_VALUE="$(suggested_secrets_file_path 2>/dev/null)"; then
+    :
+  else
+    SUGGESTED_SECRETS_FILE_VALUE=""
+  fi
+fi
+legacy_smtp_password_detected=0
+if [[ -n "$ENV_SMTP_PASSWORD_VALUE" || -n "$existing_smtp_password" ]]; then
+  legacy_smtp_password_detected=1
+fi
 
 if [[ -z "$AGENT_BIN_VALUE" ]]; then
   if is_interactive; then
@@ -491,7 +528,14 @@ fi
     echo "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq"
   fi
   echo "# Optional: SMTP settings for email delivery."
-  echo "# Keep real SMTP secrets in this gitignored local file; do not paste passwords into chat."
+  echo "# Keep non-secret SMTP config here. Keep real SMTP secrets outside the repo."
+  if [[ -n "$SECRETS_FILE_VALUE" ]]; then
+    printf 'export JOB_AGENT_SECRETS_FILE=%s\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
+  elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
+    printf '# export JOB_AGENT_SECRETS_FILE=%s\n' "$(shell_escape "$SUGGESTED_SECRETS_FILE_VALUE")"
+  else
+    echo "# export JOB_AGENT_SECRETS_FILE=/absolute/path/outside/repo/jobwatch.secrets.sh"
+  fi
   if [[ -n "$SMTP_HOST_VALUE" ]]; then
     printf 'export JOB_AGENT_SMTP_HOST=%s\n' "$(shell_escape "$SMTP_HOST_VALUE")"
   else
@@ -527,12 +571,9 @@ fi
   else
     echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'"
   fi
-  echo "# Legacy/local-only plaintext fallback; prefer JOB_AGENT_SMTP_PASSWORD_CMD."
-  if [[ -n "$SMTP_PASSWORD_VALUE" ]]; then
-    printf 'export JOB_AGENT_SMTP_PASSWORD=%s\n' "$(shell_escape "$SMTP_PASSWORD_VALUE")"
-  else
-    echo "# export JOB_AGENT_SMTP_PASSWORD=app-password"
-  fi
+  echo "# Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported."
+  echo "# If you prefer a static password over JOB_AGENT_SMTP_PASSWORD_CMD, put this in JOB_AGENT_SECRETS_FILE instead:"
+  echo "# export JOB_AGENT_SMTP_PASSWORD=app-password"
   if [[ -n "$SMTP_TLS_VALUE" ]]; then
     printf 'export JOB_AGENT_SMTP_TLS=%s\n' "$(shell_escape "$SMTP_TLS_VALUE")"
   else
@@ -612,6 +653,13 @@ cat >"$PLIST_FILE" <<EOF
 EOF
 
 echo "Wrote $ENV_FILE"
+if [[ "$legacy_smtp_password_detected" -eq 1 ]]; then
+  echo "Removed legacy JOB_AGENT_SMTP_PASSWORD from $ENV_FILE. Move it into JOB_AGENT_SECRETS_FILE or use JOB_AGENT_SMTP_PASSWORD_CMD."
+fi
+echo "Keep non-secret SMTP config in $ENV_FILE. Put real secrets in JOB_AGENT_SECRETS_FILE outside the repo."
+if [[ -z "$SECRETS_FILE_VALUE" && -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
+  echo "Suggested external secrets file path: $SUGGESTED_SECRETS_FILE_VALUE"
+fi
 
 if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
   CODEX_CONFIG_PYTHON="${JOB_AGENT_PYTHON:-python3}"

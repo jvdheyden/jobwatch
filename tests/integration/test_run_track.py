@@ -385,6 +385,48 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "--delivery" not in caffeinate_args
 
 
+def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    env_file = tmp_job_agent_root / ".env.local"
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=codex",
+                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
+                "",
+            ]
+        )
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_job_agent_root / "codex-prompt.txt").exists()
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Using Codex provider via" in log_text
+
+
 def test_run_track_logseq_delivery_runs_sync_and_preserves_caffeinate_args(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)
@@ -457,6 +499,130 @@ def test_run_track_email_delivery_invokes_email_sender(tmp_job_agent_root: Path,
     assert "Delivery phase finished successfully: email" in log_text
     assert (tmp_job_agent_root / "email.log").read_text() == "email --track demo --date 2030-01-15\n"
     assert not (tmp_job_agent_root / "sync.log").exists()
+
+
+def test_run_track_email_delivery_loads_external_secrets_file(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    env_file = tmp_job_agent_root / ".env.local"
+    secrets_file = tmp_job_agent_root.parent / "jobwatch.secrets.sh"
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "send_digest_email.py",
+        f"""#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, {str(repo_root / "scripts")!r})
+
+from runtime_env import apply_runtime_env
+
+
+apply_runtime_env(load_secrets=True)
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+(root / "email-env.log").write_text(
+    "|".join(
+        [
+            os.environ.get("JOB_AGENT_SMTP_HOST", ""),
+            os.environ.get("JOB_AGENT_SMTP_USERNAME", ""),
+            os.environ.get("JOB_AGENT_SMTP_PASSWORD", ""),
+            os.environ.get("JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED", ""),
+        ]
+    )
+    + "\\n"
+)
+""",
+    )
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=codex",
+                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
+                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                "export JOB_AGENT_SMTP_HOST=smtp.example.com",
+                "export JOB_AGENT_SMTP_FROM=jobs@example.com",
+                "export JOB_AGENT_SMTP_TO=me@example.com",
+                "export JOB_AGENT_SMTP_USERNAME=smtp-user",
+                "",
+            ]
+        )
+    )
+    secrets_file.write_text("export JOB_AGENT_SMTP_PASSWORD=secret\n")
+
+    env = os.environ | {
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_job_agent_root / "email-env.log").read_text().strip() == "smtp.example.com|smtp-user|secret|1"
+
+
+def test_run_track_email_delivery_rejects_missing_external_secrets_file(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    env_file = tmp_job_agent_root / ".env.local"
+    secrets_file = tmp_job_agent_root.parent / "missing.secrets.sh"
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=codex",
+                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
+                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                "",
+            ]
+        )
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 1
+    assert f"JOB_AGENT_SECRETS_FILE does not exist: {secrets_file}" in result.stderr
 
 
 def test_run_track_runs_multiple_deliveries_in_cli_order(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

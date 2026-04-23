@@ -93,15 +93,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 ORIGINAL_PATH="$PATH"
-if [[ -f "$ENV_FILE" ]]; then
-  set +u
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set -u
-fi
+# shellcheck source=./load_runtime_env.sh
+source "$SCRIPT_DIR/load_runtime_env.sh"
+job_agent_load_runtime_env
 
 PATH="${PATH:-$ORIGINAL_PATH}"
 ROOT="${JOB_AGENT_ROOT:-$ROOT}"
+ENV_FILE="${JOB_AGENT_ENV_FILE:-$ENV_FILE}"
 
 if [[ -z "$AGENT_VALUE" ]]; then
   AGENT_VALUE="${JOB_AGENT_PROVIDER:-}"

@@ -23,6 +23,7 @@ from digest_email import (
     load_json_payload,
     render_digest_email,
 )
+from runtime_env import RuntimeEnvError, apply_runtime_env
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    try:
+        apply_runtime_env(load_secrets=not args.dry_run)
+    except RuntimeEnvError as exc:
+        print(f"send_digest_email.py: {exc}", file=sys.stderr)
+        return 1
     root = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
     digest_path = Path(args.digest_input) if args.digest_input else digest_artifact_path(args.track, args.date, root=root)
     ranked_path = Path(args.ranked_input) if args.ranked_input else root / "shared" / "ranked_jobs" / f"{args.track}.json"
@@ -99,6 +105,12 @@ def load_smtp_config(env: Mapping[str, str], *, execute_password_cmd: bool = Tru
     username = _optional_env(env, "JOB_AGENT_SMTP_USERNAME")
     password = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD")
     password_cmd = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD_CMD")
+    secrets_loaded = _runtime_secrets_loaded(env)
+
+    if password and not secrets_loaded:
+        raise DigestEmailError(
+            "JOB_AGENT_SMTP_PASSWORD must come from JOB_AGENT_SECRETS_FILE; plaintext repo-local SMTP passwords are no longer supported"
+        )
 
     if username and not password:
         if password_cmd:
@@ -107,7 +119,7 @@ def load_smtp_config(env: Mapping[str, str], *, execute_password_cmd: bool = Tru
             password = _password_from_command(password_cmd)
         else:
             raise DigestEmailError(
-                "JOB_AGENT_SMTP_USERNAME requires JOB_AGENT_SMTP_PASSWORD or JOB_AGENT_SMTP_PASSWORD_CMD"
+                "JOB_AGENT_SMTP_USERNAME requires JOB_AGENT_SMTP_PASSWORD_CMD or JOB_AGENT_SECRETS_FILE-backed JOB_AGENT_SMTP_PASSWORD"
             )
     elif not username and (password or password_cmd):
         raise DigestEmailError(
@@ -189,6 +201,11 @@ def _password_from_command(command: str) -> str:
     if not password:
         raise DigestEmailError("JOB_AGENT_SMTP_PASSWORD_CMD produced an empty password")
     return password
+
+
+def _runtime_secrets_loaded(env: Mapping[str, str]) -> bool:
+    value = env.get("JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED", "").strip().lower()
+    return value not in {"", "0", "false", "no"}
 
 
 def _parse_port(value: str) -> int:

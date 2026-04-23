@@ -24,15 +24,6 @@ RM-### — Title
 
 ## New
 
-### RM-009 — Move secrets out of project directory and import at runtime
-- Status: new
-- Priority: H
-- Owner: Jonas
-- Last updated: 2026-04-23
-- Links: none yet
-- Next step: prioritize as the next active item after `RM-011`, then create an implementation plan
-- Notes: Define a minimal runtime-loading boundary for secrets outside the repo. Keep scheduled non-interactive runs workable; defer keyring-style integration to a later phase.
-
 ### RM-010 — Add support for main email providers (gmail, fastmail, proton, hotmail)
 - Status: new
 - Priority: H
@@ -52,6 +43,14 @@ RM-### — Title
 - Notes: Add a lightweight digest delivery path without forcing heavy setup or duplicating the email/provider redesign.
 
 ## In progress
+### RM-009 — Move secrets out of project directory and import at runtime
+- Status: in progress
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-04-23
+- Links: [plan](plans/2026-04-23-rm-009-runtime-secret-loading.md)
+- Next step: implement the shared runtime secret-loading boundary described in the linked plan
+- Notes: Keep this scoped to a minimal external secret-loading contract with no `JOB_AGENT_SMTP_PASSWORD` fallback. Do not widen into provider presets, account registries, or keyring integrations yet.
 
 ## Parked
 

@@ -6,17 +6,14 @@ ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 ENV_FILE="${JOB_AGENT_ENV_FILE:-$ROOT/.env.local}"
 SCHEDULE_FILE="${JOB_AGENT_SCHEDULE_FILE:-$ROOT/.schedule.local}"
 SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$ROOT/.scheduler}"
-
-if [[ -f "$ENV_FILE" ]]; then
-  set +u
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set -u
-fi
+# shellcheck source=./load_runtime_env.sh
+source "$SCRIPT_DIR/load_runtime_env.sh"
+job_agent_load_runtime_env
 
 ROOT="${JOB_AGENT_ROOT:-$ROOT}"
-SCHEDULE_FILE="${JOB_AGENT_SCHEDULE_FILE:-$SCHEDULE_FILE}"
-SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$SCHEDULER_DIR}"
+ENV_FILE="${JOB_AGENT_ENV_FILE:-$ROOT/.env.local}"
+SCHEDULE_FILE="${JOB_AGENT_SCHEDULE_FILE:-$ROOT/.schedule.local}"
+SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$ROOT/.scheduler}"
 STATE_DIR="${JOB_AGENT_SCHEDULER_STATE_DIR:-$SCHEDULER_DIR/state}"
 LOCK_DIR="$SCHEDULER_DIR/run.lock"
 CURRENT_TIME="${JOB_AGENT_SCHEDULE_TIME:-$(date +%H:%M)}"

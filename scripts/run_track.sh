@@ -3,6 +3,15 @@ set -euo pipefail
 
 TRACK=""
 DELIVERY_TARGETS=()
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+ENV_FILE="${JOB_AGENT_ENV_FILE:-$ROOT/.env.local}"
+# shellcheck source=./load_runtime_env.sh
+source "$SCRIPT_DIR/load_runtime_env.sh"
+job_agent_load_runtime_env
+
+ROOT="${JOB_AGENT_ROOT:-$ROOT}"
+ENV_FILE="${JOB_AGENT_ENV_FILE:-$ENV_FILE}"
 TIMEOUT_SECS="${TIMEOUT_SECS:-2700}"
 DISCOVERY_TIMEOUT_SECS="${DISCOVERY_TIMEOUT_SECS:-1800}"
 DISCOVERY_HEARTBEAT_SECS="${DISCOVERY_HEARTBEAT_SECS:-60}"
@@ -11,7 +20,6 @@ AGENT_IDLE_TIMEOUT_SECS="${AGENT_IDLE_TIMEOUT_SECS:-900}"
 JOB_AGENT_PROVIDER="${JOB_AGENT_PROVIDER:-codex}"
 JOB_AGENT_BIN="${JOB_AGENT_BIN:-}"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
   echo "Usage: $0 --track <slug> [--delivery logseq|email]... [--timeout-secs <seconds>] [--discovery-timeout-secs <seconds>]" >&2
@@ -65,7 +73,24 @@ if [[ -z "$TRACK" ]]; then
   usage
 fi
 
-ROOT="${JOB_AGENT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+needs_email_secrets=0
+for delivery_target in "${DELIVERY_TARGETS[@]}"; do
+  if [[ "$delivery_target" == "email" ]]; then
+    needs_email_secrets=1
+    break
+  fi
+done
+
+if [[ "$needs_email_secrets" -eq 1 ]]; then
+  saved_timeout_secs="$TIMEOUT_SECS"
+  saved_discovery_timeout_secs="$DISCOVERY_TIMEOUT_SECS"
+  job_agent_load_runtime_env --with-secrets
+  ROOT="${JOB_AGENT_ROOT:-$ROOT}"
+  ENV_FILE="${JOB_AGENT_ENV_FILE:-$ENV_FILE}"
+  TIMEOUT_SECS="$saved_timeout_secs"
+  DISCOVERY_TIMEOUT_SECS="$saved_discovery_timeout_secs"
+fi
+
 DIGEST_DIR="$ROOT/tracks/$TRACK/digests"
 LOG_DIR="$ROOT/logs"
 TODAY="${JOB_AGENT_TODAY:-$(date +%F)}"
@@ -343,7 +368,11 @@ if [[ -z "${JOB_AGENT_CAFFEINATED:-}" ]]; then
       REEXEC_ARGS+=(--delivery "$delivery_target")
     done
     log "Re-executing $TRACK run under caffeinate via $CAFFEINATE_BIN"
-    exec env JOB_AGENT_CAFFEINATED=1 "$CAFFEINATE_BIN" -dimsu /bin/bash "$0" "${REEXEC_ARGS[@]}"
+    exec env \
+      -u JOB_AGENT_SMTP_PASSWORD \
+      -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
+      JOB_AGENT_CAFFEINATED=1 \
+      "$CAFFEINATE_BIN" -dimsu /bin/bash "$0" "${REEXEC_ARGS[@]}"
   fi
   log "caffeinate unavailable; continuing without wake prevention"
 else
@@ -587,7 +616,11 @@ else
         ;;
       email)
         if [[ -f "$STRUCTURED_DIGEST" ]]; then
-          if JOB_AGENT_ROOT="$ROOT" "$PYTHON_BIN" "$ROOT/scripts/send_digest_email.py" --track "$TRACK" --date "$TODAY"; then
+          if env \
+            -u JOB_AGENT_SMTP_PASSWORD \
+            -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
+            JOB_AGENT_ROOT="$ROOT" \
+            "$PYTHON_BIN" "$ROOT/scripts/send_digest_email.py" --track "$TRACK" --date "$TODAY"; then
             log "Delivery phase finished successfully: email"
           else
             delivery_status=$?
