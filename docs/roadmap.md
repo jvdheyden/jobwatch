@@ -24,15 +24,6 @@ RM-### — Title
 
 ## New
 
-### RM-010 — Add support for main email providers (gmail, fastmail, proton, hotmail)
-- Status: new
-- Priority: H
-- Owner: Jonas
-- Last updated: 2026-04-23
-- Links: none yet
-- Next step: prioritize after `RM-009` settles the config and secrets boundary
-- Notes: Add lightweight named-account and provider defaults on top of the post-`RM-009` runtime model. Keep provider logic shallow and preserve a custom SMTP escape hatch.
-
 ### RM-012 — Telegram delivery for digests
 - Status: new
 - Priority: H
@@ -43,10 +34,18 @@ RM-### — Title
 - Notes: Add a lightweight digest delivery path without forcing heavy setup or duplicating the email/provider redesign.
 
 ## In progress
-
 ## Parked
 
 ## Completed
+### RM-010 — Add support for main email providers (gmail, fastmail, proton, hotmail)
+- Status: complete
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-04-23
+- Links: [plan](plans/2026-04-23-rm-010-email-provider-presets.md)
+- Next step: none
+- Notes: Provider presets now cover Gmail, Fastmail, Outlook.com/Hotmail, and Proton business SMTP on top of the post-`RM-009` runtime model. Proton Mail Bridge remains intentionally out of scope for this preset path.
+
 ### RM-009 — Move secrets out of project directory and import at runtime
 - Status: complete
 - Priority: H

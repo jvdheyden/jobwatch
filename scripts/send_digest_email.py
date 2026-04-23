@@ -37,6 +37,58 @@ class SMTPConfig:
     tls_mode: str
 
 
+@dataclass(frozen=True)
+class SMTPProviderPreset:
+    host: str | None = None
+    port: int | None = None
+    tls_mode: str | None = None
+    default_username_from_account: bool = False
+    require_auth: bool = False
+
+
+SMTP_PROVIDER_PRESETS: dict[str, SMTPProviderPreset] = {
+    "gmail": SMTPProviderPreset(
+        host="smtp.gmail.com",
+        port=587,
+        tls_mode="starttls",
+        default_username_from_account=True,
+    ),
+    "fastmail": SMTPProviderPreset(
+        host="smtp.fastmail.com",
+        port=587,
+        tls_mode="starttls",
+        default_username_from_account=True,
+    ),
+    "hotmail": SMTPProviderPreset(
+        host="smtp-mail.outlook.com",
+        port=587,
+        tls_mode="starttls",
+        default_username_from_account=True,
+    ),
+    "proton": SMTPProviderPreset(
+        host="smtp.protonmail.ch",
+        port=587,
+        tls_mode="starttls",
+        default_username_from_account=True,
+        require_auth=True,
+    ),
+}
+
+SMTP_PROVIDER_ALIASES = {
+    "custom": None,
+    "googlemail": "gmail",
+    "hotmail.com": "hotmail",
+    "live": "hotmail",
+    "live.com": "hotmail",
+    "msn": "hotmail",
+    "outlook": "hotmail",
+    "outlook.com": "hotmail",
+    "protonmail": "proton",
+    "proton-business": "proton",
+    "proton_business": "proton",
+}
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--track", required=True, help="Track name under tracks/")
@@ -93,18 +145,39 @@ def main() -> int:
 
 
 def load_smtp_config(env: Mapping[str, str], *, execute_password_cmd: bool = True) -> SMTPConfig:
-    tls_mode = env.get("JOB_AGENT_SMTP_TLS", "starttls").strip().lower()
+    provider_key = _normalize_email_provider(_optional_env(env, "JOB_AGENT_EMAIL_PROVIDER"))
+    preset = SMTP_PROVIDER_PRESETS.get(provider_key) if provider_key else None
+    account = _optional_env(env, "JOB_AGENT_EMAIL_ACCOUNT")
+    password = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD")
+    password_cmd = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD_CMD")
+    tls_mode = (_optional_env(env, "JOB_AGENT_SMTP_TLS") or (preset.tls_mode if preset and preset.tls_mode else "starttls")).lower()
     if tls_mode not in {"starttls", "ssl", "none"}:
         raise DigestEmailError("JOB_AGENT_SMTP_TLS must be one of: starttls, ssl, none")
 
-    host = _required_env(env, "JOB_AGENT_SMTP_HOST")
+    host = _optional_env(env, "JOB_AGENT_SMTP_HOST") or (preset.host if preset else None)
+    if not host:
+        raise DigestEmailError("JOB_AGENT_SMTP_HOST is required")
     port_text = env.get("JOB_AGENT_SMTP_PORT", "").strip()
-    port = _parse_port(port_text) if port_text else _default_port(tls_mode)
-    sender = _required_env(env, "JOB_AGENT_SMTP_FROM")
-    recipients = _parse_recipients(_required_env(env, "JOB_AGENT_SMTP_TO"))
+    if port_text:
+        port = _parse_port(port_text)
+    elif preset and preset.port is not None:
+        port = preset.port
+    else:
+        port = _default_port(tls_mode)
+
     username = _optional_env(env, "JOB_AGENT_SMTP_USERNAME")
-    password = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD")
-    password_cmd = _optional_env(env, "JOB_AGENT_SMTP_PASSWORD_CMD")
+    if not username and account and preset and preset.default_username_from_account:
+        username = account
+    elif not username and account and not preset and (password or password_cmd):
+        username = account
+    if preset and preset.require_auth and not username:
+        raise DigestEmailError(
+            f"JOB_AGENT_EMAIL_PROVIDER={provider_key} requires JOB_AGENT_EMAIL_ACCOUNT or JOB_AGENT_SMTP_USERNAME and SMTP token auth"
+        )
+    sender = _optional_env(env, "JOB_AGENT_SMTP_FROM") or account
+    if not sender:
+        raise DigestEmailError("JOB_AGENT_SMTP_FROM is required")
+    recipients = _parse_recipients(_required_env(env, "JOB_AGENT_SMTP_TO"))
     secrets_loaded = _runtime_secrets_loaded(env)
 
     if password and not secrets_loaded:
@@ -178,6 +251,21 @@ def _required_env(env: Mapping[str, str], name: str) -> str:
 def _optional_env(env: Mapping[str, str], name: str) -> str | None:
     value = env.get(name, "").strip()
     return value or None
+
+
+def _normalize_email_provider(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if not normalized:
+        return None
+    canonical = SMTP_PROVIDER_ALIASES.get(normalized, normalized)
+    if canonical is None:
+        return None
+    if canonical not in SMTP_PROVIDER_PRESETS:
+        supported = ", ".join(sorted(set(SMTP_PROVIDER_PRESETS) | {key for key, item in SMTP_PROVIDER_ALIASES.items() if item}))
+        raise DigestEmailError(f"JOB_AGENT_EMAIL_PROVIDER must be one of: {supported}, custom")
+    return canonical
 
 
 def _password_from_command(command: str) -> str:

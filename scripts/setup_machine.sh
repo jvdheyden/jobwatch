@@ -22,6 +22,8 @@ AGENT_BIN_VALUE=""
 ENV_AGENT_PROVIDER_VALUE="${JOB_AGENT_PROVIDER:-}"
 ENV_AGENT_BIN_VALUE="${JOB_AGENT_BIN:-}"
 ENV_LOGSEQ_GRAPH_DIR_VALUE="${LOGSEQ_GRAPH_DIR:-}"
+EMAIL_PROVIDER_VALUE=""
+EMAIL_ACCOUNT_VALUE=""
 SMTP_HOST_VALUE=""
 SMTP_PORT_VALUE=""
 SMTP_FROM_VALUE=""
@@ -40,6 +42,8 @@ ENV_SMTP_PASSWORD_VALUE="${JOB_AGENT_SMTP_PASSWORD:-}"
 ENV_SMTP_PASSWORD_CMD_VALUE="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
 ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 ENV_SECRETS_FILE_VALUE="${JOB_AGENT_SECRETS_FILE:-}"
+ENV_EMAIL_PROVIDER_VALUE="${JOB_AGENT_EMAIL_PROVIDER:-}"
+ENV_EMAIL_ACCOUNT_VALUE="${JOB_AGENT_EMAIL_ACCOUNT:-}"
 
 scheduler_instance_id() {
   local root="$1"
@@ -373,6 +377,8 @@ existing_path="$ORIGINAL_PATH"
 existing_agent_provider=""
 existing_agent_bin=""
 existing_logseq_graph_dir=""
+existing_email_provider=""
+existing_email_account=""
 existing_smtp_host=""
 existing_smtp_port=""
 existing_smtp_from=""
@@ -395,6 +401,8 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_agent_provider="${JOB_AGENT_PROVIDER:-}"
   existing_agent_bin="${JOB_AGENT_BIN:-}"
   existing_logseq_graph_dir="${LOGSEQ_GRAPH_DIR:-}"
+  existing_email_provider="${JOB_AGENT_EMAIL_PROVIDER:-}"
+  existing_email_account="${JOB_AGENT_EMAIL_ACCOUNT:-}"
   existing_smtp_host="${JOB_AGENT_SMTP_HOST:-}"
   existing_smtp_port="${JOB_AGENT_SMTP_PORT:-}"
   existing_smtp_from="${JOB_AGENT_SMTP_FROM:-}"
@@ -451,6 +459,8 @@ else
   detected_bwrap_bin=""
 fi
 
+EMAIL_PROVIDER_VALUE="${ENV_EMAIL_PROVIDER_VALUE:-$existing_email_provider}"
+EMAIL_ACCOUNT_VALUE="${ENV_EMAIL_ACCOUNT_VALUE:-$existing_email_account}"
 SMTP_HOST_VALUE="${ENV_SMTP_HOST_VALUE:-$existing_smtp_host}"
 SMTP_PORT_VALUE="${ENV_SMTP_PORT_VALUE:-$existing_smtp_port}"
 SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
@@ -529,6 +539,20 @@ fi
   fi
   echo "# Optional: SMTP settings for email delivery."
   echo "# Keep non-secret SMTP config here. Keep real SMTP secrets outside the repo."
+  echo "# Optional: shorthand for common SMTP-backed providers. Raw JOB_AGENT_SMTP_* settings override these defaults."
+  echo "# Provider presets currently cover Gmail, Fastmail, Outlook.com/Hotmail, and Proton business SMTP."
+  echo "# JOB_AGENT_EMAIL_PROVIDER=proton assumes Proton business SMTP with an SMTP token and a custom-domain address."
+  echo "# Proton Mail Bridge is still out of scope here; keep Bridge-based local SMTP settings explicit via JOB_AGENT_SMTP_* if you ever use it manually."
+  if [[ -n "$EMAIL_PROVIDER_VALUE" ]]; then
+    printf 'export JOB_AGENT_EMAIL_PROVIDER=%s\n' "$(shell_escape "$EMAIL_PROVIDER_VALUE")"
+  else
+    echo "# export JOB_AGENT_EMAIL_PROVIDER=gmail"
+  fi
+  if [[ -n "$EMAIL_ACCOUNT_VALUE" ]]; then
+    printf 'export JOB_AGENT_EMAIL_ACCOUNT=%s\n' "$(shell_escape "$EMAIL_ACCOUNT_VALUE")"
+  else
+    echo "# export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com"
+  fi
   if [[ -n "$SECRETS_FILE_VALUE" ]]; then
     printf 'export JOB_AGENT_SECRETS_FILE=%s\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
   elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then

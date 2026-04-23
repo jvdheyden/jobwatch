@@ -195,9 +195,11 @@ Preview an email without sending it:
 ./.venv/bin/python scripts/send_digest_email.py --track <track-slug> --date YYYY-MM-DD --dry-run
 ```
 
-To send through SMTP, keep non-secret SMTP config in `.env.local` and either set `JOB_AGENT_SMTP_PASSWORD_CMD` there or point `JOB_AGENT_SECRETS_FILE` at a shell snippet outside the repo that exports the real password:
+To send through SMTP, keep non-secret SMTP config in `.env.local` and either set `JOB_AGENT_SMTP_PASSWORD_CMD` there or point `JOB_AGENT_SECRETS_FILE` at a shell snippet outside the repo that exports the real password. For common providers, you can start with `JOB_AGENT_EMAIL_PROVIDER` plus `JOB_AGENT_EMAIL_ACCOUNT`; explicit `JOB_AGENT_SMTP_*` values still override the provider defaults.
 
 ```text
+JOB_AGENT_EMAIL_PROVIDER
+JOB_AGENT_EMAIL_ACCOUNT
 JOB_AGENT_SECRETS_FILE
 JOB_AGENT_SMTP_HOST
 JOB_AGENT_SMTP_PORT
@@ -208,7 +210,7 @@ JOB_AGENT_SMTP_PASSWORD_CMD
 JOB_AGENT_SMTP_TLS
 ```
 
-Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts. Plaintext repo-local `JOB_AGENT_SMTP_PASSWORD` is no longer supported; use `JOB_AGENT_SMTP_PASSWORD_CMD` or put `export JOB_AGENT_SMTP_PASSWORD=...` in the external file named by `JOB_AGENT_SECRETS_FILE`. After `.env.local` is filled and a digest JSON exists, run the dry-run command first, then test the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
+Current provider presets cover Gmail, Fastmail, Outlook.com/Hotmail, and Proton business SMTP. For Proton, `JOB_AGENT_EMAIL_PROVIDER=proton` assumes Proton's business SMTP flow: use a custom-domain sending address in `JOB_AGENT_EMAIL_ACCOUNT`, authenticate with a Proton-generated SMTP token, and keep real secrets outside the repo. Proton Mail Bridge is still out of scope for the preset path. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts. Plaintext repo-local `JOB_AGENT_SMTP_PASSWORD` is no longer supported; use `JOB_AGENT_SMTP_PASSWORD_CMD` or put `export JOB_AGENT_SMTP_PASSWORD=...` in the external file named by `JOB_AGENT_SECRETS_FILE`. After `.env.local` is filled and a digest JSON exists, run the dry-run command first, then test the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
 
 ## Logseq Delivery
 

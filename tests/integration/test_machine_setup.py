@@ -106,6 +106,12 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert "# Optional: Logseq graph root for digest publication." in env_text
     assert "# Optional: SMTP settings for email delivery." in env_text
+    assert "# Optional: shorthand for common SMTP-backed providers. Raw JOB_AGENT_SMTP_* settings override these defaults." in env_text
+    assert "# Provider presets currently cover Gmail, Fastmail, Outlook.com/Hotmail, and Proton business SMTP." in env_text
+    assert "# JOB_AGENT_EMAIL_PROVIDER=proton assumes Proton business SMTP with an SMTP token and a custom-domain address." in env_text
+    assert "# Proton Mail Bridge is still out of scope here; keep Bridge-based local SMTP settings explicit via JOB_AGENT_SMTP_* if you ever use it manually." in env_text
+    assert "# export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
+    assert "# export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com" in env_text
     assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" in env_text
     assert "# export JOB_AGENT_SMTP_PORT=587" in env_text
     assert "# export JOB_AGENT_SMTP_FROM=jobs@example.com" in env_text
@@ -234,6 +240,8 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
         "\n".join(
             [
                 f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                "export JOB_AGENT_EMAIL_PROVIDER=gmail",
+                "export JOB_AGENT_EMAIL_ACCOUNT=jobs@test.invalid",
                 "export JOB_AGENT_SMTP_HOST=smtp.test.invalid",
                 "export JOB_AGENT_SMTP_PORT=2525",
                 "export JOB_AGENT_SMTP_FROM=jobs@test.invalid",
@@ -260,6 +268,8 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
+    assert "export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
+    assert "export JOB_AGENT_EMAIL_ACCOUNT=jobs@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_HOST=smtp.test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_PORT=2525" in env_text
     assert "export JOB_AGENT_SMTP_FROM=jobs@test.invalid" in env_text

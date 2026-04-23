@@ -140,7 +140,22 @@ After changing schedules manually with the helper, install or refresh the platfo
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
 
-Email delivery is optional. Fill the non-secret `JOB_AGENT_SMTP_*` values in `.env.local` locally, and keep any real SMTP password outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
+Email delivery is optional. Fill the non-secret email settings in `.env.local` locally, and keep any real SMTP password outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
+
+For common providers, start with the provider/account shorthand and then add recipients plus password retrieval:
+
+```bash
+export JOB_AGENT_EMAIL_PROVIDER=gmail
+export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com
+export JOB_AGENT_SMTP_TO=you@example.com
+export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'
+```
+
+`JOB_AGENT_EMAIL_PROVIDER` currently supplies host/port/tls defaults for `gmail`, `fastmail`, `hotmail` / `outlook`, and Proton business SMTP. `JOB_AGENT_EMAIL_ACCOUNT` defaults the sender address and, for provider-backed setups, the SMTP username. Explicit `JOB_AGENT_SMTP_*` values still win when you need to override those defaults.
+
+`JOB_AGENT_EMAIL_PROVIDER=proton` now means Proton business SMTP, not Proton Mail Bridge. Use it only with a Proton-generated SMTP token and a custom-domain address in `JOB_AGENT_EMAIL_ACCOUNT`. Proton’s documented business SMTP settings are `smtp.protonmail.ch`, port `587`, `STARTTLS`, and SMTP-token auth.
+
+Normal personal Proton Mail via Proton Mail Bridge is still out of scope for the preset path. If you ever wire Bridge manually, keep its local host/port/username/TLS details explicit in `JOB_AGENT_SMTP_*` instead of using the provider shorthand.
 
 Optional external secrets pointer in `.env.local`:
 

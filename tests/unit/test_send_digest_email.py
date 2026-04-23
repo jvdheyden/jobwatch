@@ -31,6 +31,49 @@ def test_load_smtp_config_reads_required_env_and_defaults_port():
     assert config.tls_mode == "starttls"
 
 
+def test_load_smtp_config_uses_provider_defaults_and_account():
+    config = send_digest_email.load_smtp_config(
+        {
+            "JOB_AGENT_EMAIL_PROVIDER": "gmail",
+            "JOB_AGENT_EMAIL_ACCOUNT": "jobs@example.com",
+            "JOB_AGENT_SMTP_TO": "one@example.com, two@example.com",
+            "JOB_AGENT_SMTP_PASSWORD": "secret",
+            "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
+        }
+    )
+
+    assert config.host == "smtp.gmail.com"
+    assert config.port == 587
+    assert config.sender == "jobs@example.com"
+    assert config.recipients == ("one@example.com", "two@example.com")
+    assert config.username == "jobs@example.com"
+    assert config.password == "secret"
+    assert config.tls_mode == "starttls"
+
+
+def test_load_smtp_config_prefers_explicit_smtp_values_over_provider_defaults():
+    config = send_digest_email.load_smtp_config(
+        {
+            "JOB_AGENT_EMAIL_PROVIDER": "gmail",
+            "JOB_AGENT_EMAIL_ACCOUNT": "jobs@example.com",
+            "JOB_AGENT_SMTP_HOST": "smtp.custom.invalid",
+            "JOB_AGENT_SMTP_PORT": "2525",
+            "JOB_AGENT_SMTP_FROM": "alerts@example.com",
+            "JOB_AGENT_SMTP_TO": "me@example.com",
+            "JOB_AGENT_SMTP_USERNAME": "smtp-user",
+            "JOB_AGENT_SMTP_PASSWORD": "secret",
+            "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
+            "JOB_AGENT_SMTP_TLS": "none",
+        }
+    )
+
+    assert config.host == "smtp.custom.invalid"
+    assert config.port == 2525
+    assert config.sender == "alerts@example.com"
+    assert config.username == "smtp-user"
+    assert config.tls_mode == "none"
+
+
 def test_load_smtp_config_allows_no_auth_for_local_servers():
     config = send_digest_email.load_smtp_config(
         {
@@ -47,6 +90,42 @@ def test_load_smtp_config_allows_no_auth_for_local_servers():
     assert config.tls_mode == "none"
 
 
+def test_load_smtp_config_accepts_outlook_alias_for_hotmail():
+    config = send_digest_email.load_smtp_config(
+        {
+            "JOB_AGENT_EMAIL_PROVIDER": "outlook",
+            "JOB_AGENT_EMAIL_ACCOUNT": "jobs@hotmail.com",
+            "JOB_AGENT_SMTP_TO": "me@example.com",
+            "JOB_AGENT_SMTP_PASSWORD": "secret",
+            "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
+        }
+    )
+
+    assert config.host == "smtp-mail.outlook.com"
+    assert config.port == 587
+    assert config.username == "jobs@hotmail.com"
+    assert config.tls_mode == "starttls"
+
+
+def test_load_smtp_config_uses_proton_business_defaults_and_account():
+    config = send_digest_email.load_smtp_config(
+        {
+            "JOB_AGENT_EMAIL_PROVIDER": "proton",
+            "JOB_AGENT_EMAIL_ACCOUNT": "jobs@custom-domain.example",
+            "JOB_AGENT_SMTP_TO": "me@example.com",
+            "JOB_AGENT_SMTP_PASSWORD": "smtp-token",
+            "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
+        }
+    )
+
+    assert config.host == "smtp.protonmail.ch"
+    assert config.port == 587
+    assert config.sender == "jobs@custom-domain.example"
+    assert config.username == "jobs@custom-domain.example"
+    assert config.password == "smtp-token"
+    assert config.tls_mode == "starttls"
+
+
 def test_load_smtp_config_rejects_partial_auth():
     with pytest.raises(
         DigestEmailError,
@@ -58,6 +137,30 @@ def test_load_smtp_config_rejects_partial_auth():
                 "JOB_AGENT_SMTP_FROM": "jobs@example.com",
                 "JOB_AGENT_SMTP_TO": "me@example.com",
                 "JOB_AGENT_SMTP_USERNAME": "user",
+            }
+        )
+
+
+def test_load_smtp_config_rejects_unknown_provider():
+    with pytest.raises(DigestEmailError, match="JOB_AGENT_EMAIL_PROVIDER must be one of"):
+        send_digest_email.load_smtp_config(
+            {
+                "JOB_AGENT_EMAIL_PROVIDER": "zoho",
+                "JOB_AGENT_SMTP_HOST": "smtp.example.com",
+                "JOB_AGENT_SMTP_FROM": "jobs@example.com",
+                "JOB_AGENT_SMTP_TO": "me@example.com",
+            }
+        )
+
+
+def test_load_smtp_config_rejects_proton_without_account_or_username():
+    with pytest.raises(DigestEmailError, match="requires JOB_AGENT_EMAIL_ACCOUNT or JOB_AGENT_SMTP_USERNAME"):
+        send_digest_email.load_smtp_config(
+            {
+                "JOB_AGENT_EMAIL_PROVIDER": "proton",
+                "JOB_AGENT_SMTP_TO": "me@example.com",
+                "JOB_AGENT_SMTP_PASSWORD": "smtp-token",
+                "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
             }
         )
 
