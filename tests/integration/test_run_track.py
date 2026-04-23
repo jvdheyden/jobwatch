@@ -40,6 +40,21 @@ raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_EMAIL_STATUS", "0")))
 """,
     )
     _write_executable(
+        root / "scripts" / "send_digest_telegram.py",
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+(root / "telegram.log").write_text("telegram " + " ".join(sys.argv[1:]) + "\\n")
+raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_TELEGRAM_STATUS", "0")))
+""",
+    )
+    _write_executable(
         root / "scripts" / "update_source_state.py",
         """#!/usr/bin/env python3
 from __future__ import annotations
@@ -501,6 +516,41 @@ def test_run_track_email_delivery_invokes_email_sender(tmp_job_agent_root: Path,
     assert not (tmp_job_agent_root / "sync.log").exists()
 
 
+def test_run_track_telegram_delivery_invokes_telegram_sender(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "telegram",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Delivery phase started: telegram" in log_text
+    assert "Delivery phase finished successfully: telegram" in log_text
+    assert (tmp_job_agent_root / "telegram.log").read_text() == "telegram --track demo --date 2030-01-15\n"
+    assert not (tmp_job_agent_root / "email.log").exists()
+
+
 def test_run_track_email_delivery_loads_external_secrets_file(
     tmp_job_agent_root: Path, repo_root: Path, run_cmd
 ) -> None:
@@ -613,6 +663,51 @@ def test_run_track_email_delivery_rejects_missing_external_secrets_file(
         "demo",
         "--delivery",
         "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 1
+    assert f"JOB_AGENT_SECRETS_FILE does not exist: {secrets_file}" in result.stderr
+
+
+def test_run_track_telegram_delivery_rejects_missing_external_secrets_file(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    env_file = tmp_job_agent_root / ".env.local"
+    secrets_file = tmp_job_agent_root.parent / "missing.secrets.sh"
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=codex",
+                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
+                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                "export JOB_AGENT_TELEGRAM_CHAT_ID=123456789",
+                "",
+            ]
+        )
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "telegram",
         "--timeout-secs",
         "120",
         "--discovery-timeout-secs",

@@ -21,7 +21,7 @@ For a more detailed set-up guide, see [New User Setup](#new-user-setup).
 
 - **Find roles earlier:** track company pages and other direct sources, not just aggregators.
 - **Better matching:** evaluate the full job description against your CV and preferences, not just keywords.
-- **Stay focused:** get a concise digest by email or as Markdown.
+- **Stay focused:** get a concise digest by email, Telegram, or as Markdown.
 
 ## Who is it for?
 
@@ -43,7 +43,7 @@ Since most of the functionality is deterministic code, the daily checks will be 
 -->
 ## New User Setup
 
-This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq or email. Scheduled automation supports Codex CLI and Claude Code CLI.
+This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq, email, or Telegram. Scheduled automation supports Codex CLI and Claude Code CLI.
 
 Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step.
 
@@ -135,7 +135,9 @@ Optional delivery targets can be requested per run:
 ```bash
 bash scripts/run_track.sh --track <track-slug> --delivery logseq
 bash scripts/run_track.sh --track <track-slug> --delivery email
+bash scripts/run_track.sh --track <track-slug> --delivery telegram
 bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery email
+bash scripts/run_track.sh --track <track-slug> --delivery logseq --delivery telegram
 ```
 <!--
 
@@ -180,6 +182,7 @@ The setup agent normally manages `.schedule.local`. For manual maintenance, use 
 ./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence daily --time 08:00
 ./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence weekly --weekday mon --time 08:00 --delivery logseq
 ./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence monthly --month-day 1 --time 08:00 --delivery email
+./.venv/bin/python scripts/configure_schedule.py --track <track-slug> --cadence weekly --weekday fri --time 18:00 --delivery telegram
 bash scripts/install_scheduler.sh
 ```
 
@@ -218,6 +221,26 @@ Provider-specific credential notes:
 - Fastmail: `JOB_AGENT_EMAIL_PROVIDER=fastmail` fills `smtp.fastmail.com`, port `587`, and `STARTTLS`. Fastmail requires app passwords for third-party SMTP clients; keep that app password outside the repo and retrieve it via `JOB_AGENT_SMTP_PASSWORD_CMD` or `JOB_AGENT_SECRETS_FILE`.
 - Outlook.com / Hotmail: `JOB_AGENT_EMAIL_PROVIDER=outlook` or `hotmail` fills `smtp-mail.outlook.com`, port `587`, and `STARTTLS`. Microsoft documents Modern Auth / OAuth2 as the preferred path, so use this preset only when your account has a working app password or SMTP credential for SMTP AUTH. Store that secret outside the repo the same way.
 - Proton business SMTP: `JOB_AGENT_EMAIL_PROVIDER=proton` fills `smtp.protonmail.ch`, port `587`, and `STARTTLS`. Use a custom-domain sending address in `JOB_AGENT_EMAIL_ACCOUNT` and store the Proton-generated SMTP token outside the repo. Proton Mail Bridge remains out of scope for this preset path.
+
+## Telegram Delivery
+
+Telegram delivery reuses the concise digest body rendered from the structured digest JSON and ranked overview JSON. Long digests are split across multiple Telegram messages automatically.
+
+Preview the Telegram messages without sending them:
+
+```bash
+./.venv/bin/python scripts/send_digest_telegram.py --track <track-slug> --date YYYY-MM-DD --dry-run
+```
+
+For real Telegram delivery, keep the non-secret chat id in `.env.local` and keep the bot token outside the repo:
+
+```text
+JOB_AGENT_SECRETS_FILE
+JOB_AGENT_TELEGRAM_CHAT_ID
+JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD
+```
+
+If you prefer a password manager, point `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD` at it. If you prefer a static token, put `export JOB_AGENT_TELEGRAM_BOT_TOKEN=...` only in the external file named by `JOB_AGENT_SECRETS_FILE`. After a digest JSON exists, run the dry run first, then use `--delivery telegram` on `run_track.sh` or test `scripts/send_digest_telegram.py` without `--dry-run`.
 
 ## Logseq Delivery
 

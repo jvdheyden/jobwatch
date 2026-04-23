@@ -27,6 +27,7 @@ bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/source_config.py
 "$PYTHON_BIN" -m py_compile scripts/render_discovery_modes_md.py
 "$PYTHON_BIN" -m py_compile scripts/render_sources_md.py
+"$PYTHON_BIN" -m py_compile scripts/send_digest_telegram.py
 "$PYTHON_BIN" -m py_compile scripts/update_source_state.py
 "$PYTHON_BIN" -m py_compile scripts/source_integration.py
 "$PYTHON_BIN" -m py_compile scripts/integrate_next_source.py
@@ -47,6 +48,7 @@ fi
   tests/unit/test_digest_json.py \
   tests/unit/test_render_digest.py \
   tests/unit/test_send_digest_email.py \
+  tests/unit/test_send_digest_telegram.py \
   tests/unit/test_source_config.py \
   tests/unit/test_claude_support.py \
   tests/unit/test_machine_resolution.py \

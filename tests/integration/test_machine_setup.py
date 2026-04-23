@@ -105,6 +105,10 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
     assert "# Optional: Logseq graph root for digest publication." in env_text
+    assert "# Optional: Telegram delivery for digest notifications." in env_text
+    assert "# export JOB_AGENT_TELEGRAM_CHAT_ID=123456789" in env_text
+    assert "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='pass show chat/jobwatch-telegram-bot'" in env_text
+    assert "# export JOB_AGENT_TELEGRAM_BOT_TOKEN=123456:telegram-bot-token" in env_text
     assert "# Optional: SMTP settings for email delivery." in env_text
     assert "# export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
     assert "# export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com" in env_text
@@ -125,9 +129,9 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "JOB_AGENT_PROFILE_TEMPLATE: prefs_global.md" in (profile_dir / "prefs_global.md").read_text()
     assert schedule_file.exists()
     schedule_text = schedule_file.read_text()
-    assert "# daily HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
-    assert "# weekly mon HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
-    assert "# monthly 1 HH:MM track <track-slug> [--delivery logseq|email]..." in schedule_text
+    assert "# daily HH:MM track <track-slug> [--delivery logseq|email|telegram]..." in schedule_text
+    assert "# weekly mon HH:MM track <track-slug> [--delivery logseq|email|telegram]..." in schedule_text
+    assert "# monthly 1 HH:MM track <track-slug> [--delivery logseq|email|telegram]..." in schedule_text
     cron_text = (scheduler_dir / "cron.entry").read_text()
     cron_begin = cron_text.splitlines()[0]
     assert cron_begin.startswith("# BEGIN jobwatch scheduler ")
@@ -335,6 +339,8 @@ def test_configure_schedule_replaces_track_and_preserves_others(
         "logseq",
         "--delivery",
         "email",
+        "--delivery",
+        "telegram",
         "--schedule-file",
         str(schedule_file),
         cwd=repo_root,
@@ -345,7 +351,7 @@ def test_configure_schedule_replaces_track_and_preserves_others(
         "# existing schedules",
         "daily 09:00 track other --delivery email",
         "",
-        "monthly 15 07:30 track demo --delivery logseq --delivery email",
+        "monthly 15 07:30 track demo --delivery logseq --delivery email --delivery telegram",
     ]
 
 
@@ -366,14 +372,14 @@ def test_configure_schedule_creates_weekly_entry_with_delivery(
         "--time",
         "08:00",
         "--delivery",
-        "email",
+        "telegram",
         "--schedule-file",
         str(schedule_file),
         cwd=repo_root,
     )
 
     assert result.returncode == 0, result.stderr
-    assert "weekly mon 08:00 track demo --delivery email" in schedule_file.read_text()
+    assert "weekly mon 08:00 track demo --delivery telegram" in schedule_file.read_text()
 
 
 def test_configure_schedule_rejects_invalid_weekly_schedule(
@@ -1306,7 +1312,7 @@ def test_run_scheduled_jobs_passes_delivery_options(tmp_job_agent_root: Path, re
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
     env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
-    schedule_file.write_text("daily 08:00 track demo --delivery email --delivery logseq\n")
+    schedule_file.write_text("daily 08:00 track demo --delivery email --delivery telegram --delivery logseq\n")
 
     _write_executable(
         tmp_job_agent_root / "scripts" / "run_track.sh",
@@ -1328,7 +1334,7 @@ echo "$*" >> "$ROOT/invocations.log"
     result = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
     assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == [
-        "--track demo --delivery email --delivery logseq"
+        "--track demo --delivery email --delivery telegram --delivery logseq"
     ]
 
 

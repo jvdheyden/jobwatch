@@ -404,7 +404,8 @@ Explain the options clearly:
 - local artifacts only: always available; `run_track.sh` leaves JSON and Markdown files in the repo
 - Logseq sync: run with `--delivery logseq`; requires `LOGSEQ_GRAPH_DIR`
 - email delivery: run with `--delivery email`; requires SMTP variables
-- both Logseq and email: pass both delivery flags
+- Telegram delivery: run with `--delivery telegram`; requires `JOB_AGENT_TELEGRAM_CHAT_ID` plus a bot token via `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD` or `JOB_AGENT_SECRETS_FILE`
+- combine any requested delivery methods by passing multiple delivery flags
 
 Use these manual-run examples:
 
@@ -412,7 +413,9 @@ Use these manual-run examples:
 bash scripts/run_track.sh --track {track_slug}
 bash scripts/run_track.sh --track {track_slug} --delivery logseq
 bash scripts/run_track.sh --track {track_slug} --delivery email
+bash scripts/run_track.sh --track {track_slug} --delivery telegram
 bash scripts/run_track.sh --track {track_slug} --delivery logseq --delivery email
+bash scripts/run_track.sh --track {track_slug} --delivery logseq --delivery telegram
 ```
 
 For Logseq:
@@ -448,6 +451,26 @@ For email:
 
 Then test real delivery only when the user confirms the local SMTP config is ready. `--dry-run` renders from the digest JSON and should not require SMTP env or execute `JOB_AGENT_SMTP_PASSWORD_CMD`.
 
+For Telegram:
+- Never ask the user to paste the bot token into chat.
+- Keep `JOB_AGENT_TELEGRAM_CHAT_ID` in `.env.local`.
+- Prefer `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD` for the bot token. Use one of these local command examples, adapted by the user:
+  - macOS Keychain: `security find-generic-password -s jobwatch-telegram-bot -a telegram -w`
+  - Linux Secret Service: `secret-tool lookup service jobwatch-telegram-bot account telegram`
+  - pass: `pass show chat/jobwatch-telegram-bot`
+- If the user prefers a static token over `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD`, keep it only in `JOB_AGENT_SECRETS_FILE` as `export JOB_AGENT_TELEGRAM_BOT_TOKEN=...`.
+- Do not run `send_digest_telegram.py --dry-run` before a digest exists.
+- Sequence Telegram setup this way:
+  1. Configure `JOB_AGENT_TELEGRAM_CHAT_ID` plus token retrieval.
+  2. Reuse the digest produced by Step 6 at `artifacts/digests/{track_slug}/YYYY-MM-DD.json`. If Step 6 was skipped or deferred, run `bash scripts/run_track.sh --track {track_slug}` now and confirm the JSON exists before continuing.
+  3. Dry-run the Telegram render:
+
+```bash
+./.venv/bin/python scripts/send_digest_telegram.py --track {track_slug} --date YYYY-MM-DD --dry-run
+```
+
+Then test real delivery only when the user confirms the local Telegram config is ready. `--dry-run` renders from the digest JSON and should not require Telegram secrets or execute `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD`.
+
 For scheduling:
 - Ask whether the user wants scheduled runs for this track now.
 - If not, do not edit `.schedule.local`; tell the user manual runs are available with the examples above.
@@ -472,12 +495,14 @@ Append delivery flags when requested:
 ```bash
 --delivery logseq
 --delivery email
+--delivery telegram
 --delivery logseq --delivery email
 ```
 
 Scheduling caveats:
 - One active schedule entry per track is the default; `scripts/configure_schedule.py` replaces an existing entry for the same track and preserves other tracks.
 - If email delivery is scheduled, remind the user that SMTP values must be filled in `.env.local` before the scheduled run.
+- If Telegram delivery is scheduled, remind the user that `JOB_AGENT_TELEGRAM_CHAT_ID` plus token retrieval must be filled in `.env.local` or `JOB_AGENT_SECRETS_FILE` before the scheduled run.
 - If `bash scripts/install_scheduler.sh` needs approval to update crontab or launchd, request that approval and then continue.
 
 ### 8. Validation
@@ -522,6 +547,12 @@ If email delivery was requested, validate the sequence after the first digest ex
 12. `bash scripts/run_track.sh --track {track_slug}` with no delivery, unless already run.
 13. Confirm `artifacts/digests/{track_slug}/YYYY-MM-DD.json` exists.
 14. `./.venv/bin/python scripts/send_digest_email.py --track {track_slug} --date YYYY-MM-DD --dry-run`
+
+If Telegram delivery was requested, validate the sequence after the first digest exists:
+
+15. `bash scripts/run_track.sh --track {track_slug}` with no delivery, unless already run.
+16. Confirm `artifacts/digests/{track_slug}/YYYY-MM-DD.json` exists.
+17. `./.venv/bin/python scripts/send_digest_telegram.py --track {track_slug} --date YYYY-MM-DD --dry-run`
 
 ### 9. Final response
 

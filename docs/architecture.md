@@ -55,6 +55,7 @@ flowchart LR
   subgraph Delivery["Optional delivery"]
     Logseq[sync_to_logseq.sh]:::script
     Email[send_digest_email.py]:::script
+    Telegram[send_digest_telegram.py]:::script
   end
 
   subgraph SourceHealth["Source integration loop (manual/setup-driven)"]
@@ -98,6 +99,8 @@ flowchart LR
   Logseq -.writes.-> LogseqGraph
   RunTrack --> Email
   Email -.reads.-> StructDigest
+  RunTrack --> Telegram
+  Telegram -.reads.-> StructDigest
 
   SetUp -.scaffolds.-> SrcState
   SetUp -.runs eval + integration on top probed sources.-> Integrate
@@ -153,6 +156,9 @@ sequenceDiagram
   end
   alt --delivery email
     Track->>Deliv: send_digest_email.py
+  end
+  alt --delivery telegram
+    Track->>Deliv: send_digest_telegram.py
   end
   Track-->>Sched: exit status
 ```

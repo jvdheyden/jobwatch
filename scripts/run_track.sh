@@ -22,7 +22,7 @@ JOB_AGENT_BIN="${JOB_AGENT_BIN:-}"
 PLATFORM="${JOB_AGENT_PLATFORM:-$(uname -s)}"
 
 usage() {
-  echo "Usage: $0 --track <slug> [--delivery logseq|email]... [--timeout-secs <seconds>] [--discovery-timeout-secs <seconds>]" >&2
+  echo "Usage: $0 --track <slug> [--delivery logseq|email|telegram]... [--timeout-secs <seconds>] [--discovery-timeout-secs <seconds>]" >&2
   exit 2
 }
 
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
         usage
       fi
       case "${2:-}" in
-        logseq|email)
+        logseq|email|telegram)
           DELIVERY_TARGETS+=("$2")
           ;;
         *)
@@ -73,15 +73,15 @@ if [[ -z "$TRACK" ]]; then
   usage
 fi
 
-needs_email_secrets=0
+needs_secret_delivery=0
 for delivery_target in "${DELIVERY_TARGETS[@]}"; do
-  if [[ "$delivery_target" == "email" ]]; then
-    needs_email_secrets=1
+  if [[ "$delivery_target" == "email" || "$delivery_target" == "telegram" ]]; then
+    needs_secret_delivery=1
     break
   fi
 done
 
-if [[ "$needs_email_secrets" -eq 1 ]]; then
+if [[ "$needs_secret_delivery" -eq 1 ]]; then
   saved_timeout_secs="$TIMEOUT_SECS"
   saved_discovery_timeout_secs="$DISCOVERY_TIMEOUT_SECS"
   job_agent_load_runtime_env --with-secrets
@@ -618,6 +618,7 @@ else
         if [[ -f "$STRUCTURED_DIGEST" ]]; then
           if env \
             -u JOB_AGENT_SMTP_PASSWORD \
+            -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
             -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
             JOB_AGENT_ROOT="$ROOT" \
             "$PYTHON_BIN" "$ROOT/scripts/send_digest_email.py" --track "$TRACK" --date "$TODAY"; then
@@ -629,6 +630,24 @@ else
           fi
         else
           log "No structured digest at $STRUCTURED_DIGEST; skipping email delivery"
+        fi
+        ;;
+      telegram)
+        if [[ -f "$STRUCTURED_DIGEST" ]]; then
+          if env \
+            -u JOB_AGENT_SMTP_PASSWORD \
+            -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
+            -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
+            JOB_AGENT_ROOT="$ROOT" \
+            "$PYTHON_BIN" "$ROOT/scripts/send_digest_telegram.py" --track "$TRACK" --date "$TODAY"; then
+            log "Delivery phase finished successfully: telegram"
+          else
+            delivery_status=$?
+            log "Delivery phase failed: telegram status $delivery_status"
+            exit "$delivery_status"
+          fi
+        else
+          log "No structured digest at $STRUCTURED_DIGEST; skipping telegram delivery"
         fi
         ;;
       *)

@@ -17,9 +17,9 @@ WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 DEFAULT_HEADER = """# Machine-local scheduler entries.
 # Generated or updated by scripts/configure_schedule.py.
 # Formats:
-# daily HH:MM track <track-slug> [--delivery logseq|email]...
-# weekly mon HH:MM track <track-slug> [--delivery logseq|email]...
-# monthly 1 HH:MM track <track-slug> [--delivery logseq|email]...
+# daily HH:MM track <track-slug> [--delivery logseq|email|telegram]...
+# weekly mon HH:MM track <track-slug> [--delivery logseq|email|telegram]...
+# monthly 1 HH:MM track <track-slug> [--delivery logseq|email|telegram]...
 """
 
 
@@ -38,7 +38,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--time", required=True, help="Local run time in HH:MM")
     parser.add_argument("--weekday", choices=WEEKDAYS, help="Weekly run day, for example mon")
     parser.add_argument("--month-day", type=int, help="Monthly run day, 1 through 31")
-    parser.add_argument("--delivery", action="append", choices=("logseq", "email"), default=[])
+    parser.add_argument("--delivery", action="append", choices=("logseq", "email", "telegram"), default=[])
     parser.add_argument("--schedule-file", type=Path, help="Override .schedule.local path")
     return parser.parse_args(argv)
 

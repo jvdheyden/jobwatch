@@ -123,14 +123,15 @@ For manual maintenance, use the helper instead of editing `.schedule.local` by h
 ./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence daily --time 08:00
 ./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence weekly --weekday mon --time 08:00 --delivery logseq
 ./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence monthly --month-day 1 --time 08:00 --delivery email
+./.venv/bin/python scripts/configure_schedule.py --track core_crypto --cadence weekly --weekday fri --time 18:00 --delivery telegram
 ```
 
 Supported schedule file forms are:
 
 ```text
-daily HH:MM track <track-slug> [--delivery logseq|email]...
-weekly mon HH:MM track <track-slug> [--delivery logseq|email]...
-monthly 1 HH:MM track <track-slug> [--delivery logseq|email]...
+daily HH:MM track <track-slug> [--delivery logseq|email|telegram]...
+weekly mon HH:MM track <track-slug> [--delivery logseq|email|telegram]...
+monthly 1 HH:MM track <track-slug> [--delivery logseq|email|telegram]...
 ```
 
 After changing schedules manually with the helper, install or refresh the platform scheduler with `bash scripts/install_scheduler.sh`.
@@ -139,6 +140,18 @@ After changing schedules manually with the helper, install or refresh the platfo
 - On macOS, that installs a checkout-specific LaunchAgent that runs the same shared scheduler script every minute.
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
+
+Telegram delivery is optional. Keep `JOB_AGENT_TELEGRAM_CHAT_ID` in `.env.local`, and keep the bot token outside the repo. Prefer `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD`; if you need a static token, keep `export JOB_AGENT_TELEGRAM_BOT_TOKEN=...` in `JOB_AGENT_SECRETS_FILE` instead of `.env.local`.
+
+Telegram setup sequence:
+
+```bash
+bash scripts/run_track.sh --track <track>
+test -f artifacts/digests/<track>/YYYY-MM-DD.json
+./.venv/bin/python scripts/send_digest_telegram.py --track <track> --date YYYY-MM-DD --dry-run
+```
+
+Only test a real Telegram send or schedule Telegram delivery after the digest exists and the dry run renders correctly.
 
 Email delivery is optional. Fill the non-secret email settings in `.env.local` locally, and keep any real app password or SMTP token outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
 

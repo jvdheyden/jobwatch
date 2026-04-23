@@ -23,20 +23,19 @@ RM-### — Title
 
 
 ## New
-
-### RM-012 — Telegram delivery for digests
-- Status: new
-- Priority: H
-- Owner: Jonas
-- Last updated: 2026-04-23
-- Links: none yet
-- Next step: prioritize after `RM-010` clarifies the delivery abstraction
-- Notes: Add a lightweight digest delivery path without forcing heavy setup or duplicating the email/provider redesign.
-
 ## In progress
 ## Parked
 
 ## Completed
+### RM-012 — Telegram delivery for digests
+- Status: complete
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-04-24
+- Links: [plan](plans/2026-04-23-rm-012-telegram-delivery.md)
+- Next step: none
+- Notes: Manual runs, scheduled runs, setup guidance, and dry-run previews now support `--delivery telegram` via `scripts/send_digest_telegram.py`, with bot tokens loaded through the existing runtime-secret boundary.
+
 ### RM-010 — Add support for main email providers (gmail, fastmail, proton, hotmail)
 - Status: complete
 - Priority: H

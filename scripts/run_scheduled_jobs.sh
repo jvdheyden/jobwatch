@@ -173,7 +173,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 
     delivery_target="${fields[$((field_index + 1))]}"
     case "$delivery_target" in
-      logseq|email)
+      logseq|email|telegram)
         delivery_args+=("--delivery" "$delivery_target")
         ;;
       *)

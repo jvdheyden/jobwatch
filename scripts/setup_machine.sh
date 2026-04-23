@@ -22,6 +22,8 @@ AGENT_BIN_VALUE=""
 ENV_AGENT_PROVIDER_VALUE="${JOB_AGENT_PROVIDER:-}"
 ENV_AGENT_BIN_VALUE="${JOB_AGENT_BIN:-}"
 ENV_LOGSEQ_GRAPH_DIR_VALUE="${LOGSEQ_GRAPH_DIR:-}"
+TELEGRAM_CHAT_ID_VALUE=""
+TELEGRAM_BOT_TOKEN_CMD_VALUE=""
 EMAIL_PROVIDER_VALUE=""
 EMAIL_ACCOUNT_VALUE=""
 SMTP_HOST_VALUE=""
@@ -44,6 +46,8 @@ ENV_SMTP_TLS_VALUE="${JOB_AGENT_SMTP_TLS:-}"
 ENV_SECRETS_FILE_VALUE="${JOB_AGENT_SECRETS_FILE:-}"
 ENV_EMAIL_PROVIDER_VALUE="${JOB_AGENT_EMAIL_PROVIDER:-}"
 ENV_EMAIL_ACCOUNT_VALUE="${JOB_AGENT_EMAIL_ACCOUNT:-}"
+ENV_TELEGRAM_CHAT_ID_VALUE="${JOB_AGENT_TELEGRAM_CHAT_ID:-}"
+ENV_TELEGRAM_BOT_TOKEN_CMD_VALUE="${JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD:-}"
 
 scheduler_instance_id() {
   local root="$1"
@@ -379,6 +383,8 @@ existing_agent_bin=""
 existing_logseq_graph_dir=""
 existing_email_provider=""
 existing_email_account=""
+existing_telegram_chat_id=""
+existing_telegram_bot_token_cmd=""
 existing_smtp_host=""
 existing_smtp_port=""
 existing_smtp_from=""
@@ -403,6 +409,8 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_logseq_graph_dir="${LOGSEQ_GRAPH_DIR:-}"
   existing_email_provider="${JOB_AGENT_EMAIL_PROVIDER:-}"
   existing_email_account="${JOB_AGENT_EMAIL_ACCOUNT:-}"
+  existing_telegram_chat_id="${JOB_AGENT_TELEGRAM_CHAT_ID:-}"
+  existing_telegram_bot_token_cmd="${JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD:-}"
   existing_smtp_host="${JOB_AGENT_SMTP_HOST:-}"
   existing_smtp_port="${JOB_AGENT_SMTP_PORT:-}"
   existing_smtp_from="${JOB_AGENT_SMTP_FROM:-}"
@@ -461,6 +469,8 @@ fi
 
 EMAIL_PROVIDER_VALUE="${ENV_EMAIL_PROVIDER_VALUE:-$existing_email_provider}"
 EMAIL_ACCOUNT_VALUE="${ENV_EMAIL_ACCOUNT_VALUE:-$existing_email_account}"
+TELEGRAM_CHAT_ID_VALUE="${ENV_TELEGRAM_CHAT_ID_VALUE:-$existing_telegram_chat_id}"
+TELEGRAM_BOT_TOKEN_CMD_VALUE="${ENV_TELEGRAM_BOT_TOKEN_CMD_VALUE:-$existing_telegram_bot_token_cmd}"
 SMTP_HOST_VALUE="${ENV_SMTP_HOST_VALUE:-$existing_smtp_host}"
 SMTP_PORT_VALUE="${ENV_SMTP_PORT_VALUE:-$existing_smtp_port}"
 SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
@@ -537,6 +547,31 @@ fi
   else
     echo "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq"
   fi
+  echo "# Optional: Telegram delivery for digest notifications."
+  echo "# Keep the non-secret chat id here. Put the bot token outside the repo or behind JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD."
+  if [[ -n "$TELEGRAM_CHAT_ID_VALUE" ]]; then
+    printf 'export JOB_AGENT_TELEGRAM_CHAT_ID=%s\n' "$(shell_escape "$TELEGRAM_CHAT_ID_VALUE")"
+  else
+    echo "# export JOB_AGENT_TELEGRAM_CHAT_ID=123456789"
+  fi
+  echo "# Preferred: retrieve the Telegram bot token only when a real message is sent."
+  echo "# Examples:"
+  echo "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='security find-generic-password -s jobwatch-telegram-bot -a telegram -w'"
+  echo "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='secret-tool lookup service jobwatch-telegram-bot account telegram'"
+  echo "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='pass show chat/jobwatch-telegram-bot'"
+  if [[ -n "$TELEGRAM_BOT_TOKEN_CMD_VALUE" ]]; then
+    printf 'export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD=%s\n' "$(shell_escape "$TELEGRAM_BOT_TOKEN_CMD_VALUE")"
+  else
+    echo "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='pass show chat/jobwatch-telegram-bot'"
+  fi
+  if [[ -n "$SECRETS_FILE_VALUE" ]]; then
+    printf '# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in %s.\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
+  elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
+    printf '# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in %s and uncomment JOB_AGENT_SECRETS_FILE below.\n' "$(shell_escape "$SUGGESTED_SECRETS_FILE_VALUE")"
+  else
+    echo "# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in the external file named by JOB_AGENT_SECRETS_FILE."
+  fi
+  echo "# export JOB_AGENT_TELEGRAM_BOT_TOKEN=123456:telegram-bot-token"
   echo "# Optional: SMTP settings for email delivery."
   echo "# Keep non-secret SMTP config here. Put the real app password or SMTP token outside the repo."
   echo "# Put JOB_AGENT_SMTP_PASSWORD_CMD in this file to fetch that secret from Keychain, secret-tool, or pass."
@@ -628,12 +663,12 @@ if [[ ! -f "$SCHEDULE_FILE" ]]; then
 # Machine-local scheduler entries.
 # Prefer scripts/configure_schedule.py or the setup agent over hand-editing.
 # Formats:
-# daily HH:MM track <track-slug> [--delivery logseq|email]...
-# weekly mon HH:MM track <track-slug> [--delivery logseq|email]...
-# monthly 1 HH:MM track <track-slug> [--delivery logseq|email]...
+# daily HH:MM track <track-slug> [--delivery logseq|email|telegram]...
+# weekly mon HH:MM track <track-slug> [--delivery logseq|email|telegram]...
+# monthly 1 HH:MM track <track-slug> [--delivery logseq|email|telegram]...
 # Example:
 # daily 08:00 track core_crypto
-# weekly mon 08:00 track core_crypto --delivery logseq --delivery email
+# weekly mon 08:00 track core_crypto --delivery logseq --delivery email --delivery telegram
 EOF
 fi
 
@@ -693,6 +728,7 @@ if [[ "$legacy_smtp_password_detected" -eq 1 ]]; then
   echo "Removed legacy JOB_AGENT_SMTP_PASSWORD from $ENV_FILE. Move it into JOB_AGENT_SECRETS_FILE or use JOB_AGENT_SMTP_PASSWORD_CMD."
 fi
 echo "Keep non-secret SMTP config in $ENV_FILE. Put real secrets in JOB_AGENT_SECRETS_FILE outside the repo."
+echo "Keep non-secret Telegram chat ids in $ENV_FILE. Put bot tokens in JOB_AGENT_SECRETS_FILE or behind JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD."
 
 if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
   CODEX_CONFIG_PYTHON="${JOB_AGENT_PYTHON:-python3}"
