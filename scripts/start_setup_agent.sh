@@ -130,13 +130,16 @@ Use the project skill $set-up for a guided first-track setup.
 
 Contract:
 - Treat setup as a single guided onboarding flow, not a sequence the user has to discover.
+- For every missing preference or track field, propose a recommended answer grounded in the CV and current context; let the user override it.
+- If the user replies with partial answers or delegation phrases such as `suggest`, `use your suggestions`, `pick whatever you think is best`, `default`, or `go ahead`, treat the remaining low-risk choices as delegated and continue automatically.
 - Write local user data only under profile/ and tracks/. Never edit .agents/skills/set-up/templates/profile/*.
 - First make profile/cv.md ready. If it is still the template, look for an existing Markdown CV or a PDF in profile/. If exactly one PDF exists and pdftotext is available, draft profile/cv.md from it and ask the user to review. If multiple PDFs exist, ask which one. If no PDF exists, ask whether the user wants to add one or fill profile/cv.md manually.
 - Then make profile/prefs_global.md ready. Infer only safe facts from the CV, then ask short questions for work mode, geography, seniority, contract type, compensation or practical constraints, authorization, dealbreakers, strong signals, and borderline signals. Write the reviewed answers.
 - Collect the minimum track brief before source discovery: user name, track display name and slug, broad search area, goals or role types, keep-only keywords, constraints or red flags, and geography or remote preferences.
-- Ask for known companies, official career pages, job boards, sectors, labs, organizations, source cadences, track-wide terms, source-specific terms, and native filters.
-- If the user wants help expanding sources, invoke $discover-sources after the minimum brief exists. Keep its user-facing summary concise: recommended sources, dropped sources, URL corrections, caveats, and decisions needed.
-- After discovery, continue automatically: ask keep/drop/add, ask cadence changes, infer source-specific terms and native filters from profile and preferences, and auto-pick canaries where possible.
+- After the minimum brief exists, propose a starter seed list, cadence defaults, track-wide terms, and native-filter posture instead of making the user invent them from scratch.
+- If the known source list is sparse or missing, treat invoking $discover-sources as the recommended default next step rather than a neutral menu choice.
+- Keep the $discover-sources user-facing summary concise: recommended sources, dropped sources, URL corrections, caveats, recommended defaults to apply now, and only the truly necessary decisions.
+- After discovery, continue automatically: present one recommended keep/drop/cadence/filter package, apply it unless the user objects, infer source-specific terms and native filters from profile and preferences, and auto-pick canaries where possible.
 - Use scripts/probe_career_source.py for source probing when possible instead of guessing from WebFetch alone.
 - Scaffold and validate the track, then run source-scoped discovery and scripts/eval_source_quality.py for canary-backed important sources. A source is ready only when final_status is pass.
 - For sources that need code, tune config first. Then run scripts/source_integration.py for at most the top 2 sources, preferring reusable provider modules under scripts/discover/sources/ when a board family is shared. Queue the rest in source_state.json and validate with scripts/integrate_next_source.py --dry-run.
@@ -145,6 +148,37 @@ Contract:
 - Guide delivery and scheduling last. Do not install the scheduler or send real email unless the user explicitly confirms.
 EOF
 )
+
+SETUP_USER_PROMPT="Start guided setup now. Use the project skill \$set-up and keep following the repo's first-track setup flow until the first local digest preview is shown."
+
+SETUP_FALLBACK_PROMPT=$(cat <<'EOF'
+Use the project skill $set-up for a guided first-track setup in this repo.
+
+Default behavior:
+- Propose recommended answers for missing profile and track preferences; let me override them.
+- If the source list is sparse, use $discover-sources as the recommended next step.
+- After discovery, apply the recommended keep/drop/cadence/filter defaults unless I object.
+- Continue automatically through canaries, probing, scaffolding, validation, and the first local digest preview.
+- Do not move on to email or scheduling before the first digest preview.
+EOF
+)
+
+print_claude_interactive_guidance() {
+  local rerun_command="bash scripts/start_setup_agent.sh --agent claude"
+
+  if [[ -n "$AGENT_BIN_VALUE" ]]; then
+    rerun_command+=" --agent-bin $AGENT_BIN_VALUE"
+  fi
+
+  cat >&2 <<EOF
+Claude interactive note:
+- If Claude shows a workspace trust dialog before setup starts, trust this folder and rerun:
+  $rerun_command
+- If Claude opens without the guided setup contract, paste this prompt:
+
+$SETUP_FALLBACK_PROMPT
+EOF
+}
 
 cd "$ROOT"
 
@@ -158,9 +192,11 @@ case "$AGENT_VALUE" in
       "$SETUP_PROMPT"
       ;;
   claude)
+    print_claude_interactive_guidance
     exec "$AGENT_BIN_VALUE" \
       --permission-mode acceptEdits \
       --allowedTools "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,WebSearch,WebFetch,TodoWrite" \
-      "$SETUP_PROMPT"
+      --append-system-prompt "$SETUP_PROMPT" \
+      "$SETUP_USER_PROMPT"
       ;;
 esac

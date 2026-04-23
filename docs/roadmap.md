@@ -43,18 +43,19 @@ RM-### — Title
 - Notes: Add a lightweight digest delivery path without forcing heavy setup or duplicating the email/provider redesign.
 
 ## In progress
-### RM-009 — Move secrets out of project directory and import at runtime
-- Status: in progress
-- Priority: H
-- Owner: Jonas
-- Last updated: 2026-04-23
-- Links: [plan](plans/2026-04-23-rm-009-runtime-secret-loading.md)
-- Next step: implement the shared runtime secret-loading boundary described in the linked plan
-- Notes: Keep this scoped to a minimal external secret-loading contract with no `JOB_AGENT_SMTP_PASSWORD` fallback. Do not widen into provider presets, account registries, or keyring integrations yet.
 
 ## Parked
 
 ## Completed
+### RM-009 — Move secrets out of project directory and import at runtime
+- Status: complete
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-04-23
+- Links: [plan](plans/2026-04-23-rm-009-runtime-secret-loading.md)
+- Next step: none
+- Notes: The shared runtime secret-loading boundary is in place, `.env.local` now keeps non-secrets plus `JOB_AGENT_SECRETS_FILE`, and plaintext repo-local `JOB_AGENT_SMTP_PASSWORD` is no longer supported.
+
 ### RM-011 — Simplify digest email output
 - Status: complete
 - Priority: H

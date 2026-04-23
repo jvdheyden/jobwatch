@@ -15,6 +15,13 @@ Default assumption:
 - Use `docs/discovery_modes.md` as the generated reference for supported `discovery_mode` values.
 - Do not invoke source integration from normal scheduled track runs.
 
+Interaction defaults:
+- Prefer `recommend -> confirm or override` over blank questionnaires. For each missing profile or track field, propose a recommended answer grounded in the CV, current context, and prior answers.
+- If the user replies with partial answers, terse confirmations, or delegation phrases such as `suggest`, `use your suggestions`, `pick whatever you think is best`, `default`, `sounds good`, or `go ahead`, treat the remaining low-risk choices as delegated and continue automatically.
+- Ask only when the answer is genuinely high-risk, materially ambiguous, or not safely inferable from local context.
+- At each transition, present one recommended next step rather than a neutral menu of equally weighted options.
+- Do not reopen low-risk decisions the user has already delegated.
+
 ## Workflow
 
 ### Step zero. Make local profile files ready
@@ -76,6 +83,11 @@ Ask for:
 - important constraints or red flags, or an explicit `none yet`
 - geography / remote preferences, or an explicit `none yet`
 
+When one or more fields are missing:
+- Offer a draft brief in the same message instead of waiting for the user to invent every field from scratch.
+- Mark missing items as `recommended:` values when they are safe to infer, and invite corrections.
+- If the user answers only some fields, carry forward the unanswered low-risk fields from the recommended draft unless the user objects.
+
 Hard gate:
 - Do not use the project skill `discover-sources` until this minimum brief is captured in the conversation or already exists in `tracks/{track_slug}/prefs.md`.
 - Track name or slug alone is not enough.
@@ -85,6 +97,10 @@ Hard gate:
 ### 2. Ask for known companies and job boards
 
 After the minimum `prefs.md` brief is captured, ask what sources the user already knows and wants on the track.
+
+Do not make the user generate the source list from a blank page:
+- Offer a recommended starter seed list, cadence defaults, track-wide terms, and native-filter posture in the same message.
+- If the user says `nothing specific`, delegates, or gives only a partial source answer, continue from the recommended starter set unless corrected.
 
 Ask for:
 - known companies to track, if any
@@ -109,10 +125,11 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
   - geography / remote preferences
   - optional seed companies, sectors, labs, or organizations
   - any known companies, job boards, or career pages already supplied by the user
-- Then ask whether the user wants help finding official sources via the project skill `discover-sources`.
-- Treat discovery as opt-in assistance, not as a default setup step.
+- Then recommend whether to use the project skill `discover-sources`.
+- Treat discovery as opt-in assistance only when the current official source list is already strong; otherwise treat it as the recommended next step.
 - If the user already has a strong official source list and does not want help expanding it, skip this branch.
 - If the user wants help and the source list is missing, sparse, too broad, or clearly incomplete, hand off to the project skill `discover-sources`.
+- If the source list is missing, sparse, too broad, or clearly incomplete and the user delegates, proceed with `discover-sources` by default.
 - Pass the handoff enough context to make the discovery preference-aware:
   - user name
   - track display name
@@ -122,8 +139,8 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
   - any existing source list, if present
 - Prefer official homepage-linked careers pages or ATS boards from user-supplied companies when `discover-sources` finds them.
 - Treat the returned source pack as a recommendation, not as final config.
-- Present the user-facing discovery result as a concise shortlist: recommended sources, dropped sources, URL corrections, known caveats, and decisions needed. Do not dump full setup-ready records unless the user asks for debug detail.
-- Review the proposed sources with the user, ask keep/drop/add, ask whether cadence defaults should change, and then continue automatically with normalization.
+- Present the user-facing discovery result as a concise shortlist: recommended sources, dropped sources, URL corrections, known caveats, recommended defaults to apply now, and only the truly necessary decisions. Do not dump full setup-ready records unless the user asks for debug detail.
+- Review the proposed sources with the user by leading with one recommended keep/drop/cadence/filter package. If the user delegates or confirms the recommendation, apply it and continue automatically with normalization instead of reopening each item separately.
 - Reuse suggested cadence buckets and search terms from `discover-sources` as defaults when they fit.
 - Use `integration_follow_up` from `discover-sources` to distinguish normal config from partial/follow-up or unsupported sources.
 - Treat `match_rule_suggestion` from `discover-sources` as a draft for broad/noisy sources only; confirm it with the user before writing it.

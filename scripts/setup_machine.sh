@@ -657,9 +657,6 @@ if [[ "$legacy_smtp_password_detected" -eq 1 ]]; then
   echo "Removed legacy JOB_AGENT_SMTP_PASSWORD from $ENV_FILE. Move it into JOB_AGENT_SECRETS_FILE or use JOB_AGENT_SMTP_PASSWORD_CMD."
 fi
 echo "Keep non-secret SMTP config in $ENV_FILE. Put real secrets in JOB_AGENT_SECRETS_FILE outside the repo."
-if [[ -z "$SECRETS_FILE_VALUE" && -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
-  echo "Suggested external secrets file path: $SUGGESTED_SECRETS_FILE_VALUE"
-fi
 
 if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
   CODEX_CONFIG_PYTHON="${JOB_AGENT_PYTHON:-python3}"

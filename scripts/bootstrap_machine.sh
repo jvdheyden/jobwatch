@@ -84,25 +84,37 @@ print_final_guidance() {
 Repo root:
   $ROOT
 
-Profile files to fill:
-  profile/cv.md
-  profile/prefs_global.md
+Next:
+  1. Review local profile files:
+     - profile/cv.md
+     - profile/prefs_global.md
+     Optional: place a PDF CV in profile/ and the setup agent can draft
+     profile/cv.md while it is still the default placeholder.
 
-Optional: place a PDF CV in profile/ and the setup agent can draft
-profile/cv.md when it is still the default placeholder.
+  2. Start guided setup:
+     $start_command
 
 Do not edit:
   .agents/skills/set-up/templates/profile/*
-
-Start guided setup:
-  $start_command
 EOF
+
+  if [[ "$AGENT_VALUE" == "claude" ]]; then
+    cat <<EOF
+
+  3. Claude note:
+     If Claude asks whether you trust this folder before setup starts,
+     trust it and rerun the guided setup command above.
+     If Claude opens without the guided setup contract, use the fallback
+     prompt in docs/machine_setup.md.
+EOF
+  fi
 
   if [[ "$PLATFORM" == "Linux" && "$AGENT_VALUE" == "codex" ]]; then
     cat <<EOF
 
-Linux/Codex AppArmor, only if this host restricts bwrap user namespaces:
-  sudo bash scripts/install_bwrap_apparmor.sh
+  3. Optional Linux/Codex AppArmor fix:
+     Run this only if the host restricts bwrap user namespaces:
+     sudo bash scripts/install_bwrap_apparmor.sh
 EOF
   fi
 

@@ -25,6 +25,23 @@ bash scripts/start_setup_agent.sh --agent claude
 bash scripts/start_setup_agent.sh --agent codex
 ```
 
+For Claude interactive setup, treat the workspace trust dialog as a real CLI constraint. `scripts/start_setup_agent.sh --agent claude` still scopes tools and appends the setup contract, but if Claude shows a trust prompt before the setup flow starts:
+
+1. trust the folder
+2. rerun `bash scripts/start_setup_agent.sh --agent claude`
+3. if Claude still opens without the guided setup contract, paste this fallback prompt:
+
+```text
+Use the project skill $set-up for a guided first-track setup in this repo.
+
+Default behavior:
+- Propose recommended answers for missing profile and track preferences; let me override them.
+- If the source list is sparse, use $discover-sources as the recommended next step.
+- After discovery, apply the recommended keep/drop/cadence/filter defaults unless I object.
+- Continue automatically through canaries, probing, scaffolding, validation, and the first local digest preview.
+- Do not move on to email or scheduling before the first digest preview.
+```
+
 If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh --agent claude` or `bash scripts/setup_machine.sh --agent codex` directly. Existing `.env.local` files can also supply the previous `JOB_AGENT_PROVIDER`. That creates:
 
 - `.env.local` for machine-local paths and binaries
@@ -84,9 +101,10 @@ Track setup creates track-specific preferences in `tracks/<track>/prefs.md`. Tho
 During first-track setup, the guided agent:
 
 - fills or defers `profile/cv.md` and `profile/prefs_global.md`
-- collects the minimum track brief before source discovery
-- asks for known companies and official job boards
-- optionally uses `discover-sources` for a concise shortlist
+- collects the minimum track brief before source discovery, but proposes recommended answers instead of waiting for the user to invent each field
+- proposes a starter source list, cadence defaults, and track-wide terms instead of making the user start from a blank sheet
+- treats `discover-sources` as the recommended next step when the source list is sparse and keeps its summary concise
+- applies recommended keep/drop/cadence/filter defaults after source discovery unless the user overrides them
 - probes accepted sources with `scripts/probe_career_source.py` where useful
 - stores canaries and mutable integration state in `tracks/<track>/source_state.json`
 - runs source-quality checks and treats a source as ready only when `eval_source_quality.py` reports `final_status: "pass"`

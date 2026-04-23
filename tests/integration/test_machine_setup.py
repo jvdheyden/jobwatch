@@ -115,7 +115,6 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
     assert "Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported." in env_text
     assert "# export JOB_AGENT_SMTP_TLS=starttls" in env_text
-    assert f"Suggested external secrets file path: {tmp_job_agent_root / 'home' / '.config' / 'jobwatch' / 'secrets.sh'}" in first.stdout
     assert (profile_dir / "cv.md").exists()
     assert (profile_dir / "prefs_global.md").exists()
     assert "JOB_AGENT_PROFILE_TEMPLATE: cv.md" in (profile_dir / "cv.md").read_text()
@@ -166,7 +165,6 @@ def test_setup_machine_prefers_xdg_config_home_for_linux_secrets_path(
     assert result.returncode == 0, result.stderr
     expected_path = xdg_config_home / "jobwatch" / "secrets.sh"
     assert f"# export JOB_AGENT_SECRETS_FILE={expected_path}" in env_file.read_text()
-    assert f"Suggested external secrets file path: {expected_path}" in result.stdout
 
 
 def test_setup_machine_uses_application_support_for_macos_secrets_path(
@@ -195,7 +193,6 @@ def test_setup_machine_uses_application_support_for_macos_secrets_path(
     expected_printed_path = home_dir / "Library" / "Application Support" / "jobwatch" / "secrets.sh"
     env_text = env_file.read_text()
     assert f"# export JOB_AGENT_SECRETS_FILE={expected_path}" in env_text
-    assert f"Suggested external secrets file path: {expected_printed_path}" in result.stdout
 
 
 def test_setup_machine_preserves_existing_profile_files(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -853,6 +850,9 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     ]
     assert "jobwatch bootstrap complete" in result.stdout
     assert f"  {tmp_job_agent_root}" in result.stdout
+    assert "Next:" in result.stdout
+    assert "1. Review local profile files:" in result.stdout
+    assert "2. Start guided setup:" in result.stdout
     assert "profile/cv.md" in result.stdout
     assert "profile/prefs_global.md" in result.stdout
     assert ".agents/skills/set-up/templates/profile/*" in result.stdout
@@ -914,6 +914,7 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
     result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
     assert "jobwatch bootstrap complete" in result.stdout
+    assert "Next:" in result.stdout
     assert "bash scripts/start_setup_agent.sh --agent codex" in result.stdout
     assert "install_bwrap_apparmor" not in result.stdout
 
@@ -1091,6 +1092,7 @@ pwd > "{cwd_file}"
     assert "-s" in args
     assert "workspace-write" in args
     assert "Use the project skill $set-up" in prompt_file.read_text()
+    assert "pick whatever you think is best" in prompt_file.read_text()
     assert "scripts/probe_career_source.py" in prompt_file.read_text()
     assert password_file.read_text() == "\n"
     assert password_cmd_file.read_text() == "pass show email/jobwatch-smtp\n"
@@ -1136,9 +1138,14 @@ printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
     assert "--permission-mode" in args
     assert "acceptEdits" in args
     assert "--allowedTools" in args
+    assert "--append-system-prompt" in args
     assert any("WebSearch" in arg for arg in args)
     assert any("WebFetch" in arg for arg in args)
-    assert "Use the project skill $set-up" in prompt_file.read_text()
+    assert "Use the project skill $set-up" in args_file.read_text()
+    assert "scripts/probe_career_source.py" in args_file.read_text()
+    assert "Start guided setup now." in prompt_file.read_text()
+    assert "workspace trust dialog" in result.stderr
+    assert "guided setup contract" in result.stderr
 
 
 def test_bootstrap_machine_stops_if_setup_machine_fails(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

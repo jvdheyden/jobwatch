@@ -80,6 +80,7 @@ If the user already has a strong official source list, do not replace it. Use th
   - `primary`: high-confidence sources to use now
   - `follow_up`: plausible but lower-confidence or broader sources
 - Keep the list concise. Prefer roughly `4-8` primary sources and a smaller follow-up list, not a catalog.
+- Always identify one recommended package that `set-up` can apply immediately when the user delegates.
 - For each source, provide setup-ready normalized fields and a short reason grounded in the user's stated preferences.
 - Suggest search terms that reflect the target roles and source vocabulary.
 - Suggest cadence conservatively:
@@ -106,7 +107,8 @@ Default user-facing shape:
 - Dropped sources: source name, URL if known, and the reason it should not be used now.
 - URL corrections: user-supplied URL -> better official URL, with a short explanation.
 - Known caveats: unsupported/partial board families, broad/noisy source warnings, or filters that should be confirmed.
-- Decisions needed: keep/drop/add, cadence changes, native filters, or broad-source match-rule confirmation.
+- Recommended defaults to apply now: the primary sources to keep now, any follow-up sources to defer or drop for now, the default cadence posture, and the default native-filter posture.
+- Decisions needed: only the genuinely unresolved keep/drop/add, cadence, native-filter, or broad-source match-rule choices that cannot be safely defaulted.
 
 Keep the shortlist concise. Prefer roughly `4-8` recommended primary sources and a smaller follow-up list, not a catalog.
 
@@ -168,7 +170,7 @@ If no strong official sources are found, say so clearly and return only the best
 - `set-up` should call this skill only after the minimum setup brief is available, the user has been asked for known companies and job boards, and the user wants help finding additional sources.
 - `set-up` owns the final source list, confirmation step, normalization, and file writes.
 - Treat the output as recommended input to normalize, confirm, and write into `sources.json` and, when needed, `match_rules.json`.
-- After this skill returns, `set-up` must continue automatically: ask keep/drop/add, ask cadence changes, infer or confirm filters, and auto-pick canaries unless the user volunteers specific canaries.
+- After this skill returns, `set-up` must continue automatically: present the recommended defaults first, apply them when the user delegates or agrees, infer or confirm filters, and auto-pick canaries unless the user volunteers specific canaries.
 - If the user rejects or trims sources, adapt the shortlist instead of rerunning unnecessary discovery.
 
 ## Boundaries
