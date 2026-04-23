@@ -29,7 +29,8 @@ settings.local.json
 logs/
 
 # Generated plans
-docs/plans/
+docs/plans/*
+!docs/plans/template.md
 
 # Local user track data
 tracks/*
