@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "track": "{track_slug}",
+  "track_terms": [
+    "{track-wide term}"
+  ],
+  "sources": [
+    {
+      "id": "{stable_slugified_source_id}",
+      "name": "{source display name}",
+      "url": "{official source URL}",
+      "discovery_mode": "{supported discovery mode}",
+      "cadence_group": "every_run"
+    },
+    {
+      "id": "{stable_slugified_source_id}",
+      "name": "{source display name}",
+      "url": "{official source URL}",
+      "discovery_mode": "{supported discovery mode}",
+      "cadence_group": "every_3_runs",
+      "search_terms": {
+        "mode": "append",
+        "terms": ["{source-specific term}"]
+      },
+      "filters": {
+        "location": ["{native filter value}"]
+      }
+    }
+  ]
+}

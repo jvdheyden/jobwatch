@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "track": "{track_slug}",
+  "rules": [
+    {
+      "id": "{short_rule_id}",
+      "source_ids": ["{stable_slugified_source_id}"],
+      "source_names": ["{source display name}"],
+      "keep_if_any_text_term": ["{track-specific evidence term}"],
+      "limitation": "Track filter removed {removed} candidate(s) from this broad source without explicit fit evidence."
+    }
+  ]
+}

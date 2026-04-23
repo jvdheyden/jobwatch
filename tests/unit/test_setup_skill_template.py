@@ -5,11 +5,11 @@ from pathlib import Path
 
 def test_setup_skill_uses_generic_tracked_agents_template(repo_root: Path) -> None:
     skill_text = (repo_root / ".agents" / "skills" / "set-up" / "SKILL.md").read_text()
-    template_path = repo_root / ".agents" / "skills" / "set-up" / "templates" / "track_AGENTS.md"
+    template_path = repo_root / "shared" / "templates" / "track_AGENTS.md"
     template_text = template_path.read_text()
 
     assert "tracks/core_crypto/AGENTS.md" not in skill_text
-    assert "Use `.agents/skills/set-up/templates/track_AGENTS.md` as the base template." in skill_text
+    assert "Use `shared/templates/track_AGENTS.md` as the base template." in skill_text
     assert "tracks/{track_slug}/CLAUDE.md" in skill_text
     assert "contains exactly `@AGENTS.md`" in skill_text
     assert template_path.exists()
@@ -28,7 +28,7 @@ def test_setup_skill_uses_generic_tracked_agents_template(repo_root: Path) -> No
 
 def test_setup_agents_template_keeps_production_workflow_contract(repo_root: Path) -> None:
     template_text = (
-        repo_root / ".agents" / "skills" / "set-up" / "templates" / "track_AGENTS.md"
+        repo_root / "shared" / "templates" / "track_AGENTS.md"
     ).read_text()
 
     required_fragments = [
@@ -68,3 +68,45 @@ def test_source_discovery_uses_local_profile_cv_path(repo_root: Path) -> None:
 
     assert "`profile/cv.md`" in discovery_text
     assert "`cv.md`" not in discovery_text
+
+
+def test_setup_step5_templates_live_under_shared_templates(repo_root: Path) -> None:
+    shared_templates = repo_root / "shared" / "templates"
+    skill_text = (repo_root / ".agents" / "skills" / "set-up" / "SKILL.md").read_text()
+
+    expected = [
+        "track_prefs.md",
+        "track_sources.json",
+        "track_match_rules.json",
+        "track_source_state.json",
+        "track_AGENTS.md",
+    ]
+    for name in expected:
+        path = shared_templates / name
+        assert path.exists(), f"missing shared template: {name}"
+        assert f"shared/templates/{name}" in skill_text
+
+    legacy_track_agents = (
+        repo_root / ".agents" / "skills" / "set-up" / "templates" / "track_AGENTS.md"
+    )
+    assert not legacy_track_agents.exists()
+
+
+def test_setup_skill_ends_with_first_digest_preview_step(repo_root: Path) -> None:
+    skill_text = (repo_root / ".agents" / "skills" / "set-up" / "SKILL.md").read_text()
+
+    assert "### 6. First local digest preview" in skill_text
+    assert "bash scripts/run_track.sh --track {track_slug}" in skill_text
+    assert "tracks/{track_slug}/digests/YYYY-MM-DD.md" in skill_text
+    assert "artifacts/digests/{track_slug}/YYYY-MM-DD.json" in skill_text
+    assert "### 7. Delivery preferences and local config handholding" in skill_text
+    assert "### 8. Validation" in skill_text
+    assert "### 9. Final response" in skill_text
+
+
+def test_start_setup_agent_prompt_requires_digest_preview(repo_root: Path) -> None:
+    prompt_text = (repo_root / "scripts" / "start_setup_agent.sh").read_text()
+
+    assert "bash scripts/run_track.sh --track <track>" in prompt_text
+    assert "preview" in prompt_text.lower()
+    assert "tracks/<track>/digests/YYYY-MM-DD.md" in prompt_text

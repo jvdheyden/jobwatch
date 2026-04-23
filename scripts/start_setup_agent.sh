@@ -142,7 +142,8 @@ Contract:
 - Use scripts/probe_career_source.py for source probing when possible instead of guessing from WebFetch alone.
 - Scaffold and validate the track, then run source-scoped discovery and scripts/eval_source_quality.py for canary-backed important sources. A source is ready only when final_status is pass.
 - For sources that need code, tune config first. Then run scripts/source_integration.py for at most the top 2 sources, preferring reusable provider modules under scripts/discover/sources/ when a board family is shared. Queue the rest in source_state.json and validate with scripts/integrate_next_source.py --dry-run.
-- Run the first digest with bash scripts/run_track.sh --track <track> before email testing. Only after the digest JSON exists, dry-run email with scripts/send_digest_email.py --dry-run.
+- End guided setup by running a first local digest with bash scripts/run_track.sh --track <track> and pasting a preview of tracks/<track>/digests/YYYY-MM-DD.md into the conversation before moving on to delivery or scheduling. If run_track.sh fails, treat it as a blocker rather than skipping the preview.
+- Only after the digest JSON exists, dry-run email with scripts/send_digest_email.py --dry-run.
 - Guide delivery and scheduling last. Do not install the scheduler or send real email unless the user explicitly confirms.
 EOF
 )

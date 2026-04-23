@@ -220,66 +220,29 @@ Create:
 Do not hand-write `tracks/{track_slug}/ranked_overview.md` or `shared/ranked_jobs/{track_slug}.json`.
 Let `scripts/update_ranked_overview.py --track {track_slug}` initialize those.
 
+Step 5 scaffold templates live in `shared/templates/`:
+- `shared/templates/track_prefs.md`
+- `shared/templates/track_sources.json`
+- `shared/templates/track_match_rules.json`
+- `shared/templates/track_source_state.json`
+- `shared/templates/track_AGENTS.md`
+
+Copy these templates as starting points, replace all placeholders, then remove any example-only entries that do not apply. Do not edit the shared templates during normal track setup.
+
 #### `prefs.md`
 
-Write `tracks/{track_slug}/prefs.md` using this template:
+Use `shared/templates/track_prefs.md` as the base template for `tracks/{track_slug}/prefs.md`.
 
-```md
-# {track display name} track preferences
-
-Interpret this file as a specialization of `profile/prefs_global.md`.
-If this file conflicts with the global preferences, this file takes precedence for the {track display name} track.
-
-## Goals
-Role types:
-{user input goals / role types}
-
-## Keep only roles matching at least one of these keywords
-{user input keep-only keywords}
-
-## Constraints and red flags
-{user input constraints / red flags}
-
-## Location and work-mode preferences
-{user input geography / remote preferences or "- none specified yet"}
-```
+Replace:
+- `{track_display_name}` with the final track display name
+- `{goals_or_role_types}` with the user's goals and role types
+- `{keep_only_keywords}` with the user's keep-only keywords or `- none specified yet`
+- `{constraints_or_red_flags}` with the user's constraints and red flags or `- none specified yet`
+- `{geography_or_remote_preferences}` with the user's geography and remote preferences or `- none specified yet`
 
 #### `sources.json`
 
-Write `tracks/{track_slug}/sources.json` as the canonical machine-readable source config:
-
-```json
-{
-  "schema_version": 1,
-  "track": "{track_slug}",
-  "track_terms": [
-    "{track-wide term}"
-  ],
-  "sources": [
-    {
-      "id": "{stable_slugified_source_id}",
-      "name": "{source display name}",
-      "url": "{official source URL}",
-      "discovery_mode": "{supported discovery mode}",
-      "cadence_group": "every_run"
-    },
-    {
-      "id": "{stable_slugified_source_id}",
-      "name": "{source display name}",
-      "url": "{official source URL}",
-      "discovery_mode": "{supported discovery mode}",
-      "cadence_group": "every_3_runs",
-      "search_terms": {
-        "mode": "append",
-        "terms": ["{source-specific term}"]
-      },
-      "filters": {
-        "location": ["{native filter value}"]
-      }
-    }
-  ]
-}
-```
+Use `shared/templates/track_sources.json` as the base shape for `tracks/{track_slug}/sources.json`, then write the canonical machine-readable source config.
 
 Rules:
 - `id` is stable state identity; use lowercase ASCII slugs and do not change it during later display-name cleanup.
@@ -289,23 +252,7 @@ Rules:
 
 #### `match_rules.json`
 
-Create `tracks/{track_slug}/match_rules.json` only when the user accepted track-specific filtering for a broad or noisy source.
-
-```json
-{
-  "schema_version": 1,
-  "track": "{track_slug}",
-  "rules": [
-    {
-      "id": "{short_rule_id}",
-      "source_ids": ["{stable_slugified_source_id}"],
-      "source_names": ["{source display name}"],
-      "keep_if_any_text_term": ["{track-specific evidence term}"],
-      "limitation": "Track filter removed {removed} candidate(s) from this broad source without explicit fit evidence."
-    }
-  ]
-}
-```
+Use `shared/templates/track_match_rules.json` as the base shape for `tracks/{track_slug}/match_rules.json` only when the user accepted track-specific filtering for a broad or noisy source.
 
 Rules:
 - Omit the file entirely when no broad-source filtering rule is needed.
@@ -315,19 +262,7 @@ Rules:
 
 #### `source_state.json`
 
-Write `tracks/{track_slug}/source_state.json` with null state for new sources:
-
-```json
-{
-  "schema_version": 1,
-  "track": "{track_slug}",
-  "sources": {
-    "{stable_slugified_source_id}": {
-      "last_checked": null
-    }
-  }
-}
-```
+Use `shared/templates/track_source_state.json` as the base shape for `tracks/{track_slug}/source_state.json` with null `last_checked` state for new sources.
 
 The runner owns this file during normal track runs.
 
@@ -402,7 +337,7 @@ Write filters as `- Source Name — key: value; value | key: value`.
 
 #### `AGENTS.md`
 
-Use `.agents/skills/set-up/templates/track_AGENTS.md` as the base template.
+Use `shared/templates/track_AGENTS.md` as the base template.
 
 Copy its structure, then replace all template placeholders:
 - replace `{track_display_name}` with the final track display name
@@ -429,9 +364,27 @@ Write exactly:
 
 Do not add any other content.
 
-### 6. Delivery preferences and local config handholding
+### 6. First local digest preview
 
-After files are generated, ask which delivery methods and schedule the user wants for this track.
+After Step 5 files are generated, run a first local track digest with no delivery and paste a preview of the rendered digest into the conversation. This is how guided setup ends: do not move on to delivery or scheduling until the user has seen what today's digest produces for this track.
+
+1. Run:
+
+```bash
+bash scripts/run_track.sh --track {track_slug}
+```
+
+2. Confirm the structured digest exists at `artifacts/digests/{track_slug}/YYYY-MM-DD.json`.
+3. Read the rendered digest at `tracks/{track_slug}/digests/YYYY-MM-DD.md`.
+4. Paste a preview of the rendered digest into the conversation:
+   - the rendered digest body verbatim if it is short, otherwise the first ~40 lines with a note about where the full file lives
+   - a one-line summary of strong vs. borderline matches
+5. If the digest finds zero relevant new roles, say so explicitly. The scaffold is still ready.
+6. If `bash scripts/run_track.sh` fails, surface the error and treat it as a blocker. Do not move on to delivery or scheduling until the first digest has been produced and previewed, or the user explicitly decides to defer the preview.
+
+### 7. Delivery preferences and local config handholding
+
+After the first digest has been previewed, ask which delivery methods and schedule the user wants for this track.
 
 Explain the options clearly:
 - local artifacts only: always available; `run_track.sh` leaves JSON and Markdown files in the repo
@@ -472,14 +425,8 @@ For email:
 - Do not run `send_digest_email.py --dry-run` before a digest exists.
 - Sequence email setup this way:
   1. Configure non-secret SMTP settings and password-command retrieval.
-  2. Run a first local digest with no delivery:
-
-```bash
-bash scripts/run_track.sh --track {track_slug}
-```
-
-  3. Confirm `artifacts/digests/{track_slug}/YYYY-MM-DD.json` exists.
-  4. Dry-run the email render:
+  2. Reuse the digest produced by Step 6 at `artifacts/digests/{track_slug}/YYYY-MM-DD.json`. If Step 6 was skipped or deferred, run `bash scripts/run_track.sh --track {track_slug}` now and confirm the JSON exists before continuing.
+  3. Dry-run the email render:
 
 ```bash
 ./.venv/bin/python scripts/send_digest_email.py --track {track_slug} --date YYYY-MM-DD --dry-run
@@ -519,7 +466,7 @@ Scheduling caveats:
 - If email delivery is scheduled, remind the user that SMTP values must be filled in `.env.local` before the scheduled run.
 - If `bash scripts/install_scheduler.sh` needs approval to update crontab or launchd, request that approval and then continue.
 
-### 7. Validation
+### 8. Validation
 
 After scaffolding, run:
 
@@ -562,7 +509,7 @@ If email delivery was requested, validate the sequence after the first digest ex
 13. Confirm `artifacts/digests/{track_slug}/YYYY-MM-DD.json` exists.
 14. `./.venv/bin/python scripts/send_digest_email.py --track {track_slug} --date YYYY-MM-DD --dry-run`
 
-### 8. Final response
+### 9. Final response
 
 Report:
 - what files were created or changed
@@ -570,6 +517,7 @@ Report:
 - which sources were included and with which `discovery_mode`
 - whether `match_rules.json` was created, and which broad sources it affects
 - whether `profile/cv.md` and `profile/prefs_global.md` were filled, default, or deferred
+- whether the first local digest was produced and previewed, with the digest path and a short summary of what was found
 - whether the Codex project config was installed, already present, updated, conflicted, or not applicable (only relevant when `--agent codex` was used)
 - whether the Claude `SessionStart` hook was installed, already present, or not applicable (only relevant when `--agent claude` was used)
 - which delivery methods the user selected, and which local config values still need to be filled
