@@ -35,6 +35,7 @@ Read, when available:
 - `tracks/{track_slug}/prefs.md`
 - `profile/cv.md`
 - `profile/prefs_global.md`
+- `docs/source_curation.md` when choosing or explaining official-source selection or `discovery_mode` heuristics
 - `docs/discovery_modes.md` when choosing or explaining supported `discovery_mode` values
 - the user's stated setup preferences:
   - track display name or search area
@@ -68,7 +69,7 @@ If the user already has a strong official source list, do not replace it. Use th
 ### 3. Validate lightly
 
 - Confirm the source appears official and relevant to the stated preferences.
-- Detect board family or likely `discovery_mode` when obvious from the URL or page shape, using `docs/discovery_modes.md` as the supported-mode reference when available.
+- Detect board family or likely `discovery_mode` when obvious from the URL or page shape. Use `docs/source_curation.md` for the canonical official-source and fallback heuristics, and `docs/discovery_modes.md` as the supported-mode reference.
 - If an official ATS board is linked from the employer homepage or official careers page, keep it even when it must fall back to `html`.
 - If unclear, keep the source only when it still looks plausibly official and default `suggested_discovery_mode` to `html`.
 - Do not do exhaustive browsing, canary discovery, source-quality evaluation, or scraper integration here.
@@ -91,29 +92,9 @@ If the user already has a strong official source list, do not replace it. Use th
   - reusable source parsing belongs in provider modules under `scripts/discover/sources/`, not in track config
 - Suggest match rules only for broad or noisy sources such as ecosystem boards, public-service searches, Hacker News, YC role boards, or community job lists. Do not suggest match rules for ordinary official employer boards unless they are predictably noisy.
 
-## Suggested discovery mode mapping
+## Shared heuristics
 
-Prefer modes listed in `docs/discovery_modes.md`. Common mappings:
-
-- Workday career pages or APIs: `workday_api`
-- Greenhouse boards: `greenhouse_api`
-- Lever boards: `lever_json`
-- Ashby boards with usable API responses: `ashby_api`
-- Ashby boards without reliable API clues: `ashby_html`
-- Workable boards: `workable_api`
-- Getro collection boards: `getro_api`
-- Personio pages: `personio_page`
-- Recruitee inline pages: `recruitee_inline`
-- YC jobs role boards: `yc_jobs_board`
-- Hacker News jobs pages: `hackernews_jobs`
-- service.bund search URLs: `service_bund_search`
-- IACR jobs: `iacr_jobs`
-- Other official ATS pages without dedicated support: `html`
-- Unknown or custom official pages: `html`
-
-If more than one mode seems plausible, choose the conservative supported option and note the uncertainty. Do not invent a new `discovery_mode`.
-
-Common pattern to preserve: if an employer homepage links directly to an official ATS board, keep that board as a primary source. Example: if `https://www.wakingup.com/` links to `https://apply.workable.com/waking-up-1/`, keep the Workable board as an official primary source.
+Use `docs/source_curation.md` as the canonical reference for official-source selection, common `discovery_mode` mappings, fallback behavior, and when to surface source-integration follow-up. Use `docs/discovery_modes.md` as the supported-mode catalog.
 
 ## Output contract
 

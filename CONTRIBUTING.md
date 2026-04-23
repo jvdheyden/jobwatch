@@ -42,7 +42,7 @@ If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — on
 | Change | Start here |
 | --- | --- |
 | Add or modify a discovery source | [`docs/contributing/adding-sources.md`](./docs/contributing/adding-sources.md) — provider lives under `scripts/discover/sources/`, never directly in `scripts/discover_jobs.py` |
-| Edit an agent skill (`coding`, `find-jobs`, `rank-jobs`, `discover-sources`, `set-up`) | Edit the canonical file under `.agents/skills/<skill>/SKILL.md`, then run `bash scripts/sync_claude_skills.sh`. Never edit `.claude/skills/` directly. |
+| Edit an agent skill (`coding`, `existing-source-curation`, `find-jobs`, `rank-jobs`, `discover-sources`, `set-up`) | Edit the canonical file under `.agents/skills/<skill>/SKILL.md`, then run `bash scripts/sync_claude_skills.sh`. Never edit `.claude/skills/` directly. |
 | Touch the track-run pipeline | `scripts/run_track.sh`, `scripts/run_scheduled_jobs.sh`, and the post-processing helpers around them. See [`docs/architecture.md`](./docs/architecture.md) for the call graph. |
 | Add a new provider contract test | `tests/contract/` with fixtures under `tests/fixtures/sources/<discovery_mode>/`. |
 

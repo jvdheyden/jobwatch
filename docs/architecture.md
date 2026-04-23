@@ -10,7 +10,7 @@ This repo runs an agent-assisted job-search workflow. Each track combines determ
 | --- | --- | --- |
 | Track run | Scheduled or user prompt to run a track and produce a digest | `tracks/<track>/AGENTS.md`, agent skills, `scripts/` |
 | Track setup | Prompt to create/scaffold a new search track | `set-up` skill |
-| Existing-track source curation | Prompt to add/evaluate a single named employer or source for an existing track | `tracks/<track>/sources.json` + `scripts/render_sources_md.py` |
+| Existing-track source curation | Prompt to add/evaluate a single named employer or source for an existing track | `existing-source-curation` skill, `tracks/<track>/sources.json`, `scripts/render_sources_md.py` |
 | Repo development | Prompt to change code, tests, skills, or docs | `coding` skill, `scripts/`, `tests/` |
 
 ## Component map
@@ -25,6 +25,7 @@ flowchart LR
 
   subgraph Skills["Agent skills (.agents/skills/)"]
     SetUp[set-up]:::agent
+    ExistingSourceCuration[existing-source-curation]:::agent
     FindJobs[find-jobs]:::agent
     RankJobs[rank-jobs]:::agent
     DiscoverSources[discover-sources]:::agent
@@ -39,11 +40,16 @@ flowchart LR
   subgraph TrackRun["Track-run pipeline (scripts/)"]
     RunTrack[run_track.sh]:::script
     Discover[discover_jobs.py]:::script
-    Agent[(agent: claude or codex<br/>uses find-jobs / rank-jobs / discover-sources)]:::agent
+    Agent[(agent: claude or codex<br/>uses find-jobs / rank-jobs)]:::agent
     UpdState[update_source_state.py]:::script
     Render[render_digest.py]:::script
     Seen[update_seen_jobs.py]:::script
     Ranked[update_ranked_overview.py]:::script
+  end
+
+  subgraph SourceCuration["Existing-track source curation"]
+    CurateSource[existing-source-curation]:::agent
+    RenderSources[scripts/render_sources_md.py]:::script
   end
 
   subgraph Delivery["Optional delivery"]
@@ -62,6 +68,8 @@ flowchart LR
     DiscArt[(artifacts/discovery/&lt;track&gt;/&lt;date&gt;.json)]:::artifact
     StructDigest[(artifacts/digests/&lt;track&gt;/&lt;date&gt;.json)]:::artifact
     MdDigest[(tracks/&lt;track&gt;/digests/&lt;date&gt;.md)]:::artifact
+    SrcConfig[(tracks/&lt;track&gt;/sources.json)]:::artifact
+    SrcDoc[(tracks/&lt;track&gt;/sources.md)]:::artifact
     SrcState[(tracks/&lt;track&gt;/source_state.json)]:::artifact
     SeenJobs[(shared/seen_jobs.md)]:::artifact
     RankedOv[(shared/ranked_jobs/, ranked_overview.md)]:::artifact
@@ -94,7 +102,11 @@ flowchart LR
   SetUp -.scaffolds.-> SrcState
   SetUp -.runs eval + integration on top probed sources.-> Integrate
   SetUp -.queues remaining sources.-> SrcState
-  DiscoverSources -.edits.-> SrcState
+  DiscoverSources -.recommends sources to.-> SetUp
+  CurateSource -.reads/writes.-> SrcConfig
+  CurateSource -.reads.-> SrcDoc
+  CurateSource --> RenderSources
+  RenderSources -.writes.-> SrcDoc
   Coding -.edits.-> RunTrack
 
   IntegrateNext -.reads queue from.-> SrcState

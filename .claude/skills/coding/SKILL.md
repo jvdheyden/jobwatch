@@ -146,6 +146,10 @@ Progress tracking rules:
 - If `./.venv` is missing, bootstrap it with `bash scripts/bootstrap_venv.sh` before running Python test commands.
 - Prefer `./.venv/bin/python -m pytest ...` over bare `pytest` or `python3 -m pytest`.
 - When changing behavior or fixing a bug, add or update tests where reasonable.
+- Prefer behavioral tests or consumer-level checks over prose-locking tests.
+- Do not add tests that merely assert literal strings in docs, `AGENTS.md`, or skill files unless some script, parser, generator, or harness depends on that exact text.
+- For docs-only or instruction-only changes, verification may be limited to manual review, mirror sync, and targeted checks of consuming code or generated artifacts.
+- Avoid brittle tests that lock down non-semantic wording.
 - Do not force TDD for trivial refactors, config changes, or docs-only edits.
 - Run relevant checks during development when helpful.
 - Always run `scripts/test.sh` before finishing, unless the task is explicitly docs-only or the script is not applicable.
