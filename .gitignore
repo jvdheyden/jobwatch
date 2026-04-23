@@ -1,4 +1,5 @@
 .DS_Store
+*.swp
 
 # Python cache and local virtualenvs
 __pycache__/
