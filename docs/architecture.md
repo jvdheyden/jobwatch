@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This repo runs an agent-assisted job-search workflow. Each track combines deterministic Python helpers under `scripts/` with agent-driven skills under `.agents/skills/`. This page is the high-level map; per-source detail lives in the auto-generated [`discovery_modes.md`](./discovery_modes.md).
+This repo runs an agent-assisted job-search workflow. Each track combines deterministic Python helpers under `scripts/` with agent-driven skills under `.agents/skills/`. This page is the high-level map; per-source detail lives in the auto-generated [`shared/discovery_modes.md`](../shared/discovery_modes.md).
 
 ## Work modes
 
@@ -209,7 +209,7 @@ When an integration lands a working fix, push the branch from your fork and open
 
 - [`AGENTS.md`](../AGENTS.md) — mode routing rules.
 - [`README.md`](../README.md) — user-facing setup, manual runs, scheduling, delivery.
-- [`docs/discovery_modes.md`](./discovery_modes.md) — auto-generated catalog of every supported provider.
+- [`shared/discovery_modes.md`](../shared/discovery_modes.md) — auto-generated catalog of every supported provider.
 - [`docs/contributing/adding-sources.md`](./contributing/adding-sources.md) — how to add a new discovery source.
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) — fork-and-PR workflow for code or doc contributions.
 - Per-skill instructions live under `.agents/skills/<skill>/SKILL.md` (canonical) and mirror to `.claude/skills/<skill>/SKILL.md` via `bash scripts/sync_claude_skills.sh`.

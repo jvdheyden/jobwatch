@@ -35,8 +35,8 @@ Read, when available:
 - `tracks/{track_slug}/prefs.md`
 - `profile/cv.md`
 - `profile/prefs_global.md`
-- `docs/source_curation.md` when choosing or explaining official-source selection or `discovery_mode` heuristics
-- `docs/discovery_modes.md` when choosing or explaining supported `discovery_mode` values
+- `shared/source_curation.md` when choosing or explaining official-source selection or `discovery_mode` heuristics
+- `shared/discovery_modes.md` when choosing or explaining supported `discovery_mode` values
 - the user's stated setup preferences:
   - track display name or search area
   - goals / role types
@@ -69,7 +69,7 @@ If the user already has a strong official source list, do not replace it. Use th
 ### 3. Validate lightly
 
 - Confirm the source appears official and relevant to the stated preferences.
-- Detect board family or likely `discovery_mode` when obvious from the URL or page shape. Use `docs/source_curation.md` for the canonical official-source and fallback heuristics, and `docs/discovery_modes.md` as the supported-mode reference.
+- Detect board family or likely `discovery_mode` when obvious from the URL or page shape. Use `shared/source_curation.md` for the canonical official-source and fallback heuristics, and `shared/discovery_modes.md` as the supported-mode reference.
 - If an official ATS board is linked from the employer homepage or official careers page, keep it even when it must fall back to `html`.
 - If unclear, keep the source only when it still looks plausibly official and default `suggested_discovery_mode` to `html`.
 - Do not do exhaustive browsing, canary discovery, source-quality evaluation, or scraper integration here.
@@ -95,7 +95,7 @@ If the user already has a strong official source list, do not replace it. Use th
 
 ## Shared heuristics
 
-Use `docs/source_curation.md` as the canonical reference for official-source selection, common `discovery_mode` mappings, fallback behavior, and when to surface source-integration follow-up. Use `docs/discovery_modes.md` as the supported-mode catalog.
+Use `shared/source_curation.md` as the canonical reference for official-source selection, common `discovery_mode` mappings, fallback behavior, and when to surface source-integration follow-up. Use `shared/discovery_modes.md` as the supported-mode catalog.
 
 ## Output contract
 

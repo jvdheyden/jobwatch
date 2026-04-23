@@ -65,7 +65,7 @@ Before making non-trivial changes, read the smallest relevant set of docs for th
 
 When relevant, also read:
 
-- `docs/discovery_modes.md` if the task touches discovery behavior or provider capabilities
+- `shared/discovery_modes.md` if the task touches discovery behavior or provider capabilities
 - `docs/contributing/adding-sources.md` if the task adds or changes a discovery source
 - the relevant skill under `.agents/skills/<skill>/SKILL.md` if the task touches agent behavior
 - existing tests and fixtures in `tests/` for the subsystem you are changing

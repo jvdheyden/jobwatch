@@ -13,7 +13,7 @@ from discover.registry import load_registry
 
 
 ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
-DEFAULT_OUTPUT = ROOT / "docs" / "discovery_modes.md"
+DEFAULT_OUTPUT = ROOT / "shared" / "discovery_modes.md"
 
 
 MODE_DETAILS = {

@@ -12,7 +12,7 @@ Default assumption:
 - Reuse the shared scripts in `scripts/`.
 - Tune source-specific config before adding discovery code.
 - New source-integration code should live in a provider module under `scripts/discover/sources/`; keep `scripts/discover_jobs.py` as the CLI compatibility entrypoint.
-- Use `docs/discovery_modes.md` as the generated reference for supported `discovery_mode` values.
+- Use `shared/discovery_modes.md` as the generated reference for supported `discovery_mode` values.
 - Do not invoke source integration from normal scheduled track runs.
 
 Interaction defaults:
@@ -156,7 +156,7 @@ Use this canonical path:
    - Normalize the slug before writing files.
    - Treat the final source list as coming from the user, from `discover-sources`, or from both.
    - Infer `discovery_mode` from the source URL when obvious.
-   - Prefer modes listed in `docs/discovery_modes.md`, which is generated from the provider registry. Use `scripts/discover_jobs.py` as the stable CLI entrypoint, not as the place to add source logic.
+   - Prefer modes listed in `shared/discovery_modes.md`, which is generated from the provider registry. Use `scripts/discover_jobs.py` as the stable CLI entrypoint, not as the place to add source logic.
    - Common modes worth trying first: `workday_api`, `greenhouse_api`, `lever_json`, `ashby_api`, `ashby_html`, `workable_api`, `getro_api`, `personio_page`, `recruitee_inline`, `service_bund_search`, `html`, `iacr_jobs`, `yc_jobs_board`, `hackernews_jobs`.
    - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
    - If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.

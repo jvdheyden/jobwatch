@@ -12,7 +12,7 @@ Use this guide when a skill needs to identify the best official source URL for a
 
 ## `discovery_mode` selection
 
-- Use a mode listed in `docs/discovery_modes.md`. Do not invent a new `discovery_mode`.
+- Use a mode listed in `shared/discovery_modes.md`. Do not invent a new `discovery_mode`.
 - Common mappings:
   - Workday career pages or APIs: `workday_api`
   - Greenhouse boards: `greenhouse_api`

@@ -18,8 +18,8 @@ Read:
 - `tracks/{track_slug}/prefs.md`
 - `tracks/{track_slug}/sources.json`
 - `tracks/{track_slug}/sources.md`
-- `docs/source_curation.md`
-- `docs/discovery_modes.md` when choosing or explaining supported `discovery_mode` values
+- `shared/source_curation.md`
+- `shared/discovery_modes.md` when choosing or explaining supported `discovery_mode` values
 - any user-supplied employer name, careers URL, board URL, or notes
 
 If the track files are missing or the request is really for a new track, stop and hand control back to `set-up`.
@@ -34,7 +34,7 @@ If the track files are missing or the request is really for a new track, stop an
 
 ### 2. Resolve the official source
 
-- Use `docs/source_curation.md` as the canonical reference for official-source selection and `discovery_mode` heuristics.
+- Use `shared/source_curation.md` as the canonical reference for official-source selection and `discovery_mode` heuristics.
 - If the user supplied a URL, verify whether it is the best official URL instead of accepting it blindly.
 - Check the employer homepage and official careers path first. Prefer homepage-linked careers pages or ATS boards.
 - Surface URL corrections when you replace a user-supplied URL with a better official one.

@@ -46,6 +46,11 @@ If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — on
 | Touch the track-run pipeline | `scripts/run_track.sh`, `scripts/run_scheduled_jobs.sh`, and the post-processing helpers around them. See [`docs/architecture.md`](./docs/architecture.md) for the call graph. |
 | Add a new provider contract test | `tests/contract/` with fixtures under `tests/fixtures/sources/<discovery_mode>/`. |
 
+## Docs placement
+
+- Keep human-facing documentation in `docs/`.
+- Keep tracked reference material that agents or scripts read directly in `shared/`, including generated catalogs and schemas.
+
 ## Before you push
 
 ```bash
