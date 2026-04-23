@@ -538,9 +538,14 @@ fi
     echo "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq"
   fi
   echo "# Optional: SMTP settings for email delivery."
-  echo "# Keep non-secret SMTP config here. Keep real SMTP secrets outside the repo."
+  echo "# Keep non-secret SMTP config here. Put the real app password or SMTP token outside the repo."
+  echo "# Put JOB_AGENT_SMTP_PASSWORD_CMD in this file to fetch that secret from Keychain, secret-tool, or pass."
+  echo "# Or put export JOB_AGENT_SMTP_PASSWORD=... only in the external file named by JOB_AGENT_SECRETS_FILE."
   echo "# Optional: shorthand for common SMTP-backed providers. Raw JOB_AGENT_SMTP_* settings override these defaults."
   echo "# Provider presets currently cover Gmail, Fastmail, Outlook.com/Hotmail, and Proton business SMTP."
+  echo "# Gmail: turn on Google 2-Step Verification and create an app password."
+  echo "# Fastmail: create an app password for a mail client."
+  echo "# Outlook.com/Hotmail: use this only if your account has a working app password or SMTP credential."
   echo "# JOB_AGENT_EMAIL_PROVIDER=proton assumes Proton business SMTP with an SMTP token and a custom-domain address."
   echo "# Proton Mail Bridge is still out of scope here; keep Bridge-based local SMTP settings explicit via JOB_AGENT_SMTP_* if you ever use it manually."
   if [[ -n "$EMAIL_PROVIDER_VALUE" ]]; then
@@ -586,6 +591,7 @@ fi
     echo "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com"
   fi
   echo "# Preferred: retrieve the SMTP password only when a real email is sent."
+  echo "# Keep the command here in .env.local; keep the actual app password or SMTP token in the password store it reads."
   echo "# Examples:"
   echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='security find-generic-password -s jobwatch-smtp -a jobs@example.com -w'"
   echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='secret-tool lookup service jobwatch-smtp account jobs@example.com'"
@@ -596,7 +602,13 @@ fi
     echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'"
   fi
   echo "# Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported."
-  echo "# If you prefer a static password over JOB_AGENT_SMTP_PASSWORD_CMD, put this in JOB_AGENT_SECRETS_FILE instead:"
+  if [[ -n "$SECRETS_FILE_VALUE" ]]; then
+    printf '# If you prefer a static password, write export JOB_AGENT_SMTP_PASSWORD=... in %s.\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
+  elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
+    printf '# If you prefer a static password, write export JOB_AGENT_SMTP_PASSWORD=... in %s and uncomment JOB_AGENT_SECRETS_FILE above.\n' "$(shell_escape "$SUGGESTED_SECRETS_FILE_VALUE")"
+  else
+    echo "# If you prefer a static password over JOB_AGENT_SMTP_PASSWORD_CMD, put it only in the external file named by JOB_AGENT_SECRETS_FILE."
+  fi
   echo "# export JOB_AGENT_SMTP_PASSWORD=app-password"
   if [[ -n "$SMTP_TLS_VALUE" ]]; then
     printf 'export JOB_AGENT_SMTP_TLS=%s\n' "$(shell_escape "$SMTP_TLS_VALUE")"

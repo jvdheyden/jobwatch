@@ -140,7 +140,7 @@ After changing schedules manually with the helper, install or refresh the platfo
 
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
 
-Email delivery is optional. Fill the non-secret email settings in `.env.local` locally, and keep any real SMTP password outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
+Email delivery is optional. Fill the non-secret email settings in `.env.local` locally, and keep any real app password or SMTP token outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
 
 For common providers, start with the provider/account shorthand and then add recipients plus password retrieval:
 
@@ -152,6 +152,14 @@ export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'
 ```
 
 `JOB_AGENT_EMAIL_PROVIDER` currently supplies host/port/tls defaults for `gmail`, `fastmail`, `hotmail` / `outlook`, and Proton business SMTP. `JOB_AGENT_EMAIL_ACCOUNT` defaults the sender address and, for provider-backed setups, the SMTP username. Explicit `JOB_AGENT_SMTP_*` values still win when you need to override those defaults.
+
+Keep only the retrieval wiring in `.env.local`. The real secret belongs either in the password manager entry read by `JOB_AGENT_SMTP_PASSWORD_CMD` or, if you need a static secret, in the external shell snippet named by `JOB_AGENT_SECRETS_FILE` as `export JOB_AGENT_SMTP_PASSWORD=...`.
+
+Provider-specific setup notes:
+
+- Gmail: `JOB_AGENT_EMAIL_PROVIDER=gmail` fills `smtp.gmail.com`, port `587`, and `STARTTLS`. Turn on Google 2-Step Verification, create a Google app password, and store that app password outside the repo. Put the retrieval command in `.env.local` via `JOB_AGENT_SMTP_PASSWORD_CMD`, or keep `export JOB_AGENT_SMTP_PASSWORD=...` in `JOB_AGENT_SECRETS_FILE`.
+- Fastmail: `JOB_AGENT_EMAIL_PROVIDER=fastmail` fills `smtp.fastmail.com`, port `587`, and `STARTTLS`. Fastmail requires an app password for third-party SMTP clients, and Fastmail Basic plans do not include SMTP or app-password support. Store the app password outside the repo and wire it in through `JOB_AGENT_SMTP_PASSWORD_CMD` or `JOB_AGENT_SECRETS_FILE`.
+- Outlook.com / Hotmail: `JOB_AGENT_EMAIL_PROVIDER=outlook` or `hotmail` fills `smtp-mail.outlook.com`, port `587`, and `STARTTLS`. Microsoft documents Modern Auth / OAuth2 as the preferred authentication method, so use this preset only if your account has a working app password or SMTP credential for SMTP AUTH. Store that secret outside the repo and expose it through `JOB_AGENT_SMTP_PASSWORD_CMD` or `JOB_AGENT_SECRETS_FILE`.
 
 `JOB_AGENT_EMAIL_PROVIDER=proton` now means Proton business SMTP, not Proton Mail Bridge. Use it only with a Proton-generated SMTP token and a custom-domain address in `JOB_AGENT_EMAIL_ACCOUNT`. Proton’s documented business SMTP settings are `smtp.protonmail.ch`, port `587`, `STARTTLS`, and SMTP-token auth.
 

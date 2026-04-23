@@ -195,7 +195,7 @@ Preview an email without sending it:
 ./.venv/bin/python scripts/send_digest_email.py --track <track-slug> --date YYYY-MM-DD --dry-run
 ```
 
-To send through SMTP, keep non-secret SMTP config in `.env.local` and either set `JOB_AGENT_SMTP_PASSWORD_CMD` there or point `JOB_AGENT_SECRETS_FILE` at a shell snippet outside the repo that exports the real password. For common providers, you can start with `JOB_AGENT_EMAIL_PROVIDER` plus `JOB_AGENT_EMAIL_ACCOUNT`; explicit `JOB_AGENT_SMTP_*` values still override the provider defaults.
+To send through SMTP, keep only non-secret SMTP config in `.env.local`. Put the real app password or SMTP token either behind `JOB_AGENT_SMTP_PASSWORD_CMD` in `.env.local` or as `export JOB_AGENT_SMTP_PASSWORD=...` in the external shell snippet named by `JOB_AGENT_SECRETS_FILE`. For common providers, you can start with `JOB_AGENT_EMAIL_PROVIDER` plus `JOB_AGENT_EMAIL_ACCOUNT`; explicit `JOB_AGENT_SMTP_*` values still override the provider defaults.
 
 ```text
 JOB_AGENT_EMAIL_PROVIDER
@@ -211,6 +211,13 @@ JOB_AGENT_SMTP_TLS
 ```
 
 Current provider presets cover Gmail, Fastmail, Outlook.com/Hotmail, and Proton business SMTP. For Proton, `JOB_AGENT_EMAIL_PROVIDER=proton` assumes Proton's business SMTP flow: use a custom-domain sending address in `JOB_AGENT_EMAIL_ACCOUNT`, authenticate with a Proton-generated SMTP token, and keep real secrets outside the repo. Proton Mail Bridge is still out of scope for the preset path. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts. Plaintext repo-local `JOB_AGENT_SMTP_PASSWORD` is no longer supported; use `JOB_AGENT_SMTP_PASSWORD_CMD` or put `export JOB_AGENT_SMTP_PASSWORD=...` in the external file named by `JOB_AGENT_SECRETS_FILE`. After `.env.local` is filled and a digest JSON exists, run the dry-run command first, then test the same command without `--dry-run` or use `--delivery email` on `run_track.sh`.
+
+Provider-specific credential notes:
+
+- Gmail: `JOB_AGENT_EMAIL_PROVIDER=gmail` fills `smtp.gmail.com`, port `587`, and `STARTTLS`. Google only exposes app passwords for accounts with 2-Step Verification enabled. Put the generated app password in your password store and point `JOB_AGENT_SMTP_PASSWORD_CMD` at it, or put `export JOB_AGENT_SMTP_PASSWORD=...` in `JOB_AGENT_SECRETS_FILE`.
+- Fastmail: `JOB_AGENT_EMAIL_PROVIDER=fastmail` fills `smtp.fastmail.com`, port `587`, and `STARTTLS`. Fastmail requires app passwords for third-party SMTP clients; keep that app password outside the repo and retrieve it via `JOB_AGENT_SMTP_PASSWORD_CMD` or `JOB_AGENT_SECRETS_FILE`.
+- Outlook.com / Hotmail: `JOB_AGENT_EMAIL_PROVIDER=outlook` or `hotmail` fills `smtp-mail.outlook.com`, port `587`, and `STARTTLS`. Microsoft documents Modern Auth / OAuth2 as the preferred path, so use this preset only when your account has a working app password or SMTP credential for SMTP AUTH. Store that secret outside the repo the same way.
+- Proton business SMTP: `JOB_AGENT_EMAIL_PROVIDER=proton` fills `smtp.protonmail.ch`, port `587`, and `STARTTLS`. Use a custom-domain sending address in `JOB_AGENT_EMAIL_ACCOUNT` and store the Proton-generated SMTP token outside the repo. Proton Mail Bridge remains out of scope for this preset path.
 
 ## Logseq Delivery
 
