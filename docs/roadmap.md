@@ -52,15 +52,15 @@ RM-### — Title
 - Notes: Add a lightweight digest delivery path without forcing heavy setup or duplicating the email/provider redesign.
 
 ## In progress
-### RM-011 — Simplify digest email output
-- Status: in progress
-- Priority: H
-- Owner: Jonas
-- Last updated: 2026-04-23
-- Links: [plan](plans/2026-04-23-rm-011-email-output-cleanup.md)
-- Next step: implement the linked plan and verify the updated dry-run and renderer output
-- Notes: Keep this scoped to email presentation only: remove redundant body chrome and revisit the ranked-overview attachment as part of the renderer, without widening into config, auth, or provider work.
 
 ## Parked
 
 ## Completed
+### RM-011 — Simplify digest email output
+- Status: complete
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-04-23
+- Links: [plan](plans/2026-04-23-rm-011-email-output-cleanup.md)
+- Next step: none
+- Notes: The default digest email body now starts at `Executive summary`, the redundant body header/date lines are gone, and the ranked-overview attachment is no longer emitted by default.

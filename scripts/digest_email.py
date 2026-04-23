@@ -111,9 +111,6 @@ def render_digest_email(
     subject = _render_subject(display_name, new_roles)
 
     lines: list[str] = [
-        f"{display_name} job digest",
-        f"Date: {digest['date']}",
-        "",
         "Executive summary",
         _executive_summary(digest),
         "",
@@ -142,17 +139,9 @@ def render_digest_email(
         ]
     )
 
-    attachment_filename = None
-    attachment_text = None
-    if ranked is not None:
-        attachment_filename = f"ranked-overview-{track}.md"
-        attachment_text = render_ranked_overview_attachment(ranked)
-
     return RenderedDigestEmail(
         subject=subject,
         body="\n".join(lines).rstrip() + "\n",
-        attachment_filename=attachment_filename,
-        attachment_text=attachment_text,
     )
 
 

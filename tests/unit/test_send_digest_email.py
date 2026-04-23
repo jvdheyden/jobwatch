@@ -115,6 +115,9 @@ def test_dry_run_does_not_load_smtp_or_execute_password_command(tmp_path, monkey
     (digest_dir / "2026-03-29.json").write_text(
         json.dumps(load_json_fixture("digests/core_crypto_minimal.json")) + "\n"
     )
+    ranked_dir = root / "shared" / "ranked_jobs"
+    ranked_dir.mkdir(parents=True)
+    (ranked_dir / "core_crypto.json").write_text(json.dumps({"track": "core_crypto", "generated_at": "2026-03-29T09:00:00Z", "jobs": []}) + "\n")
     monkeypatch.setenv("JOB_AGENT_ROOT", str(root))
     monkeypatch.setenv("JOB_AGENT_SMTP_PASSWORD_CMD", "exit 99")
     monkeypatch.setattr(
@@ -129,7 +132,9 @@ def test_dry_run_does_not_load_smtp_or_execute_password_command(tmp_path, monkey
     )
 
     assert send_digest_email.main() == 0
-    assert "Subject:" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "Subject:" in output
+    assert "Attachment:" not in output
 
 
 def test_build_email_message_adds_ranked_attachment():
