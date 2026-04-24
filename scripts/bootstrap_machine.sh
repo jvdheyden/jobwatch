@@ -10,7 +10,7 @@ START_SETUP_AGENT=""
 
 usage() {
   cat <<EOF
-Usage: $0 --agent codex|claude [--agent-bin <path>] [--start-setup-agent|--no-start-setup-agent]
+Usage: $0 --agent codex|claude|gemini [--agent-bin <path>] [--start-setup-agent|--no-start-setup-agent]
 
 Bootstrap this checkout for first-time local use.
 
@@ -27,15 +27,22 @@ EOF
 
 agent_guidance() {
   local detected=""
-  if command -v claude >/dev/null 2>&1 && ! command -v codex >/dev/null 2>&1; then
-    detected="claude"
-  elif command -v codex >/dev/null 2>&1 && ! command -v claude >/dev/null 2>&1; then
-    detected="codex"
+  local detected_count=0
+  local candidate=""
+  for candidate in claude codex gemini; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      detected="$candidate"
+      detected_count=$((detected_count + 1))
+    fi
+  done
+  if [[ "$detected_count" -ne 1 ]]; then
+    detected=""
   fi
   cat >&2 <<EOF
 Choose an automation agent:
   bash scripts/bootstrap_machine.sh --agent claude
   bash scripts/bootstrap_machine.sh --agent codex
+  bash scripts/bootstrap_machine.sh --agent gemini
 EOF
   if [[ -n "$detected" ]]; then
     echo "Detected '$detected' on PATH; likely command: bash scripts/bootstrap_machine.sh --agent $detected" >&2
@@ -44,7 +51,7 @@ EOF
 
 validate_agent() {
   case "${1:-}" in
-    codex|claude)
+    codex|claude|gemini)
       return 0
       ;;
     *)
@@ -109,6 +116,16 @@ EOF
 EOF
   fi
 
+  if [[ "$AGENT_VALUE" == "gemini" ]]; then
+    cat <<EOF
+
+  3. Gemini note:
+     Authenticate Gemini CLI before scheduled runs if this machine has not
+     already been configured:
+     gemini -p 'Respond with exactly: ok'
+EOF
+  fi
+
   if [[ "$PLATFORM" == "Linux" && "$AGENT_VALUE" == "codex" ]]; then
     cat <<EOF
 
@@ -167,7 +184,7 @@ if [[ -z "$AGENT_VALUE" ]]; then
   exit 2
 fi
 if ! validate_agent "$AGENT_VALUE"; then
-  echo "Invalid --agent '$AGENT_VALUE'; expected codex or claude." >&2
+  echo "Invalid --agent '$AGENT_VALUE'; expected codex, claude, or gemini." >&2
   agent_guidance
   exit 2
 fi

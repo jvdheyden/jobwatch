@@ -9,13 +9,16 @@ from pathlib import Path
 from typing import Mapping
 
 
-SUPPORTED_PROVIDERS = ("codex", "claude")
+SUPPORTED_PROVIDERS = ("codex", "claude", "gemini")
 DEFAULT_PROVIDER = "codex"
 
 DEFAULT_CLAUDE_REVIEWER_ALLOWED_TOOLS = "Read,Glob,Grep,LS"
 DEFAULT_CLAUDE_CODER_ALLOWED_TOOLS = "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite"
 DEFAULT_CLAUDE_SCHEDULED_ALLOWED_TOOLS = DEFAULT_CLAUDE_CODER_ALLOWED_TOOLS
 DEFAULT_CLAUDE_PERMISSION_MODE = "acceptEdits"
+DEFAULT_GEMINI_CODER_APPROVAL_MODE = "yolo"
+DEFAULT_GEMINI_SCHEDULED_APPROVAL_MODE = DEFAULT_GEMINI_CODER_APPROVAL_MODE
+DEFAULT_GEMINI_SETUP_APPROVAL_MODE = "auto_edit"
 
 
 def resolve_agent_provider(explicit: str | None = None, env: Mapping[str, str] | None = None) -> str:
@@ -32,6 +35,8 @@ def default_binary_name(provider: str) -> str:
         return "codex"
     if provider == "claude":
         return "claude"
+    if provider == "gemini":
+        return "gemini"
     raise ValueError(f"unsupported agent provider: {provider}")
 
 
@@ -84,6 +89,26 @@ def claude_allowed_tools(role: str, env: Mapping[str, str] | None = None) -> str
     if role == "scheduled":
         return values.get("JOB_AGENT_CLAUDE_SCHEDULED_ALLOWED_TOOLS", DEFAULT_CLAUDE_SCHEDULED_ALLOWED_TOOLS)
     return values.get("JOB_AGENT_CLAUDE_CODER_ALLOWED_TOOLS", DEFAULT_CLAUDE_CODER_ALLOWED_TOOLS)
+
+
+def gemini_approval_mode(role: str, env: Mapping[str, str] | None = None) -> str:
+    values = os.environ if env is None else env
+    if role == "reviewer":
+        return values.get("JOB_AGENT_GEMINI_REVIEWER_APPROVAL_MODE", "")
+    if role == "scheduled":
+        return values.get(
+            "JOB_AGENT_GEMINI_SCHEDULED_APPROVAL_MODE",
+            values.get("JOB_AGENT_GEMINI_APPROVAL_MODE", DEFAULT_GEMINI_SCHEDULED_APPROVAL_MODE),
+        )
+    if role == "setup":
+        return values.get(
+            "JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE",
+            values.get("JOB_AGENT_GEMINI_APPROVAL_MODE", DEFAULT_GEMINI_SETUP_APPROVAL_MODE),
+        )
+    return values.get(
+        "JOB_AGENT_GEMINI_CODER_APPROVAL_MODE",
+        values.get("JOB_AGENT_GEMINI_APPROVAL_MODE", DEFAULT_GEMINI_CODER_APPROVAL_MODE),
+    )
 
 
 def build_codex_reviewer_command(root: Path, agent_bin: Path) -> list[str]:
@@ -144,11 +169,32 @@ def build_claude_print_command(
     return command
 
 
+def build_gemini_command(
+    agent_bin: Path,
+    *,
+    role: str,
+    output_format: str,
+    env: Mapping[str, str] | None = None,
+) -> list[str]:
+    command = [
+        str(agent_bin),
+        "--skip-trust",
+        "--output-format",
+        output_format,
+    ]
+    approval_mode = gemini_approval_mode(role, env).strip()
+    if approval_mode:
+        command.extend(["--approval-mode", approval_mode])
+    return command
+
+
 def build_reviewer_command(provider: str, root: Path, agent_bin: Path) -> list[str]:
     if provider == "codex":
         return build_codex_reviewer_command(root, agent_bin)
     if provider == "claude":
         return build_claude_print_command(agent_bin, role="reviewer", output_format="text")
+    if provider == "gemini":
+        return build_gemini_command(agent_bin, role="reviewer", output_format="text")
     raise ValueError(f"unsupported agent provider: {provider}")
 
 
@@ -157,4 +203,6 @@ def build_coder_command(provider: str, root: Path, agent_bin: Path, last_message
         return build_codex_coder_command(root, agent_bin, last_message_path)
     if provider == "claude":
         return build_claude_print_command(agent_bin, role="coder", output_format="stream-json")
+    if provider == "gemini":
+        return build_gemini_command(agent_bin, role="coder", output_format="stream-json")
     raise ValueError(f"unsupported agent provider: {provider}")

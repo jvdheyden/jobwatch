@@ -40,7 +40,7 @@ flowchart LR
   subgraph TrackRun["Track-run pipeline (scripts/)"]
     RunTrack[run_track.sh]:::script
     Discover[discover_jobs.py]:::script
-    Agent[(agent: claude or codex<br/>uses find-jobs / rank-jobs)]:::agent
+    Agent[(agent: claude, codex, or gemini<br/>uses find-jobs / rank-jobs)]:::agent
     UpdState[update_source_state.py]:::script
     Render[render_digest.py]:::script
     Seen[update_seen_jobs.py]:::script
@@ -62,7 +62,7 @@ flowchart LR
     Integrate[source_integration.py]:::script
     IntegrateNext[integrate_next_source.py]:::script
     Eval[eval_source_quality.py<br/>+ source_quality.review_source_with_llm]:::script
-    Coder[(coder agent: claude or codex<br/>uses coding skill)]:::agent
+    Coder[(coder agent: claude, codex, or gemini<br/>uses coding skill)]:::agent
   end
 
   subgraph Artifacts["On-disk artifacts"]
@@ -135,7 +135,7 @@ sequenceDiagram
   participant Sched as run_scheduled_jobs.sh
   participant Track as run_track.sh
   participant Disc as discover_jobs.py
-  participant Agent as Agent (claude/codex)
+  participant Agent as Agent (claude/codex/gemini)
   participant Post as Post-processing scripts
   participant Deliv as Delivery (logseq/email)
 
@@ -178,7 +178,7 @@ sequenceDiagram
   participant Integrate as source_integration.py
   participant Eval as eval_source_quality.py<br/>(deterministic + LLM reviewer)
   participant Disc as discover_jobs.py
-  participant Coder as Coder agent (claude/codex)<br/>uses coding skill
+  participant Coder as Coder agent (claude/codex/gemini)<br/>uses coding skill
 
   Dev->>Integrate: source_integration.py --track <slug> --source "<Name>" --today <date> --canary-title "..."
   loop until pass / blocked / retry_limit

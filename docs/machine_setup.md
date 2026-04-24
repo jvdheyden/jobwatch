@@ -6,6 +6,8 @@ For first-time setup, choose the automation agent explicitly after cloning the r
 bash scripts/bootstrap_machine.sh --agent claude
 # or
 bash scripts/bootstrap_machine.sh --agent codex
+# or
+bash scripts/bootstrap_machine.sh --agent gemini
 ```
 
 That will:
@@ -23,6 +25,8 @@ You can also launch guided setup directly after bootstrap:
 bash scripts/start_setup_agent.sh --agent claude
 # or
 bash scripts/start_setup_agent.sh --agent codex
+# or
+bash scripts/start_setup_agent.sh --agent gemini
 ```
 
 For Claude interactive setup, treat the workspace trust dialog as a real CLI constraint. `scripts/start_setup_agent.sh --agent claude` still scopes tools and appends the setup contract, but if Claude shows a trust prompt before the setup flow starts:
@@ -42,7 +46,7 @@ Default behavior:
 - Do not move on to email or scheduling before the first digest preview.
 ```
 
-If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh --agent claude` or `bash scripts/setup_machine.sh --agent codex` directly. Existing `.env.local` files can also supply the previous `JOB_AGENT_PROVIDER`. That creates:
+If you only need to refresh the generated machine-local config later, run `bash scripts/setup_machine.sh --agent claude`, `bash scripts/setup_machine.sh --agent codex`, or `bash scripts/setup_machine.sh --agent gemini` directly. Existing `.env.local` files can also supply the previous `JOB_AGENT_PROVIDER`. That creates:
 
 - `.env.local` for machine-local paths and binaries
 - `.codex/config.toml` when the provider is Codex
@@ -57,17 +61,17 @@ Do not edit `.agents/skills/set-up/templates/profile/*`. Those files are tracked
 
 In a normal terminal, the setup script prompts for missing machine-local values after the agent is selected.
 
-- `--agent codex|claude` selects the automation provider for first-time setup. If omitted and no existing `JOB_AGENT_PROVIDER` is available, setup exits with exact commands to rerun.
+- `--agent codex|claude|gemini` selects the automation provider for first-time setup. If omitted and no existing `JOB_AGENT_PROVIDER` is available, setup exits with exact commands to rerun.
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
 - `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
 - SMTP settings are optional. The script writes non-secret SMTP placeholders to `.env.local` plus either an existing `JOB_AGENT_SECRETS_FILE` value or a commented platform-specific suggestion for real secrets stored outside the repo. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; if you need a static password, keep it in the external secrets file instead of `.env.local`.
 
-On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude paths are written as detected.
+On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude and Gemini paths are written as detected.
 
 For Codex, the setup script also writes `.codex/config.toml` with a managed `shell_environment_policy` that puts this checkout's `.venv/bin` first on `PATH`. This keeps Codex shell commands and patch helpers on the repo-local Python while preserving the rest of the setup-time PATH. If an existing unmanaged `shell_environment_policy` is present, setup leaves it unchanged and reports a conflict instead of overwriting local Codex preferences.
 
-On Linux with `JOB_AGENT_PROVIDER=codex`, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces. Claude setups do not generate Codex/bwrap AppArmor guidance.
+On Linux with `JOB_AGENT_PROVIDER=codex`, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces. Claude and Gemini setups do not generate Codex/bwrap AppArmor guidance.
 
 To install and reload that generated profile on Linux, run:
 
@@ -84,6 +88,7 @@ Provider examples:
 ```bash
 bash scripts/setup_machine.sh --agent codex --agent-bin /absolute/path/to/codex
 bash scripts/setup_machine.sh --agent claude --agent-bin /absolute/path/to/claude
+bash scripts/setup_machine.sh --agent gemini --agent-bin /absolute/path/to/gemini
 ```
 
 For Claude Code, authenticate locally before scheduled runs:
@@ -93,6 +98,14 @@ claude -p 'Respond with exactly: ok'
 ```
 
 If that command reports `Not logged in`, run Claude Code login in an interactive terminal first. Scheduled Claude automation uses noninteractive `claude -p` with scoped allowed tools and normal project context loading; it does not use `--bare` by default.
+
+For Gemini CLI, authenticate locally before scheduled runs:
+
+```bash
+gemini -p 'Respond with exactly: ok'
+```
+
+Scheduled Gemini automation uses headless mode from stdin with `--output-format stream-json`, `--approval-mode yolo`, and `--skip-trust`. Because Gemini enables sandboxing by default for `yolo`, jobwatch sets `GEMINI_SANDBOX=false` for scheduled and source-integration Gemini child processes unless you override `JOB_AGENT_GEMINI_SANDBOX` or `GEMINI_SANDBOX`. You can also override approval behavior with `JOB_AGENT_GEMINI_APPROVAL_MODE`, `JOB_AGENT_GEMINI_SCHEDULED_APPROVAL_MODE`, `JOB_AGENT_GEMINI_CODER_APPROVAL_MODE`, or `JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE`.
 
 The track setup agent normally asks about delivery and scheduling after it creates a track. When you choose scheduled runs, it writes `.schedule.local` with `scripts/configure_schedule.py` and installs the platform scheduler with `bash scripts/install_scheduler.sh`.
 

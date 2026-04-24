@@ -10,7 +10,7 @@ AGENT_BIN_VALUE=""
 
 usage() {
   cat <<EOF
-Usage: $0 [--agent codex|claude] [--agent-bin <path>]
+Usage: $0 [--agent codex|claude|gemini] [--agent-bin <path>]
 
 Launch the guided jobwatch setup agent from the repo root.
 If omitted, --agent and --agent-bin are read from .env.local or the environment.
@@ -19,7 +19,7 @@ EOF
 
 validate_agent() {
   case "${1:-}" in
-    codex|claude)
+    codex|claude|gemini)
       return 0
       ;;
     *)
@@ -54,6 +54,9 @@ default_binary_name() {
       ;;
     claude)
       printf 'claude\n'
+      ;;
+    gemini)
+      printf 'gemini\n'
       ;;
     *)
       return 1
@@ -109,7 +112,7 @@ if [[ -z "$AGENT_BIN_VALUE" ]]; then
 fi
 
 if ! validate_agent "$AGENT_VALUE"; then
-  echo "Invalid or missing setup agent provider; expected --agent codex or --agent claude." >&2
+  echo "Invalid or missing setup agent provider; expected --agent codex, --agent claude, or --agent gemini." >&2
   exit 2
 fi
 
@@ -180,6 +183,17 @@ $SETUP_FALLBACK_PROMPT
 EOF
 }
 
+print_gemini_interactive_guidance() {
+  cat >&2 <<EOF
+Gemini interactive note:
+- This launch uses Gemini CLI prompt-interactive mode with the guided setup contract.
+- If Gemini reports missing authentication, run 'gemini' once to authenticate and rerun this command.
+- If Gemini opens without the guided setup contract, paste this prompt:
+
+$SETUP_FALLBACK_PROMPT
+EOF
+}
+
 cd "$ROOT"
 
 case "$AGENT_VALUE" in
@@ -198,5 +212,14 @@ case "$AGENT_VALUE" in
       --allowedTools "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,WebSearch,WebFetch,TodoWrite" \
       --append-system-prompt "$SETUP_PROMPT" \
       "$SETUP_USER_PROMPT"
+      ;;
+  gemini)
+    print_gemini_interactive_guidance
+    exec "$AGENT_BIN_VALUE" \
+      --skip-trust \
+      --approval-mode "${JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-auto_edit}}" \
+      --prompt-interactive "$SETUP_PROMPT
+
+$SETUP_USER_PROMPT"
       ;;
 esac

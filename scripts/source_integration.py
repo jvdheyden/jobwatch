@@ -878,6 +878,8 @@ def run_coder(
             "JOB_AGENT_PRIOR_POSTMORTEM": json.dumps(prior_postmortem) if prior_postmortem else "",
         }
     )
+    if provider == "gemini":
+        env["GEMINI_SANDBOX"] = env.get("JOB_AGENT_GEMINI_SANDBOX") or env.get("GEMINI_SANDBOX") or "false"
     command = build_coder_command(provider, WORK_ROOT, coder_bin, last_message_path)
     stdout_log_path.parent.mkdir(parents=True, exist_ok=True)
     stderr_log_path.parent.mkdir(parents=True, exist_ok=True)

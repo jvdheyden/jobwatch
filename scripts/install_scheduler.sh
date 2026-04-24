@@ -40,7 +40,7 @@ usage() {
 Usage: $0
 
 Install the machine-local scheduler for this checkout.
-Run scripts/setup_machine.sh --agent codex or --agent claude first. This script
+Run scripts/setup_machine.sh --agent codex, --agent claude, or --agent gemini first. This script
 refreshes generated files from the existing machine-local config.
 EOF
 }

@@ -479,6 +479,23 @@ def test_build_reviewer_command_supports_claude_print_mode(monkeypatch):
     ]
 
 
+def test_build_reviewer_command_supports_gemini_headless_mode(monkeypatch):
+    monkeypatch.delenv("JOB_AGENT_GEMINI_REVIEWER_APPROVAL_MODE", raising=False)
+
+    command = source_quality.build_reviewer_command(
+        Path("/tmp/jobwatch"),
+        Path("/usr/local/bin/gemini"),
+        provider="gemini",
+    )
+
+    assert command == [
+        "/usr/local/bin/gemini",
+        "--skip-trust",
+        "--output-format",
+        "text",
+    ]
+
+
 def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fields(monkeypatch):
     source = {
         "source": "Example Source",

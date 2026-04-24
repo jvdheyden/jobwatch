@@ -20,6 +20,8 @@ If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — on
    bash scripts/bootstrap_machine.sh --agent claude
    # or
    bash scripts/bootstrap_machine.sh --agent codex
+   # or
+   bash scripts/bootstrap_machine.sh --agent gemini
    ```
 
    This creates the repo-local virtualenv at `./.venv`, writes machine-local config to `.env.local`, and seeds local profile placeholders under `profile/`. All of that is gitignored.
@@ -35,7 +37,7 @@ If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — on
 - Branch off `master`: `git checkout -b <short-topic-slug>`.
 - Use the repo-local Python venv: `./.venv/bin/python -m pytest ...`. If `./.venv` is missing, `bash scripts/bootstrap_venv.sh` rebuilds it.
 - Match the existing commit-message style — short imperative subject, optional body. `git log` is the canonical reference.
-- Keep diffs minimal and avoid drive-by changes; the `coding` skill at [`.agents/skills/coding/SKILL.md`](./.agents/skills/coding/SKILL.md) spells out the conventions Claude Code and Codex follow when working in this repo, and they apply equally to human contributors.
+- Keep diffs minimal and avoid drive-by changes; the `coding` skill at [`.agents/skills/coding/SKILL.md`](./.agents/skills/coding/SKILL.md) spells out the conventions Claude Code, Codex, and Gemini follow when working in this repo, and they apply equally to human contributors.
 
 ## Where new code goes
 

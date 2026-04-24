@@ -427,6 +427,7 @@ def test_setup_machine_requires_agent_selection_without_existing_config(tmp_job_
     assert "Choose an automation agent:" in result.stderr
     assert "bash scripts/setup_machine.sh --agent claude" in result.stderr
     assert "bash scripts/setup_machine.sh --agent codex" in result.stderr
+    assert "bash scripts/setup_machine.sh --agent gemini" in result.stderr
     assert not env_file.exists()
 
 
@@ -732,6 +733,44 @@ def test_setup_machine_supports_claude_provider_without_bwrap(
     assert not (tmp_job_agent_root / ".codex" / "config.toml").exists()
 
 
+def test_setup_machine_supports_gemini_provider_without_bwrap(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    apparmor_profile = scheduler_dir / "bwrap-userns-restrict"
+    _write_executable(fake_bin_dir / "gemini", "#!/bin/bash\nexit 0\n")
+    _write_executable(fake_bin_dir / "bwrap", "#!/bin/bash\nexit 0\n")
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "JOB_AGENT_PLATFORM": "Linux",
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "setup_machine.sh"),
+        "--agent",
+        "gemini",
+        env=env,
+        cwd=repo_root,
+    )
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert "export JOB_AGENT_PROVIDER=gemini" in env_text
+    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'gemini')}" in env_text
+    assert not apparmor_profile.exists()
+    assert not (tmp_job_agent_root / ".codex" / "config.toml").exists()
+
+
 def test_bootstrap_venv_installs_playwright_browser_by_default(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     requirements_file = tmp_job_agent_root / "requirements-dev.txt"
     bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
@@ -907,6 +946,7 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     assert "Choose an automation agent:" in result.stderr
     assert "bash scripts/bootstrap_machine.sh --agent claude" in result.stderr
     assert "bash scripts/bootstrap_machine.sh --agent codex" in result.stderr
+    assert "bash scripts/bootstrap_machine.sh --agent gemini" in result.stderr
     assert not log_file.exists()
 
 
@@ -1161,6 +1201,58 @@ printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
     assert "Start guided setup now." in prompt_file.read_text()
     assert "workspace trust dialog" in result.stderr
     assert "guided setup contract" in result.stderr
+
+
+def test_start_setup_agent_runs_gemini_with_prompt_interactive(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    fake_bin = tmp_job_agent_root / "bin" / "gemini"
+    env_file = tmp_job_agent_root / ".env.local"
+    args_file = tmp_job_agent_root / "gemini-args.txt"
+    password_file = tmp_job_agent_root / "smtp-password.txt"
+    password_cmd_file = tmp_job_agent_root / "smtp-password-cmd.txt"
+
+    _write_executable(
+        fake_bin,
+        f"""#!/bin/bash
+set -euo pipefail
+printf '%s\\n' "$@" > "{args_file}"
+printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD-}}" > "{password_file}"
+printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD_CMD-}}" > "{password_cmd_file}"
+""",
+    )
+    env_file.write_text(
+        "\n".join(
+            [
+                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                "export JOB_AGENT_PROVIDER=gemini",
+                f"export JOB_AGENT_BIN={fake_bin}",
+                "export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'",
+                "",
+            ]
+        )
+    )
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "start_setup_agent.sh"),
+        env=os.environ | {"JOB_AGENT_ROOT": str(tmp_job_agent_root), "JOB_AGENT_ENV_FILE": str(env_file)},
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    args_text = args_file.read_text()
+    assert "--skip-trust" in args_text
+    assert "--approval-mode" in args_text
+    assert "auto_edit" in args_text
+    assert "--prompt-interactive" in args_text
+    assert "Use the project skill $set-up" in args_text
+    assert "scripts/probe_career_source.py" in args_text
+    assert "Start guided setup now." in args_text
+    assert "Gemini interactive note:" in result.stderr
+    assert "guided setup contract" in result.stderr
+    assert password_file.read_text() == "\n"
+    assert password_cmd_file.read_text() == "pass show email/jobwatch-smtp\n"
 
 
 def test_bootstrap_machine_stops_if_setup_machine_fails(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

@@ -79,7 +79,7 @@ CRON_END="# END jobwatch scheduler $SCHEDULER_INSTANCE_ID"
 
 usage() {
   cat <<EOF
-Usage: $0 --agent codex|claude [--agent-bin <path>] [--logseq-graph-dir <path>]
+Usage: $0 --agent codex|claude|gemini [--agent-bin <path>] [--logseq-graph-dir <path>]
 
 Create or refresh machine-local scheduler config and profile placeholders for this checkout.
 In a terminal, the script prompts for any missing required values.
@@ -93,16 +93,23 @@ EOF
 agent_guidance() {
   local script_name
   local detected=""
+  local detected_count=0
+  local candidate=""
   script_name="$(basename "$0")"
-  if command -v claude >/dev/null 2>&1 && ! command -v codex >/dev/null 2>&1; then
-    detected="claude"
-  elif command -v codex >/dev/null 2>&1 && ! command -v claude >/dev/null 2>&1; then
-    detected="codex"
+  for candidate in claude codex gemini; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      detected="$candidate"
+      detected_count=$((detected_count + 1))
+    fi
+  done
+  if [[ "$detected_count" -ne 1 ]]; then
+    detected=""
   fi
   cat >&2 <<EOF
 Choose an automation agent:
   bash scripts/$script_name --agent claude
   bash scripts/$script_name --agent codex
+  bash scripts/$script_name --agent gemini
 EOF
   if [[ -n "$detected" ]]; then
     echo "Detected '$detected' on PATH; likely command: bash scripts/$script_name --agent $detected" >&2
@@ -182,7 +189,7 @@ canonicalize_linux_executable_path() {
 
 validate_agent_provider() {
   case "${1:-}" in
-    codex|claude)
+    codex|claude|gemini)
       return 0
       ;;
     *)
@@ -198,6 +205,9 @@ agent_default_binary_name() {
       ;;
     claude)
       printf 'claude\n'
+      ;;
+    gemini)
+      printf 'gemini\n'
       ;;
     *)
       return 1
@@ -434,7 +444,7 @@ if [[ -z "$AGENT_PROVIDER_VALUE" ]]; then
   exit 2
 fi
 if ! validate_agent_provider "$AGENT_PROVIDER_VALUE"; then
-  echo "Invalid --agent/JOB_AGENT_PROVIDER '$AGENT_PROVIDER_VALUE'; expected codex or claude." >&2
+  echo "Invalid --agent/JOB_AGENT_PROVIDER '$AGENT_PROVIDER_VALUE'; expected codex, claude, or gemini." >&2
   agent_guidance
   exit 2
 fi

@@ -172,7 +172,7 @@ canonicalize_linux_executable_path() {
 resolve_agent_provider() {
   local provider="${JOB_AGENT_PROVIDER:-codex}"
   case "$provider" in
-    codex|claude)
+    codex|claude|gemini)
       printf '%s\n' "$provider"
       ;;
     *)
@@ -189,6 +189,9 @@ agent_default_binary_name() {
     claude)
       printf 'claude\n'
       ;;
+    gemini)
+      printf 'gemini\n'
+      ;;
     *)
       return 1
       ;;
@@ -202,6 +205,9 @@ agent_label() {
       ;;
     claude)
       printf 'Claude\n'
+      ;;
+    gemini)
+      printf 'Gemini\n'
       ;;
     *)
       printf 'Agent\n'
@@ -231,7 +237,7 @@ resolve_agent_bin() {
 }
 
 if ! AGENT_PROVIDER="$(resolve_agent_provider)"; then
-  log "invalid JOB_AGENT_PROVIDER '$JOB_AGENT_PROVIDER'; expected codex or claude"
+  log "invalid JOB_AGENT_PROVIDER '$JOB_AGENT_PROVIDER'; expected codex, claude, or gemini"
   exit 2
 fi
 AGENT_LABEL="$(agent_label "$AGENT_PROVIDER")"
@@ -480,6 +486,17 @@ run_agent_command() {
           --permission-mode "${JOB_AGENT_CLAUDE_PERMISSION_MODE:-acceptEdits}" \
           --allowedTools "${JOB_AGENT_CLAUDE_SCHEDULED_ALLOWED_TOOLS:-Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite}" \
           --verbose \
+          <"$PROMPT_FILE"
+      )
+      ;;
+    gemini)
+      (
+        cd "$ROOT"
+        export GEMINI_SANDBOX="${JOB_AGENT_GEMINI_SANDBOX:-${GEMINI_SANDBOX:-false}}"
+        "$AGENT_BIN" \
+          --skip-trust \
+          --output-format stream-json \
+          --approval-mode "${JOB_AGENT_GEMINI_SCHEDULED_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-yolo}}" \
           <"$PROMPT_FILE"
       )
       ;;

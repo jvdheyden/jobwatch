@@ -60,6 +60,17 @@ def test_resolve_agent_bin_uses_claude_default_for_claude_provider(tmp_path, mon
     assert agent_provider.resolve_agent_bin() == fake_claude
 
 
+def test_resolve_agent_bin_uses_gemini_default_for_gemini_provider(tmp_path, monkeypatch) -> None:
+    fake_gemini = tmp_path / "gemini"
+    _write_executable(fake_gemini, "#!/bin/bash\nexit 0\n")
+
+    monkeypatch.setenv("JOB_AGENT_PROVIDER", "gemini")
+    monkeypatch.delenv("JOB_AGENT_BIN", raising=False)
+    monkeypatch.setenv("PATH", str(tmp_path))
+
+    assert agent_provider.resolve_agent_bin() == fake_gemini
+
+
 def test_resolve_agent_provider_rejects_unknown(monkeypatch) -> None:
     monkeypatch.setenv("JOB_AGENT_PROVIDER", "llama")
 

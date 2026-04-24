@@ -12,8 +12,8 @@ jobwatch finds the roles. Trackers manage the ones you already found; writers dr
 -->
 ### Quick start:
 - `git clone git@github.com:jvdheyden/jobwatch.git && cd "$(basename "$_" .git)"`
-- `bash scripts/bootstrap_machine.sh --agent {claude,codex}`
-- `bash scripts/start_setup_agent.sh --agent {claude,codex}`
+- `bash scripts/bootstrap_machine.sh --agent {claude,codex,gemini}`
+- `bash scripts/start_setup_agent.sh --agent {claude,codex,gemini}`
 
 For a more detailed set-up guide, see [New User Setup](#new-user-setup).
 
@@ -32,7 +32,7 @@ jobwatch is a good fit if you:
 
 It is probably **not** a good fit if you:
 
-- do not have a ChatGPT or Claude subscription / API key
+- do not have access to a supported coding-agent CLI account or API key
 - do not want to use a CLI tool
 - are on Windows (we support MacOS and most Linux distributions)
 
@@ -43,14 +43,15 @@ Since most of the functionality is deterministic code, the daily checks will be 
 -->
 ## New User Setup
 
-This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq, email, or Telegram. Scheduled automation supports Codex CLI and Claude Code CLI.
+This repository runs an agent-assisted job-search workflow with per-track discovery, ranking, digest generation, and optional delivery to Logseq, email, or Telegram. Scheduled automation supports Codex CLI, Claude Code CLI, and Gemini CLI.
 
 Each track run produces local JSON and Markdown artifacts first. Delivery is a separate opt-in step.
 
 1. Requirements:
    - Python 3
-   - either the Codex CLI or Claude Code CLI
+   - the Codex CLI, Claude Code CLI, or Gemini CLI
    - for Claude, run Claude Code login locally before scheduled runs
+   - for Gemini, authenticate Gemini CLI locally before scheduled runs
    - on Linux with Codex, `bwrap` if you want Codex sandboxing backed by Bubblewrap
 2. From the repo root, choose the automation agent and bootstrap the checkout for local use:
 
@@ -58,6 +59,8 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/bootstrap_machine.sh --agent claude
    # or
    bash scripts/bootstrap_machine.sh --agent codex
+   # or
+   bash scripts/bootstrap_machine.sh --agent gemini
    ```
 
    This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`. In an interactive terminal, bootstrap offers to start the guided setup agent; in non-interactive runs, pass `--start-setup-agent` to launch it automatically.
@@ -84,6 +87,8 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/setup_machine.sh --agent claude
    # or
    bash scripts/setup_machine.sh --agent codex
+   # or
+   bash scripts/setup_machine.sh --agent gemini
    ```
    </details>
 
@@ -101,6 +106,8 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/start_setup_agent.sh --agent claude
    # or
    bash scripts/start_setup_agent.sh --agent codex
+   # or
+   bash scripts/start_setup_agent.sh --agent gemini
    ```
 
    The setup flow fills local profile files, creates the track files, discovers and validates sources, runs the first local digest before email testing, asks which delivery methods you want, configures scheduling if requested, and validates the track.
@@ -173,6 +180,15 @@ export JOB_AGENT_BIN=/absolute/path/to/claude
 ```
 
 `scripts/setup_machine.sh --agent claude` writes those values when `claude` is discoverable on `PATH`. Claude runs use `claude -p` noninteractively with scoped allowed tools and normal project context loading; `--bare` is not used by default.
+
+For Gemini CLI:
+
+```bash
+export JOB_AGENT_PROVIDER=gemini
+export JOB_AGENT_BIN=/absolute/path/to/gemini
+```
+
+`scripts/setup_machine.sh --agent gemini` writes those values when `gemini` is discoverable on `PATH`. Scheduled Gemini runs use headless mode with `--output-format stream-json`, `--approval-mode yolo`, and `GEMINI_SANDBOX=false` by default. Override with `JOB_AGENT_GEMINI_APPROVAL_MODE`, `JOB_AGENT_GEMINI_SCHEDULED_APPROVAL_MODE`, or `JOB_AGENT_GEMINI_SANDBOX` if your local Gemini configuration needs stricter policy.
 
 ## Scheduled Runs
 
@@ -252,6 +268,8 @@ Set `LOGSEQ_GRAPH_DIR` in `.env.local`, either by rerunning setup:
 bash scripts/setup_machine.sh --agent claude --logseq-graph-dir /absolute/path/to/logseq
 # or
 bash scripts/setup_machine.sh --agent codex --logseq-graph-dir /absolute/path/to/logseq
+# or
+bash scripts/setup_machine.sh --agent gemini --logseq-graph-dir /absolute/path/to/logseq
 ```
 
 or by editing `.env.local` locally:
