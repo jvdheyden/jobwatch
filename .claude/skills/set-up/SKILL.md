@@ -232,6 +232,7 @@ Create:
 - `tracks/{track_slug}/sources.md`
 - `tracks/{track_slug}/AGENTS.md`
 - `tracks/{track_slug}/CLAUDE.md`
+- `tracks/{track_slug}/GEMINI.md`
 - `tracks/{track_slug}/digests/`
 
 Do not hand-write `tracks/{track_slug}/ranked_overview.md` or `shared/ranked_jobs/{track_slug}.json`.
@@ -369,9 +370,9 @@ Important:
 - Do not leave domain-specific fit text from another track in the generated file.
 - Keep the run boundaries, same-day rerun behavior, JSON digest flow, and ranked-overview rebuild steps aligned with the current shared workflow
 
-#### `CLAUDE.md`
+#### `CLAUDE.md` and `GEMINI.md`
 
-Create `tracks/{track_slug}/CLAUDE.md` next to the generated `AGENTS.md`.
+Create `tracks/{track_slug}/CLAUDE.md` and `tracks/{track_slug}/GEMINI.md` next to the generated `AGENTS.md`.
 
 Write exactly:
 
@@ -379,7 +380,7 @@ Write exactly:
 @AGENTS.md
 ```
 
-Do not add any other content.
+Do not add any other content to either file.
 
 ### 6. First local digest preview
 

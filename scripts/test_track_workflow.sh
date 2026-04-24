@@ -61,8 +61,14 @@ path.write_text(json.dumps(payload, indent=2) + "\n")
 PY
 JOB_AGENT_ROOT="$TEST_ROOT" python3 "$TEST_ROOT/scripts/render_sources_md.py" --track "$TRACK"
 
-JOB_AGENT_PROVIDER="codex" \
-JOB_AGENT_BIN="$ROOT/tests/e2e/fake_codex.sh" \
+PROVIDER="${JOB_AGENT_PROVIDER:-codex}"
+FAKE_BIN="$ROOT/tests/e2e/fake_codex.sh"
+if [[ "$PROVIDER" == "gemini" ]]; then
+  FAKE_BIN="$ROOT/tests/e2e/fake_gemini.sh"
+fi
+
+JOB_AGENT_PROVIDER="$PROVIDER" \
+JOB_AGENT_BIN="$FAKE_BIN" \
 JOB_AGENT_ROOT="$TEST_ROOT" \
 JOB_AGENT_TODAY="$TODAY" \
 JOB_AGENT_JOURNAL_DATE="$JOURNAL_DATE" \
@@ -95,7 +101,11 @@ rg -q '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
 rg -q "\"last_checked\": \"$TODAY\"" "$SOURCE_STATE_PATH"
 rg -q "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
 rg -q "Discovery phase started" "$RUN_LOG"
-rg -q "Codex phase started" "$RUN_LOG"
+if [[ "$PROVIDER" == "gemini" ]]; then
+  rg -q "Gemini phase started" "$RUN_LOG"
+else
+  rg -q "Codex phase started" "$RUN_LOG"
+fi
 rg -q "Delivery phase finished successfully: logseq" "$RUN_LOG"
 rg -q "Finished $TRACK daily run" "$RUN_LOG"
 

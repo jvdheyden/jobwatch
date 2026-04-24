@@ -763,6 +763,15 @@ if [[ "$AGENT_PROVIDER_VALUE" == "claude" ]]; then
   fi
 fi
 
+if [[ "$AGENT_PROVIDER_VALUE" == "gemini" ]]; then
+  GEMINI_HOOK_PYTHON="${JOB_AGENT_PYTHON:-python3}"
+  if gemini_gate_status="$("$GEMINI_HOOK_PYTHON" "$SCRIPT_DIR/hooks/install_gemini_coding_gate_hook.py" --root "$ROOT" 2>&1)"; then
+    echo "Gemini coding-gate hook: $gemini_gate_status ($ROOT/.gemini/settings.json)"
+  else
+    echo "Gemini coding-gate hook install failed: $gemini_gate_status" >&2
+  fi
+fi
+
 echo "Prepared local profile directory at $PROFILE_DIR"
 echo "$profile_cv_status $PROFILE_CV_FILE"
 echo "$profile_prefs_status $PROFILE_PREFS_FILE"
