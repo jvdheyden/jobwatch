@@ -70,8 +70,8 @@ When `scripts/setup_machine.sh` is run with `--agent codex`, it writes a repo-lo
 ### Basic Options
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
 - `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
-- `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
-- SMTP settings are optional. The setup agent prompts for these and writes them to `.env.local` automatically. `JOB_AGENT_SECRETS_FILE` is also enabled by default for real secrets stored outside the repo. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; if you need a static password, keep it in the external secrets file instead of `.env.local`.
+- `LOGSEQ_GRAPH_DIR` is optional. Bootstrap does not ask for delivery preferences; Logseq is configured later during guided delivery setup.
+- SMTP settings are optional. Bootstrap does not ask for delivery preferences; the setup agent prompts for these during guided delivery setup and writes them to `.env.local` automatically. `JOB_AGENT_SECRETS_FILE` is also enabled by default for real secrets stored outside the repo. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; if you need a static password, keep it in the external secrets file instead of `.env.local`.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude and Gemini paths are written as detected.
 
@@ -127,7 +127,7 @@ During first-track setup, the guided agent:
 - probes accepted sources with `scripts/probe_career_source.py` where useful
 - stores canaries and mutable integration state in `tracks/<track>/source_state.json`
 - runs source-quality checks and treats a source as ready only when `eval_source_quality.py` reports `final_status: "pass"`
-- runs `scripts/source_integration.py` for at most the top 2 integration-needed sources, then queues the rest for `scripts/integrate_next_source.py`
+- may start detached source-integration jobs with `scripts/start_source_integration.py`, then queues the rest for one-at-a-time follow-up with `scripts/integrate_next_source.py`; `scripts/source_integration.py` is the heavier repo-development loop used by that follow-up path when code is needed
 - runs the first local digest before email dry-run testing
 
 If a canary disappears later, refresh it instead of deleting quality checks:

@@ -46,7 +46,7 @@ def main() -> int:
 
     results = data.get("result", [])
     if not results:
-        print("No recent updates found. Send a message to your bot and try again.")
+        print("No recent updates found. Open your bot, press Start, send a short message such as \"hi\", then retry.")
         return 0
 
     seen_chats = {}

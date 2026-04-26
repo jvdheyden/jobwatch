@@ -238,6 +238,85 @@ def test_build_integration_ticket_maps_reviewer_only_other_noise_to_candidate_no
     assert "Preserve the canary" in ticket["target_outcome"]
 
 
+def test_build_integration_ticket_suggests_config_url_correction():
+    source = {
+        "source": "Vonovia",
+        "source_url": "https://www.vonovia.de/karriere",
+        "discovery_mode": "html",
+        "candidates": [
+            {"url": "https://karriere.vonovia.de/job/example-1"},
+            {"url": "https://karriere.vonovia.de/job/example-2"},
+            {"url": "https://karriere.vonovia.de/job/example-3"},
+        ]
+    }
+    deterministic = {
+        "confidence": "failed",
+        "checks": [
+            {
+                "name": "url_allowlist",
+                "status": "fail",
+                "severity": "major",
+                "details": "URLs do not match the allowlist.",
+            }
+        ],
+        "warnings": [],
+    }
+    reviewer = {}
+
+    ticket = source_quality.build_integration_ticket(
+        "test_track",
+        source,
+        deterministic,
+        reviewer,
+        canary_title="",
+        canary_url="",
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "bad_url"
+    assert ticket["suggested_strategy"] == "config_url_correction"
+    assert ticket["config_suggestion"]["source_url"] == "https://karriere.vonovia.de"
+    assert ticket["config_suggestion"]["reason"] == "Candidate URLs indicate the official ATS/listing root."
+
+
+def test_build_integration_ticket_url_correction_uses_winning_candidate_domain():
+    source = {
+        "source": "Vonovia",
+        "source_url": "https://www.vonovia.com/karriere/",
+        "discovery_mode": "html",
+        "candidates": [
+            {"url": "https://ir-api.eqs.com/media/document/file.pdf"},
+            {"url": "https://jobs.vonovia.de/Vonovia"},
+            {"url": "https://jobs.vonovia.de/Vonovia?currentPage=1&pageSize=12"},
+        ],
+    }
+    deterministic = {
+        "confidence": "failed",
+        "checks": [
+            {
+                "name": "url_allowlist",
+                "status": "fail",
+                "severity": "blocking",
+                "details": "URLs do not match the allowlist.",
+            }
+        ],
+        "warnings": [],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "test_track",
+        source,
+        deterministic,
+        {"status": "completed", "defects": []},
+        canary_title="",
+        canary_url="",
+    )
+
+    assert ticket is not None
+    assert ticket["suggested_strategy"] == "config_url_correction"
+    assert ticket["config_suggestion"]["source_url"] == "https://jobs.vonovia.de/Vonovia"
+
+
 def test_build_integration_ticket_distinguishes_config_native_filters_for_high_volume():
     source = {
         "source": "Example Browser",

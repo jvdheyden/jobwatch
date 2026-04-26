@@ -105,17 +105,6 @@ Do not edit:
   shared/templates/profile/*
 EOF
 
-  if [[ "$AGENT_VALUE" == "claude" ]]; then
-    cat <<EOF
-
-  3. Claude note:
-     If Claude asks whether you trust this folder before setup starts,
-     trust it and rerun the guided setup command above.
-     If Claude opens without the guided setup contract, use the fallback
-     prompt in docs/machine_setup.md.
-EOF
-  fi
-
   if [[ "$AGENT_VALUE" == "gemini" ]]; then
     cat <<EOF
 
@@ -189,13 +178,13 @@ if ! validate_agent "$AGENT_VALUE"; then
   exit 2
 fi
 
-SETUP_ARGS=(--agent "$AGENT_VALUE")
+SETUP_ARGS=(--agent "$AGENT_VALUE" --no-logseq-prompt --quiet)
 if [[ -n "$AGENT_BIN_VALUE" ]]; then
   SETUP_ARGS+=(--agent-bin "$AGENT_BIN_VALUE")
 fi
 
 /bin/bash "$SCRIPT_DIR/setup_machine.sh" "${SETUP_ARGS[@]}"
-/bin/bash "$SCRIPT_DIR/bootstrap_venv.sh"
+/bin/bash "$SCRIPT_DIR/bootstrap_venv.sh" --quiet
 
 if [[ -z "$START_SETUP_AGENT" ]]; then
   if is_interactive; then
@@ -205,12 +194,13 @@ if [[ -z "$START_SETUP_AGENT" ]]; then
   fi
 fi
 
-print_final_guidance
-
 if [[ "$START_SETUP_AGENT" == "yes" ]]; then
+  echo "Bootstrap complete. Starting guided setup..."
   START_ARGS=(--agent "$AGENT_VALUE")
   if [[ -n "$AGENT_BIN_VALUE" ]]; then
     START_ARGS+=(--agent-bin "$AGENT_BIN_VALUE")
   fi
   /bin/bash "$SCRIPT_DIR/start_setup_agent.sh" "${START_ARGS[@]}"
+else
+  print_final_guidance
 fi

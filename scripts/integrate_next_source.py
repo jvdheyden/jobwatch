@@ -24,6 +24,7 @@ from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, source_slug
 
 ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 CONFIG_TUNING_STRATEGIES = {
+    "config_url_correction",
     "config_terms_override",
     "config_terms_append",
     "config_native_filters",
@@ -315,6 +316,18 @@ def apply_config_tuning(
         source["search_terms"] = normalized
         return True, f"updated source search_terms using {strategy}"
 
+    if strategy == "config_url_correction":
+        suggestion = ticket.get("config_suggestion") or {}
+        new_url = suggestion.get("source_url")
+        if not new_url:
+            return False, "integration ticket asks for config_url_correction but no URL was suggested"
+        source["url"] = new_url
+        if "discovery_mode" in suggestion:
+            supported_modes = {"workday_api", "greenhouse_api", "lever_json", "ashby_api", "ashby_html"}
+            if suggestion["discovery_mode"] in supported_modes:
+                source["discovery_mode"] = suggestion["discovery_mode"]
+        return True, f"updated source url to {new_url}"
+
     if strategy == "config_native_filters":
         filter_payload = integration.get("filters") or integration.get("suggested_filters")
         normalized_filters = _normalize_filters(filter_payload)
@@ -464,12 +477,15 @@ def main() -> int:
         write_state(args.track, config, state)
         print(f"{source_name}: pass")
         return 0
-    if status == "blocked":
+
+    is_config_tuning = ticket and str(ticket.get("suggested_strategy")) in CONFIG_TUNING_STRATEGIES
+
+    if status == "blocked" and not is_config_tuning:
         update_integration_state(state_entry, today=args.today, status="blocked", discovery_path=discovery_path, eval_path=eval_path)
         write_state(args.track, config, state)
         print(f"{source_name}: blocked")
         return 1
-    if status != "integration_needed" or not ticket:
+    if status not in {"integration_needed", "blocked"} or not ticket:
         update_integration_state(
             state_entry,
             today=args.today,
@@ -481,7 +497,7 @@ def main() -> int:
         write_state(args.track, config, state)
         return 1
 
-    if str(ticket.get("suggested_strategy")) in CONFIG_TUNING_STRATEGIES:
+    if is_config_tuning:
         applied, note = apply_config_tuning(config, source_id=source["id"], integration=integration, ticket=ticket)
         if not applied:
             update_integration_state(

@@ -944,11 +944,10 @@ printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP
     _write_executable(
         bootstrap_venv_script,
         """#!/bin/bash
-set -euo pipefail
-printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
-""",
+    set -euo pipefail
+    printf 'bootstrap_venv %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+    """,
     )
-
     env = os.environ | {
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
@@ -967,8 +966,8 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     )
     assert result.returncode == 0, result.stderr
     assert log_file.read_text().splitlines() == [
-        f"setup_machine --agent codex --agent-bin {agent_bin}",
-        "bootstrap_venv",
+        f"setup_machine --agent codex --no-logseq-prompt --quiet --agent-bin {agent_bin}",
+        "bootstrap_venv --quiet",
     ]
     assert "jobwatch bootstrap complete" in result.stdout
     assert f"  {tmp_job_agent_root}" in result.stdout
@@ -1000,11 +999,10 @@ printf 'setup_machine\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE
     _write_executable(
         bootstrap_venv_script,
         """#!/bin/bash
-set -euo pipefail
-printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
-""",
+    set -euo pipefail
+    printf 'bootstrap_venv %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+    """,
     )
-
     env = os.environ | {
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
@@ -1064,9 +1062,9 @@ printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP
     _write_executable(
         bootstrap_venv_script,
         """#!/bin/bash
-set -euo pipefail
-printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
-""",
+    set -euo pipefail
+    printf 'bootstrap_venv %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+    """,
     )
     _write_executable(
         start_setup_script,
@@ -1096,8 +1094,8 @@ printf 'start_setup_agent %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTS
 
     assert result.returncode == 0, result.stderr
     assert log_file.read_text().splitlines() == [
-        f"setup_machine --agent codex --agent-bin {agent_bin}",
-        "bootstrap_venv",
+        f"setup_machine --agent codex --no-logseq-prompt --quiet --agent-bin {agent_bin}",
+        "bootstrap_venv --quiet",
         f"start_setup_agent --agent codex --agent-bin {agent_bin}",
     ]
 
@@ -1123,9 +1121,9 @@ printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP
     _write_executable(
         bootstrap_venv_script,
         """#!/bin/bash
-set -euo pipefail
-printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
-""",
+    set -euo pipefail
+    printf 'bootstrap_venv %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+    """,
     )
     _write_executable(
         start_setup_script,
@@ -1156,8 +1154,8 @@ printf 'start_setup_agent %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTS
     assert result.returncode == 0, result.stdout
     assert "Start guided setup now? [Y/n]:" in result.stdout
     assert log_file.read_text().splitlines() == [
-        f"setup_machine --agent codex --agent-bin {agent_bin}",
-        "bootstrap_venv",
+        f"setup_machine --agent codex --no-logseq-prompt --quiet --agent-bin {agent_bin}",
+        "bootstrap_venv --quiet",
         f"start_setup_agent --agent codex --agent-bin {agent_bin}",
     ]
 
@@ -1343,11 +1341,10 @@ exit 12
     _write_executable(
         bootstrap_venv_script,
         """#!/bin/bash
-set -euo pipefail
-printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
-""",
+    set -euo pipefail
+    printf 'bootstrap_venv %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+    """,
     )
-
     env = os.environ | {
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
@@ -1376,7 +1373,7 @@ printf 'setup_machine\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE
         bootstrap_venv_script,
         """#!/bin/bash
 set -euo pipefail
-printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
+printf 'bootstrap_venv %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHINE_LOG}"
 exit 23
 """,
     )
@@ -1388,7 +1385,7 @@ exit 23
 
     result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 23
-    assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv"]
+    assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv --quiet"]
 
 
 def test_run_scheduled_jobs_runs_due_tracks_once_per_stamp(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

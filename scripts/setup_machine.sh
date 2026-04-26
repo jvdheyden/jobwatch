@@ -48,6 +48,8 @@ ENV_EMAIL_PROVIDER_VALUE="${JOB_AGENT_EMAIL_PROVIDER:-}"
 ENV_EMAIL_ACCOUNT_VALUE="${JOB_AGENT_EMAIL_ACCOUNT:-}"
 ENV_TELEGRAM_CHAT_ID_VALUE="${JOB_AGENT_TELEGRAM_CHAT_ID:-}"
 ENV_TELEGRAM_BOT_TOKEN_CMD_VALUE="${JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD:-}"
+QUIET_MODE=0
+NO_LOGSEQ_PROMPT=0
 
 scheduler_instance_id() {
   local root="$1"
@@ -106,6 +108,8 @@ Options:
   --email-provider <name>    Email provider preset (gmail, fastmail, etc.)
   --email-account <addr>     Sender email address
   --smtp-to <addr>           Recipient email address
+  --quiet                    Suppress explanatory success chatter
+  --no-logseq-prompt         Never prompt for Logseq graph directory
 
 Create or refresh machine-local scheduler config and profile placeholders for this checkout.
 EOF
@@ -432,6 +436,14 @@ while [[ $# -gt 0 ]]; do
       SMTP_TO_VALUE="$2"
       shift 2
       ;;
+    --quiet)
+      QUIET_MODE=1
+      shift
+      ;;
+    --no-logseq-prompt)
+      NO_LOGSEQ_PROMPT=1
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -588,7 +600,7 @@ else
   exit 1
 fi
 
-if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" ]] && is_interactive; then
+if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" ]] && is_interactive && [[ "$NO_LOGSEQ_PROMPT" -ne 1 ]]; then
   LOGSEQ_GRAPH_DIR_VALUE="$(prompt_for_logseq_graph_dir "$detected_logseq_graph_dir")"
 fi
 
@@ -720,8 +732,17 @@ fi
   fi
 } >"$ENV_FILE"
 
+apparmor_status="preserved"
 if [[ -n "$detected_bwrap_bin" ]]; then
-  write_bwrap_apparmor_profile "$detected_bwrap_bin"
+  if [[ ! -f "$APPARMOR_PROFILE_FILE" ]]; then
+    apparmor_status="created"
+  fi
+  tmp_apparmor="$(mktemp)"
+  APPARMOR_PROFILE_FILE="$tmp_apparmor" write_bwrap_apparmor_profile "$detected_bwrap_bin"
+  if [[ "$apparmor_status" == "preserved" ]] && ! cmp -s "$tmp_apparmor" "$APPARMOR_PROFILE_FILE"; then
+    apparmor_status="changed"
+  fi
+  mv "$tmp_apparmor" "$APPARMOR_PROFILE_FILE"
 else
   rm -f "$APPARMOR_PROFILE_FILE"
 fi
@@ -791,17 +812,23 @@ cat >"$PLIST_FILE" <<EOF
 </plist>
 EOF
 
-echo "Wrote $ENV_FILE"
+if [[ "$QUIET_MODE" -eq 0 ]]; then
+  echo "Wrote $ENV_FILE"
+fi
 if [[ "$legacy_smtp_password_detected" -eq 1 ]]; then
   echo "Removed legacy JOB_AGENT_SMTP_PASSWORD from $ENV_FILE. Move it into JOB_AGENT_SECRETS_FILE or use JOB_AGENT_SMTP_PASSWORD_CMD."
 fi
-echo "Keep non-secret SMTP config in $ENV_FILE. Put real secrets in JOB_AGENT_SECRETS_FILE outside the repo."
-echo "Keep non-secret Telegram chat ids in $ENV_FILE. Put bot tokens in JOB_AGENT_SECRETS_FILE or behind JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD."
+if [[ "$QUIET_MODE" -eq 0 ]]; then
+  echo "Keep non-secret SMTP config in $ENV_FILE. Put real secrets in JOB_AGENT_SECRETS_FILE outside the repo."
+  echo "Keep non-secret Telegram chat ids in $ENV_FILE. Put bot tokens in JOB_AGENT_SECRETS_FILE or behind JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD."
+fi
 
 if [[ "$AGENT_PROVIDER_VALUE" == "codex" ]]; then
   CODEX_CONFIG_PYTHON="${JOB_AGENT_PYTHON:-python3}"
   if codex_config_status="$("$CODEX_CONFIG_PYTHON" "$SCRIPT_DIR/hooks/install_codex_project_config.py" --root "$ROOT" --base-path "$existing_path")"; then
-    echo "Codex project config: $codex_config_status ($ROOT/.codex/config.toml)"
+    if [[ "$QUIET_MODE" -eq 0 ]]; then
+      echo "Codex project config: $codex_config_status ($ROOT/.codex/config.toml)"
+    fi
   else
     echo "Codex project config install failed" >&2
   fi
@@ -810,12 +837,16 @@ fi
 if [[ "$AGENT_PROVIDER_VALUE" == "claude" ]]; then
   CLAUDE_HOOK_PYTHON="${JOB_AGENT_PYTHON:-python3}"
   if claude_hook_status="$("$CLAUDE_HOOK_PYTHON" "$SCRIPT_DIR/hooks/install_claude_session_hook.py" --root "$ROOT" 2>&1)"; then
-    echo "Claude SessionStart hook: $claude_hook_status ($ROOT/.claude/settings.local.json)"
+    if [[ "$QUIET_MODE" -eq 0 ]]; then
+      echo "Claude SessionStart hook: $claude_hook_status ($ROOT/.claude/settings.local.json)"
+    fi
   else
     echo "Claude SessionStart hook install failed: $claude_hook_status" >&2
   fi
   if claude_gate_status="$("$CLAUDE_HOOK_PYTHON" "$SCRIPT_DIR/hooks/install_claude_coding_gate_hook.py" --root "$ROOT" 2>&1)"; then
-    echo "Claude coding-gate hook: $claude_gate_status ($ROOT/.claude/settings.local.json)"
+    if [[ "$QUIET_MODE" -eq 0 ]]; then
+      echo "Claude coding-gate hook: $claude_gate_status ($ROOT/.claude/settings.local.json)"
+    fi
   else
     echo "Claude coding-gate hook install failed: $claude_gate_status" >&2
   fi
@@ -824,21 +855,29 @@ fi
 if [[ "$AGENT_PROVIDER_VALUE" == "gemini" ]]; then
   GEMINI_HOOK_PYTHON="${JOB_AGENT_PYTHON:-python3}"
   if gemini_gate_status="$("$GEMINI_HOOK_PYTHON" "$SCRIPT_DIR/hooks/install_gemini_coding_gate_hook.py" --root "$ROOT" 2>&1)"; then
-    echo "Gemini coding-gate hook: $gemini_gate_status ($ROOT/.gemini/settings.json)"
+    if [[ "$QUIET_MODE" -eq 0 ]]; then
+      echo "Gemini coding-gate hook: $gemini_gate_status ($ROOT/.gemini/settings.json)"
+    fi
   else
     echo "Gemini coding-gate hook install failed: $gemini_gate_status" >&2
   fi
 fi
 
-echo "Prepared local profile directory at $PROFILE_DIR"
-echo "$profile_cv_status $PROFILE_CV_FILE"
-echo "$profile_prefs_status $PROFILE_PREFS_FILE"
-echo "Fill profile/cv.md and profile/prefs_global.md locally; optionally place a PDF CV in profile/ for setup assistance."
-echo "Prepared $SCHEDULE_FILE"
-echo "Generated $CRON_FILE"
-echo "Generated $PLIST_FILE"
-if [[ -f "$APPARMOR_PROFILE_FILE" ]]; then
-  echo "Generated $APPARMOR_PROFILE_FILE for $detected_bwrap_bin"
-  echo "Run sudo bash scripts/install_bwrap_apparmor.sh if this Linux host enforces AppArmor userns restrictions."
+if [[ "$QUIET_MODE" -eq 0 ]]; then
+  echo "Prepared local profile directory at $PROFILE_DIR"
+  echo "$profile_cv_status $PROFILE_CV_FILE"
+  echo "$profile_prefs_status $PROFILE_PREFS_FILE"
+  echo "Fill profile/cv.md and profile/prefs_global.md locally; optionally place a PDF CV in profile/ for setup assistance."
+  echo "Prepared $SCHEDULE_FILE"
+  echo "Generated $CRON_FILE"
+  echo "Generated $PLIST_FILE"
 fi
-echo "Use scripts/configure_schedule.py or the setup agent to add track entries, then run scripts/install_scheduler.sh."
+if [[ -f "$APPARMOR_PROFILE_FILE" ]]; then
+  if [[ "$QUIET_MODE" -eq 0 ]] || [[ "$apparmor_status" != "preserved" ]]; then
+    echo "Generated $APPARMOR_PROFILE_FILE for $detected_bwrap_bin"
+    echo "Run sudo bash scripts/install_bwrap_apparmor.sh if this Linux host enforces AppArmor userns restrictions."
+  fi
+fi
+if [[ "$QUIET_MODE" -eq 0 ]]; then
+  echo "Use scripts/configure_schedule.py or the setup agent to add track entries, then run scripts/install_scheduler.sh."
+fi

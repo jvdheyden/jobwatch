@@ -1012,6 +1012,137 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
     return "Fresh discovery artifact addresses the primary evidence in the integration ticket with the narrowest source-specific fix." + canary_clause
 
 
+JOB_BOARD_HOST_MARKERS = (
+    "apply",
+    "ashby",
+    "breezy",
+    "career",
+    "careers",
+    "greenhouse",
+    "job",
+    "jobs",
+    "karriere",
+    "lever",
+    "myworkdayjobs",
+    "recruit",
+    "stellen",
+    "workday",
+)
+JOB_BOARD_PATH_MARKERS = (
+    "career",
+    "careers",
+    "job",
+    "jobs",
+    "karriere",
+    "stellen",
+)
+GENERIC_DETAIL_OR_LISTING_SEGMENTS = {
+    "career",
+    "careers",
+    "job",
+    "jobs",
+    "jobsuche",
+    "karriere",
+    "opening",
+    "openings",
+    "position",
+    "positions",
+    "stellen",
+    "stellenangebote",
+}
+LOCALE_SEGMENT_RE = re.compile(r"^[a-z]{2}(?:-[a-z]{2})?$", flags=re.IGNORECASE)
+
+
+def _candidate_url_values(source: dict[str, Any]) -> list[str]:
+    candidates = source.get("candidates", [])
+    if not isinstance(candidates, list):
+        return []
+    return [str(candidate.get("url", "")) for candidate in candidates if isinstance(candidate, dict) and candidate.get("url")]
+
+
+def _job_board_like_host_or_path(host: str, paths: list[str]) -> bool:
+    lowered_host = host.lower()
+    if any(marker in lowered_host for marker in JOB_BOARD_HOST_MARKERS):
+        return True
+    for path in paths:
+        segments = [segment.lower() for segment in path.split("/") if segment]
+        if any(any(marker in segment for marker in JOB_BOARD_PATH_MARKERS) for segment in segments):
+            return True
+    return False
+
+
+def _common_path_segments(paths: list[str]) -> list[str]:
+    split_paths = [[segment for segment in path.split("/") if segment] for path in paths]
+    if not split_paths:
+        return []
+    common: list[str] = []
+    for values in zip(*split_paths):
+        first = values[0]
+        if all(value == first for value in values):
+            common.append(first)
+            continue
+        break
+    return common
+
+
+def _listing_root_from_candidate_group(host: str, parsed_urls: list[Any]) -> str:
+    scheme = parsed_urls[0].scheme or "https"
+    base_url = f"{scheme}://{host}"
+    paths = [parsed.path for parsed in parsed_urls]
+    common_segments = _common_path_segments(paths)
+    host_lower = host.lower()
+
+    if host_lower.endswith("myworkdayjobs.com") and common_segments:
+        return f"{base_url}/{common_segments[0]}"
+    if any(marker in host_lower for marker in ("greenhouse.io", "lever.co", "ashbyhq.com")) and common_segments:
+        return f"{base_url}/{common_segments[0]}"
+
+    while common_segments and common_segments[-1].lower() in GENERIC_DETAIL_OR_LISTING_SEGMENTS:
+        common_segments.pop()
+    while common_segments and LOCALE_SEGMENT_RE.fullmatch(common_segments[-1]):
+        common_segments.pop()
+    if common_segments:
+        return f"{base_url}/{'/'.join(common_segments)}"
+    return base_url
+
+
+def _url_correction_suggestion(source: dict[str, Any]) -> dict[str, Any] | None:
+    source_host = (urlparse(str(source.get("source_url", ""))).hostname or "").lower()
+    groups: dict[str, list[Any]] = {}
+    for candidate_url in _candidate_url_values(source):
+        parsed = urlparse(candidate_url)
+        host = (parsed.hostname or "").lower()
+        if not host or host == source_host or parsed.scheme not in {"http", "https"}:
+            continue
+        groups.setdefault(host, []).append(parsed)
+
+    plausible_groups: list[tuple[int, int, str, list[Any]]] = []
+    for host, parsed_urls in groups.items():
+        paths = [parsed.path for parsed in parsed_urls]
+        if not _job_board_like_host_or_path(host, paths):
+            continue
+        plausible_groups.append((len(parsed_urls), int(any(marker in host for marker in JOB_BOARD_HOST_MARKERS)), host, parsed_urls))
+
+    if not plausible_groups:
+        return None
+
+    plausible_groups.sort(key=lambda item: (item[1], item[0], item[2]), reverse=True)
+    _count, _host_score, host, parsed_urls = plausible_groups[0]
+    suggestion = {
+        "source_url": _listing_root_from_candidate_group(host, parsed_urls),
+        "reason": "Candidate URLs indicate the official ATS/listing root.",
+    }
+    if "myworkdayjobs.com" in host:
+        suggestion["discovery_mode"] = "workday_api"
+    elif "greenhouse.io" in host:
+        suggestion["discovery_mode"] = "greenhouse_api"
+    elif "lever.co" in host:
+        suggestion["discovery_mode"] = "lever_json"
+    elif "jobs.ashbyhq.com" in host:
+        suggestion["discovery_mode"] = "ashby_api"
+    return suggestion
+
+
 def _suggested_strategy(
     failure_mode: str,
     *,
@@ -1021,6 +1152,9 @@ def _suggested_strategy(
     failing_check_names = {str(check.get("name", "")) for check in failing_checks}
     configured_filters = source.get("filters") if isinstance(source.get("filters"), dict) else {}
     search_terms_tried = source.get("search_terms_tried") if isinstance(source.get("search_terms_tried"), list) else []
+    if failure_mode in {"bad_url", "url_allowlist"} and _url_correction_suggestion(source):
+        return "config_url_correction"
+
     if "result_volume" in failing_check_names:
         return "provider_filter_support" if configured_filters else "config_native_filters"
     if failure_mode == "candidate_noise":
@@ -1034,6 +1168,7 @@ def _suggested_strategy(
 
 def _strategy_label(strategy: str) -> str:
     return {
+        "config_url_correction": "correct the official root URL in config to match the ATS domain",
         "config_terms_override": "replace source-specific search terms before changing provider code",
         "config_terms_append": "append source-specific search terms before changing provider code",
         "config_native_filters": "add native source filters before changing provider code",
@@ -1043,10 +1178,12 @@ def _strategy_label(strategy: str) -> str:
 
 
 def _config_suggestion(source: dict[str, Any], strategy: str, canary_title: str) -> dict[str, Any]:
-    if strategy not in {"config_terms_override", "config_terms_append", "config_native_filters"}:
+    if strategy not in {"config_url_correction", "config_terms_override", "config_terms_append", "config_native_filters"}:
         return {}
     suggestion: dict[str, Any] = {}
-    if strategy in {"config_terms_override", "config_terms_append"}:
+    if strategy == "config_url_correction":
+        suggestion.update(_url_correction_suggestion(source) or {})
+    elif strategy in {"config_terms_override", "config_terms_append"}:
         terms = [
             term
             for term in re.split(r"[^A-Za-z0-9+#.]+", canary_title)

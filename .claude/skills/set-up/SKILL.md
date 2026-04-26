@@ -387,9 +387,10 @@ bash scripts/run_track.sh --track {track_slug} --delivery logseq --delivery tele
 ```
 
 For Logseq:
+- Ask about Logseq only after the first digest preview.
 - Check whether `.env.local` already has `LOGSEQ_GRAPH_DIR`.
-- If it is missing and the user wants Logseq, help them identify the graph root path.
-- Prefer running `bash scripts/setup_machine.sh --logseq-graph-dir <absolute-path>` or adding `export LOGSEQ_GRAPH_DIR=<absolute-path>` to `.env.local`.
+- If it is missing and the user wants Logseq, ask them for the graph root path.
+- Once provided, write it via `bash scripts/setup_machine.sh --logseq-graph-dir <absolute-path> --quiet` or by adding `export LOGSEQ_GRAPH_DIR=<absolute-path>` directly to `.env.local`.
 - Do not inspect the Logseq graph contents during setup.
 
 For email:
@@ -422,8 +423,11 @@ For Telegram:
   1. Read `JOB_AGENT_SECRETS_FILE` from `.env.local` to determine where secrets should go.
   2. Give the user a simple command to save their bot token locally, using the literal resolved path, for example:
      `printf '%s\\n' 'export JOB_AGENT_TELEGRAM_BOT_TOKEN=PASTE_TOKEN_HERE' >> '/home/user/.config/jobwatch/secrets.sh'`
-  3. Tell the user to open their new bot in Telegram and press **Start**.
-  4. Run `./.venv/bin/python scripts/telegram_chat_id.py` to find the chat ID.
+  3. Tell the user to open their new bot in Telegram, press **Start**, and send a short message such as `hi`. Pressing Start alone is not enough.
+  4. Then run `./.venv/bin/python scripts/telegram_chat_id.py` to find the chat ID.
+- **Strict command environment instruction:**
+  - Do not run helper commands as `source .env.local && source "$JOB_AGENT_SECRETS_FILE" && ...`.
+  - Run the script directly (e.g. `./.venv/bin/python scripts/telegram_chat_id.py`) and let `scripts/runtime_env.py` handle loading `.env.local` and the secrets file.
 - Never ask the user to paste the bot token into chat.
 - Once the chat ID is retrieved, write `JOB_AGENT_TELEGRAM_CHAT_ID=<id>` to `.env.local` yourself.
 - Do not run `send_digest_telegram.py --dry-run` before a digest exists.
@@ -497,13 +501,13 @@ If setup required changes to shared code such as `scripts/discover/`, provider d
 
 8. `scripts/test.sh`
 
-If setup included source integration with a canary, also run:
+If setup included source-quality probing with a canary, also run:
 
 9. For each newly added or materially changed source that was actually probed and has a canary:
    `./.venv/bin/python scripts/eval_source_quality.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
 
-10. For at most the top 2 `integration_needed` sources that still need code after config tuning:
-   `./.venv/bin/python scripts/source_integration.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`
+10. If the user accepted background source integration, start detached jobs for the selected top sources and report their log paths:
+   `./.venv/bin/python scripts/start_source_integration.py --track {track_slug} --limit 2 --today YYYY-MM-DD`
 
 11. If sources remain queued for follow-up, validate the queue can select exactly one eligible source:
    `./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --today YYYY-MM-DD --dry-run`

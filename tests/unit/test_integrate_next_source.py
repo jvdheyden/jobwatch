@@ -49,6 +49,70 @@ def test_select_next_source_force_allows_same_day_attempt():
     assert selected["id"] == "attempted"
 
 
+def test_apply_config_tuning_updates_url_and_discovery_mode():
+    config = {
+        "sources": [
+            {
+                "id": "example",
+                "name": "Example",
+                "url": "https://example.com/karriere",
+                "discovery_mode": "html",
+                "cadence_group": "every_run",
+            }
+        ]
+    }
+    ticket = {
+        "suggested_strategy": "config_url_correction",
+        "config_suggestion": {
+            "source_url": "https://jobs.example.com",
+            "discovery_mode": "workday_api",
+        }
+    }
+
+    changed, note = integrate_next_source.apply_config_tuning(
+        config,
+        source_id="example",
+        integration={},
+        ticket=ticket,
+    )
+
+    assert changed is True
+    assert config["sources"][0]["url"] == "https://jobs.example.com"
+    assert config["sources"][0]["discovery_mode"] == "workday_api"
+
+
+def test_apply_config_tuning_omits_unsupported_discovery_mode():
+    config = {
+        "sources": [
+            {
+                "id": "example",
+                "name": "Example",
+                "url": "https://example.com/karriere",
+                "discovery_mode": "html",
+                "cadence_group": "every_run",
+            }
+        ]
+    }
+    ticket = {
+        "suggested_strategy": "config_url_correction",
+        "config_suggestion": {
+            "source_url": "https://jobs.example.com",
+            "discovery_mode": "unsupported_mode",
+        }
+    }
+
+    changed, _note = integrate_next_source.apply_config_tuning(
+        config,
+        source_id="example",
+        integration={},
+        ticket=ticket,
+    )
+
+    assert changed is True
+    assert config["sources"][0]["url"] == "https://jobs.example.com"
+    assert config["sources"][0]["discovery_mode"] == "html"
+
+
 def test_apply_config_tuning_updates_search_terms_before_code():
     config = {
         "sources": [

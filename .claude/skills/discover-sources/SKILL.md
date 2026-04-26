@@ -70,7 +70,7 @@ If the user already has a strong official source list, do not replace it. Use th
 - Do not use third-party aggregators unless the user explicitly asks for them or the track scope requires them.
 - If the user provided seed employers, preserve them unless they clearly conflict with the stated preferences.
 - **Limit initial recommendations to a small source pack: roughly 4-8 high-signal sources.**
-- **Avoid broad page-fetch/browser calls over many sources.** For Gemini, use `WebFetch` on at most 3 URLs per call and stop after one failed or oversized response.
+- **Avoid broad page-fetch/browser calls over many sources.** For agents with WebFetch or browser-fetch tools, fetch at most 3 URLs during discovery and stop after one failed or oversized response.
 
 ### 3. Validate lightly
 

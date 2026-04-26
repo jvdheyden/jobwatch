@@ -11,9 +11,9 @@ Example:
 jobwatch finds the roles. Trackers manage the ones you already found; writers draft applications you haven't decided on yet. This is the step before both.
 -->
 ### Quick start:
-- `git clone git@github.com:jvdheyden/jobwatch.git && cd "$(basename "$_" .git)"`
-- `bash scripts/bootstrap_machine.sh --agent {claude,codex,gemini}`
-- `bash scripts/start_setup_agent.sh --agent {claude,codex,gemini}`
+1. `git clone git@github.com:jvdheyden/jobwatch.git && cd "$(basename "$_" .git)"`
+2. `bash scripts/bootstrap_machine.sh --agent {claude,codex,gemini}`
+3. Optional: run `bash scripts/start_setup_agent.sh --agent {claude,codex,gemini}` only if bootstrap did not start guided setup automatically or was invoked with `--no-start-setup-agent`.
 
 For a more detailed set-up guide, see [New User Setup](#new-user-setup).
 
