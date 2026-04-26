@@ -102,7 +102,7 @@ Next:
      $start_command
 
 Do not edit:
-  .agents/skills/set-up/templates/profile/*
+  shared/templates/profile/*
 EOF
 
   if [[ "$AGENT_VALUE" == "claude" ]]; then

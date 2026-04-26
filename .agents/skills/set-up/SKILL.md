@@ -31,7 +31,7 @@ Before creating or expanding a track, proactively make the local profile files u
 - `profile/cv.md`
 - `profile/prefs_global.md`
 
-These files are local user data and are ignored by Git. Setup writes local `profile/` files only. Never edit `.agents/skills/set-up/templates/profile/*`.
+These files are local user data and are ignored by Git. Setup writes local `profile/` files only. Never edit `shared/templates/profile/*`.
 
 If either profile file is missing, run or recommend:
 
@@ -46,8 +46,11 @@ For `profile/cv.md`:
 - If it is still default, check whether a PDF CV already exists in `profile/`.
 - If exactly one PDF CV exists and `pdftotext` is available, use it to draft a concise Markdown CV in `profile/cv.md`, then ask the user to review and correct it before relying on it.
 - If multiple PDF CVs exist, ask which one to use before extracting text.
-- If no PDF CV exists, ask the user to place a PDF CV in `profile/` or manually fill `profile/cv.md`.
+- If no PDF CV exists, use this wording: **"If you want me to read a PDF, tell me the path or copy it into `profile/` now; then I will extract it. Otherwise complete `profile/cv.md` now and tell me when ready."**
+- Ask only this profile-readiness question at that point; do not combine it with other setup questions.
 - Do not ask the user to paste a full CV into chat unless they explicitly choose that route.
+
+**Note on Ignored Files:** Gemini file tools (and other agents) may report that files in `profile/` or `tracks/` are ignored. Since these are local user files, always use shell commands (e.g., `cat` or `grep`) to read them when the standard file tools fail.
 
 For `profile/prefs_global.md`:
 - If it is filled, treat it as durable cross-track preference context.
@@ -65,9 +68,7 @@ For `profile/prefs_global.md`:
 
 If the user chooses to defer profile cleanup, continue from the track brief but explicitly note that ranking and source discovery may be weaker until `profile/cv.md` and `profile/prefs_global.md` are filled.
 
-When `scripts/setup_machine.sh` is run with `--agent claude`, it also merges a repo-local `SessionStart` hook into `.claude/settings.local.json` that exports `CLAUDE_SESSION_ID`. The `coding` skill reads that variable to record a resumable `agent_id` in plan files. The merge is idempotent and preserves any existing `permissions` or other settings.
-
-When `scripts/setup_machine.sh` is run with `--agent codex`, it also writes a repo-local `.codex/config.toml` with a managed `shell_environment_policy` that puts `./.venv/bin` first on `PATH`. The merge is idempotent and preserves unrelated Codex settings. If a user already has an unmanaged `shell_environment_policy`, setup reports a conflict and leaves it unchanged.
+Refer to `docs/machine_setup.md` for detailed information on how `scripts/setup_machine.sh` configures automation providers (Claude `SessionStart`, Codex `shell_environment_policy`, etc.) and delivery secrets. Report setup-machine conflicts or relevant agent config changes only when they occur.
 
 ### 1. Gather the minimum `prefs.md` brief first
 
@@ -129,6 +130,7 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
 - Treat discovery as opt-in assistance only when the current official source list is already strong; otherwise treat it as the recommended next step.
 - If the user already has a strong official source list and does not want help expanding it, skip this branch.
 - If the user wants help and the source list is missing, sparse, too broad, or clearly incomplete, hand off to the project skill `discover-sources`.
+- **Discovery will exclude the user's current or most recent employer by default.**
 - If the source list is missing, sparse, too broad, or clearly incomplete and the user delegates, proceed with `discover-sources` by default.
 - Pass the handoff enough context to make the discovery preference-aware:
   - user name
@@ -148,74 +150,36 @@ Use this branch only after the minimum `prefs.md` brief is available and the use
 
 ### 4. Normalize, probe, and integrate sources
 
-Source integration is part of setup prioritization. Do not ask the user whether integration should happen as a separate choice; use the source importance, canary availability, and quality results to decide how far to go within the default budget.
-
-Use this canonical path:
+The goal of setup is a **first-digest milestone**: a rendered digest from a valid scaffold that proves the track works. **Do not let failed or complex secondary sources block this milestone.**
 
 1. Normalize the source list.
+   - Use `shared/templates/track_sources.json`, `track_source_state.json`, and `track_match_rules.json` as schema templates rather than inventing fields.
    - Normalize the slug before writing files.
-   - Treat the final source list as coming from the user, from `discover-sources`, or from both.
    - Infer `discovery_mode` from the source URL when obvious.
-   - Prefer modes listed in `shared/discovery_modes.md`, which is generated from the provider registry. Use `scripts/discover_jobs.py` as the stable CLI entrypoint, not as the place to add source logic.
-   - Common modes worth trying first: `workday_api`, `greenhouse_api`, `lever_json`, `ashby_api`, `ashby_html`, `workable_api`, `getro_api`, `personio_page`, `recruitee_inline`, `service_bund_search`, `html`, `iacr_jobs`, `yc_jobs_board`, `hackernews_jobs`.
    - If the correct mode is unclear, prefer `html` over inventing a new unsupported mode.
-   - If a source is clearly an official employer-linked board but has no dedicated supported mode, keep it with the best existing fallback, usually `html`, rather than excluding it for lacking a first-class integration.
 2. Read preference context before finalizing search terms and filters.
    - Read `profile/cv.md`, `profile/prefs_global.md`, and the draft `tracks/{track_slug}/prefs.md`.
-   - Derive track-wide terms from durable role goals and keep-only criteria.
-   - Derive source-specific `search_terms` from the user's CV vocabulary, target role shapes, sector constraints, and source vocabulary.
-   - Derive source-specific `filters` from location/work-mode preferences, degree requirements, job family, organization, employment type, and other stable native filters.
-3. Keep logic in the right file.
-   - `prefs.md`: human intent, fit criteria, constraints, and geography.
-   - `sources.json`: official source identity, URL, discovery mode, cadence, track terms, source-specific search terms, and native source filters.
-   - `source_state.json`: mutable cadence and integration state, including canaries, priority, attempts, last attempted date, accepted fallback decisions, and next actions.
-   - `match_rules.json`: track-specific post-discovery filtering for broad or noisy sources after source IDs are stable.
-   - `scripts/discover/sources/`: reusable provider parsing, enumeration, pagination, and native-filter support.
-4. Auto-pick canaries where possible.
-   - Explain canaries as known current postings that prove the source is covered.
-   - For each accepted source, try to identify one current posting.
-   - Prefer both exact title and direct job detail URL.
-   - If only an ATS application URL exists, accept it but note the source family.
-   - A title-only canary is acceptable only when the source hides URLs.
-   - Use `scripts/probe_career_source.py <url> --name "<source>" --term "<term>" --pretty` for setup probing when possible instead of ad hoc `WebFetch` guesses.
-   - Ask the user only when the selected canary appears stale, the source is high-value and no canary is found, or the source is broad/noisy and the canary defines intended fit.
-   - If no canary is found, write `source_state.json` integration state with `status: "pending"`, `canary.status: "missing"`, a priority, and a concrete `next_action`.
+3. Auto-pick canaries where possible.
+   - Use `scripts/probe_career_source.py <url> --name "<source>" --term "<term>" --pretty` for setup probing.
    - Store selected or deferred canaries in each source's `source_state.json` `integration` object.
-5. Probe sources with the best existing mode plus inferred config.
-   - Run source-scoped discovery for important newly added sources that have canaries or high track value.
-   - Do not invoke source integration from normal scheduled track runs.
-6. Run source-quality evaluation.
-   - Use `scripts/eval_source_quality.py` for probed sources with canaries.
-   - Do not treat `scripts/discover_jobs.py` source status `complete` as enough; source quality must reject nav/share/link-only candidate sets.
-   - `pass`: source is ready.
-   - `integration_needed`: inspect the `integration_ticket.suggested_strategy`.
-   - `blocked`: stop treating the source as ready and report the blocker.
-   - Store pass/fail/deferred state in `source_state.json`.
-7. Tune config before code.
-   - For `config_terms_override`, update only that source's `search_terms` in `sources.json` with mode `override`, rerender `sources.md`, rediscover, and re-evaluate.
-   - For `config_terms_append`, update only that source's `search_terms` in `sources.json` with mode `append`, rerender, rediscover, and re-evaluate.
-   - For `config_native_filters`, update only that source's `filters` in `sources.json`, rerender, rediscover, and re-evaluate.
-   - For `provider_filter_support`, keep the declarative filters in `sources.json` and invoke source integration to add reusable provider support for those filters.
-   - For `dedicated_provider_logic`, invoke source integration only after the existing mode and config cannot satisfy the canary and quality checks.
-8. Invoke source integration for at most the top 2 sources that still need code.
-   - Rank by importance to the track, canary quality, current source failure severity, whether one provider fix helps multiple sources, and likely implementation effort.
-   - Use `./.venv/bin/python scripts/source_integration.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --canary-title "..." [--canary-url "..."]`.
-   - Prefer reusable providers under `scripts/discover/sources/` when multiple accepted sources share a board family such as Applied, Jobvite, Workable, Recruitee, Personio, Ashby, Lever, Greenhouse, or Workday.
-   - Avoid one-off branches in `generic_html.py` unless the site is truly unique and no reusable family exists.
-   - Treat the source as supported only if the final loop result is `final_status: "pass"`.
-9. Queue remaining pending sources for one-per-day follow-up.
+4. **Prioritize the first digest.**
+   - Validate only enough sources (roughly 2-4) to prove the track works and produce a useful first digest.
+   - After the first digest milestone is reached (see Step 6), report failed or deferred sources.
+   - **Do not manually troubleshoot secondary sources** during interactive setup unless the user explicitly chooses that.
+5. Defer complex integration.
+   - **Do not run synchronous `scripts/source_integration.py`** during normal interactive setup.
+   - If a source needs custom code, queue it for background integration instead of waiting for it.
+   - Use `./.venv/bin/python scripts/start_source_integration.py --track {track_slug} --source "{source_name}"` to start a background job.
+   - Report the log path for any background integration jobs: `logs/source-integration/<track>/<timestamp>-<source>.log`.
+6. Queue remaining pending sources for follow-up.
    - Write each remaining source's mutable follow-up state under `source_state.json` at `sources.<source_id>.integration`.
-   - Include `status: "pending"` or `status: "integration_needed"`, `priority`, `canary`, `attempts`, `last_attempted` when present, `next_action`, and any `suggested_search_terms` or `suggested_filters`.
    - The follow-up command is `./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --today YYYY-MM-DD`.
-   - After queue creation, run `./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --today YYYY-MM-DD --dry-run` and confirm it selects one eligible source.
 
 When an old canary disappears, refresh it with:
 
 ```bash
 ./.venv/bin/python scripts/update_source_canary.py --track {track_slug} --source "{source_name}"
 ```
-
-Do not delete source-quality checks just because a canary aged out.
 
 Before generating files, summarize the normalized config, inferred source-specific terms/filters, canary status, and any queued integration follow-up.
 
@@ -427,22 +391,14 @@ For Logseq:
 
 For email:
 - Never ask the user to paste SMTP passwords or app passwords into chat.
-- Ensure `.env.local` has commented SMTP placeholders by running or recommending `bash scripts/setup_machine.sh`.
-- Tell the user to edit `.env.local` locally and uncomment/fill non-secret SMTP values:
-  - `JOB_AGENT_SMTP_HOST`
-  - `JOB_AGENT_SMTP_PORT`
-  - `JOB_AGENT_SMTP_FROM`
-  - `JOB_AGENT_SMTP_TO`
-  - `JOB_AGENT_SMTP_USERNAME`
-  - `JOB_AGENT_SMTP_TLS`
-- Prefer `JOB_AGENT_SMTP_PASSWORD_CMD` for the password. Use one of these local command examples, adapted by the user:
-  - macOS Keychain: `security find-generic-password -s jobwatch-smtp -a jobs@example.com -w`
-  - Linux Secret Service: `secret-tool lookup service jobwatch-smtp account jobs@example.com`
-  - pass: `pass show email/jobwatch-smtp`
-- `JOB_AGENT_SMTP_PASSWORD` remains a legacy/local-only plaintext fallback; do not recommend it unless the user explicitly accepts that tradeoff.
+- Ask the user for their non-secret SMTP values: provider, account, to, from, username, host, port, TLS (as needed).
+- Write these non-secret values to `.env.local` yourself.
+- Read `JOB_AGENT_SECRETS_FILE` from `.env.local` to determine where secrets should go.
+- Give the user a simple command to save their password locally, using the literal resolved path, for example:
+  `printf '%s\\n' 'export JOB_AGENT_SMTP_PASSWORD=PASTE_PASSWORD_HERE' >> '/home/user/.config/jobwatch/secrets.sh'`
 - Do not run `send_digest_email.py --dry-run` before a digest exists.
 - Sequence email setup this way:
-  1. Configure non-secret SMTP settings and password-command retrieval.
+  1. Configure non-secret SMTP settings in `.env.local` and provide the `secrets.sh` append command.
   2. Reuse the digest produced by Step 6 at `artifacts/digests/{track_slug}/YYYY-MM-DD.json`. If Step 6 was skipped or deferred, run `bash scripts/run_track.sh --track {track_slug}` now and confirm the JSON exists before continuing.
   3. Dry-run the email render:
 
@@ -453,18 +409,26 @@ For email:
 Then test real delivery only when the user confirms the local SMTP config is ready. `--dry-run` renders from the digest JSON and should not require SMTP env or execute `JOB_AGENT_SMTP_PASSWORD_CMD`.
 
 For Telegram:
+- **Explain the model briefly:** BotFather (@BotFather) creates a bot, you start a DM with that bot, and jobwatch sends digests to that DM. Default Telegram setup is DM with the bot; do not tell the user to create a Telegram channel.
+- **Provide steps for @BotFather:**
+  1. Open @BotFather on Telegram.
+  2. Use `/newbot` to create a new bot.
+  3. Choose a display name (e.g., "My JobWatch Bot").
+  4. Choose a username ending in `bot` (e.g., `jobwatch_<track_slug>_<initials>_bot`).
+- **Retrieve the Chat ID:**
+  1. Read `JOB_AGENT_SECRETS_FILE` from `.env.local` to determine where secrets should go.
+  2. Give the user a simple command to save their bot token locally, using the literal resolved path, for example:
+     `printf '%s\\n' 'export JOB_AGENT_TELEGRAM_BOT_TOKEN=PASTE_TOKEN_HERE' >> '/home/user/.config/jobwatch/secrets.sh'`
+  3. Tell the user to open their new bot in Telegram and press **Start**.
+  4. Run `./.venv/bin/python scripts/telegram_chat_id.py` to find the chat ID.
 - Never ask the user to paste the bot token into chat.
-- Keep `JOB_AGENT_TELEGRAM_CHAT_ID` in `.env.local`.
-- Prefer `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD` for the bot token. Use one of these local command examples, adapted by the user:
-  - macOS Keychain: `security find-generic-password -s jobwatch-telegram-bot -a telegram -w`
-  - Linux Secret Service: `secret-tool lookup service jobwatch-telegram-bot account telegram`
-  - pass: `pass show chat/jobwatch-telegram-bot`
-- If the user prefers a static token over `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD`, keep it only in `JOB_AGENT_SECRETS_FILE` as `export JOB_AGENT_TELEGRAM_BOT_TOKEN=...`.
+- Once the chat ID is retrieved, write `JOB_AGENT_TELEGRAM_CHAT_ID=<id>` to `.env.local` yourself.
 - Do not run `send_digest_telegram.py --dry-run` before a digest exists.
 - Sequence Telegram setup this way:
-  1. Configure `JOB_AGENT_TELEGRAM_CHAT_ID` plus token retrieval.
-  2. Reuse the digest produced by Step 6 at `artifacts/digests/{track_slug}/YYYY-MM-DD.json`. If Step 6 was skipped or deferred, run `bash scripts/run_track.sh --track {track_slug}` now and confirm the JSON exists before continuing.
-  3. Dry-run the Telegram render:
+  1. Provide the `secrets.sh` append command for the bot token.
+  2. Run `telegram_chat_id.py` to get the chat ID and write it to `.env.local`.
+  3. Reuse the digest produced by Step 6 at `artifacts/digests/{track_slug}/YYYY-MM-DD.json`. If Step 6 was skipped or deferred, run `bash scripts/run_track.sh --track {track_slug}` now and confirm the JSON exists before continuing.
+  4. Dry-run the Telegram render:
 
 ```bash
 ./.venv/bin/python scripts/send_digest_telegram.py --track {track_slug} --date YYYY-MM-DD --dry-run
@@ -570,6 +534,5 @@ Report:
 - whether scheduling was configured, with cadence, local time, and scheduler install status
 - which validation commands passed
 - which newly integrated sources passed the quality gate
-- which sources were deferred instead of escalated, and why
-- any sources that still need custom integration or follow-up
-- a succinct suggested commit message
+- **A short "deferred sources / background jobs" section listing any sources that still need custom integration or follow-up.**
+- **If repository files were changed, suggest a succinct commit message. Otherwise, note that generated profile/track artifacts are local and gitignored.**

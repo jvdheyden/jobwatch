@@ -135,20 +135,22 @@ Contract:
 - Treat setup as a single guided onboarding flow, not a sequence the user has to discover.
 - For every missing preference or track field, propose a recommended answer grounded in the CV and current context; let the user override it.
 - If the user replies with partial answers or delegation phrases such as `suggest`, `use your suggestions`, `pick whatever you think is best`, `default`, or `go ahead`, treat the remaining low-risk choices as delegated and continue automatically.
-- Write local user data only under profile/ and tracks/. Never edit .agents/skills/set-up/templates/profile/*.
-- First make profile/cv.md ready. If it is still the template, look for an existing Markdown CV or a PDF in profile/. If exactly one PDF exists and pdftotext is available, draft profile/cv.md from it and ask the user to review. If multiple PDFs exist, ask which one. If no PDF exists, ask whether the user wants to add one or fill profile/cv.md manually.
+- Write local user data only under profile/ and tracks/. Never edit shared/templates/profile/*.
+- First make profile/cv.md ready. If it is still the template, look for an existing Markdown CV or a PDF in profile/. If exactly one PDF exists and pdftotext is available, draft profile/cv.md from it and ask the user to review. If multiple PDFs exist, ask which one. If no PDF exists, use this wording: "If you want me to read a PDF, tell me the path or copy it into profile/ now; then I will extract it. Otherwise complete profile/cv.md now and tell me when ready."
 - Then make profile/prefs_global.md ready. Infer only safe facts from the CV, then ask short questions for work mode, geography, seniority, contract type, compensation or practical constraints, authorization, dealbreakers, strong signals, and borderline signals. Write the reviewed answers.
 - Collect the minimum track brief before source discovery: user name, track display name and slug, broad search area, goals or role types, keep-only keywords, constraints or red flags, and geography or remote preferences.
 - After the minimum brief exists, propose a starter seed list, cadence defaults, track-wide terms, and native-filter posture instead of making the user invent them from scratch.
-- If the known source list is sparse or missing, treat invoking $discover-sources as the recommended default next step rather than a neutral menu choice.
+- If the known source list is sparse or missing, treat invoking $discover-sources as the recommended default next step rather than a neutral menu choice. Discovery will exclude the user's current or most recent employer by default.
 - Keep the $discover-sources user-facing summary concise: recommended sources, dropped sources, URL corrections, caveats, recommended defaults to apply now, and only the truly necessary decisions.
 - After discovery, continue automatically: present one recommended keep/drop/cadence/filter package, apply it unless the user objects, infer source-specific terms and native filters from profile and preferences, and auto-pick canaries where possible.
 - Use scripts/probe_career_source.py for source probing when possible instead of guessing from WebFetch alone.
-- Scaffold and validate the track, then run source-scoped discovery and scripts/eval_source_quality.py for canary-backed important sources. A source is ready only when final_status is pass.
-- For sources that need code, tune config first. Then run scripts/source_integration.py for at most the top 2 sources, preferring reusable provider modules under scripts/discover/sources/ when a board family is shared. Queue the rest in source_state.json and validate with scripts/integrate_next_source.py --dry-run.
+- Scaffold and validate the track. Setup aims for a **first-digest milestone**: a rendered digest from a valid scaffold that proves the track works. Do not let failed or complex secondary sources block this milestone.
+- For sources that need code, tune config first. **Do not run synchronous scripts/source_integration.py** during interactive setup. Instead, use scripts/start_source_integration.py to start a background job for top sources and report the log path. Queue the rest in source_state.json and validate with scripts/integrate_next_source.py --dry-run.
 - End guided setup by running a first local digest with bash scripts/run_track.sh --track <track> and pasting a preview of tracks/<track>/digests/YYYY-MM-DD.md into the conversation before moving on to delivery or scheduling. If run_track.sh fails, treat it as a blocker rather than skipping the preview.
 - Only after the digest JSON exists, dry-run any requested delivery method first: scripts/send_digest_email.py --dry-run for email and scripts/send_digest_telegram.py --dry-run for Telegram.
 - Guide delivery and scheduling last. Do not install the scheduler or send real email or Telegram messages unless the user explicitly confirms.
+- Note on Ignored Files: Gemini/Claude may report that local profile/track files are gitignored. Always use shell commands (cat/grep) to read them when standard tools fail.
+- Remove repo-development drift from final responses. Generated profile/track artifacts are local and gitignored; suggest a commit message only if repository files were changed.
 EOF
 )
 
@@ -217,7 +219,7 @@ case "$AGENT_VALUE" in
     print_gemini_interactive_guidance
     exec "$AGENT_BIN_VALUE" \
       --skip-trust \
-      --approval-mode "${JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-auto_edit}}" \
+      --approval-mode "${JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-yolo}}" \
       --prompt-interactive "$SETUP_PROMPT
 
 $SETUP_USER_PROMPT"

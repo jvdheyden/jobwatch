@@ -8,7 +8,7 @@ ENV_FILE="${JOB_AGENT_ENV_FILE:-$ROOT/.env.local}"
 SCHEDULE_FILE="${JOB_AGENT_SCHEDULE_FILE:-$ROOT/.schedule.local}"
 SCHEDULER_DIR="${JOB_AGENT_SCHEDULER_DIR:-$ROOT/.scheduler}"
 PROFILE_DIR="${JOB_AGENT_PROFILE_DIR:-$ROOT/profile}"
-PROFILE_TEMPLATE_DIR="$REPO_ROOT/.agents/skills/set-up/templates/profile"
+PROFILE_TEMPLATE_DIR="$REPO_ROOT/shared/templates/profile"
 PROFILE_CV_TEMPLATE="$PROFILE_TEMPLATE_DIR/cv.md"
 PROFILE_PREFS_TEMPLATE="$PROFILE_TEMPLATE_DIR/prefs_global.md"
 PROFILE_CV_FILE="$PROFILE_DIR/cv.md"
@@ -71,6 +71,24 @@ scheduler_instance_id() {
   printf '%s-%s\n' "$safe_base" "$checksum"
 }
 
+ensure_secrets_file() {
+  local path="$1"
+  [[ -z "$path" ]] && return 0
+  local dir
+  dir="$(dirname "$path")"
+  if [[ ! -d "$dir" ]]; then
+    mkdir -m 0700 -p "$dir"
+  fi
+  if [[ ! -f "$path" ]]; then
+    touch "$path"
+    chmod 0600 "$path"
+    {
+      echo "# Jobwatch external secrets file."
+      echo "# Use export KEY=value to store secrets here."
+    } > "$path"
+  fi
+}
+
 SCHEDULER_INSTANCE_ID="$(scheduler_instance_id "$ROOT")"
 SCHEDULER_LABEL="com.jvdh.jobwatch.scheduler.$SCHEDULER_INSTANCE_ID"
 PLIST_FILE="$SCHEDULER_DIR/$SCHEDULER_LABEL.plist"
@@ -79,14 +97,17 @@ CRON_END="# END jobwatch scheduler $SCHEDULER_INSTANCE_ID"
 
 usage() {
   cat <<EOF
-Usage: $0 --agent codex|claude|gemini [--agent-bin <path>] [--logseq-graph-dir <path>]
+Usage: $0 --agent codex|claude|gemini [options]
+
+Options:
+  --agent-bin <path>         Path to automation agent binary
+  --logseq-graph-dir <path>  Logseq graph root for digest publication
+  --telegram-chat-id <id>    Telegram chat ID for notifications
+  --email-provider <name>    Email provider preset (gmail, fastmail, etc.)
+  --email-account <addr>     Sender email address
+  --smtp-to <addr>           Recipient email address
 
 Create or refresh machine-local scheduler config and profile placeholders for this checkout.
-In a terminal, the script prompts for any missing required values.
-In non-interactive mode, JOB_AGENT_BIN must be supplied or the selected provider binary must be discoverable.
-This script does not install cron or launchd. After adding entries to
-$SCHEDULE_FILE with scripts/configure_schedule.py or the setup agent, run
-scripts/install_scheduler.sh.
 EOF
 }
 
@@ -375,6 +396,42 @@ while [[ $# -gt 0 ]]; do
       LOGSEQ_GRAPH_DIR_VALUE="$2"
       shift 2
       ;;
+    --telegram-chat-id)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --telegram-chat-id" >&2
+        usage >&2
+        exit 2
+      fi
+      TELEGRAM_CHAT_ID_VALUE="$2"
+      shift 2
+      ;;
+    --email-provider)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --email-provider" >&2
+        usage >&2
+        exit 2
+      fi
+      EMAIL_PROVIDER_VALUE="$2"
+      shift 2
+      ;;
+    --email-account)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --email-account" >&2
+        usage >&2
+        exit 2
+      fi
+      EMAIL_ACCOUNT_VALUE="$2"
+      shift 2
+      ;;
+    --smtp-to)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --smtp-to" >&2
+        usage >&2
+        exit 2
+      fi
+      SMTP_TO_VALUE="$2"
+      shift 2
+      ;;
     --help|-h)
       usage
       exit 0
@@ -477,14 +534,14 @@ else
   detected_bwrap_bin=""
 fi
 
-EMAIL_PROVIDER_VALUE="${ENV_EMAIL_PROVIDER_VALUE:-$existing_email_provider}"
-EMAIL_ACCOUNT_VALUE="${ENV_EMAIL_ACCOUNT_VALUE:-$existing_email_account}"
-TELEGRAM_CHAT_ID_VALUE="${ENV_TELEGRAM_CHAT_ID_VALUE:-$existing_telegram_chat_id}"
+EMAIL_PROVIDER_VALUE="${EMAIL_PROVIDER_VALUE:-${ENV_EMAIL_PROVIDER_VALUE:-$existing_email_provider}}"
+EMAIL_ACCOUNT_VALUE="${EMAIL_ACCOUNT_VALUE:-${ENV_EMAIL_ACCOUNT_VALUE:-$existing_email_account}}"
+TELEGRAM_CHAT_ID_VALUE="${TELEGRAM_CHAT_ID_VALUE:-${ENV_TELEGRAM_CHAT_ID_VALUE:-$existing_telegram_chat_id}}"
 TELEGRAM_BOT_TOKEN_CMD_VALUE="${ENV_TELEGRAM_BOT_TOKEN_CMD_VALUE:-$existing_telegram_bot_token_cmd}"
 SMTP_HOST_VALUE="${ENV_SMTP_HOST_VALUE:-$existing_smtp_host}"
 SMTP_PORT_VALUE="${ENV_SMTP_PORT_VALUE:-$existing_smtp_port}"
 SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
-SMTP_TO_VALUE="${ENV_SMTP_TO_VALUE:-$existing_smtp_to}"
+SMTP_TO_VALUE="${SMTP_TO_VALUE:-${ENV_SMTP_TO_VALUE:-$existing_smtp_to}}"
 SMTP_USERNAME_VALUE="${ENV_SMTP_USERNAME_VALUE:-$existing_smtp_username}"
 SMTP_PASSWORD_CMD_VALUE="${ENV_SMTP_PASSWORD_CMD_VALUE:-$existing_smtp_password_cmd}"
 SMTP_TLS_VALUE="${ENV_SMTP_TLS_VALUE:-$existing_smtp_tls}"
@@ -496,6 +553,13 @@ if [[ -z "$SECRETS_FILE_VALUE" ]]; then
     SUGGESTED_SECRETS_FILE_VALUE=""
   fi
 fi
+
+FINAL_SECRETS_FILE_VALUE="$SECRETS_FILE_VALUE"
+if [[ -z "$FINAL_SECRETS_FILE_VALUE" ]]; then
+  FINAL_SECRETS_FILE_VALUE="$SUGGESTED_SECRETS_FILE_VALUE"
+fi
+ensure_secrets_file "$FINAL_SECRETS_FILE_VALUE"
+
 legacy_smtp_password_detected=0
 if [[ -n "$ENV_SMTP_PASSWORD_VALUE" || -n "$existing_smtp_password" ]]; then
   legacy_smtp_password_detected=1
@@ -524,7 +588,7 @@ else
   exit 1
 fi
 
-if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" && is_interactive ]]; then
+if [[ -z "$LOGSEQ_GRAPH_DIR_VALUE" ]] && is_interactive; then
   LOGSEQ_GRAPH_DIR_VALUE="$(prompt_for_logseq_graph_dir "$detected_logseq_graph_dir")"
 fi
 
@@ -574,10 +638,8 @@ fi
   else
     echo "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='pass show chat/jobwatch-telegram-bot'"
   fi
-  if [[ -n "$SECRETS_FILE_VALUE" ]]; then
-    printf '# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in %s.\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
-  elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
-    printf '# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in %s and uncomment JOB_AGENT_SECRETS_FILE below.\n' "$(shell_escape "$SUGGESTED_SECRETS_FILE_VALUE")"
+  if [[ -n "$FINAL_SECRETS_FILE_VALUE" ]]; then
+    printf '# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in %s.\n' "$(shell_escape "$FINAL_SECRETS_FILE_VALUE")"
   else
     echo "# Or put export JOB_AGENT_TELEGRAM_BOT_TOKEN=... only in the external file named by JOB_AGENT_SECRETS_FILE."
   fi
@@ -603,10 +665,8 @@ fi
   else
     echo "# export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com"
   fi
-  if [[ -n "$SECRETS_FILE_VALUE" ]]; then
-    printf 'export JOB_AGENT_SECRETS_FILE=%s\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
-  elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
-    printf '# export JOB_AGENT_SECRETS_FILE=%s\n' "$(shell_escape "$SUGGESTED_SECRETS_FILE_VALUE")"
+  if [[ -n "$FINAL_SECRETS_FILE_VALUE" ]]; then
+    printf 'export JOB_AGENT_SECRETS_FILE=%s\n' "$(shell_escape "$FINAL_SECRETS_FILE_VALUE")"
   else
     echo "# export JOB_AGENT_SECRETS_FILE=/absolute/path/outside/repo/jobwatch.secrets.sh"
   fi
@@ -647,10 +707,8 @@ fi
     echo "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'"
   fi
   echo "# Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported."
-  if [[ -n "$SECRETS_FILE_VALUE" ]]; then
-    printf '# If you prefer a static password, write export JOB_AGENT_SMTP_PASSWORD=... in %s.\n' "$(shell_escape "$SECRETS_FILE_VALUE")"
-  elif [[ -n "$SUGGESTED_SECRETS_FILE_VALUE" ]]; then
-    printf '# If you prefer a static password, write export JOB_AGENT_SMTP_PASSWORD=... in %s and uncomment JOB_AGENT_SECRETS_FILE above.\n' "$(shell_escape "$SUGGESTED_SECRETS_FILE_VALUE")"
+  if [[ -n "$FINAL_SECRETS_FILE_VALUE" ]]; then
+    printf '# If you prefer a static password, write export JOB_AGENT_SMTP_PASSWORD=... in %s.\n' "$(shell_escape "$FINAL_SECRETS_FILE_VALUE")"
   else
     echo "# If you prefer a static password over JOB_AGENT_SMTP_PASSWORD_CMD, put it only in the external file named by JOB_AGENT_SECRETS_FILE."
   fi

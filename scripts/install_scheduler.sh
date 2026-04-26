@@ -79,7 +79,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-/bin/bash "$SCRIPT_DIR/setup_machine.sh"
+/bin/bash "$SCRIPT_DIR/setup_machine.sh" </dev/null
 
 case "$PLATFORM" in
   Linux)

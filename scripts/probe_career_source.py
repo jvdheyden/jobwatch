@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import socket
 import ssl
 import sys
 from dataclasses import dataclass
@@ -178,8 +179,12 @@ def fetch_http(url: str, timeout: int) -> tuple[str, str, int, list[str]]:
         if exc.code == 403:
             hints.append("HTTP 403; source may block scripted requests")
         return body, exc.geturl() or url, int(exc.code), hints
-    except URLError as exc:
-        hints.append(f"HTTP fetch failed: {exc.reason}")
+    except (URLError, socket.timeout, TimeoutError, OSError) as exc:
+        reason = getattr(exc, "reason", str(exc))
+        if "timed out" in str(reason).lower() or "timeout" in str(reason).lower():
+            hints.append(f"HTTP fetch failed: timeout ({reason})")
+        else:
+            hints.append(f"HTTP fetch failed: {reason}")
         return "", url, 0, hints
 
 

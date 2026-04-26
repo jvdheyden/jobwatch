@@ -57,15 +57,21 @@ If you only need to refresh the generated machine-local config later, run `bash 
 
 The `profile/` directory is local user data and is ignored by Git. `profile/cv.md` is the primary agent-readable CV context. `profile/prefs_global.md` stores durable cross-track preferences. You can also place a PDF CV in `profile/`; the setup agent can use it to draft `profile/cv.md` when the Markdown CV is still the default placeholder.
 
-Do not edit `.agents/skills/set-up/templates/profile/*`. Those files are tracked defaults used only when local profile files are missing.
+Do not edit `shared/templates/profile/*`. Those files are tracked defaults used only when local profile files are missing.
 
 In a normal terminal, the setup script prompts for missing machine-local values after the agent is selected.
 
-- `--agent codex|claude|gemini` selects the automation provider for first-time setup. If omitted and no existing `JOB_AGENT_PROVIDER` is available, setup exits with exact commands to rerun.
+### Automation Provider Configuration
+
+When `scripts/setup_machine.sh` is run with `--agent claude`, it merges a repo-local `SessionStart` hook into `.claude/settings.local.json` that exports `CLAUDE_SESSION_ID`. The `coding` skill reads this variable to record a resumable `agent_id` in plan files. This merge is idempotent and preserves any existing permissions or settings.
+
+When `scripts/setup_machine.sh` is run with `--agent codex`, it writes a repo-local `.codex/config.toml` with a managed `shell_environment_policy` that puts the checkout's `./.venv/bin` first on `PATH`. This ensures that Codex shell commands use the project's virtualenv. If an existing unmanaged `shell_environment_policy` is present, setup reports a conflict and leaves it unchanged.
+
+### Basic Options
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
 - `JOB_AGENT_BIN` is required. If the selected provider binary is already on `PATH`, the script offers that detected binary as the default.
 - `LOGSEQ_GRAPH_DIR` is optional. If a common path such as `~/Documents/logseq` already exists, the script offers it as the default.
-- SMTP settings are optional. The script writes non-secret SMTP placeholders to `.env.local` plus either an existing `JOB_AGENT_SECRETS_FILE` value or a commented platform-specific suggestion for real secrets stored outside the repo. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; if you need a static password, keep it in the external secrets file instead of `.env.local`.
+- SMTP settings are optional. The setup agent prompts for these and writes them to `.env.local` automatically. `JOB_AGENT_SECRETS_FILE` is also enabled by default for real secrets stored outside the repo. Prefer `JOB_AGENT_SMTP_PASSWORD_CMD`; if you need a static password, keep it in the external secrets file instead of `.env.local`.
 
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude and Gemini paths are written as detected.
 
@@ -166,7 +172,7 @@ test -f artifacts/digests/<track>/YYYY-MM-DD.json
 
 Only test a real Telegram send or schedule Telegram delivery after the digest exists and the dry run renders correctly.
 
-Email delivery is optional. Fill the non-secret email settings in `.env.local` locally, and keep any real app password or SMTP token outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
+Email delivery is optional. The setup agent flow will prompt for non-secret email settings and write them to `.env.local` automatically. Keep any real app password or SMTP token outside the repo. Do not put SMTP passwords in tracked files, `.env.local`, or chat transcripts.
 
 For common providers, start with the provider/account shorthand and then add recipients plus password retrieval:
 
@@ -194,14 +200,14 @@ Normal personal Proton Mail via Proton Mail Bridge is still out of scope for the
 Optional external secrets pointer in `.env.local`:
 
 ```bash
-# Linux default suggestion:
+# Linux default path:
 export JOB_AGENT_SECRETS_FILE=${XDG_CONFIG_HOME:-$HOME/.config}/jobwatch/secrets.sh
 
-# macOS default suggestion:
+# macOS default path:
 export JOB_AGENT_SECRETS_FILE=$HOME/Library/Application\ Support/jobwatch/secrets.sh
 ```
 
-When `JOB_AGENT_SECRETS_FILE` is not already set, setup writes the platform-specific path above as a commented suggestion instead of enabling it automatically. That keeps `JOB_AGENT_SMTP_PASSWORD_CMD` and unauthenticated local SMTP setups from pointing at a missing file by default.
+When `JOB_AGENT_SECRETS_FILE` is not already set, setup automatically enables the platform-specific default path above and creates the parent directory and file if they are absent. This provides a clear, guaranteed location for `secrets.sh` where you can append credentials.
 
 Preferred password retrieval examples:
 

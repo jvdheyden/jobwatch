@@ -62,20 +62,25 @@ If the user already has a strong official source list, do not replace it. Use th
 ### 2. Discover candidate employers and official sources
 
 - Prioritize employers, research labs, and organizations likely to post the target roles.
+- **Exclude the user's current or most recent employer by default.** If found and highly relevant, list it under a "deferred / not recommended by default" section with the reason.
 - When a target employer homepage is known, inspect the official homepage header, footer, and main navigation first for links such as `Careers`, `Jobs`, `Join us`, or `Work with us` before doing broader search.
 - Prefer official career pages and first-party hosted boards.
 - Treat homepage-linked official careers pages and homepage-linked ATS destinations as high-confidence official sources.
 - Accept official Greenhouse, Lever, Ashby, Workday, Workable, and comparable first-party boards when they are clearly tied to the employer.
 - Do not use third-party aggregators unless the user explicitly asks for them or the track scope requires them.
 - If the user provided seed employers, preserve them unless they clearly conflict with the stated preferences.
+- **Limit initial recommendations to a small source pack: roughly 4-8 high-signal sources.**
+- **Avoid broad page-fetch/browser calls over many sources.** For Gemini, use `WebFetch` on at most 3 URLs per call and stop after one failed or oversized response.
 
 ### 3. Validate lightly
 
 - Confirm the source appears official and relevant to the stated preferences.
 - Detect board family or likely `discovery_mode` when obvious from the URL or page shape. Use `shared/source_curation.md` for the canonical official-source and fallback heuristics, and `shared/discovery_modes.md` as the supported-mode reference.
+- **Validate at most the top 3 recommended URLs during this discovery phase.**
 - If an official ATS board is linked from the employer homepage or official careers page, keep it even when it must fall back to `html`.
 - If unclear, keep the source only when it still looks plausibly official and default `suggested_discovery_mode` to `html`.
 - Do not do exhaustive browsing, canary discovery, source-quality evaluation, or scraper integration here.
+- **This skill does NOT create `match_rules.json`.** It only proposes broad-source filtering rules for `$set-up` to review and potentially apply.
 
 ### 4. Normalize for `set-up`
 

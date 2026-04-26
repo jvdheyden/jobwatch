@@ -117,7 +117,7 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# export JOB_AGENT_SMTP_FROM=jobs@example.com" in env_text
     assert "# export JOB_AGENT_SMTP_TO=you@example.com" in env_text
     assert "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com" in env_text
-    assert f"# export JOB_AGENT_SECRETS_FILE={tmp_job_agent_root / 'home' / '.config' / 'jobwatch' / 'secrets.sh'}" in env_text
+    assert f"export JOB_AGENT_SECRETS_FILE={tmp_job_agent_root / 'home' / '.config' / 'jobwatch' / 'secrets.sh'}" in env_text
     assert "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'" in env_text
     assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
     assert "Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported." in env_text
@@ -172,7 +172,7 @@ def test_setup_machine_prefers_xdg_config_home_for_linux_secrets_path(
     result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
     expected_path = xdg_config_home / "jobwatch" / "secrets.sh"
-    assert f"# export JOB_AGENT_SECRETS_FILE={expected_path}" in env_file.read_text()
+    assert f"export JOB_AGENT_SECRETS_FILE={expected_path}" in env_file.read_text()
 
 
 def test_setup_machine_uses_application_support_for_macos_secrets_path(
@@ -200,7 +200,7 @@ def test_setup_machine_uses_application_support_for_macos_secrets_path(
     expected_path = str(home_dir / "Library" / "Application Support" / "jobwatch" / "secrets.sh").replace(" ", "\\ ")
     expected_printed_path = home_dir / "Library" / "Application Support" / "jobwatch" / "secrets.sh"
     env_text = env_file.read_text()
-    assert f"# export JOB_AGENT_SECRETS_FILE={expected_path}" in env_text
+    assert f"export JOB_AGENT_SECRETS_FILE={expected_path}" in env_text
 
 
 def test_setup_machine_preserves_existing_profile_files(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -285,6 +285,74 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
     assert "export JOB_AGENT_SMTP_TLS=none" in env_text
     assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" not in env_text
     assert "Removed legacy JOB_AGENT_SMTP_PASSWORD" in result.stdout
+
+
+def test_setup_machine_delivery_flags_precedence(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    scheduler_dir = tmp_job_agent_root / ".scheduler"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
+    
+    # Pre-existing values
+    env_file.write_text(
+        "\n".join(
+            [
+                "export JOB_AGENT_EMAIL_PROVIDER=fastmail",
+                "export JOB_AGENT_EMAIL_ACCOUNT=old@test.invalid",
+                "export JOB_AGENT_SMTP_TO=old-to@test.invalid",
+                "export JOB_AGENT_TELEGRAM_CHAT_ID=111111",
+                "",
+            ]
+        )
+    )
+
+    env = os.environ | {
+        "HOME": str(tmp_job_agent_root / "home"),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
+        "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+    }
+
+    # CLI args should override
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "setup_machine.sh"),
+        "--agent", "codex",
+        "--email-provider", "gmail",
+        "--email-account", "new@test.invalid",
+        "--smtp-to", "new-to@test.invalid",
+        "--telegram-chat-id", "222222",
+        env=env,
+        cwd=repo_root,
+    )
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert "export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
+    assert "export JOB_AGENT_EMAIL_ACCOUNT=new@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_TO=new-to@test.invalid" in env_text
+    assert "export JOB_AGENT_TELEGRAM_CHAT_ID=222222" in env_text
+
+    # Without CLI args, existing should be preserved
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "setup_machine.sh"),
+        "--agent", "codex",
+        env=env,
+        cwd=repo_root,
+    )
+    assert result.returncode == 0, result.stderr
+
+    env_text = env_file.read_text()
+    assert "export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
+    assert "export JOB_AGENT_EMAIL_ACCOUNT=new@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_TO=new-to@test.invalid" in env_text
+    assert "export JOB_AGENT_TELEGRAM_CHAT_ID=222222" in env_text
 
 
 def test_configure_schedule_creates_daily_entry(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -909,7 +977,8 @@ printf 'bootstrap_venv\\n' >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP_MACHIN
     assert "2. Start guided setup:" in result.stdout
     assert "profile/cv.md" in result.stdout
     assert "profile/prefs_global.md" in result.stdout
-    assert ".agents/skills/set-up/templates/profile/*" in result.stdout
+    assert "shared/templates/profile/*" in result.stdout
+
     assert "bash scripts/start_setup_agent.sh --agent codex" in result.stdout
     assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
 
@@ -1244,7 +1313,8 @@ printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD_CMD-}}" > "{password_cmd_file}"
     args_text = args_file.read_text()
     assert "--skip-trust" in args_text
     assert "--approval-mode" in args_text
-    assert "auto_edit" in args_text
+    assert "yolo" in args_text
+
     assert "--prompt-interactive" in args_text
     assert "Use the project skill $set-up" in args_text
     assert "scripts/probe_career_source.py" in args_text

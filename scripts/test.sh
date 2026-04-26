@@ -31,6 +31,8 @@ bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/update_source_state.py
 "$PYTHON_BIN" -m py_compile scripts/source_integration.py
 "$PYTHON_BIN" -m py_compile scripts/integrate_next_source.py
+"$PYTHON_BIN" -m py_compile scripts/start_source_integration.py
+"$PYTHON_BIN" -m py_compile scripts/telegram_chat_id.py
 "$PYTHON_BIN" -m py_compile scripts/discover/*.py scripts/discover/sources/*.py
 bash scripts/sync_claude_skills.sh --check
 "$PYTHON_BIN" scripts/render_discovery_modes_md.py --check
@@ -50,9 +52,11 @@ fi
   tests/unit/test_send_digest_email.py \
   tests/unit/test_send_digest_telegram.py \
   tests/unit/test_source_config.py \
-  tests/unit/test_claude_support.py \
+  tests/unit/test_agent_support.py \
   tests/unit/test_machine_resolution.py \
   tests/unit/test_integrate_next_source.py \
+  tests/unit/test_probe_career_source.py \
+  tests/unit/test_telegram_chat_id.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \
   tests/integration/test_machine_setup.py \
