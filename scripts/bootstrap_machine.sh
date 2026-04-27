@@ -60,6 +60,32 @@ validate_agent() {
   esac
 }
 
+agent_install_command() {
+  case "${1:-}" in
+    claude)
+      printf 'curl -fsSL https://claude.ai/install.sh | bash\n'
+      ;;
+    codex)
+      printf 'npm i -g @openai/codex\n'
+      ;;
+    gemini)
+      printf 'npm install -g @google/gemini-cli\n'
+      ;;
+  esac
+}
+
+check_agent_installed() {
+  local agent="$1"
+  local agent_bin="$2"
+  if [[ -n "$agent_bin" ]]; then
+    if [[ -x "$agent_bin" ]] || command -v "$agent_bin" >/dev/null 2>&1; then
+      return 0
+    fi
+    return 1
+  fi
+  command -v "$agent" >/dev/null 2>&1
+}
+
 is_interactive() {
   [[ -t 0 && -t 1 ]]
 }
@@ -175,6 +201,18 @@ fi
 if ! validate_agent "$AGENT_VALUE"; then
   echo "Invalid --agent '$AGENT_VALUE'; expected codex, claude, or gemini." >&2
   agent_guidance
+  exit 2
+fi
+
+if ! check_agent_installed "$AGENT_VALUE" "$AGENT_BIN_VALUE"; then
+  if [[ -n "$AGENT_BIN_VALUE" ]]; then
+    echo "Agent binary '$AGENT_BIN_VALUE' not found or not executable." >&2
+  else
+    echo "Agent '$AGENT_VALUE' was not found on PATH." >&2
+  fi
+  echo "Install it with:" >&2
+  echo "  $(agent_install_command "$AGENT_VALUE")" >&2
+  echo "Or pass --agent-bin <path> if it is installed elsewhere." >&2
   exit 2
 fi
 
