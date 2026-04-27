@@ -326,7 +326,7 @@ prompt_for_agent_bin() {
 
   while true; do
     if [[ -n "$default_value" ]]; then
-      entered="$(prompt_line "JOB_AGENT_BIN for $provider [$default_value]: ")"
+      entered="$(prompt_line "JOB_AGENT_BIN for $provider (press Enter to use $default_value): ")"
       candidate="${entered:-$default_value}"
     else
       entered="$(prompt_line "JOB_AGENT_BIN for $provider (required): ")"

@@ -588,7 +588,7 @@ def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_roo
     )
 
     assert result.returncode == 0, result.stdout
-    assert f"JOB_AGENT_BIN for codex [{fake_bin_dir / 'codex'}]:" in result.stdout
+    assert f"JOB_AGENT_BIN for codex (press Enter to use {fake_bin_dir / 'codex'}):" in result.stdout
     assert f"LOGSEQ_GRAPH_DIR (optional, Enter to use {detected_graph_dir}, type skip to leave unset):" in result.stdout
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
@@ -678,7 +678,7 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     )
 
     assert result.returncode == 0, result.stdout
-    assert f"JOB_AGENT_BIN for codex [{canonical_codex}]:" in result.stdout
+    assert f"JOB_AGENT_BIN for codex (press Enter to use {canonical_codex}):" in result.stdout
     env_text = env_file.read_text()
     assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
 

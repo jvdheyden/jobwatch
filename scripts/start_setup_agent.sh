@@ -205,6 +205,8 @@ case "$AGENT_VALUE" in
     exec "$AGENT_BIN_VALUE" \
       --search \
       -a never \
+      -m "${JOB_AGENT_CODEX_SETUP_MODEL:-gpt-5-codex}" \
+      -c "model_reasoning_effort=\"${JOB_AGENT_CODEX_SETUP_REASONING_EFFORT:-medium}\"" \
       -C "$ROOT" \
       -s workspace-write \
       "$SETUP_PROMPT"
@@ -212,6 +214,7 @@ case "$AGENT_VALUE" in
   claude)
     print_claude_interactive_guidance
     exec "$AGENT_BIN_VALUE" \
+      --model "${JOB_AGENT_CLAUDE_SETUP_MODEL:-sonnet}" \
       --permission-mode acceptEdits \
       --allowedTools "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,WebSearch,WebFetch,TodoWrite" \
       --append-system-prompt "$SETUP_PROMPT" \
@@ -221,6 +224,7 @@ case "$AGENT_VALUE" in
     print_gemini_interactive_guidance
     exec "$AGENT_BIN_VALUE" \
       --skip-trust \
+      -m "${JOB_AGENT_GEMINI_SETUP_MODEL:-gemini-3-pro-preview}" \
       --approval-mode "${JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-yolo}}" \
       --prompt-interactive "$SETUP_PROMPT
 
