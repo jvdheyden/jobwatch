@@ -214,11 +214,10 @@ case "$AGENT_VALUE" in
   claude)
     print_claude_interactive_guidance
     exec "$AGENT_BIN_VALUE" \
-      --model "${JOB_AGENT_CLAUDE_SETUP_MODEL:-opus}" \
+      --model opus \
       --permission-mode acceptEdits \
       --allowedTools "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,WebSearch,WebFetch,TodoWrite" \
-      --append-system-prompt "$SETUP_PROMPT" \
-      "$SETUP_USER_PROMPT"
+      --append-system-prompt "$SETUP_PROMPT"
       ;;
   gemini)
     print_gemini_interactive_guidance
