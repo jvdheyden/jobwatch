@@ -23,6 +23,7 @@ Use this guide when a skill needs to identify the best official source URL for a
   - Getro collection boards: `getro_api`
   - Personio pages: `personio_page`
   - Recruitee inline pages: `recruitee_inline`
+  - Softgarden vacancy pages: `softgarden_html`
   - YC jobs role boards: `yc_jobs_board`
   - Hacker News jobs pages: `hackernews_jobs`
   - service.bund search URLs: `service_bund_search`

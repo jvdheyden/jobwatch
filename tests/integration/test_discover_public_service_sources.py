@@ -786,6 +786,90 @@ def test_discover_rheinmetall_html_extracts_structured_ssr_cards(monkeypatch):
     assert candidate.matched_terms == ["privacy"]
 
 
+def test_discover_softgarden_html_filters_cards_and_enriches_details(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Bundesdruckerei",
+        url="https://bundesdruckerei.softgarden.io/de/vacancies",
+        discovery_mode="softgarden_html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    listing_html = """
+    <html><body>
+      <div class="matchElement" id="job_id_101">
+        <div target="_blank" class="matchValue title">
+          <a href="../job/101/Information-Security-Expert-m-w-d-?jobDbPVId=1&amp;l=de" target="_blank">Information Security Expert (m/w/d)</a>
+        </div>
+        <div class="matchValue jobcategory">IT - Informationssicherheit / Cyber Security</div>
+        <div class="matchValue ProjectGeoLocationCity"><span class="location-view-item">Bonn</span></div>
+      </div><div class="matchElement" id="job_id_102">
+        <div target="_blank" class="matchValue title">
+          <a href="../job/102/DevOps-Engineer-m-w-d-?jobDbPVId=2&amp;l=de" target="_blank">DevOps Engineer (m/w/d)</a>
+        </div>
+        <div class="matchValue jobcategory">IT - DevOps</div>
+        <div class="matchValue ProjectGeoLocationCity"><span class="location-view-item">Berlin</span></div>
+      </div><div class="matchElement" id="job_id_103">
+        <div target="_blank" class="matchValue title">
+          <a href="../job/103/DevSecOps-Engineer-m-w-d-?jobDbPVId=3&amp;l=de" target="_blank">DevSecOps Engineer (m/w/d)</a>
+        </div>
+        <div class="matchValue jobcategory">IT - DevOps</div>
+        <div class="matchValue ProjectGeoLocationCity"><span class="location-view-item">Berlin</span></div>
+      </div>
+    </body></html>
+    """
+    security_detail = """
+    <html><body>
+      <h1>Information Security Expert (m/w/d)</h1>
+      <h2>Ihr Aufgabenbereich</h2>
+      <p>Design controls for high-security information systems.</p>
+      <h2>Ihr Profil</h2>
+      <p>Experience with security engineering and incident response.</p>
+      <h2>Ihre Vorteile</h2>
+      <p>Modern equipment.</p>
+    </body></html>
+    """
+    devsecops_detail = """
+    <html><body>
+      <h1>DevSecOps Engineer (m/w/d)</h1>
+      <h2>Ihr Aufgabenbereich</h2>
+      <p>Integrate security practices into CI/CD pipelines.</p>
+      <h2>Ihr Profil</h2>
+      <p>Experience with DevSecOps practices and container security.</p>
+    </body></html>
+    """
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        if url == source.url:
+            return listing_html
+        if "/job/101/" in url:
+            return security_detail
+        if "/job/103/" in url:
+            return devsecops_detail
+        raise AssertionError(f"unexpected fetch: {url}")
+
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_softgarden_html(
+        source,
+        ["Information Security", "Cyber Security", "DevSecOps"],
+        timeout_seconds=5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 3
+    assert coverage.direct_job_pages_opened == 2
+    assert [candidate.title for candidate in coverage.candidates] == [
+        "Information Security Expert (m/w/d)",
+        "DevSecOps Engineer (m/w/d)",
+    ]
+    assert coverage.candidates[0].location == "Bonn"
+    assert coverage.candidates[0].url.endswith("?jobDbPVId=1&l=de")
+    assert "Tasks: Design controls" in coverage.candidates[0].notes
+    assert "Qualifications: Experience with security engineering" in coverage.candidates[0].notes
+    assert coverage.candidates[1].matched_terms == ["DevSecOps"]
+
+
 def test_extract_helsing_jobs_filters_visible_cards():
     page = FakePage(
         [

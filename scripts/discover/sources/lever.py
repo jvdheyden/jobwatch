@@ -32,6 +32,19 @@ def lever_api_url(source_url: str) -> str:
     return f"{parsed.scheme or 'https'}://{api_host}/v0/postings/{token}?mode=json"
 
 
+def _posting_notes(posting: dict[str, object]) -> str:
+    detail_parts: list[str] = []
+    for key in ("descriptionPlain", "additionalPlain"):
+        value = posting.get(key)
+        if isinstance(value, str):
+            cleaned = helpers.normalize_whitespace(value)
+            if cleaned:
+                detail_parts.append(cleaned)
+    if not detail_parts:
+        return ""
+    return "Description: " + helpers.truncate_text(" ".join(detail_parts), 480)
+
+
 def discover_lever_json(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     postings = http.fetch_json(lever_api_url(source.url), timeout_seconds)
     if not isinstance(postings, list):
@@ -70,7 +83,7 @@ def discover_lever_json(source: SourceConfig, terms: list[str], timeout_seconds:
                 source_url=source.url,
                 location=location,
                 matched_terms=matched,
-                notes="Enumerated through Lever JSON",
+                notes=_posting_notes(posting),
             ),
         )
 

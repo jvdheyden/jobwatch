@@ -357,6 +357,52 @@ def test_build_integration_ticket_distinguishes_config_native_filters_for_high_v
     assert ticket["candidate_counts"]["candidates"] == source_quality.HIGH_VOLUME_CANDIDATE_THRESHOLD + 1
 
 
+def test_validate_source_coverage_allows_broad_api_enumeration_when_matches_are_filtered():
+    source = {
+        "source": "Example Lever",
+        "source_url": "https://jobs.lever.co/example",
+        "discovery_mode": "lever_json",
+        "status": "complete",
+        "search_terms_tried": ["security engineer"],
+        "enumerated_jobs": source_quality.HIGH_VOLUME_CANDIDATE_THRESHOLD * 4,
+        "matched_jobs": 2,
+        "result_pages_scanned": "local_filter=1",
+        "direct_job_pages_opened": 0,
+        "candidates": [
+            {
+                "employer": "Example Lever",
+                "title": "Security Engineer",
+                "url": "https://jobs.lever.co/example/security-engineer-berlin",
+                "source_url": "https://jobs.lever.co/example",
+                "location": "Berlin",
+                "notes": "Description: Responsibilities include building security review automation. Qualifications include Python and applied security experience.",
+            },
+            {
+                "employer": "Example Lever",
+                "title": "Security Engineer",
+                "url": "https://jobs.lever.co/example/security-engineer-london",
+                "source_url": "https://jobs.lever.co/example",
+                "location": "London",
+                "notes": "Description: Responsibilities include hardening production systems. Qualifications include infrastructure security experience.",
+            },
+        ],
+    }
+
+    deterministic = source_quality.validate_source_coverage(source)
+    check_by_name = {check["name"]: check for check in deterministic["checks"]}
+
+    assert check_by_name["result_volume"]["status"] == "pass"
+    assert deterministic["confidence"] == "high"
+    assert source_quality.build_integration_ticket(
+        "demo",
+        source,
+        deterministic,
+        {"status": "skipped", "defects": []},
+        canary_title="",
+        canary_url="",
+    ) is None
+
+
 def test_build_integration_ticket_distinguishes_provider_filter_support_when_filters_exist():
     source = {
         "source": "Example Browser",

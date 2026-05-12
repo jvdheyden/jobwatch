@@ -171,3 +171,28 @@ def test_apply_config_tuning_merges_native_filters():
         "location": ["Berlin, Germany", "Munich, Germany"],
         "degree": ["Ph.D."],
     }
+
+
+def test_update_integration_state_clears_stale_ticket_fields_on_pass():
+    state_entry = {
+        "last_checked": None,
+        "integration": {
+            "status": "deferred",
+            "next_action": "config_native_filters",
+            "last_ticket_summary": "old ticket",
+            "last_note": "old note",
+        },
+    }
+
+    integrate_next_source.update_integration_state(
+        state_entry,
+        today="2026-05-05",
+        status="pass",
+    )
+
+    integration = state_entry["integration"]
+    assert integration["status"] == "pass"
+    assert integration["last_attempted"] == "2026-05-05"
+    assert "next_action" not in integration
+    assert "last_ticket_summary" not in integration
+    assert "last_note" not in integration

@@ -368,6 +368,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Parses service.bund search results and next-page tokens.
 
+### `softgarden_html`
+
+- Provider: `discover.sources.softgarden` / `discover_softgarden_html`
+- Emits candidates: yes
+- URL/source shape: `https://<tenant>.softgarden.io/<language>/vacancies`
+- Supported filters/options: `jobcategory`, `location`, and `company`
+- Contract fixtures: `tests/fixtures/sources/softgarden_html/`
+- Requirements: none
+- Known limitations: Parses static Softgarden vacancy cards and opens matched detail pages for role-section snippets.
+
 ### `thales_browser`
 
 - Provider: `discover.sources.browser` / `discover_thales_browser`

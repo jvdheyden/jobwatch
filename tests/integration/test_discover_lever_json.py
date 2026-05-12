@@ -49,3 +49,7 @@ def test_discover_lever_json_filters_and_deduplicates(monkeypatch):
     assert candidate.url == "https://jobs.lever.co/example/security-engineer"
     assert candidate.location == "Remote"
     assert candidate.matched_terms == ["cryptography", "security"]
+    assert candidate.notes == (
+        "Description: Build security and applied cryptography systems.; "
+        "Description: Build protocol security systems."
+    )

@@ -197,6 +197,11 @@ MODE_DETAILS = {
         "filters": "encode service.bund native filters in the source URL",
         "limitations": "Parses service.bund search results and next-page tokens.",
     },
+    "softgarden_html": {
+        "url_shape": "`https://<tenant>.softgarden.io/<language>/vacancies`",
+        "filters": "`jobcategory`, `location`, and `company`",
+        "limitations": "Parses static Softgarden vacancy cards and opens matched detail pages for role-section snippets.",
+    },
     "thales_browser": {
         "url_shape": "`https://careers.thalesgroup.com/global/en/search-results`",
         "filters": "none",

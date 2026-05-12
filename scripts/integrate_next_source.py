@@ -362,8 +362,13 @@ def update_integration_state(
     if ticket:
         integration["next_action"] = ticket.get("suggested_strategy")
         integration["last_ticket_summary"] = ticket.get("summary")
+    elif status == "pass":
+        integration.pop("next_action", None)
+        integration.pop("last_ticket_summary", None)
     if note:
         integration["last_note"] = note
+    elif status == "pass":
+        integration.pop("last_note", None)
     artifacts = integration.setdefault("artifacts", {})
     if isinstance(artifacts, dict):
         if discovery_path:

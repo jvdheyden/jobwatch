@@ -249,6 +249,12 @@ from discover.sources.service_bund import (
     discover_service_bund_search,
     should_keep_service_bund_candidate,
 )
+from discover.sources.softgarden import (
+    apply_softgarden_detail_text,
+    discover_softgarden_html,
+    extract_softgarden_detail_sections,
+    extract_softgarden_job_cards,
+)
 from discover.sources.static_pages import (
     PCD_TEAM_DETAIL_STOP_HEADINGS,
     PCD_TEAM_QUALIFICATION_HEADINGS,

@@ -70,6 +70,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
             "?view=processForm&nn=4641514"
         ),
         "secunet_jobboard": "https://www.secunet.com/karriere/stellenangebote",
+        "softgarden_html": "https://example.softgarden.io/de/vacancies",
         "thales_browser": "https://careers.thalesgroup.com/global/en/search-results",
         "thales_html": "https://careers.thalesgroup.com/global/en/search-results",
         "trailofbits_browser": "https://trailofbits.com/careers/",

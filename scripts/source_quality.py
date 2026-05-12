@@ -570,7 +570,8 @@ def validate_source_coverage(
     high_volume = candidate_count > HIGH_VOLUME_CANDIDATE_THRESHOLD
     if isinstance(matched_jobs, int) and matched_jobs > HIGH_VOLUME_CANDIDATE_THRESHOLD:
         high_volume = True
-    if isinstance(enumerated_jobs, int) and enumerated_jobs > HIGH_VOLUME_CANDIDATE_THRESHOLD * 3:
+    broad_enumeration = isinstance(enumerated_jobs, int) and enumerated_jobs > HIGH_VOLUME_CANDIDATE_THRESHOLD * 3
+    if broad_enumeration and not candidates:
         high_volume = True
     if high_volume:
         results.append(
@@ -579,6 +580,18 @@ def validate_source_coverage(
                 "fail",
                 "blocking",
                 f"Source produced {candidate_count} candidates, matched_jobs={matched_jobs}, enumerated_jobs={enumerated_jobs}; tune source-specific terms or native filters before provider code.",
+            )
+        )
+    elif broad_enumeration:
+        warnings.append(
+            "Source enumerated a broad board, but matched candidate volume is within the normal review range."
+        )
+        results.append(
+            ValidatorResult(
+                "result_volume",
+                "pass",
+                "info",
+                "Source enumerated a broad board, but filtered candidate volume is within the normal review range.",
             )
         )
     else:
