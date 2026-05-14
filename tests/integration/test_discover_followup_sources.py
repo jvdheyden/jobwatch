@@ -18,6 +18,16 @@ def test_discover_greenhouse_api_filters_and_builds_urls(monkeypatch):
         last_checked=None,
         cadence_group="every_3_runs",
     )
+    matching_content = """
+    <h2>About the Role</h2>
+    <p>Build applied cryptography systems for privacy products.</p>
+    <h2>Requirements</h2>
+    <ul>
+      <li>Security engineering experience with production cryptography.</li>
+    </ul>
+    <h2>Benefits</h2>
+    <p>This complete benefits catalogue should not be copied into candidate notes.</p>
+    """
 
     def fake_fetch_json(url: str, timeout_seconds: int):
         assert url == "https://boards-api.greenhouse.io/v1/boards/example/jobs?content=true"
@@ -28,7 +38,7 @@ def test_discover_greenhouse_api_filters_and_builds_urls(monkeypatch):
                     "title": "Security Engineer",
                     "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1",
                     "location": {"name": "Remote"},
-                    "content": "Applied cryptography and security engineering.",
+                    "content": matching_content,
                 },
                 {
                     "title": "Marketing Manager",
@@ -51,6 +61,10 @@ def test_discover_greenhouse_api_filters_and_builds_urls(monkeypatch):
     assert candidate.url == "https://job-boards.greenhouse.io/example/jobs/1"
     assert candidate.location == "Remote"
     assert candidate.matched_terms == ["security", "cryptography"]
+    assert candidate.notes.startswith("Enumerated through Greenhouse board API; ")
+    assert "Tasks: Build applied cryptography systems for privacy products." in candidate.notes
+    assert "Qualifications: Security engineering experience with production cryptography." in candidate.notes
+    assert "complete benefits catalogue" not in candidate.notes
 
 
 def test_discover_workday_api_posts_search_terms_and_builds_detail_urls(monkeypatch):

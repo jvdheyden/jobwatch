@@ -259,6 +259,30 @@ def google_public_job_url(source: SourceConfig, job_id: str, title: str) -> str:
     return f"{base}/{job_id}"
 
 
+def build_google_candidate_notes(
+    source: SourceConfig,
+    term: str,
+    page_num: int,
+    *,
+    summary: str,
+    responsibilities: str,
+    requirements: str,
+) -> str:
+    note_parts = [
+        (
+            f"Google browser search q='{term}' {google_filter_note(source)} "
+            f"page={page_num}; public overview URL synthesized from Google ds:1 payload"
+        )
+    ]
+    if summary:
+        note_parts.append(f"Summary: {truncate_text(summary, 220)}")
+    if responsibilities:
+        note_parts.append(f"Tasks: {truncate_text(responsibilities, 260)}")
+    if requirements:
+        note_parts.append(f"Qualifications: {truncate_text(requirements, 260)}")
+    return "; ".join(note_parts)
+
+
 def bosch_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     del page_num
     return f"{source.url.rstrip('/')}/?{urlencode({'search': term})}"
@@ -392,9 +416,13 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
                 alternate_url=apply_url if apply_url and apply_url != url else "",
                 location=location,
                 matched_terms=matched_terms,
-                notes=(
-                    f"Google browser search q='{term}' {google_filter_note(source)} "
-                    f"page={page_num}; public overview URL synthesized from Google ds:1 payload"
+                notes=build_google_candidate_notes(
+                    source,
+                    term,
+                    page_num,
+                    summary=summary,
+                    responsibilities=responsibilities,
+                    requirements=requirements,
                 ),
             )
         )

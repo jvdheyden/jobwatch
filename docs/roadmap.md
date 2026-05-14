@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-04-23_
+_Last updated: 2026-05-14_
 
 ## Conventions
 
@@ -10,6 +10,10 @@ _Last updated: 2026-04-23_
 - `parked` items must include a reason and revisit condition
 - Keep entries short; move architecture, migration steps, interfaces, and test detail into linked plan docs
 - Keep only recent completed items here; archive older ones elsewhere
+
+## Instructions for AI Agents
+- AI Agents should only append to fields, not delete any previous text. Exceptions are the fields Last updated and Status, which can be changed. Additionally, items may be moved between Status headers
+- If you are instructed to complete multiple action items, or a sufficiently complex action item, do not implement them yourself. Rather, act as an orchestrator that writes the implementation plans and keeps track. Spawn subagents that implement the actual changes detailed in the plan.
 
 Template:
 RM-### — Title
@@ -23,10 +27,38 @@ RM-### — Title
 
 
 ## New
+
 ## In progress
 ## Parked
 
 ## Completed
+### RM-015 — Run source discovery for core\_crypto
+- Status: complete
+- Priority: M
+- Owner: Jonas
+- Last updated: 2026-05-14
+- Links: [plan](plans/2026-05-14-roadmap-new-items.md)
+- Next step: none
+- Notes: Recommended a compact `core_crypto` source pack: Proton, OpenZeppelin, Aztec Labs, Succinct, Axiom, Brave, Decentriq, and Giesecke+Devrient, with Tools for Humanity / World deferred pending an Ashby board-slug URL-decoding fix.
+
+### RM-014 — Analysis required: Why does the artifact often not include full listing description for Google / Anthropic etc
+- Status: complete
+- Priority: M
+- Owner: Jonas
+- Last updated: 2026-05-14
+- Links: [plan](plans/2026-05-14-roadmap-new-items.md)
+- Next step: none
+- Notes: The main obstacle is provider output shape: Google and Greenhouse paths use role bodies for matching but do not preserve concise detail snippets in candidate notes; Google also lacks direct-page enrichment and can hit the browser page cap.
+
+### RM-013 — Change codex\_hooks to hooks
+- Status: complete
+- Priority: M
+- Owner: Jonas
+- Last updated: 2026-05-14
+- Links: [plan](plans/2026-05-14-roadmap-new-items.md)
+- Next step: none
+- Notes: Updated `/home/jvdh/.codex/config.toml` to use `[features].hooks = true`; verified `codex_hooks` no longer appears in that file.
+
 ### RM-012 — Telegram delivery for digests
 - Status: complete
 - Priority: H
