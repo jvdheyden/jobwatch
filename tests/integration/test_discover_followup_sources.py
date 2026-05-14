@@ -152,6 +152,51 @@ def test_discover_ashby_api_uses_non_user_graphql_payload(monkeypatch):
     assert candidate.remote == "Remote"
 
 
+def test_discover_ashby_api_decodes_percent_encoded_board_slug(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Tools for Humanity / World",
+        url="https://jobs.ashbyhq.com/Tools%20for%20Humanity",
+        discovery_mode="ashby_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
+        assert payload["variables"] == {"organizationHostedJobsPageName": "Tools for Humanity"}
+        assert headers == {"Referer": source.url}
+        return {
+            "data": {
+                "jobBoard": {
+                    "teams": [{"id": "eng", "externalName": "Engineering"}],
+                    "jobPostings": [
+                        {
+                            "id": "privacy-engineer",
+                            "title": "Privacy Engineer",
+                            "teamId": "eng",
+                            "locationName": "San Francisco, CA",
+                            "secondaryLocations": [{"locationName": "Munich, Germany"}],
+                            "workplaceType": "Hybrid",
+                            "employmentType": "Full-time",
+                            "compensationTierSummary": "",
+                        }
+                    ],
+                }
+            }
+        }
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_ashby_api(source, ["privacy"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 1
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.url == "https://jobs.ashbyhq.com/Tools%20for%20Humanity/privacy-engineer"
+    assert candidate.location == "San Francisco, CA; Munich, Germany"
+
+
 def test_eightfold_domain_for_source_supports_existing_infineon_mode():
     source = discover_jobs.SourceConfig(
         source="Infineon",

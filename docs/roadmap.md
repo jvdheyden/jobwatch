@@ -39,7 +39,7 @@ RM-### — Title
 - Last updated: 2026-05-14
 - Links: [plan](plans/2026-05-14-roadmap-new-items.md)
 - Next step: none
-- Notes: Recommended a compact `core_crypto` source pack: Proton, OpenZeppelin, Aztec Labs, Succinct, Axiom, Brave, Decentriq, and Giesecke+Devrient, with Tools for Humanity / World deferred pending an Ashby board-slug URL-decoding fix.
+- Notes: Recommended a compact `core_crypto` source pack: Proton, OpenZeppelin, Aztec Labs, Succinct, Axiom, Brave, Decentriq, and Giesecke+Devrient, with Tools for Humanity / World deferred pending an Ashby board-slug URL-decoding fix. Implementation follow-up on 2026-05-14 added those sources locally, added Tools for Humanity / World after the Ashby fix, and used the reachable official G+D SuccessFactors search URL because the originally recommended marketing careers URL returned HTTP 401 to deterministic discovery.
 
 ### RM-014 — Analysis required: Why does the artifact often not include full listing description for Google / Anthropic etc
 - Status: complete

@@ -10,7 +10,7 @@ Expected source URL shape:
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from discover import helpers, http
 from discover.core import Candidate, Coverage, SourceConfig
@@ -54,11 +54,15 @@ fragment JobPostingSecondaryLocationParts on JobPostingSecondaryLocation {
 }"""
 
 
-def discover_ashby_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
-    path_bits = [bit for bit in urlparse(source.url).path.split("/") if bit]
+def ashby_board_slug(source_url: str) -> str:
+    path_bits = [bit for bit in urlparse(source_url).path.split("/") if bit]
     if not path_bits:
-        raise ValueError(f"Could not derive Ashby board slug from {source.url}")
-    board_slug = path_bits[0]
+        raise ValueError(f"Could not derive Ashby board slug from {source_url}")
+    return unquote(path_bits[0])
+
+
+def discover_ashby_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    board_slug = ashby_board_slug(source.url)
     endpoint = "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
     payload = {
         "operationName": "ApiJobBoardWithTeams",
