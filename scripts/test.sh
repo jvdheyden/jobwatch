@@ -64,6 +64,7 @@ fi
   tests/integration/test_eval_source_quality.py \
   tests/integration/test_source_integration.py \
   tests/integration/test_sync_to_logseq.py \
+  tests/integration/test_discover_apple_jobs.py \
   tests/integration/test_discover_asml_browser.py \
   tests/integration/test_discover_iacr_jobs.py \
   tests/integration/test_discover_lever_json.py \

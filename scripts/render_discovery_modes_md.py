@@ -17,6 +17,11 @@ DEFAULT_OUTPUT = ROOT / "shared" / "discovery_modes.md"
 
 
 MODE_DETAILS = {
+    "apple_jobs": {
+        "url_shape": "`https://jobs.apple.com/<locale>/search?...`",
+        "filters": "encode Apple keyword/team/location filters in the source URL",
+        "limitations": "Parses direct Apple job-detail links and visible search-result summaries from the static search page.",
+    },
     "ashby_api": {
         "url_shape": "`https://jobs.ashbyhq.com/<organization>`",
         "filters": "none",

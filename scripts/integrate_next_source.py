@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from runtime_env import RuntimeEnvError, apply_runtime_env
 from source_config import (
     SourceConfigError,
     load_source_state,
@@ -402,6 +403,15 @@ def main() -> int:
     except ValueError:
         print("integrate_next_source.py: --today must use YYYY-MM-DD", file=sys.stderr)
         return 2
+
+    try:
+        apply_runtime_env(load_secrets=False)
+    except RuntimeEnvError as exc:
+        print(f"integrate_next_source.py: {exc}", file=sys.stderr)
+        return 1
+
+    global ROOT
+    ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 
     track_dir = ROOT / "tracks" / args.track
     state_path = track_dir / "source_state.json"

@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 from agent_provider import resolve_agent_bin, resolve_agent_provider
+from runtime_env import RuntimeEnvError, apply_runtime_env
 from source_quality import (
     DEFAULT_REVIEW_TIMEOUT_SECONDS,
     build_integration_ticket,
@@ -63,6 +65,15 @@ def main() -> int:
         help="Timeout for reviewer/raw page fetches",
     )
     args = parser.parse_args()
+
+    try:
+        apply_runtime_env(load_secrets=False)
+    except RuntimeEnvError as exc:
+        print(f"eval_source_quality.py: {exc}", file=sys.stderr)
+        return 1
+
+    global ROOT
+    ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 
     artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)
     output_path = Path(args.output) if args.output else default_output_path(args.track, args.source, args.today)

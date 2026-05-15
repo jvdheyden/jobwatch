@@ -67,6 +67,7 @@ from discover.runner import (
     source_to_dict,
     write_output_text,
 )
+from discover.sources.apple import discover_apple_jobs
 from discover.sources.ashby import ASHBY_JOB_BOARD_QUERY, discover_ashby_api
 from discover.sources.bundeswehr import (
     BUNDESWEHR_COMPENSATION_HEADINGS,

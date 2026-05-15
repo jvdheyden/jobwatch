@@ -33,6 +33,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
     urls = {
         "ashby_api": "https://jobs.ashbyhq.com/example",
         "ashby_html": "https://jobs.ashbyhq.com/example",
+        "apple_jobs": "https://jobs.apple.com/en-us/search?search=cryptography",
         "asml_browser": "https://www.asml.com/en/careers/find-your-job",
         "automattic_browser": "https://automattic.com/work-with-us/",
         "auswaertiges_amt_json": "https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen",

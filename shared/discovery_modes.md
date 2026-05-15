@@ -8,6 +8,16 @@ New source support should usually add or extend one of these provider modules ra
 
 ## Modes
 
+### `apple_jobs`
+
+- Provider: `discover.sources.apple` / `discover_apple_jobs`
+- Emits candidates: yes
+- URL/source shape: `https://jobs.apple.com/<locale>/search?...`
+- Supported filters/options: encode Apple keyword/team/location filters in the source URL
+- Contract fixtures: `tests/fixtures/sources/apple_jobs/`
+- Requirements: none
+- Known limitations: Parses direct Apple job-detail links and visible search-result summaries from the static search page.
+
 ### `ashby_api`
 
 - Provider: `discover.sources.ashby` / `discover_ashby_api`

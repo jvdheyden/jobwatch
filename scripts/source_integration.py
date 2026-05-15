@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_provider import build_coder_command, resolve_agent_bin, resolve_agent_provider
+from runtime_env import RuntimeEnvError, apply_runtime_env
 from source_config import SourceConfigError, load_sources_config
 from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, generated_at, source_slug, truncate_text
 
@@ -937,6 +938,15 @@ def main() -> int:
     parser.add_argument("--idle-timeout-seconds", type=int, default=90, help="Abort a coding integration attempt if it produces no new output for this many seconds")
     parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding integration attempts")
     args = parser.parse_args()
+
+    try:
+        apply_runtime_env(load_secrets=False)
+    except RuntimeEnvError as exc:
+        print(f"source_integration.py: {exc}", file=sys.stderr)
+        return 1
+
+    global WORK_ROOT
+    WORK_ROOT = Path(os.environ.get("JOB_AGENT_ROOT", REPO_ROOT))
 
     artifact_path = Path(args.artifact_path) if args.artifact_path else default_artifact_path(args.track, args.today)
     fresh_artifact_path = default_fresh_artifact_path(args.track, args.source, args.today)
