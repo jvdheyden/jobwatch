@@ -217,6 +217,9 @@ def build_email_message(rendered: RenderedDigestEmail, *, sender: str, recipient
     message["To"] = ", ".join(recipients)
     message.set_content(rendered.body)
 
+    if rendered.html_body is not None:
+        message.add_alternative(rendered.html_body, subtype="html")
+
     if rendered.attachment_filename and rendered.attachment_text is not None:
         message.add_attachment(
             rendered.attachment_text,
