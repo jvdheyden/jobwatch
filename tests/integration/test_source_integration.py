@@ -215,6 +215,8 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert "config_terms_append" in prompt_text
     assert "prefer a reusable provider module under `scripts/discover/sources/`" in prompt_text
     assert "Avoid one-off branches in `scripts/discover/sources/generic_html.py`" in prompt_text
+    assert "URL/mode pivot exception" in prompt_text
+    assert "update this source's `url` and `discovery_mode` in `tracks/public_service/sources.json`" in prompt_text
     assert "search_terms_tried" in prompt_text
     assert (
         f"Start by inspecting the source-specific parser path in {GENERIC_HTML_PROVIDER} "
