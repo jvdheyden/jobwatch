@@ -93,17 +93,74 @@ def test_discover_workday_api_posts_search_terms_and_builds_detail_urls(monkeypa
             ],
         }
 
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        assert url == "https://example.wd1.myworkdayjobs.com/wday/cxs/example/Example/job/123"
+        return {
+            "jobPostingInfo": {
+                "jobDescription": (
+                    "<h2>Responsibilities</h2>"
+                    "<ul><li>Design and ship security-critical services.</li></ul>"
+                    "<h2>Qualifications</h2>"
+                    "<ul><li>5+ years in production security engineering.</li></ul>"
+                    "<h2>Pay Range</h2>"
+                    "<p>$180,000 - $220,000 USD annually.</p>"
+                )
+            }
+        }
+
     monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
 
     coverage = discover_jobs.discover_workday_api(source, ["security"], timeout_seconds=5)
 
     assert coverage.status == "complete"
     assert coverage.enumerated_jobs == 1
     assert coverage.matched_jobs == 1
+    assert coverage.direct_job_pages_opened == 1
     candidate = coverage.candidates[0]
     assert candidate.url == "https://example.wd1.myworkdayjobs.com/Example/job/123"
     assert candidate.location == "Remote"
     assert candidate.matched_terms == ["security"]
+    assert "Tasks: Design and ship security-critical services." in candidate.notes
+    assert "Qualifications: 5+ years in production security engineering." in candidate.notes
+    assert "Compensation: $180,000 - $220,000 USD annually." in candidate.notes
+
+
+def test_discover_workday_api_keeps_candidate_when_detail_fetch_fails(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Workday",
+        url="https://example.wd1.myworkdayjobs.com/Example",
+        discovery_mode="workday_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        return {
+            "total": 1,
+            "jobPostings": [
+                {
+                    "title": "Security Engineer",
+                    "externalPath": "/job/123",
+                    "locationsText": "Remote",
+                    "postedOn": "Posted Today",
+                    "bulletFields": ["Security"],
+                }
+            ],
+        }
+
+    def failing_fetch_json(url: str, timeout_seconds: int):
+        raise RuntimeError("detail endpoint unavailable")
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+    monkeypatch.setattr(discover_http, "fetch_json", failing_fetch_json)
+
+    coverage = discover_jobs.discover_workday_api(source, ["security"], timeout_seconds=5)
+
+    assert coverage.matched_jobs == 1
+    assert coverage.direct_job_pages_opened == 0
+    assert coverage.status == "partial"
+    assert any("Detail fetch failed" in limitation for limitation in coverage.limitations)
 
 
 def test_discover_ashby_api_uses_non_user_graphql_payload(monkeypatch):
