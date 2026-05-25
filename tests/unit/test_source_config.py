@@ -89,3 +89,50 @@ def test_update_source_state_advances_only_complete_sources(tmp_path, monkeypatc
         "priority": 10,
         "last_attempted": "2026-04-13",
     }
+
+
+def _file_lock_writer(target_path: str, key: str, value: str, delay_after_read: float) -> None:
+    """Helper for ``test_file_lock_serializes_concurrent_writers`` run in a child process.
+
+    Must live at module scope so multiprocessing's spawn start method can pickle it.
+    """
+    import json
+    import time
+    from pathlib import Path
+
+    from source_config import file_lock, write_json_atomic
+
+    path = Path(target_path)
+    with file_lock(path):
+        current = json.loads(path.read_text())
+        time.sleep(delay_after_read)
+        current["entries"][key] = value
+        write_json_atomic(path, current)
+
+
+def test_file_lock_serializes_concurrent_writers(tmp_path):
+    """Two processes that lock the same path block each other, preserving
+    both their updates instead of clobbering."""
+    import multiprocessing as mp
+    import time
+
+    from source_config import write_json_atomic
+
+    target = tmp_path / "state.json"
+    write_json_atomic(target, {"entries": {}})
+
+    # Without locking, p1 reading first then p2 writing while p1 sleeps
+    # would have p1 clobber p2 on its later write. With the lock, p2 blocks
+    # until p1 releases, so both updates land.
+    p1 = mp.Process(target=_file_lock_writer, args=(str(target), "a", "1", 0.3))
+    p2 = mp.Process(target=_file_lock_writer, args=(str(target), "b", "2", 0.0))
+    p1.start()
+    # Give p1 time to acquire the lock before p2 starts contending.
+    time.sleep(0.05)
+    p2.start()
+    p1.join(timeout=5)
+    p2.join(timeout=5)
+    assert not p1.is_alive() and not p2.is_alive()
+
+    result = json.loads(target.read_text())
+    assert result["entries"] == {"a": "1", "b": "2"}

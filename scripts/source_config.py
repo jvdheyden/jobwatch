@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import json
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 
 VALID_CADENCE_GROUPS = {"every_run", "every_3_runs", "every_month"}
@@ -52,6 +54,26 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
     temp_path = path.with_name(f".{path.name}.tmp")
     temp_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     temp_path.replace(path)
+
+
+@contextlib.contextmanager
+def file_lock(path: Path) -> Iterator[None]:
+    """Acquire an exclusive flock on a sidecar lockfile next to `path`.
+
+    A sidecar lockfile (``<path>.lock``) is used instead of locking the data
+    file itself because ``write_json_atomic`` replaces the data file via
+    ``rename``, which would invalidate any flock held on the original inode.
+    The sidecar lockfile is never renamed, so concurrent processes coordinate
+    on a stable inode for the full read-modify-write window.
+    """
+    lockfile = path.with_name(path.name + ".lock")
+    lockfile.parent.mkdir(parents=True, exist_ok=True)
+    with open(lockfile, "w") as fh:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
 
 
 def _expect_string(value: Any, field: str) -> str:
