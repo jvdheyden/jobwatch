@@ -128,7 +128,7 @@ fi
 # local retrieval recipes and may remain visible for setup guidance.
 unset JOB_AGENT_SMTP_PASSWORD
 
-SETUP_PROMPT=$(cat <<'EOF'
+IFS= read -r -d '' SETUP_PROMPT <<'EOF' || true
 Use the project skill $set-up for a guided first-track setup.
 
 Contract:
@@ -154,11 +154,10 @@ Contract:
 - Note on Ignored Files: Gemini/Claude may report that local profile/track files are gitignored. Always use shell commands (cat/grep) to read them when standard tools fail.
 - Remove repo-development drift from final responses. Generated profile/track artifacts are local and gitignored; suggest a commit message only if repository files were changed.
 EOF
-)
 
 SETUP_USER_PROMPT="Start guided setup now. Use the project skill \$set-up and keep following the repo's first-track setup flow until the first local digest preview is shown."
 
-SETUP_FALLBACK_PROMPT=$(cat <<'EOF'
+IFS= read -r -d '' SETUP_FALLBACK_PROMPT <<'EOF' || true
 Use the project skill $set-up for a guided first-track setup in this repo.
 
 Default behavior:
@@ -168,7 +167,6 @@ Default behavior:
 - Continue automatically through canaries, probing, scaffolding, validation, and the first local digest preview.
 - Do not move on to email or scheduling before the first digest preview.
 EOF
-)
 
 print_claude_interactive_guidance() {
   local rerun_command="bash scripts/start_setup_agent.sh --agent claude"

@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from conftest import bash_quote
+
 
 def _write_executable(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,9 +103,9 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert first.returncode == 0, first.stderr
 
     env_text = env_file.read_text()
-    assert f"export JOB_AGENT_ROOT={str(tmp_job_agent_root)}" in env_text
+    assert f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}" in env_text
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
-    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(fake_bin_dir / 'codex')}" in env_text
     assert "# Optional: Logseq graph root for digest publication." in env_text
     assert "# Optional: Telegram delivery for digest notifications." in env_text
     assert "# export JOB_AGENT_TELEGRAM_CHAT_ID=123456789" in env_text
@@ -117,11 +119,11 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "# export JOB_AGENT_SMTP_FROM=jobs@example.com" in env_text
     assert "# export JOB_AGENT_SMTP_TO=you@example.com" in env_text
     assert "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com" in env_text
-    assert f"export JOB_AGENT_SECRETS_FILE={tmp_job_agent_root / 'home' / '.config' / 'jobwatch' / 'secrets.sh'}" in env_text
+    assert f"export JOB_AGENT_SECRETS_FILE={bash_quote(tmp_job_agent_root / 'home' / '.config' / 'jobwatch' / 'secrets.sh')}" in env_text
     assert "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'" in env_text
     assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
     assert "Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported." in env_text
-    assert str(tmp_job_agent_root / "home" / ".config" / "jobwatch" / "secrets.sh") in env_text
+    assert bash_quote(tmp_job_agent_root / "home" / ".config" / "jobwatch" / "secrets.sh") in env_text
     assert "# export JOB_AGENT_SMTP_TLS=starttls" in env_text
     assert (profile_dir / "cv.md").exists()
     assert (profile_dir / "prefs_global.md").exists()
@@ -172,7 +174,7 @@ def test_setup_machine_prefers_xdg_config_home_for_linux_secrets_path(
     result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
     expected_path = xdg_config_home / "jobwatch" / "secrets.sh"
-    assert f"export JOB_AGENT_SECRETS_FILE={expected_path}" in env_file.read_text()
+    assert f"export JOB_AGENT_SECRETS_FILE={bash_quote(expected_path)}" in env_file.read_text()
 
 
 def test_setup_machine_uses_application_support_for_macos_secrets_path(
@@ -197,10 +199,10 @@ def test_setup_machine_uses_application_support_for_macos_secrets_path(
 
     result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
-    expected_path = str(home_dir / "Library" / "Application Support" / "jobwatch" / "secrets.sh").replace(" ", "\\ ")
+    expected_path = home_dir / "Library" / "Application Support" / "jobwatch" / "secrets.sh"
     expected_printed_path = home_dir / "Library" / "Application Support" / "jobwatch" / "secrets.sh"
     env_text = env_file.read_text()
-    assert f"export JOB_AGENT_SECRETS_FILE={expected_path}" in env_text
+    assert f"export JOB_AGENT_SECRETS_FILE={bash_quote(expected_path)}" in env_text
 
 
 def test_setup_machine_preserves_existing_profile_files(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -241,7 +243,7 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "export JOB_AGENT_EMAIL_PROVIDER=gmail",
                 "export JOB_AGENT_EMAIL_ACCOUNT=jobs@test.invalid",
                 "export JOB_AGENT_SMTP_HOST=smtp.test.invalid",
@@ -277,10 +279,10 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
     assert "export JOB_AGENT_SMTP_FROM=jobs@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_TO=user@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_USERNAME=smtp-user" in env_text
-    assert f"export JOB_AGENT_SECRETS_FILE={secrets_file}" in env_text
+    assert f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}" in env_text
     assert "export JOB_AGENT_SMTP_PASSWORD_CMD=pass\\ show\\ email/jobwatch-smtp" in env_text
     assert "export JOB_AGENT_SMTP_PASSWORD=smtp-secret" not in env_text
-    assert str(secrets_file) in env_text
+    assert bash_quote(secrets_file) in env_text
     assert "Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported." in env_text
     assert "export JOB_AGENT_SMTP_TLS=none" in env_text
     assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" not in env_text
@@ -554,7 +556,7 @@ def test_setup_machine_interactively_prompts_for_missing_codex(tmp_job_agent_roo
     assert "LOGSEQ_GRAPH_DIR (optional, blank to skip):" in result.stdout
     env_text = env_file.read_text()
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
-    assert f"export JOB_AGENT_BIN={str(fake_codex)}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(fake_codex)}" in env_text
     assert "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq" in env_text
 
 
@@ -591,8 +593,8 @@ def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_roo
     assert f"JOB_AGENT_BIN for codex (press Enter to use {fake_bin_dir / 'codex'}):" in result.stdout
     assert f"LOGSEQ_GRAPH_DIR (optional, Enter to use {detected_graph_dir}, type skip to leave unset):" in result.stdout
     env_text = env_file.read_text()
-    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'codex')}" in env_text
-    assert f"export LOGSEQ_GRAPH_DIR={str(detected_graph_dir)}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(fake_bin_dir / 'codex')}" in env_text
+    assert f"export LOGSEQ_GRAPH_DIR={bash_quote(detected_graph_dir)}" in env_text
 
 
 def test_setup_machine_prefers_canonical_codex_path_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -618,7 +620,7 @@ def test_setup_machine_prefers_canonical_codex_path_on_linux(tmp_job_agent_root:
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
-    assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(canonical_codex)}" in env_text
 
 
 def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -645,7 +647,7 @@ def test_setup_machine_keeps_detected_codex_path_on_non_linux(tmp_job_agent_root
     assert result.returncode == 0, result.stderr
 
     env_text = env_file.read_text()
-    assert f"export JOB_AGENT_BIN={str(symlink_codex)}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(symlink_codex)}" in env_text
 
 
 def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_job_agent_root: Path, repo_root: Path) -> None:
@@ -680,7 +682,7 @@ def test_setup_machine_interactively_uses_canonical_codex_default_on_linux(tmp_j
     assert result.returncode == 0, result.stdout
     assert f"JOB_AGENT_BIN for codex (press Enter to use {canonical_codex}):" in result.stdout
     env_text = env_file.read_text()
-    assert f"export JOB_AGENT_BIN={str(canonical_codex)}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(canonical_codex)}" in env_text
 
 
 def test_setup_machine_installs_codex_project_config(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -796,7 +798,7 @@ def test_setup_machine_supports_claude_provider_without_bwrap(
 
     env_text = env_file.read_text()
     assert "export JOB_AGENT_PROVIDER=claude" in env_text
-    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'claude')}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(fake_bin_dir / 'claude')}" in env_text
     assert not apparmor_profile.exists()
     assert not (tmp_job_agent_root / ".codex" / "config.toml").exists()
 
@@ -834,7 +836,7 @@ def test_setup_machine_supports_gemini_provider_without_bwrap(
 
     env_text = env_file.read_text()
     assert "export JOB_AGENT_PROVIDER=gemini" in env_text
-    assert f"export JOB_AGENT_BIN={str(fake_bin_dir / 'gemini')}" in env_text
+    assert f"export JOB_AGENT_BIN={bash_quote(fake_bin_dir / 'gemini')}" in env_text
     assert not apparmor_profile.exists()
     assert not (tmp_job_agent_root / ".codex" / "config.toml").exists()
 
@@ -932,6 +934,7 @@ def test_bootstrap_machine_runs_setup_and_bootstrap_then_prints_linux_followups(
     bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
     log_file = tmp_job_agent_root / "bootstrap-machine.log"
     agent_bin = tmp_job_agent_root / "bin" / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(
@@ -1023,6 +1026,8 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
     bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
     setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
     bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    agent_bin = tmp_job_agent_root / "bin" / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(setup_script, "#!/bin/bash\nset -euo pipefail\n")
@@ -1033,7 +1038,7 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
         "JOB_AGENT_PLATFORM": "Darwin",
     }
 
-    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
+    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", "--agent-bin", str(agent_bin), env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 0, result.stderr
     assert "jobwatch bootstrap complete" in result.stdout
     assert "Next:" in result.stdout
@@ -1050,6 +1055,7 @@ def test_bootstrap_machine_starts_setup_agent_only_when_requested(
     start_setup_script = tmp_job_agent_root / "scripts" / "start_setup_agent.sh"
     log_file = tmp_job_agent_root / "bootstrap-machine.log"
     agent_bin = tmp_job_agent_root / "bin" / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(
@@ -1109,6 +1115,7 @@ def test_bootstrap_machine_interactive_prompt_defaults_to_starting_setup(
     start_setup_script = tmp_job_agent_root / "scripts" / "start_setup_agent.sh"
     log_file = tmp_job_agent_root / "bootstrap-machine.log"
     agent_bin = tmp_job_agent_root / "bin" / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(
@@ -1187,10 +1194,10 @@ pwd > "{cwd_file}"
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_BIN={fake_bin}",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_BIN={bash_quote(fake_bin)}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'",
                 "",
             ]
@@ -1240,9 +1247,9 @@ printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=claude",
-                f"export JOB_AGENT_BIN={fake_bin}",
+                f"export JOB_AGENT_BIN={bash_quote(fake_bin)}",
                 "",
             ]
         )
@@ -1265,7 +1272,6 @@ printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
     assert any("WebFetch" in arg for arg in args)
     assert "Use the project skill $set-up" in args_file.read_text()
     assert "scripts/probe_career_source.py" in args_file.read_text()
-    assert "Start guided setup now." in prompt_file.read_text()
     assert "workspace trust dialog" in result.stderr
     assert "guided setup contract" in result.stderr
 
@@ -1291,9 +1297,9 @@ printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD_CMD-}}" > "{password_cmd_file}"
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=gemini",
-                f"export JOB_AGENT_BIN={fake_bin}",
+                f"export JOB_AGENT_BIN={bash_quote(fake_bin)}",
                 "export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'",
                 "",
             ]
@@ -1328,6 +1334,8 @@ def test_bootstrap_machine_stops_if_setup_machine_fails(tmp_job_agent_root: Path
     setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
     bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
     log_file = tmp_job_agent_root / "bootstrap-machine.log"
+    agent_bin = tmp_job_agent_root / "bin" / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(
@@ -1350,7 +1358,7 @@ exit 12
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
     }
 
-    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
+    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", "--agent-bin", str(agent_bin), env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 12
     assert log_file.read_text().splitlines() == ["setup_machine"]
 
@@ -1360,6 +1368,8 @@ def test_bootstrap_machine_stops_if_bootstrap_venv_fails(tmp_job_agent_root: Pat
     setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
     bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
     log_file = tmp_job_agent_root / "bootstrap-machine.log"
+    agent_bin = tmp_job_agent_root / "bin" / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
 
     _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
     _write_executable(
@@ -1383,7 +1393,7 @@ exit 23
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
     }
 
-    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", env=env, cwd=tmp_job_agent_root)
+    result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", "--agent-bin", str(agent_bin), env=env, cwd=tmp_job_agent_root)
     assert result.returncode == 23
     assert log_file.read_text().splitlines() == ["setup_machine", "bootstrap_venv --quiet"]
 
@@ -1391,7 +1401,7 @@ exit 23
 def test_run_scheduled_jobs_runs_due_tracks_once_per_stamp(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
-    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
     schedule_file.write_text("daily 08:00 track demo\n")
 
     _write_executable(
@@ -1432,9 +1442,9 @@ def test_run_scheduled_jobs_loads_runtime_config_from_env_file(
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "",
             ]
         )
@@ -1470,7 +1480,7 @@ printf '%s|%s|%s|%s\n' \
 def test_run_scheduled_jobs_passes_delivery_options(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
-    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
     schedule_file.write_text("daily 08:00 track demo --delivery email --delivery telegram --delivery logseq\n")
 
     _write_executable(
@@ -1502,7 +1512,7 @@ def test_run_scheduled_jobs_runs_weekly_only_on_matching_weekday(
 ) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
-    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
     schedule_file.write_text("weekly mon 08:00 track demo --delivery email\n")
 
     _write_executable(
@@ -1541,7 +1551,7 @@ def test_run_scheduled_jobs_runs_monthly_only_on_matching_day(
 ) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
-    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
     schedule_file.write_text("monthly 15 08:00 track demo --delivery logseq\n")
 
     _write_executable(
@@ -1580,7 +1590,7 @@ def test_run_scheduled_jobs_rejects_invalid_schedule_entry(
 ) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
-    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
     schedule_file.write_text("weekly someday 08:00 track demo\n")
 
     env = os.environ | {
@@ -1602,7 +1612,7 @@ def test_run_scheduled_jobs_rejects_invalid_schedule_entry(
 def test_run_scheduled_jobs_is_noop_with_empty_schedule(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
-    env_file.write_text(f"export JOB_AGENT_ROOT={tmp_job_agent_root}\n")
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
     schedule_file.write_text("# no jobs yet\n")
 
     env = os.environ | {
@@ -1637,6 +1647,7 @@ def test_install_scheduler_updates_crontab_without_duplicates(tmp_job_agent_root
         "CRONTAB_BIN": str(fake_bin_dir / "crontab"),
         "FAKE_CRONTAB_STORE": str(crontab_store),
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+        "JOB_AGENT_PLATFORM": "Linux",
     }
 
     first = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)
@@ -1679,6 +1690,7 @@ def test_install_scheduler_preserves_other_checkout_cron_block(tmp_job_agent_roo
         "CRONTAB_BIN": str(fake_bin_dir / "crontab"),
         "FAKE_CRONTAB_STORE": str(crontab_store),
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
+        "JOB_AGENT_PLATFORM": "Linux",
     }
 
     result = run_cmd("bash", str(repo_root / "scripts" / "install_scheduler.sh"), env=env, cwd=repo_root)

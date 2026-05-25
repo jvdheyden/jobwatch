@@ -59,7 +59,8 @@ if [[ "$REQUIRE_ROOT" != "0" ]] && [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   exit 1
 fi
 
-"$INSTALL_BIN" -D -m 644 "$SOURCE_PROFILE" "$DEST_PROFILE"
+mkdir -p "$(dirname "$DEST_PROFILE")"
+"$INSTALL_BIN" -m 644 "$SOURCE_PROFILE" "$DEST_PROFILE"
 "$APPARMOR_PARSER_BIN" -r "$DEST_PROFILE"
 
 echo "Installed bwrap AppArmor profile to $DEST_PROFILE"

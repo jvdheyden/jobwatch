@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from conftest import bash_quote
+
 
 def _write_executable(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -427,9 +429,9 @@ def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
+                f"export JOB_AGENT_BIN={bash_quote(tmp_job_agent_root / 'fake_codex.sh')}",
                 "",
             ]
         )
@@ -610,10 +612,10 @@ root = Path(os.environ["JOB_AGENT_ROOT"])
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_BIN={bash_quote(tmp_job_agent_root / 'fake_codex.sh')}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "export JOB_AGENT_SMTP_HOST=smtp.example.com",
                 "export JOB_AGENT_SMTP_FROM=jobs@example.com",
                 "export JOB_AGENT_SMTP_TO=me@example.com",
@@ -659,10 +661,10 @@ def test_run_track_email_delivery_rejects_missing_external_secrets_file(
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_BIN={bash_quote(tmp_job_agent_root / 'fake_codex.sh')}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "",
             ]
         )
@@ -703,10 +705,10 @@ def test_run_track_telegram_delivery_rejects_missing_external_secrets_file(
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={tmp_job_agent_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_BIN={tmp_job_agent_root / 'fake_codex.sh'}",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_BIN={bash_quote(tmp_job_agent_root / 'fake_codex.sh')}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "export JOB_AGENT_TELEGRAM_CHAT_ID=123456789",
                 "",
             ]
