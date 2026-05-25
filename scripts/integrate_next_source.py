@@ -14,6 +14,7 @@ from typing import Any
 
 from source_config import (
     SourceConfigError,
+    file_lock,
     load_source_state,
     load_sources_config,
     source_state_payload,
@@ -379,10 +380,39 @@ def update_integration_state(
             artifacts["last_loop_summary"] = str(summary_path)
 
 
-def write_state(track: str, config: dict[str, Any], state: dict[str, dict[str, Any]]) -> None:
+def write_state(
+    track: str,
+    config: dict[str, Any],
+    state: dict[str, dict[str, Any]],
+    *,
+    source_id: str | None = None,
+) -> None:
+    """Persist source state to disk, race-safely against concurrent processes.
+
+    Acquires an exclusive lock on the state file, reloads the current on-disk
+    content (so other processes' updates are not clobbered), then overlays
+    only this process's entry for ``source_id`` before writing atomically.
+    When ``source_id`` is ``None`` no entry is overwritten — only the
+    auto-initialization of missing configured source entries happens, which is
+    idempotent and race-safe.
+
+    Other sources' entries already on disk are preserved as-is. This lets
+    parallel integrate_next_source.py runs (one per source) coexist without
+    losing each other's updates.
+    """
     track_dir = ROOT / "tracks" / track
+    state_path = track_dir / "source_state.json"
     source_ids = [source["id"] for source in config["sources"]]
-    write_json_atomic(track_dir / "source_state.json", source_state_payload(track, source_ids, state))
+    with file_lock(state_path):
+        try:
+            current = load_source_state(state_path, track)
+        except (FileNotFoundError, SourceConfigError):
+            current = {}
+        if source_id is not None and source_id in state:
+            current[source_id] = state[source_id]
+        for sid in source_ids:
+            current.setdefault(sid, {"last_checked": None})
+        write_json_atomic(state_path, source_state_payload(track, source_ids, current))
 
 
 def read_eval_payload(path: Path) -> dict[str, Any]:
@@ -426,7 +456,7 @@ def main() -> int:
         print(f"No source selected: {reason}")
         return 0
     if args.dry_run:
-        write_state(args.track, config, state)
+        write_state(args.track, config, state, source_id=source["id"])
         print(f"Selected source: {source['name']} ({source['id']})")
         return 0
 
@@ -453,7 +483,7 @@ def main() -> int:
             discovery_path=discovery_path,
             note=discovery.stderr.strip() or f"discovery exited {discovery.returncode}",
         )
-        write_state(args.track, config, state)
+        write_state(args.track, config, state, source_id=source["id"])
         print(f"Discovery failed for {source_name}", file=sys.stderr)
         return 1
 
@@ -479,7 +509,7 @@ def main() -> int:
     ticket = eval_payload.get("integration_ticket") if isinstance(eval_payload.get("integration_ticket"), dict) else None
     if status == "pass":
         update_integration_state(state_entry, today=args.today, status="pass", discovery_path=discovery_path, eval_path=eval_path)
-        write_state(args.track, config, state)
+        write_state(args.track, config, state, source_id=source["id"])
         print(f"{source_name}: pass")
         return 0
 
@@ -487,7 +517,7 @@ def main() -> int:
 
     if status == "blocked" and not is_config_tuning:
         update_integration_state(state_entry, today=args.today, status="blocked", discovery_path=discovery_path, eval_path=eval_path)
-        write_state(args.track, config, state)
+        write_state(args.track, config, state, source_id=source["id"])
         print(f"{source_name}: blocked")
         return 1
     if status not in {"integration_needed", "blocked"} or not ticket:
@@ -499,7 +529,7 @@ def main() -> int:
             eval_path=eval_path,
             note=f"unexpected eval status {status!r}",
         )
-        write_state(args.track, config, state)
+        write_state(args.track, config, state, source_id=source["id"])
         return 1
 
     if is_config_tuning:
@@ -514,11 +544,30 @@ def main() -> int:
                 ticket=ticket,
                 note=note,
             )
-            write_state(args.track, config, state)
+            write_state(args.track, config, state, source_id=source["id"])
             print(f"{source_name}: deferred ({note})")
             return 1
 
-        write_json_atomic(sources_path, config)
+        # Race-safe write: lock the sources file, reload, overlay only this
+        # source's entry, then atomically replace. Without this, two parallel
+        # integrate_next_source.py runs that each apply config_tuning for
+        # different sources can clobber each other's url/discovery_mode
+        # changes when writing the full config back.
+        with file_lock(sources_path):
+            try:
+                disk_config = load_sources_config(sources_path, args.track)
+            except SourceConfigError:
+                disk_config = config
+            sid = source["id"]
+            replaced = False
+            for i, src in enumerate(disk_config["sources"]):
+                if src["id"] == sid:
+                    disk_config["sources"][i] = source
+                    replaced = True
+                    break
+            if not replaced:
+                disk_config["sources"].append(source)
+            write_json_atomic(sources_path, disk_config)
         render = subprocess.run(
             [resolve_repo_python(), str(ROOT / "scripts" / "render_sources_md.py"), "--track", args.track],
             cwd=ROOT,
@@ -536,7 +585,7 @@ def main() -> int:
                 ticket=ticket,
                 note=render.stderr.strip() or "render_sources_md.py failed after config tuning",
             )
-            write_state(args.track, config, state)
+            write_state(args.track, config, state, source_id=source["id"])
             return 1
 
         tuned_discovery_path = discovery_artifact_path(args.track, source_name, args.today, suffix="integration.tuned")
@@ -558,7 +607,7 @@ def main() -> int:
                 ticket=ticket,
                 note=tuned_discovery.stderr.strip() or "discovery failed after config tuning",
             )
-            write_state(args.track, config, state)
+            write_state(args.track, config, state, source_id=source["id"])
             return 1
         tuned_eval = run_eval(
             track=args.track,
@@ -588,7 +637,7 @@ def main() -> int:
                 ticket=ticket,
                 note=note,
             )
-            write_state(args.track, config, state)
+            write_state(args.track, config, state, source_id=source["id"])
             print(f"{source_name}: pass after config tuning")
             return 0
         if status == "blocked":
@@ -601,7 +650,7 @@ def main() -> int:
                 ticket=ticket,
                 note=note,
             )
-            write_state(args.track, config, state)
+            write_state(args.track, config, state, source_id=source["id"])
             print(f"{source_name}: blocked after config tuning")
             return 1
 
@@ -638,7 +687,7 @@ def main() -> int:
         ticket=ticket,
         note=f"source_integration.py final_status={loop_status}",
     )
-    write_state(args.track, config, state)
+    write_state(args.track, config, state, source_id=source["id"])
     print(f"{source_name}: {state_status}")
     return 0 if integration_result.returncode == 0 and state_status == "pass" else 1
 
