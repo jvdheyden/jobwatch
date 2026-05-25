@@ -29,6 +29,7 @@ class DigestEmailError(ValueError):
 class RenderedDigestEmail:
     subject: str
     body: str
+    html_body: str | None = None
     attachment_filename: str | None = None
     attachment_text: str | None = None
 
@@ -139,9 +140,21 @@ def render_digest_email(
         ]
     )
 
+    html_body = _render_html_email(
+        display_name=display_name,
+        as_of=as_of,
+        summary=_html_executive_summary(digest),
+        actions_with_priority=_recommended_actions_with_priority(digest),
+        new_roles=new_roles,
+        ranked=ranked,
+        ranked_limit=ranked_limit,
+        status_counts=status_counts,
+    )
+
     return RenderedDigestEmail(
         subject=subject,
         body="\n".join(lines).rstrip() + "\n",
+        html_body=html_body,
     )
 
 
@@ -269,6 +282,31 @@ def _executive_summary(digest: dict[str, Any]) -> str:
     return " ".join(summaries)
 
 
+def _html_executive_summary(digest: dict[str, Any]) -> str:
+    """Return only the initial run's summary for email display (avoids same-day update noise)."""
+    for run in digest["runs"]:
+        if run.get("kind") == "initial" and run.get("executive_summary"):
+            return run["executive_summary"]
+    # Fallback: first non-empty summary
+    for run in digest["runs"]:
+        if run.get("executive_summary"):
+            return run["executive_summary"]
+    return "No summary provided."
+
+
+_ACTION_HIGH_WORDS = ("prioritize", "apply", "tailor an application", "submit", "reach out", "send")
+_ACTION_LOW_WORDS = ("defer", "no new action", "flag ", "skip", "no action", "out of scope")
+
+
+def _action_priority(action: str) -> str:
+    lower = action.lower()
+    if any(w in lower for w in _ACTION_HIGH_WORDS):
+        return "high"
+    if any(w in lower for w in _ACTION_LOW_WORDS):
+        return "low"
+    return "mid"
+
+
 def _recommended_actions(digest: dict[str, Any]) -> list[str]:
     actions: list[str] = []
     seen: set[str] = set()
@@ -278,6 +316,19 @@ def _recommended_actions(digest: dict[str, Any]) -> list[str]:
                 seen.add(action)
                 actions.append(action)
     return actions
+
+
+def _recommended_actions_with_priority(digest: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return (action_text, priority) pairs, deduped, sorted high→mid→low."""
+    seen: set[str] = set()
+    items: list[tuple[str, str]] = []
+    for run in digest["runs"]:
+        for action in run["recommended_actions"]:
+            if action not in seen:
+                seen.add(action)
+                items.append((action, _action_priority(action)))
+    order = {"high": 0, "mid": 1, "low": 2}
+    return sorted(items, key=lambda x: order[x[1]])
 
 
 def _source_status_counts(digest: dict[str, Any]) -> dict[str, int]:
@@ -332,3 +383,245 @@ def _format_score(value: float | int | None) -> str:
     if value is None:
         return "unknown"
     return f"{float(value):g}"
+
+
+# ---------------------------------------------------------------------------
+# HTML email renderer
+# ---------------------------------------------------------------------------
+
+_HTML_SCORE_COLORS = {
+    "high": ("#16a34a", "#dcfce7"),    # green: score >= 8
+    "mid": ("#c2410c", "#ffedd5"),     # orange: score >= 6
+    "low": ("#6b7280", "#f3f4f6"),     # gray: score < 6
+}
+
+_HTML_REC_LABELS: dict[str, tuple[str, str]] = {
+    "apply_now": ("#15803d", "Apply now"),
+    "apply": ("#15803d", "Apply"),
+    "watch": ("#b45309", "Watch"),
+    "defer": ("#6b7280", "Defer"),
+    "skip": ("#6b7280", "Skip"),
+}
+
+
+def _h(text: Any) -> str:
+    """HTML-escape a value."""
+    return (
+        str(text)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _score_colors(score: float | None) -> tuple[str, str]:
+    if score is None:
+        return _HTML_SCORE_COLORS["low"]
+    if score >= 8:
+        return _HTML_SCORE_COLORS["high"]
+    if score >= 6:
+        return _HTML_SCORE_COLORS["mid"]
+    return _HTML_SCORE_COLORS["low"]
+
+
+def _rec_label(recommendation: str | None) -> tuple[str, str]:
+    if recommendation and recommendation.lower() in _HTML_REC_LABELS:
+        return _HTML_REC_LABELS[recommendation.lower()]
+    return ("#6b7280", _h(recommendation or "unknown"))
+
+
+def _render_html_role_card(role: dict[str, Any], index: int) -> str:
+    score = role["fit_score"]
+    score_fg, score_bg = _score_colors(score)
+    score_text = _format_score(score)
+    rec_color, rec_text = _rec_label(role.get("recommendation"))
+
+    location_parts = []
+    loc = _optional_text(role.get("location"))
+    remote = _optional_text(role.get("remote"))
+    if loc and loc != "unknown":
+        location_parts.append(_h(loc))
+    if remote and remote != "unknown":
+        location_parts.append(_h(remote))
+    location_line = " &nbsp;·&nbsp; ".join(location_parts) if location_parts else "Location unknown"
+
+    why_html = ""
+    if role.get("why_match"):
+        items = "".join(f'<li style="margin-bottom:4px;">{_h(r)}</li>' for r in role["why_match"])
+        why_html = f'<p style="margin:12px 0 4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#888;">Why it fits</p><ul style="margin:0;padding-left:18px;color:#374151;font-size:14px;line-height:1.6;">{items}</ul>'
+
+    note_html = ""
+    if role.get("short_note"):
+        note_html = f'<p style="margin:10px 0 0;font-size:13px;color:#6b7280;font-style:italic;">{_h(role["short_note"])}</p>'
+
+    concerns_html = ""
+    if role.get("concerns"):
+        items = "".join(f'<li style="margin-bottom:4px;">{_h(c)}</li>' for c in role["concerns"])
+        concerns_html = f'<p style="margin:12px 0 4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#b45309;">Concerns</p><ul style="margin:0;padding-left:18px;color:#92400e;font-size:14px;line-height:1.6;">{items}</ul>'
+
+    url = _optional_text(role.get("url")) or "#"
+
+    return f"""
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;overflow:hidden;">
+  <div style="padding:18px 20px 14px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="vertical-align:top;">
+        <div style="font-size:16px;font-weight:700;color:#111827;line-height:1.3;">{_h(role["title"])}</div>
+        <div style="font-size:14px;color:#6b7280;margin-top:2px;">{_h(role["company"])}</div>
+      </td>
+      <td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:12px;">
+        <span style="display:inline-block;background:{score_bg};color:{score_fg};font-size:15px;font-weight:700;padding:3px 10px;border-radius:20px;">{score_text}</span>
+      </td>
+    </tr></table>
+    <div style="margin-top:10px;font-size:13px;color:#6b7280;">
+      📍 {location_line}
+      &nbsp;&nbsp;
+      <span style="color:{rec_color};font-weight:600;">{rec_text}</span>
+    </div>
+    {why_html}
+    {note_html}
+    {concerns_html}
+    <div style="margin-top:16px;">
+      <a href="{_h(url)}" style="display:inline-block;background:#1e293b;color:#fff;text-decoration:none;padding:7px 16px;border-radius:5px;font-size:13px;font-weight:600;">View listing →</a>
+    </div>
+  </div>
+</div>"""
+
+
+def _render_html_ranked_row(job: dict[str, Any], index: int) -> str:
+    score_fg, _ = _score_colors(job.get("fit_score"))
+    score_text = _format_score(job.get("fit_score"))
+    url = _optional_text(job.get("url"))
+    title_cell = f'<a href="{_h(url)}" style="color:#1e293b;text-decoration:none;font-weight:600;">{_h(job["title"])}</a>' if url else f'<strong>{_h(job["title"])}</strong>'
+    bg = "#f9fafb" if index % 2 == 0 else "#ffffff"
+    return (
+        f'<tr style="background:{bg};">'
+        f'<td style="padding:8px 12px;font-size:13px;color:{score_fg};font-weight:700;">{score_text}</td>'
+        f'<td style="padding:8px 12px;font-size:13px;">{title_cell}</td>'
+        f'<td style="padding:8px 12px;font-size:13px;color:#6b7280;">{_h(job["company"])}</td>'
+        f'<td style="padding:8px 12px;font-size:13px;color:#9ca3af;">{_h(job.get("date_seen",""))}</td>'
+        f'</tr>'
+    )
+
+
+_PRIORITY_BADGE: dict[str, tuple[str, str, str]] = {
+    # priority: (bg, text-color, label)
+    "high": ("#fef2f2", "#b91c1c", "High"),
+    "mid":  ("#fffbeb", "#92400e", "Mid"),
+    "low":  ("#f9fafb", "#6b7280", "Low"),
+}
+
+
+def _render_html_email(
+    *,
+    display_name: str,
+    as_of: date | None,
+    summary: str,
+    actions_with_priority: list[tuple[str, str]],
+    new_roles: list[dict[str, Any]],
+    ranked: dict[str, Any] | None,
+    ranked_limit: int,
+    status_counts: dict[str, int],
+) -> str:
+    date_str = as_of.isoformat() if as_of else date.today().isoformat()
+
+    # --- executive summary ---
+    summary_html = f'<p style="margin:0;font-size:14px;line-height:1.7;color:#374151;">{_h(summary)}</p>'
+
+    # --- recommended actions with priority badges ---
+    actions_html = ""
+    if actions_with_priority:
+        rows = []
+        for action_text, priority in actions_with_priority:
+            bg, fg, label = _PRIORITY_BADGE[priority]
+            badge = (
+                f'<span style="display:inline-block;background:{bg};color:{fg};'
+                f'font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;'
+                f'margin-right:8px;white-space:nowrap;">{label}</span>'
+            )
+            rows.append(
+                f'<li style="margin-bottom:8px;font-size:14px;line-height:1.5;color:#374151;list-style:none;">'
+                f'{badge}{_h(action_text)}</li>'
+            )
+        items = "".join(rows)
+        actions_html = f"""
+<div style="margin-top:24px;">
+  <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">Recommended actions</h2>
+  <ul style="margin:0;padding-left:0;">{items}</ul>
+</div>"""
+
+    # --- new roles ---
+    if new_roles:
+        role_cards = "".join(_render_html_role_card(r, i) for i, r in enumerate(new_roles, 1))
+        roles_html = f"""
+<div style="margin-top:28px;">
+  <h2 style="margin:0 0 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">New roles ({len(new_roles)})</h2>
+  {role_cards}
+</div>"""
+    else:
+        roles_html = """
+<div style="margin-top:28px;">
+  <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">New roles</h2>
+  <p style="margin:0;font-size:14px;color:#9ca3af;">No new roles found today.</p>
+</div>"""
+
+    # --- ranked overview ---
+    ranked_html = ""
+    if ranked:
+        shown = ranked["jobs"][:ranked_limit]
+        if shown:
+            rows = "".join(_render_html_ranked_row(j, i) for i, j in enumerate(shown, 1))
+            ranked_html = f"""
+<div style="margin-top:28px;">
+  <h2 style="margin:0 0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">Ranked overview (top {len(shown)} of {len(ranked["jobs"])})</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;font-family:Arial,sans-serif;">
+    <tr style="background:#f3f4f6;">
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Score</th>
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Role</th>
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Company</th>
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Seen</th>
+    </tr>
+    {rows}
+  </table>
+</div>"""
+
+    # --- footer metadata ---
+    meta_html = f"""
+<div style="margin-top:28px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;">
+  Sources: {status_counts["complete"]} complete &nbsp;·&nbsp; {status_counts["partial"]} partial &nbsp;·&nbsp; {status_counts["failed"]} failed
+</div>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{_h(display_name)} job digest</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;">
+<tr><td align="center" style="padding:24px 16px;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+  <!-- Header -->
+  <tr><td style="background:#0f172a;border-radius:8px 8px 0 0;padding:24px 28px;">
+    <div style="color:#fff;font-size:20px;font-weight:700;">{_h(display_name)}</div>
+    <div style="color:#94a3b8;font-size:13px;margin-top:4px;">Job digest &nbsp;·&nbsp; {_h(date_str)}</div>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="background:#ffffff;border-radius:0 0 8px 8px;padding:24px 28px 28px;">
+    <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">Executive summary</h2>
+    {summary_html}
+    {actions_html}
+    {roles_html}
+    {ranked_html}
+    {meta_html}
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>"""
