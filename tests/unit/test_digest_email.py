@@ -97,6 +97,59 @@ def test_render_digest_email_shows_last_seen_only_when_different(load_json_fixtu
     assert "Date seen: 2026-03-01 | Last seen: 2026-03-29" in rendered.body
 
 
+def test_render_digest_email_shows_all_ranked_jobs_by_default(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+    ranked = _ranked_payload(count=12)
+
+    rendered = render_digest_email(digest, ranked)
+
+    assert "Ranked overview (top 12 of 12)" in rendered.body
+    assert "Role 12 - Company 12" in rendered.body
+    assert rendered.html_body is not None
+    assert "Ranked overview (top 12 of 12)" in rendered.html_body
+
+
+def test_render_digest_email_html_bulletizes_multi_sentence_summary(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+    digest["runs"][0]["executive_summary"] = "First point here. Second point follows. Third wraps it up."
+
+    rendered = render_digest_email(digest, _ranked_payload(count=1))
+
+    assert rendered.html_body is not None
+    assert "<ul" in rendered.html_body
+    assert rendered.html_body.count("<li") >= 3
+    assert "First point here." in rendered.html_body
+
+
+def test_render_digest_email_html_single_sentence_summary_stays_paragraph(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+
+    rendered = render_digest_email(digest, _ranked_payload(count=1))
+
+    assert rendered.html_body is not None
+    assert "One strong new role cleared the bar today." in rendered.html_body
+    # A single-sentence summary should not be rendered as a bullet list.
+    summary_index = rendered.html_body.index("One strong new role cleared the bar today.")
+    summary_context = rendered.html_body[summary_index - 40 : summary_index]
+    assert "<li" not in summary_context
+
+
+def test_render_digest_email_html_ranked_table_has_first_seen_only(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+    ranked = _ranked_payload(count=1)
+    ranked["jobs"][0]["date_seen"] = "2026-03-01"
+    ranked["jobs"][0]["last_seen"] = "2026-03-29"
+
+    rendered = render_digest_email(digest, ranked)
+
+    assert rendered.html_body is not None
+    assert ">First seen<" in rendered.html_body
+    assert ">Last seen<" not in rendered.html_body
+    assert "2026-03-01" in rendered.html_body
+    # The last_seen date is no longer surfaced in the HTML ranked table.
+    assert "2026-03-29" not in rendered.html_body
+
+
 def test_render_digest_email_rejects_bad_ranked_limit(load_json_fixture):
     digest = load_json_fixture("digests/core_crypto_minimal.json")
 
