@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 import json
+import re
 from typing import Any
 
 from digest_json import (
@@ -18,7 +19,9 @@ from digest_json import (
 )
 
 
-DEFAULT_RANKED_LIMIT = 10
+# None means "show every ranked job" (no cap). Callers may still pass an
+# explicit positive integer to limit the rows shown.
+DEFAULT_RANKED_LIMIT: int | None = None
 
 
 class DigestEmailError(ValueError):
@@ -87,11 +90,11 @@ def render_digest_email(
     digest_payload: dict[str, Any],
     ranked_payload: dict[str, Any] | None = None,
     *,
-    ranked_limit: int = DEFAULT_RANKED_LIMIT,
+    ranked_limit: int | None = DEFAULT_RANKED_LIMIT,
     as_of: date | None = None,
     recent_days: int = RECENT_CUTOFF_DAYS,
 ) -> RenderedDigestEmail:
-    if ranked_limit < 1:
+    if ranked_limit is not None and ranked_limit < 1:
         raise DigestEmailError("ranked_limit must be at least 1")
 
     try:
@@ -235,7 +238,7 @@ def _render_new_role(role: dict[str, Any], index: int) -> list[str]:
     return lines
 
 
-def _render_ranked_overview(ranked: dict[str, Any] | None, *, limit: int) -> list[str]:
+def _render_ranked_overview(ranked: dict[str, Any] | None, *, limit: int | None) -> list[str]:
     if ranked is None:
         return [
             "Ranked overview",
@@ -404,6 +407,17 @@ _HTML_REC_LABELS: dict[str, tuple[str, str]] = {
 }
 
 
+# Split on sentence-ending punctuation followed by whitespace and the start of
+# the next sentence (capital letter or digit). The lookbehind/lookahead avoid
+# breaking on decimals like "8.5" or mid-sentence abbreviations.
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9])")
+
+
+def _summary_sentences(text: str) -> list[str]:
+    """Split a prose summary into trimmed sentences for bulleted display."""
+    return [part.strip() for part in _SENTENCE_SPLIT_RE.split(text.strip()) if part.strip()]
+
+
 def _h(text: Any) -> str:
     """HTML-escape a value."""
     return (
@@ -500,7 +514,7 @@ def _render_html_ranked_row(job: dict[str, Any], index: int) -> str:
         f'<td style="padding:8px 12px;font-size:13px;color:{score_fg};font-weight:700;">{score_text}</td>'
         f'<td style="padding:8px 12px;font-size:13px;">{title_cell}</td>'
         f'<td style="padding:8px 12px;font-size:13px;color:#6b7280;">{_h(job["company"])}</td>'
-        f'<td style="padding:8px 12px;font-size:13px;color:#9ca3af;">{_h(job.get("date_seen",""))}</td>'
+        f'<td style="padding:8px 12px;font-size:13px;color:#9ca3af;white-space:nowrap;">{_h(job.get("date_seen",""))}</td>'
         f'</tr>'
     )
 
@@ -521,13 +535,23 @@ def _render_html_email(
     actions_with_priority: list[tuple[str, str]],
     new_roles: list[dict[str, Any]],
     ranked: dict[str, Any] | None,
-    ranked_limit: int,
+    ranked_limit: int | None,
     status_counts: dict[str, int],
 ) -> str:
     date_str = as_of.isoformat() if as_of else date.today().isoformat()
 
     # --- executive summary ---
-    summary_html = f'<p style="margin:0;font-size:14px;line-height:1.7;color:#374151;">{_h(summary)}</p>'
+    summary_sentences = _summary_sentences(summary)
+    if len(summary_sentences) > 1:
+        summary_items = "".join(
+            f'<li style="margin:0 0 8px;">{_h(sentence)}</li>' for sentence in summary_sentences
+        )
+        summary_html = (
+            '<ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:#374151;">'
+            f"{summary_items}</ul>"
+        )
+    else:
+        summary_html = f'<p style="margin:0;font-size:14px;line-height:1.7;color:#374151;">{_h(summary)}</p>'
 
     # --- recommended actions with priority badges ---
     actions_html = ""
@@ -580,7 +604,7 @@ def _render_html_email(
       <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Score</th>
       <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Role</th>
       <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Company</th>
-      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">Seen</th>
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;">First seen</th>
     </tr>
     {rows}
   </table>

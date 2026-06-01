@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--ranked-limit",
         type=int,
         default=DEFAULT_RANKED_LIMIT,
-        help="Number of ranked overview jobs to include in the Telegram body",
+        help="Number of ranked overview jobs to include in the Telegram body (default: all)",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print the rendered Telegram messages instead of sending them")
     return parser

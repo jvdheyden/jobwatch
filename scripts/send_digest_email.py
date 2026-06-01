@@ -95,7 +95,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--date", default=date.today().isoformat(), help="Digest date in YYYY-MM-DD format")
     parser.add_argument("--input", dest="digest_input", help="Optional explicit digest JSON input path")
     parser.add_argument("--ranked-input", dest="ranked_input", help="Optional explicit ranked overview JSON input path")
-    parser.add_argument("--ranked-limit", type=int, default=DEFAULT_RANKED_LIMIT, help="Number of ranked overview jobs to include in the email body")
+    parser.add_argument("--ranked-limit", type=int, default=DEFAULT_RANKED_LIMIT, help="Number of ranked overview jobs to include in the email body (default: all)")
     parser.add_argument("--dry-run", action="store_true", help="Print the rendered email instead of sending it")
     return parser
 
