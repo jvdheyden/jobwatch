@@ -74,7 +74,7 @@ if [[ -z "$TRACK" ]]; then
 fi
 
 needs_secret_delivery=0
-for delivery_target in "${DELIVERY_TARGETS[@]}"; do
+for delivery_target in "${DELIVERY_TARGETS[@]+"${DELIVERY_TARGETS[@]}"}"; do
   if [[ "$delivery_target" == "email" || "$delivery_target" == "telegram" ]]; then
     needs_secret_delivery=1
     break
@@ -370,7 +370,7 @@ start_idle_watchdog() {
 if [[ -z "${JOB_AGENT_CAFFEINATED:-}" ]]; then
   if CAFFEINATE_BIN="$(command -v caffeinate 2>/dev/null)"; then
     REEXEC_ARGS=(--track "$TRACK" --timeout-secs "$TIMEOUT_SECS" --discovery-timeout-secs "$DISCOVERY_TIMEOUT_SECS")
-    for delivery_target in "${DELIVERY_TARGETS[@]}"; do
+    for delivery_target in "${DELIVERY_TARGETS[@]+"${DELIVERY_TARGETS[@]}"}"; do
       REEXEC_ARGS+=(--delivery "$delivery_target")
     done
     log "Re-executing $TRACK run under caffeinate via $CAFFEINATE_BIN"
