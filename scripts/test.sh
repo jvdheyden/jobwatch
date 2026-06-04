@@ -65,6 +65,7 @@ fi
   tests/integration/test_source_integration.py \
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_asml_browser.py \
+  tests/integration/test_discover_followup_sources.py \
   tests/integration/test_discover_iacr_jobs.py \
   tests/integration/test_discover_lever_json.py \
   tests/integration/test_discover_meta_browser.py \
