@@ -43,6 +43,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "bundeswehr_jobsuche": "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded",
         "coinbase_browser": "https://www.coinbase.com/careers",
         "cybernetica_teamdash": "https://cyber.ee/careers/",
+        "ecb_avature_rss": "https://talent.ecb.europa.eu/careers/SearchJobs?jobRecordsPerPage=50",
         "eightfold_api": "https://apply.careers.microsoft.com/careers",
         "enbw_phenom": "https://careers.enbw.com/en_US/careers",
         "getro_api": "https://jobs.example-getro.com/jobs",

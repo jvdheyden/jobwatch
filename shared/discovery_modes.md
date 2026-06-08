@@ -128,6 +128,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Only direct Teamdash job links visible in the careers-page HTML are enumerated.
 
+### `ecb_avature_rss`
+
+- Provider: `discover.sources.ecb` / `discover_ecb_avature_rss`
+- Emits candidates: yes
+- URL/source shape: ECB Avature careers page or its `SearchJobs/feed/` RSS URL.
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/ecb_avature_rss/`
+- Requirements: none
+- Known limitations: Uses the official Avature RSS feed and opens matched job-detail pages for role sections.
+
 ### `eightfold_api`
 
 - Provider: `discover.sources.eightfold` / `discover_eightfold_api`

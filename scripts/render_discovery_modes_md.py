@@ -77,6 +77,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Only direct Teamdash job links visible in the careers-page HTML are enumerated.",
     },
+    "ecb_avature_rss": {
+        "url_shape": "ECB Avature careers page or its `SearchJobs/feed/` RSS URL.",
+        "filters": "none",
+        "limitations": "Uses the official Avature RSS feed and opens matched job-detail pages for role sections.",
+    },
     "eightfold_api": {
         "url_shape": "Eightfold-hosted careers URL such as Microsoft careers.",
         "filters": "none",

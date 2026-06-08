@@ -152,6 +152,7 @@ from discover.sources.eightfold import (
     discover_infineon_api,
     eightfold_domain_for_source,
 )
+from discover.sources.ecb import ECB_DEFAULT_FEED_URL, discover_ecb_avature_rss, ecb_avature_feed_url
 from discover.sources.enbw import (
     ENBW_RESULTS_PAGE_SIZE,
     build_enbw_apply_url,
