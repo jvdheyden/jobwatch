@@ -1585,6 +1585,240 @@ echo "$*" >> "$ROOT/invocations.log"
     assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo --delivery logseq"]
 
 
+def test_run_scheduled_jobs_catches_up_after_missed_minute(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("weekly mon 08:00 track demo --delivery email\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    base_env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_WEEKDAY": "mon",
+    }
+
+    # The machine was asleep at 08:00 and the first tick lands at 08:34; the
+    # weekly job should still run (catch-up within the scheduled day).
+    catch_up = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "08:34", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-14-08:34"},
+        cwd=repo_root,
+    )
+    # A later tick the same day must not run it a second time.
+    same_day = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "09:00", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-14-09:00"},
+        cwd=repo_root,
+    )
+
+    assert catch_up.returncode == 0, catch_up.stderr
+    assert same_day.returncode == 0, same_day.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo --delivery email"]
+
+
+def test_run_scheduled_jobs_skips_before_scheduled_minute(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("daily 08:00 track demo\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    base_env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+    }
+
+    # A tick before the scheduled minute must not run the job early.
+    early = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "07:59", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-07:59"},
+        cwd=repo_root,
+    )
+    assert early.returncode == 0, early.stderr
+    assert not (tmp_job_agent_root / "invocations.log").exists()
+
+    # The first tick at or after the scheduled minute runs it.
+    on_time = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "08:00", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:00"},
+        cwd=repo_root,
+    )
+    assert on_time.returncode == 0, on_time.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo"]
+
+
+def test_run_scheduled_jobs_old_minute_stamp_suppresses_same_day_catch_up(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("daily 08:00 track demo\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    # A stamp left by the pre-catch-up code stored the full YYYY-MM-DD-HH:MM. A
+    # catch-up tick later the same day must treat it as "already ran today" and
+    # not re-run -- this is the real double-send the date-prefix match prevents.
+    state_dir = tmp_job_agent_root / ".scheduler" / "state"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    (state_dir / "track-demo-local.stamp").write_text("2030-01-15-08:00\n")
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_TIME": "08:34",
+        "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:34",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_job_agent_root / "invocations.log").exists()
+
+
+def test_run_scheduled_jobs_catches_up_daily_after_missed_minute(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("daily 08:00 track demo\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    base_env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+    }
+
+    catch_up = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "08:34", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:34"},
+        cwd=repo_root,
+    )
+    same_day = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "09:00", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-09:00"},
+        cwd=repo_root,
+    )
+
+    assert catch_up.returncode == 0, catch_up.stderr
+    assert same_day.returncode == 0, same_day.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo"]
+
+
+def test_run_scheduled_jobs_monthly_catch_up_after_minute_and_skips_before(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("monthly 15 08:00 track demo --delivery logseq\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    base_env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_MONTH_DAY": "15",
+    }
+
+    # Before the scheduled minute on the matching day: must not run.
+    early = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "07:59", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-07:59"},
+        cwd=repo_root,
+    )
+    assert early.returncode == 0, early.stderr
+    assert not (tmp_job_agent_root / "invocations.log").exists()
+
+    # First tick at or after the scheduled minute on the matching day runs once.
+    catch_up = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "08:34", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:34"},
+        cwd=repo_root,
+    )
+    assert catch_up.returncode == 0, catch_up.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == ["--track demo --delivery logseq"]
+
+
+def test_run_scheduled_jobs_rejects_invalid_time(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("daily 99:99 track demo\n")
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+        "JOB_AGENT_SCHEDULE_TIME": "08:00",
+        "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:00",
+    }
+
+    result = run_cmd("bash", str(repo_root / "scripts" / "run_scheduled_jobs.sh"), env=env, cwd=repo_root)
+    assert result.returncode == 1
+    assert "Invalid schedule entry: daily 99:99 track demo" in result.stderr
+    assert not (tmp_job_agent_root / "invocations.log").exists()
+
+
 def test_run_scheduled_jobs_rejects_invalid_schedule_entry(
     tmp_job_agent_root: Path, repo_root: Path, run_cmd
 ) -> None:

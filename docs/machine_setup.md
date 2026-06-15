@@ -158,6 +158,8 @@ After changing schedules manually with the helper, install or refresh the platfo
 - On Linux, that updates your user crontab with one checkout-specific entry that runs `scripts/run_scheduled_jobs.sh` every minute.
 - On macOS, that installs a checkout-specific LaunchAgent that runs the same shared scheduler script every minute.
 
+A scheduled entry becomes due on the first tick at or after its scheduled time on its scheduled day, and runs at most once on that day. This catch-up window matters on laptops: macOS suspends the LaunchAgent timer during sleep and fires a single coalesced tick on wake, so a job whose minute was slept through still runs once the machine wakes that same day. If the machine stays asleep for the entire scheduled day, that occurrence is missed.
+
 Logseq sync is optional. Set `LOGSEQ_GRAPH_DIR` in `.env.local` only if you want digest publication into a Logseq graph.
 
 Telegram delivery is optional. Keep `JOB_AGENT_TELEGRAM_CHAT_ID` in `.env.local`, and keep the bot token outside the repo. Prefer `JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD`; if you need a static token, keep `export JOB_AGENT_TELEGRAM_BOT_TOKEN=...` in `JOB_AGENT_SECRETS_FILE` instead of `.env.local`.
