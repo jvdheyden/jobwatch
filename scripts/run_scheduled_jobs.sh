@@ -18,6 +18,7 @@ STATE_DIR="${JOB_AGENT_SCHEDULER_STATE_DIR:-$SCHEDULER_DIR/state}"
 LOCK_DIR="$SCHEDULER_DIR/run.lock"
 CURRENT_TIME="${JOB_AGENT_SCHEDULE_TIME:-$(date +%H:%M)}"
 CURRENT_STAMP="${JOB_AGENT_SCHEDULE_STAMP:-$(date +%F-%H:%M)}"
+CURRENT_DATE="${JOB_AGENT_SCHEDULE_DATE:-${CURRENT_STAMP:0:10}}"
 CURRENT_WEEKDAY_RAW="${JOB_AGENT_SCHEDULE_WEEKDAY:-$(LC_ALL=C date +%a)}"
 CURRENT_MONTH_DAY="${JOB_AGENT_SCHEDULE_MONTH_DAY:-$(date +%d)}"
 STATUS=0
@@ -62,6 +63,17 @@ canonical_month_day() {
   printf '%s\n' "$value"
 }
 
+# Succeeds when HH:MM "$1" (now) is at or after HH:MM "$2" (scheduled).
+# Returns non-zero on malformed input so a bad time never marks an entry due.
+time_at_or_after() {
+  local now="$1" target="$2"
+  [[ "$now" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || return 1
+  [[ "$target" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || return 1
+  local now_min=$((10#${now%%:*} * 60 + 10#${now#*:}))
+  local target_min=$((10#${target%%:*} * 60 + 10#${target#*:}))
+  [[ "$now_min" -ge "$target_min" ]]
+}
+
 if ! CURRENT_WEEKDAY="$(normalize_weekday "$CURRENT_WEEKDAY_RAW")"; then
   echo "Invalid current weekday: $CURRENT_WEEKDAY_RAW" >&2
   exit 2
@@ -72,6 +84,14 @@ if ! is_valid_month_day "$CURRENT_MONTH_DAY"; then
   exit 2
 fi
 CURRENT_MONTH_DAY="$(canonical_month_day "$CURRENT_MONTH_DAY")"
+
+# CURRENT_DATE is the per-day dedup key; validate it like the other current
+# values so a malformed stamp/date override fails loudly instead of silently
+# corrupting dedup.
+if [[ ! "$CURRENT_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+  echo "Invalid current date: $CURRENT_DATE" >&2
+  exit 2
+fi
 
 mkdir -p "$STATE_DIR" "$ROOT/logs"
 
@@ -120,7 +140,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
         job_type="${fields[2]}"
         job_arg="${fields[3]}"
         field_index=4
-        if [[ "$scheduled_time" == "$CURRENT_TIME" ]]; then
+        if time_at_or_after "$CURRENT_TIME" "$scheduled_time"; then
           due_entry=1
         fi
       fi
@@ -134,7 +154,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
           job_type="${fields[3]}"
           job_arg="${fields[4]}"
           field_index=5
-          if [[ "$scheduled_weekday" == "$CURRENT_WEEKDAY" && "$scheduled_time" == "$CURRENT_TIME" ]]; then
+          if [[ "$scheduled_weekday" == "$CURRENT_WEEKDAY" ]] && time_at_or_after "$CURRENT_TIME" "$scheduled_time"; then
             due_entry=1
           fi
         else
@@ -151,7 +171,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
         job_type="${fields[3]}"
         job_arg="${fields[4]}"
         field_index=5
-        if [[ "$scheduled_month_day" == "$CURRENT_MONTH_DAY" && "$scheduled_time" == "$CURRENT_TIME" ]]; then
+        if [[ "$scheduled_month_day" == "$CURRENT_MONTH_DAY" ]] && time_at_or_after "$CURRENT_TIME" "$scheduled_time"; then
           due_entry=1
         fi
       fi
@@ -216,11 +236,26 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
   esac
   state_file="$STATE_DIR/$state_key.stamp"
 
-  if [[ -f "$state_file" ]] && [[ "$(cat "$state_file")" == "$CURRENT_STAMP" ]]; then
-    continue
+  # Dedup per day, not per minute: with the catch-up window an entry is due on
+  # every tick from its scheduled time onward, so it must run at most once per
+  # scheduled day. The stamp file is keyed by state_key (cadence/day-spec/track/
+  # delivery), not by scheduled time, so two entries for the same track+delivery
+  # on one day would share a stamp and run once; configure_schedule.py keeps a
+  # single entry per track, so that case does not arise via supported tooling.
+  # Older state files stored the full YYYY-MM-DD-HH:MM stamp; the date-prefix
+  # match keeps them recognized as "already ran today". A failed read must not
+  # abort the loop (it would silently skip every later entry), so treat an
+  # unreadable stamp as not-yet-run and let the job run.
+  if [[ -f "$state_file" ]]; then
+    if ! last_stamp="$(cat "$state_file" 2>/dev/null)"; then
+      last_stamp=""
+    fi
+    if [[ "$last_stamp" == "$CURRENT_DATE" || "$last_stamp" == "$CURRENT_DATE"-* ]]; then
+      continue
+    fi
   fi
 
-  printf '%s\n' "$CURRENT_STAMP" >"$state_file"
+  printf '%s\n' "$CURRENT_DATE" >"$state_file"
   echo "Running scheduled track '$job_arg' for $CURRENT_STAMP"
   if /bin/bash "$ROOT/scripts/run_track.sh" --track "$job_arg" ${delivery_args[@]+"${delivery_args[@]}"}; then
     :
