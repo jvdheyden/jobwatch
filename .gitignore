@@ -27,6 +27,10 @@ tests/tmp/
 .gemini/
 settings.local.json
 
+# Local scripts and helpers
+scripts/local/
+docs/reviews/
+
 # Generated logs
 logs/
 
