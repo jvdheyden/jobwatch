@@ -13,6 +13,20 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = str(REPO_ROOT / "scripts")
 if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
+TESTS_DIR = str(Path(__file__).resolve().parent)
+if TESTS_DIR not in sys.path:
+    sys.path.insert(0, TESTS_DIR)
+
+
+def bash_quote(value: object) -> str:
+    """Quote a value the way bash's `printf '%q'` does for paths used in tests.
+
+    Keeps generated `.env.local` files source-able and lets assertions match
+    setup_machine.sh output when the repo checkout lives at a path containing
+    spaces.
+    """
+    text = str(value)
+    return text.replace("\\", "\\\\").replace(" ", "\\ ")
 
 
 @pytest.fixture(scope="session")

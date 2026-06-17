@@ -94,7 +94,7 @@ prompt_start_setup_agent() {
   local entered=""
   printf 'Start guided setup now? [Y/n]: ' >&2
   IFS= read -r entered
-  case "${entered,,}" in
+  case "$(printf '%s' "$entered" | tr '[:upper:]' '[:lower:]')" in
     n|no)
       printf 'no\n'
       ;;
