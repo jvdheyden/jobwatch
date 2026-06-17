@@ -222,7 +222,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 
   printf '%s\n' "$CURRENT_STAMP" >"$state_file"
   echo "Running scheduled track '$job_arg' for $CURRENT_STAMP"
-  if /bin/bash "$ROOT/scripts/run_track.sh" --track "$job_arg" "${delivery_args[@]}"; then
+  if /bin/bash "$ROOT/scripts/run_track.sh" --track "$job_arg" ${delivery_args[@]+"${delivery_args[@]}"}; then
     :
   else
     cmd_status=$?

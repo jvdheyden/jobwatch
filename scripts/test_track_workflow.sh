@@ -94,20 +94,20 @@ do
   fi
 done
 
-rg -q "Cryptography Advisor" "$DIGEST_PATH"
-rg -q "Cryptography Advisor" "$OVERVIEW_PATH"
-rg -q "Cryptography Advisor" "$DIGEST_PAGE"
-rg -q '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
-rg -q "\"last_checked\": \"$TODAY\"" "$SOURCE_STATE_PATH"
-rg -q "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
-rg -q "Discovery phase started" "$RUN_LOG"
+grep -qF "Cryptography Advisor" "$DIGEST_PATH"
+grep -qF "Cryptography Advisor" "$OVERVIEW_PATH"
+grep -qF "Cryptography Advisor" "$DIGEST_PAGE"
+grep -qF '"schema_version": 1' "$STRUCTURED_DIGEST_PATH"
+grep -qF "\"last_checked\": \"$TODAY\"" "$SOURCE_STATE_PATH"
+grep -qF "Test Workflow Job Digest $TODAY" "$JOURNAL_PATH"
+grep -qF "Discovery phase started" "$RUN_LOG"
 if [[ "$PROVIDER" == "gemini" ]]; then
-  rg -q "Gemini phase started" "$RUN_LOG"
+  grep -qF "Gemini phase started" "$RUN_LOG"
 else
-  rg -q "Codex phase started" "$RUN_LOG"
+  grep -qF "Codex phase started" "$RUN_LOG"
 fi
-rg -q "Delivery phase finished successfully: logseq" "$RUN_LOG"
-rg -q "Finished $TRACK daily run" "$RUN_LOG"
+grep -qF "Delivery phase finished successfully: logseq" "$RUN_LOG"
+grep -qF "Finished $TRACK daily run" "$RUN_LOG"
 
 echo "Generic track workflow test passed."
 echo "Artifact: $ARTIFACT_DIR/$TODAY.json"
