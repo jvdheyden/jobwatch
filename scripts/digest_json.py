@@ -37,8 +37,16 @@ class DigestValidationError(ValueError):
     """Raised when a structured digest artifact is invalid."""
 
 
+_TRACK_ACRONYMS = {"pm", "ai", "ml", "ui", "ux", "api", "sdk", "b2b", "b2c", "saas"}
+
+
 def track_display_name(track: str) -> str:
-    return " ".join(part.capitalize() for part in re.split(r"[_-]+", track) if part)
+    parts = []
+    for part in re.split(r"[_-]+", track):
+        if not part:
+            continue
+        parts.append(part.upper() if part.lower() in _TRACK_ACRONYMS else part.capitalize())
+    return " ".join(parts)
 
 
 def digest_page_name(track: str, stamp: str) -> str:
