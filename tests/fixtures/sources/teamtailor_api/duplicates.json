@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "url": "https://www.rolandcareers.com/jobs/123-senior-security-engineer",
+      "title": "Senior Security Engineer",
+      "content_html": "<p>Own the device security roadmap.</p>",
+      "_jobposting": {
+        "jobLocation": {
+          "address": {
+            "addressLocality": "Hamamatsu",
+            "addressCountry": "JP"
+          }
+        }
+      }
+    },
+    {
+      "url": "https://www.rolandcareers.com/jobs/123-senior-security-engineer",
+      "title": "Senior Security Engineer",
+      "content_html": "<p>Own the device security roadmap.</p>",
+      "_jobposting": {
+        "jobLocation": {
+          "address": {
+            "addressLocality": "Hamamatsu",
+            "addressCountry": "JP"
+          }
+        }
+      }
+    }
+  ]
+}

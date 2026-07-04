@@ -1,0 +1,37 @@
+{
+  "https://api.lifeatspotify.com/wp-json/animal/v1/job/search": {
+    "result": [
+      {
+        "id": "sec-eng",
+        "text": "Senior Security Engineer",
+        "main_category": {
+          "name": "Engineering"
+        },
+        "locations": [
+          {
+            "location": "Stockholm"
+          }
+        ]
+      },
+      {
+        "id": "sec-eng",
+        "text": "Senior Security Engineer",
+        "main_category": {
+          "name": "Engineering"
+        },
+        "locations": [
+          {
+            "location": "Stockholm"
+          }
+        ]
+      }
+    ]
+  },
+  "https://api.lifeatspotify.com/wp-json/animal/v1/job/single/sec-eng": {
+    "data": {
+      "content": {
+        "descriptionHtml": "<p>Protect the creator platform.</p>"
+      }
+    }
+  }
+}

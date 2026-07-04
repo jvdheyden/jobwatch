@@ -1,0 +1,23 @@
+{
+  "https://example.bamboohr.com/careers/list": {
+    "result": [
+      {
+        "id": 42,
+        "jobOpeningName": "Senior Security Engineer",
+        "departmentLabel": "Engineering",
+        "employmentStatusLabel": "Full-Time",
+        "atsLocation": {
+          "city": "Remote",
+          "country": "Brazil"
+        }
+      }
+    ]
+  },
+  "https://example.bamboohr.com/careers/42/detail": {
+    "result": {
+      "jobOpening": {
+        "description": "<h2>Responsibilities</h2><ul><li>Harden the pipeline security.</li></ul>"
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "id": "job-1",
+      "title": "Senior Security Engineer",
+      "is_published": true,
+      "locations": [
+        {
+          "name": "Remote"
+        }
+      ]
+    },
+    {
+      "id": "job-1",
+      "title": "Senior Security Engineer",
+      "is_published": true,
+      "locations": [
+        {
+          "name": "Remote"
+        }
+      ]
+    }
+  ]
+}
