@@ -9,7 +9,7 @@ import json
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 
 VALID_CADENCE_GROUPS = {"every_run", "every_3_runs", "every_month"}
@@ -217,6 +217,32 @@ def source_state_payload(track: str, source_ids: list[str], state: dict[str, dic
         "track": track,
         "sources": sources,
     }
+
+
+def mutate_source_state(
+    state_path: Path,
+    track: str,
+    source_ids: list[str],
+    mutate: Callable[[dict[str, dict[str, Any]]], None],
+) -> dict[str, dict[str, Any]]:
+    """Apply ``mutate`` to source_state.json race-safely and return the result.
+
+    Every writer of source_state.json must go through this helper. It acquires
+    the exclusive state-file lock, reloads the current on-disk state (so
+    concurrent processes' updates are not clobbered), applies ``mutate`` to the
+    fresh state, ensures every configured source id has at least a minimal
+    entry, and writes the result atomically.
+
+    A missing state file starts empty; invalid content raises
+    ``SourceConfigError`` rather than being silently reset.
+    """
+    with file_lock(state_path):
+        current = load_source_state(state_path, track)
+        mutate(current)
+        for source_id in source_ids:
+            current.setdefault(source_id, {"last_checked": None})
+        write_json_atomic(state_path, source_state_payload(track, source_ids, current))
+    return current
 
 
 def _markdown_cell(value: str) -> str:

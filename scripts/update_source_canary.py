@@ -14,11 +14,9 @@ from typing import Any
 
 from source_config import (
     SourceConfigError,
-    load_source_state,
     load_sources_config,
-    source_state_payload,
+    mutate_source_state,
     slugify_source_id,
-    write_json_atomic,
 )
 
 
@@ -145,40 +143,46 @@ def refresh_canary(
     candidates = load_candidates(output, source_name)
     selected = pick_canary(candidates, source["url"])
     state_path = track_dir / "source_state.json"
-    state = load_source_state(state_path, track)
     source_ids = [item["id"] for item in config["sources"]]
-    state_entry = dict(state.get(source_id) or {"last_checked": None})
-    integration = dict(state_entry.get("integration") or {})
-    old_canary = integration.get("canary")
+    new_canary = (
+        {
+            "status": "selected",
+            "title": selected["title"],
+            "url": selected["url"],
+            "selected_at": today,
+        }
+        if selected
+        else None
+    )
 
-    if not selected:
-        append_canary_history(integration, old_canary, today, "refresh_found_no_replacement")
-        integration["canary"] = {"status": "missing", "checked_at": today}
-        integration["status"] = integration.get("status") or "pending"
-        integration["next_action"] = "Find a current canary posting before the next source-quality check."
+    def apply_canary(current: dict[str, dict[str, Any]]) -> None:
+        # Runs under the state-file lock: read the entry from the freshly
+        # reloaded state so concurrent writers' updates are not clobbered.
+        state_entry = dict(current.get(source_id) or {"last_checked": None})
+        integration = dict(state_entry.get("integration") or {})
+        old_canary = integration.get("canary")
+        if new_canary is None:
+            append_canary_history(integration, old_canary, today, "refresh_found_no_replacement")
+            integration["canary"] = {"status": "missing", "checked_at": today}
+            integration["status"] = integration.get("status") or "pending"
+            integration["next_action"] = "Find a current canary posting before the next source-quality check."
+        else:
+            if old_canary != new_canary:
+                append_canary_history(integration, old_canary, today, "refresh_replaced")
+            integration["canary"] = new_canary
+            integration["next_action"] = integration.get("next_action") or "Run source-quality evaluation with the refreshed canary."
         state_entry["integration"] = integration
-        state[source_id] = state_entry
-        write_json_atomic(state_path, source_state_payload(track, source_ids, state))
+        current[source_id] = state_entry
+
+    mutate_source_state(state_path, track, source_ids, apply_canary)
+
+    if new_canary is None:
         return False, {
             "status": "missing",
             "source": source_name,
             "output": str(output),
             "candidates_seen": len(candidates),
         }
-
-    new_canary = {
-        "status": "selected",
-        "title": selected["title"],
-        "url": selected["url"],
-        "selected_at": today,
-    }
-    if old_canary != new_canary:
-        append_canary_history(integration, old_canary, today, "refresh_replaced")
-    integration["canary"] = new_canary
-    integration["next_action"] = integration.get("next_action") or "Run source-quality evaluation with the refreshed canary."
-    state_entry["integration"] = integration
-    state[source_id] = state_entry
-    write_json_atomic(state_path, source_state_payload(track, source_ids, state))
     return True, {
         "status": "updated",
         "source": source_name,
