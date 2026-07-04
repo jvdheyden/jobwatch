@@ -17,6 +17,11 @@ DEFAULT_OUTPUT = ROOT / "shared" / "discovery_modes.md"
 
 
 MODE_DETAILS = {
+    "alphatheta_html": {
+        "url_shape": "`https://alphatheta.com/...` careers page.",
+        "filters": "none",
+        "limitations": "Recognizes the no-open-positions marker as a complete empty result; otherwise falls back to generic static-HTML link enumeration.",
+    },
     "apple_jobs": {
         "url_shape": "`https://jobs.apple.com/<locale>/search?...`",
         "filters": "encode Apple keyword/team/location filters in the source URL",
@@ -47,6 +52,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Requires Playwright and extracts visible job-card links only.",
     },
+    "bamboohr_api": {
+        "url_shape": "`https://<tenant>.bamboohr.com/careers`",
+        "filters": "none",
+        "limitations": "Uses the tenant careers/list and careers/<id>/detail JSON endpoints; fetches every posting detail before term filtering.",
+    },
     "bnd_career_search": {
         "url_shape": "BND advanced career-search form URL.",
         "filters": "encode BND native filters in the source URL",
@@ -76,6 +86,16 @@ MODE_DETAILS = {
         "url_shape": "Cybernetica careers page with `cyber.teamdash.com/p/job/` links.",
         "filters": "none",
         "limitations": "Only direct Teamdash job links visible in the careers-page HTML are enumerated.",
+    },
+    "demant_rss": {
+        "url_shape": "Demant careers page; enumeration uses `careers.demant.com/services/rss/job/` keyword search.",
+        "filters": "none",
+        "limitations": "One RSS search per track term; postings not matching any searched keyword are not enumerated.",
+    },
+    "dover_api": {
+        "url_shape": "`https://app.dover.com/<company>/careers/<careers-page-uuid>`",
+        "filters": "none",
+        "limitations": "Uses the Dover careers-page JSON API; unpublished and sample postings are skipped.",
     },
     "ecb_avature_rss": {
         "url_shape": "ECB Avature careers page or its `SearchJobs/feed/` RSS URL.",
@@ -112,6 +132,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Parses the active Who Is Hiring thread and infers employer/title fields from post text.",
     },
+    "harman_html": {
+        "url_shape": "`https://jobsearch.harman.com/<locale>/careers/...` listing page.",
+        "filters": "none",
+        "limitations": "Only direct Avature JobDetail links visible in the listing HTML are enumerated.",
+    },
     "helsing_browser": {
         "url_shape": "`https://helsing.ai/jobs`",
         "filters": "none",
@@ -142,6 +167,16 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Infineon-specific Eightfold provider wrapper.",
     },
+    "jobvite_html": {
+        "url_shape": "`https://jobs.jobvite.com/<company>/...` listing page.",
+        "filters": "none",
+        "limitations": "Parses jv-job-list rows from the listing HTML and enriches matched candidates from job-detail pages.",
+    },
+    "krisp_html": {
+        "url_shape": "`https://krisp.ai/careers/`",
+        "filters": "none",
+        "limitations": "Enumerates direct /jobs/<slug> links and enriches from each job-detail page.",
+    },
     "leastauthority_careers": {
         "url_shape": "Least Authority careers page.",
         "filters": "none",
@@ -156,6 +191,11 @@ MODE_DETAILS = {
         "url_shape": "`https://jobs.lever.co/<organization>`",
         "filters": "none",
         "limitations": "Uses Lever public postings JSON.",
+    },
+    "lifeatspotify_api": {
+        "url_shape": "`https://www.lifeatspotify.com/jobs`",
+        "filters": "none",
+        "limitations": "Uses the public api.lifeatspotify.com job search and detail endpoints; details fetched for matched candidates only.",
     },
     "neclab_jobs": {
         "url_shape": "NEC Laboratories Europe jobs page.",
@@ -202,6 +242,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Only links matching the secunet job-detail URL pattern are enumerated.",
     },
+    "sennheiser_rss": {
+        "url_shape": "`https://jobs.sennheiser.com/`",
+        "filters": "none",
+        "limitations": "Reads the full jobs.sennheiser.com RSS feed in a single fetch.",
+    },
     "service_bund_links": {
         "url_shape": "Official employer page exposing `service.bund.de/.../IMPORTE/Stellenangebote/...` links.",
         "filters": "none",
@@ -217,6 +262,11 @@ MODE_DETAILS = {
         "filters": "`jobcategory`, `location`, and `company`",
         "limitations": "Parses static Softgarden vacancy cards and opens matched detail pages for role-section snippets.",
     },
+    "teamtailor_api": {
+        "url_shape": "Teamtailor-hosted careers site exposing `/jobs.json` at the site root.",
+        "filters": "none",
+        "limitations": "Reads the standard Teamtailor jobs.json feed; locations come from embedded jobposting address data.",
+    },
     "thales_browser": {
         "url_shape": "`https://careers.thalesgroup.com/global/en/search-results`",
         "filters": "none",
@@ -231,6 +281,11 @@ MODE_DETAILS = {
         "url_shape": "`https://trailofbits.com/careers/`",
         "filters": "none",
         "limitations": "Requires Playwright and extracts visible Workable application links.",
+    },
+    "ultipro_api": {
+        "url_shape": "`https://recruiting2.ultipro.com/<tenant>/JobBoard/<board-guid>/...`",
+        "filters": "none",
+        "limitations": "Pages the LoadSearchResults JSON endpoint (up to 10 pages of 100).",
     },
     "verfassungsschutz_rss": {
         "url_shape": "Verfassungsschutz jobs source; provider reads the official jobs RSS feed.",

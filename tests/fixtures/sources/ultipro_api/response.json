@@ -1,0 +1,27 @@
+{
+  "totalCount": 1,
+  "opportunities": [
+    {
+      "Id": "op-1",
+      "Title": "Senior Security Engineer",
+      "RequisitionNumber": "R-100",
+      "JobCategoryName": "Engineering",
+      "FullTime": true,
+      "BriefDescription": "Lead embedded security work.",
+      "Locations": [
+        {
+          "LocalizedName": "Headquarters",
+          "Address": {
+            "City": "Eden Prairie",
+            "State": {
+              "Code": "MN"
+            },
+            "Country": {
+              "Code": "US"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
