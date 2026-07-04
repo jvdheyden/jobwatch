@@ -13,10 +13,8 @@ from typing import Any
 
 from source_config import (
     SourceConfigError,
-    load_source_state,
     load_sources_config,
-    source_state_payload,
-    write_json_atomic,
+    mutate_source_state,
 )
 
 
@@ -79,20 +77,19 @@ def main() -> int:
     track_dir = ROOT / "tracks" / args.track
     state_path = track_dir / "source_state.json"
 
+    def mark_complete(current: dict[str, dict[str, Any]]) -> None:
+        for source_id in complete:
+            current.setdefault(source_id, {})["last_checked"] = args.date
+
     try:
         config = load_sources_config(track_dir / "sources.json", args.track)
-        state = load_source_state(state_path, args.track)
         source_ids = [source["id"] for source in config["sources"]]
         artifact = load_artifact(artifact_path)
         complete = complete_source_ids(artifact, set(source_ids))
+        mutate_source_state(state_path, args.track, source_ids, mark_complete)
     except SourceConfigError as exc:
         print(f"update_source_state.py: {exc}", file=sys.stderr)
         return 2
-
-    for source_id in complete:
-        state.setdefault(source_id, {})["last_checked"] = args.date
-
-    write_json_atomic(state_path, source_state_payload(args.track, source_ids, state))
     print(f"Updated {len(complete)} source state entries in {state_path}")
     return 0
 

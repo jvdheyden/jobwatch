@@ -18,7 +18,7 @@ from source_config import (
     file_lock,
     load_source_state,
     load_sources_config,
-    source_state_payload,
+    mutate_source_state,
     write_json_atomic,
 )
 from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, source_slug
@@ -390,30 +390,22 @@ def write_state(
 ) -> None:
     """Persist source state to disk, race-safely against concurrent processes.
 
-    Acquires an exclusive lock on the state file, reloads the current on-disk
-    content (so other processes' updates are not clobbered), then overlays
-    only this process's entry for ``source_id`` before writing atomically.
-    When ``source_id`` is ``None`` no entry is overwritten — only the
-    auto-initialization of missing configured source entries happens, which is
-    idempotent and race-safe.
-
-    Other sources' entries already on disk are preserved as-is. This lets
-    parallel integrate_next_source.py runs (one per source) coexist without
-    losing each other's updates.
+    Overlays only this process's entry for ``source_id`` on top of the current
+    on-disk state via ``mutate_source_state``, so other sources' entries are
+    preserved as-is and parallel integrate_next_source.py runs (one per source)
+    coexist without losing each other's updates. When ``source_id`` is ``None``
+    no entry is overwritten — only the auto-initialization of missing configured
+    source entries happens, which is idempotent and race-safe.
     """
     track_dir = ROOT / "tracks" / track
     state_path = track_dir / "source_state.json"
     source_ids = [source["id"] for source in config["sources"]]
-    with file_lock(state_path):
-        try:
-            current = load_source_state(state_path, track)
-        except (FileNotFoundError, SourceConfigError):
-            current = {}
+
+    def overlay(current: dict[str, dict[str, Any]]) -> None:
         if source_id is not None and source_id in state:
             current[source_id] = state[source_id]
-        for sid in source_ids:
-            current.setdefault(sid, {"last_checked": None})
-        write_json_atomic(state_path, source_state_payload(track, source_ids, current))
+
+    mutate_source_state(state_path, track, source_ids, overlay)
 
 
 def read_eval_payload(path: Path) -> dict[str, Any]:
