@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import runtime_env
+from conftest import bash_quote
 
 
 def test_resolve_runtime_env_loads_config_without_secrets_when_not_requested(tmp_path: Path) -> None:
@@ -16,9 +17,9 @@ def test_resolve_runtime_env_loads_config_without_secrets_when_not_requested(tmp
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={root}",
+                f"export JOB_AGENT_ROOT={bash_quote(root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "",
             ]
         )
@@ -44,8 +45,8 @@ def test_resolve_runtime_env_loads_external_secrets_when_requested(tmp_path: Pat
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={root}",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_ROOT={bash_quote(root)}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "",
             ]
         )
@@ -70,8 +71,8 @@ def test_resolve_runtime_env_rejects_missing_secrets_file_when_requested(tmp_pat
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={root}",
-                f"export JOB_AGENT_SECRETS_FILE={secrets_file}",
+                f"export JOB_AGENT_ROOT={bash_quote(root)}",
+                f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}",
                 "",
             ]
         )
@@ -91,7 +92,7 @@ def test_resolve_runtime_env_rejects_plaintext_password_in_env_file(tmp_path: Pa
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={root}",
+                f"export JOB_AGENT_ROOT={bash_quote(root)}",
                 "export JOB_AGENT_SMTP_PASSWORD=secret",
                 "",
             ]
