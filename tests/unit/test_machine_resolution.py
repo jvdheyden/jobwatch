@@ -8,6 +8,7 @@ import subprocess
 import agent_provider
 import eval_source_quality
 import source_integration
+from conftest import bash_quote
 
 
 def _write_executable(path: Path, text: str) -> None:
@@ -101,9 +102,9 @@ def test_eval_source_quality_cli_loads_runtime_env_before_reviewer_resolution(
     env_file.write_text(
         "\n".join(
             [
-                f"export JOB_AGENT_ROOT={repo_root}",
+                f"export JOB_AGENT_ROOT={bash_quote(repo_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
-                f"export JOB_AGENT_BIN={fake_codex}",
+                f"export JOB_AGENT_BIN={bash_quote(fake_codex)}",
                 "",
             ]
         )
