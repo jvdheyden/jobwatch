@@ -56,6 +56,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "ibm_api": "https://www.ibm.com/careers/search",
         "icims_html": "https://example.icims.com/jobs",
         "infineon_api": "https://jobs.infineon.com/careers",
+        "knds_jobboard": "https://jobs.knds.de/content/search/?locale=de_DE",
         "leastauthority_careers": "https://leastauthority.com/careers/",
         "lever_json": "https://jobs.lever.co/example",
         "neclab_jobs": "https://jobs.neclab.eu/",
@@ -206,6 +207,49 @@ def test_provider_candidates_have_required_fields(
         parsed = urlparse(candidate.url)
         assert parsed.scheme in {"http", "https"}
         assert parsed.netloc
+
+
+def test_thales_html_enriches_kept_candidates_from_detail_pages(monkeypatch: pytest.MonkeyPatch):
+    listing_html = """
+    <html><body>
+      <a href="/global/en/job/123/security-engineer">Security Engineer</a>
+      <script>window.__DATA__ = {"eagerLoadRefineSearch":{"hits":1,"totalHits":1,"data":{"jobs":[{"reqId":"123","jobSeqNo":"THALES123","title":"Security Engineer","cityStateCountry":"Munich, Germany","descriptionTeaser":"Build cryptography systems.","category":"Security"}]}}};</script>
+    </body></html>
+    """
+    detail_html = """
+    <html><body>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          "description": "&lt;h2&gt;Responsibilities&lt;/h2&gt;&lt;p&gt;Design cryptography services for secure identity products.&lt;/p&gt;&lt;h2&gt;Qualifications&lt;/h2&gt;&lt;p&gt;Experience with applied security engineering and production cryptography.&lt;/p&gt;&lt;h2&gt;Benefits&lt;/h2&gt;&lt;p&gt;Competitive salary and flexible benefits.&lt;/p&gt;&lt;h2&gt;About Thales&lt;/h2&gt;&lt;p&gt;This company overview should not be copied into notes.&lt;/p&gt;"
+        }
+      </script>
+    </body></html>
+    """
+    fetched_urls: list[str] = []
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        fetched_urls.append(url)
+        if "/global/en/job/123/" in url:
+            return detail_html
+        return listing_html
+
+    monkeypatch.setattr(http, "fetch_text", fake_fetch_text)
+
+    coverage = core.discover_source(_source_for_mode("thales_html"), ["cryptography"], 5)
+
+    assert coverage.status == "complete"
+    assert coverage.direct_job_pages_opened == 1
+    assert len(fetched_urls) == 2
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Security Engineer"
+    assert "Tasks: Design cryptography services for secure identity products." in candidate.notes
+    assert "Qualifications: Experience with applied security engineering and production cryptography." in candidate.notes
+    assert "Compensation: Competitive salary and flexible benefits." in candidate.notes
+    assert "<p>" not in candidate.notes
+    assert "company overview" not in candidate.notes
 
 
 @pytest.mark.parametrize(("mode", "adapter"), _provider_modes())

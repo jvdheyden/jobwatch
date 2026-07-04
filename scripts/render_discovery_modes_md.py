@@ -147,6 +147,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Coverage marker provider; may emit no candidates when no current listing links are exposed.",
     },
+    "knds_jobboard": {
+        "url_shape": "`https://jobs.knds.de/content/search/?locale=de_DE`",
+        "filters": "none",
+        "limitations": "Uses visible KNDS job-detail links when static links are present, then falls back to the public Recruiting Solutions search API.",
+    },
     "lever_json": {
         "url_shape": "`https://jobs.lever.co/<organization>`",
         "filters": "none",

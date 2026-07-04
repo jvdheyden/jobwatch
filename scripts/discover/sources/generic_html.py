@@ -4,11 +4,25 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from urllib.parse import urljoin, urlparse
+from typing import Any
+from urllib.parse import unquote, urljoin, urlparse
 
 from discover import helpers, http
 from discover.core import Candidate, Coverage, SourceConfig
 from discover.registry import SourceAdapter
+
+KNDS_SEARCH_API_URL = "https://production.api.recruiting-solutions.org/search"
+KNDS_SEARCH_API_HEADERS = {
+    "customerId": "knds-prod",
+    "x-api-key": "pk_knds-prod_vQoHZUfidPgNIsDClPNzfoBaJvKnKpXCNtxVmSctXTwKEYCbjNuFAnAKcVoJpdpjEpuLDuxCTazaJMEODATzaVvrzWwaZNnb",
+    "internal": "false",
+    "privateJobBoard": "false",
+}
+KNDS_SEARCH_FIELDS = "jobId,title,profile,tasks"
+KNDS_TERM_ALIASES: dict[str, tuple[str, ...]] = {
+    "it security": ("IT-Security",),
+    "it-sicherheit": ("IT Sicherheit", "Informationssicherheit"),
+}
 
 
 def is_same_page_link(source_url: str, candidate_url: str) -> bool:
@@ -202,8 +216,259 @@ def discover_secunet_jobboard(source: SourceConfig, terms: list[str], timeout_se
     )
 
 
+def is_knds_job_detail_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.netloc == "jobs.knds.de" and (
+        parsed.path.startswith("/job/") or parsed.path.startswith("/job-invite/")
+    )
+
+
+def is_knds_listing_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.netloc == "jobs.knds.de" and parsed.path.startswith("/viewalljobs/")
+
+
+def knds_title_from_url(url: str) -> str:
+    parsed = urlparse(url)
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) < 2 or parts[0] != "job":
+        return "unknown"
+    title_part = unquote(parts[1])
+    return helpers.normalize_whitespace(re.sub(r"[-_]+", " ", title_part)) or "unknown"
+
+
+def knds_search_term_variants(terms: list[str]) -> list[str]:
+    variants: list[str] = []
+    for term in terms:
+        for variant in (term, *KNDS_TERM_ALIASES.get(term.lower(), ())):
+            if variant not in variants:
+                variants.append(variant)
+    return variants
+
+
+def knds_api_search_payload(term: str) -> dict[str, Any]:
+    return {
+        "count": True,
+        "facets": [],
+        "filter": "",
+        "search": f"/.*{term}.*/",
+        "queryType": "full",
+        "searchFields": KNDS_SEARCH_FIELDS,
+        "skip": 0,
+        "top": 50,
+    }
+
+
+def knds_job_location(job: dict[str, Any]) -> str:
+    addresses = job.get("addresses")
+    if not isinstance(addresses, list):
+        return "unknown"
+    locations: list[str] = []
+    for address in addresses:
+        if not isinstance(address, dict):
+            continue
+        location = helpers.normalize_whitespace(str(address.get("city") or address.get("name") or ""))
+        if location and location not in locations:
+            locations.append(location)
+    return "; ".join(locations) if locations else "unknown"
+
+
+def knds_job_searchable_text(job: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for key in ("title", "externalTitle", "profile", "tasks"):
+        value = job.get(key)
+        if isinstance(value, str):
+            parts.append(helpers.strip_html_fragment(value))
+    category = job.get("category")
+    if isinstance(category, list):
+        parts.extend(str(value) for value in category)
+    elif isinstance(category, str):
+        parts.append(category)
+    return " ".join(parts)
+
+
+def knds_compact_detail(value: Any, max_length: int = 320) -> str:
+    if not isinstance(value, str):
+        return ""
+    detail = helpers.strip_html_fragment(value)
+    if len(detail) <= max_length:
+        return detail
+    return detail[:max_length].rsplit(" ", 1)[0] + "..."
+
+
+def knds_role_detail_notes(job: dict[str, Any]) -> str:
+    profile = knds_compact_detail(job.get("profile"))
+    tasks = knds_compact_detail(job.get("tasks"))
+    detail_parts = []
+    if profile:
+        detail_parts.append(f"Profile: {profile}")
+    if tasks:
+        detail_parts.append(f"Tasks: {tasks}")
+    return "; ".join(detail_parts)
+
+
+def merge_knds_candidate(
+    candidates_by_url: dict[str, Candidate],
+    source: SourceConfig,
+    title: str,
+    url: str,
+    terms: list[str],
+    searchable_extra: str,
+    notes: str,
+) -> bool:
+    searchable_text = f"{title} {searchable_extra} {url}"
+    matched_terms = sorted(set(helpers.match_terms_with_aliases(searchable_text, terms, KNDS_TERM_ALIASES)))
+    if not matched_terms:
+        return False
+    helpers.merge_candidate(
+        candidates_by_url,
+        Candidate(
+            employer=source.source,
+            title=title,
+            url=url,
+            source_url=source.url,
+            matched_terms=matched_terms,
+            notes=notes,
+        ),
+    )
+    return True
+
+
+def merge_knds_api_candidate(
+    candidates_by_url: dict[str, Candidate],
+    source: SourceConfig,
+    job: dict[str, Any],
+    terms: list[str],
+) -> bool:
+    title = helpers.normalize_whitespace(str(job.get("title") or job.get("externalTitle") or "unknown"))
+    link = helpers.normalize_whitespace(str(job.get("link") or ""))
+    if not link and job.get("jobId"):
+        link = f"https://jobs.knds.de/job-invite/{job.get('jobId')}/?locale=de_DE"
+    absolute_url = helpers.normalize_url_without_fragment(urljoin(source.url, link))
+    if not is_knds_job_detail_url(absolute_url):
+        return False
+    searchable_text = knds_job_searchable_text(job)
+    matched_terms = sorted(set(helpers.match_terms_with_aliases(searchable_text, terms, KNDS_TERM_ALIASES)))
+    if not matched_terms:
+        return False
+    helpers.merge_candidate(
+        candidates_by_url,
+        Candidate(
+            employer=source.source,
+            title=title,
+            url=absolute_url,
+            source_url=source.url,
+            location=knds_job_location(job),
+            matched_terms=matched_terms,
+            notes="; ".join(
+                part
+                for part in [
+                    "Enumerated through KNDS Recruiting Solutions search API",
+                    knds_role_detail_notes(job),
+                ]
+                if part
+            ),
+        ),
+    )
+    return True
+
+
+def discover_knds_jobboard(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    first_html = http.fetch_text(source.url, timeout_seconds)
+    parser = helpers.LinkCollector()
+    parser.feed(first_html)
+    pages_by_url: dict[str, str] = {source.url: first_html}
+    listing_urls: list[str] = []
+    for link in parser.links:
+        absolute_url = helpers.normalize_url_without_fragment(urljoin(source.url, link["href"]))
+        if absolute_url == source.url:
+            continue
+        if is_knds_listing_url(absolute_url) and absolute_url not in pages_by_url and absolute_url not in listing_urls:
+            listing_urls.append(absolute_url)
+
+    limitations: list[str] = []
+    for listing_url in listing_urls[:1]:
+        try:
+            pages_by_url[listing_url] = http.fetch_text(listing_url, timeout_seconds)
+        except Exception as exc:
+            limitations.append(f"KNDS listing page fetch failed for {listing_url}: {exc}")
+
+    api_queries_scanned = 0
+    raw_urls: set[str] = set()
+    candidates_by_url: dict[str, Candidate] = {}
+    for page_url, html in pages_by_url.items():
+        page_parser = helpers.LinkCollector()
+        page_parser.feed(html)
+        for link in page_parser.links:
+            absolute_url = helpers.normalize_url_without_fragment(urljoin(page_url, link["href"]))
+            if not is_knds_job_detail_url(absolute_url):
+                continue
+            raw_urls.add(absolute_url)
+            text = helpers.normalize_whitespace(link["text"])
+            title = text or knds_title_from_url(absolute_url)
+            merge_knds_candidate(
+                candidates_by_url,
+                source,
+                title,
+                absolute_url,
+                terms,
+                "",
+                "Enumerated through KNDS job-detail links",
+            )
+
+    static_job_links = len(raw_urls)
+    if not candidates_by_url:
+        for term in knds_search_term_variants(terms):
+            api_queries_scanned += 1
+            try:
+                payload = knds_api_search_payload(term)
+                response = http.post_json(KNDS_SEARCH_API_URL, payload, timeout_seconds, headers=KNDS_SEARCH_API_HEADERS)
+            except Exception as exc:
+                limitations.append(f"KNDS API search failed for {term}: {exc}")
+                continue
+
+            for job in response.get("value", []) if isinstance(response, dict) else []:
+                if not isinstance(job, dict):
+                    continue
+                link = helpers.normalize_whitespace(str(job.get("link") or ""))
+                if link:
+                    absolute_url = helpers.normalize_url_without_fragment(urljoin(source.url, link))
+                elif job.get("jobId"):
+                    absolute_url = f"https://jobs.knds.de/job-invite/{job.get('jobId')}?locale=de_DE"
+                else:
+                    absolute_url = ""
+                if is_knds_job_detail_url(absolute_url):
+                    raw_urls.add(absolute_url)
+                merge_knds_api_candidate(candidates_by_url, source, job, terms)
+
+    if not raw_urls:
+        limitations.append("No KNDS job-detail links were visible in static pages or API search results.")
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=len(pages_by_url),
+        search_terms_tried=terms,
+        result_pages_scanned=(
+            f"knds_static_pages={len(pages_by_url)}; "
+            f"knds_static_job_links={static_job_links}; "
+            f"knds_api_queries={api_queries_scanned}"
+        ),
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
 SOURCES = [
     SourceAdapter(modes=("html", "icims_html"), discover=discover_html),
     SourceAdapter(modes=("cybernetica_teamdash",), discover=discover_cybernetica_teamdash),
+    SourceAdapter(modes=("knds_jobboard",), discover=discover_knds_jobboard),
     SourceAdapter(modes=("secunet_jobboard",), discover=discover_secunet_jobboard),
 ]

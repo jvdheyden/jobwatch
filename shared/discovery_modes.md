@@ -258,6 +258,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Infineon-specific Eightfold provider wrapper.
 
+### `knds_jobboard`
+
+- Provider: `discover.sources.generic_html` / `discover_knds_jobboard`
+- Emits candidates: yes
+- URL/source shape: `https://jobs.knds.de/content/search/?locale=de_DE`
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/knds_jobboard/`
+- Requirements: none
+- Known limitations: Uses visible KNDS job-detail links when static links are present, then falls back to the public Recruiting Solutions search API.
+
 ### `leastauthority_careers`
 
 - Provider: `discover.sources.static_pages` / `discover_leastauthority_careers`

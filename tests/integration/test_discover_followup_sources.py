@@ -266,6 +266,91 @@ def test_eightfold_domain_for_source_supports_existing_infineon_mode():
     assert discover_jobs.eightfold_domain_for_source(source) == "infineon.com"
 
 
+def test_discover_infineon_api_enriches_kept_candidates_from_detail_pages(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Infineon",
+        url="https://jobs.infineon.com/careers",
+        discovery_mode="infineon_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        query = parse_qs(urlparse(url).query)
+        assert query["domain"] == ["infineon.com"]
+        if query["query"] != ["security"]:
+            return {"data": {"count": 0, "positions": []}}
+        return {
+            "data": {
+                "count": 1,
+                "positions": [
+                    {
+                        "id": 563808969188654,
+                        "displayJobId": "HRC1234567",
+                        "name": "Principal Security Architect",
+                        "locations": ["Munich (Germany)"],
+                        "department": "Information Technology",
+                        "workLocationOption": "Hybrid",
+                        "positionUrl": "/careers/job/563808969188654",
+                    }
+                ],
+            }
+        }
+
+    def fake_fetch_text(url: str, timeout_seconds: int):
+        assert url == "https://jobs.infineon.com/careers/job/563808969188654"
+        assert timeout_seconds == 5
+        return """
+        <html><body>
+          <h2>In your new role you will</h2>
+          <ul>
+            <li>Design identity security architecture for zero trust authentication.</li>
+          </ul>
+          <h2>You are best equipped for this task if you have</h2>
+          <p>Experience with cryptography, secure hardware, and protocol design.</p>
+          <h2>Contact</h2>
+          <p>This contact copy should not be included.</p>
+        </body></html>
+        """
+
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_infineon_api(source, ["security", "cryptography"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.direct_job_pages_opened == 1
+    candidate = coverage.candidates[0]
+    assert candidate.matched_terms == ["cryptography", "security"]
+    assert "Enumerated through Eightfold PCSx search for 'security'" in candidate.notes
+    assert "Tasks: Design identity security architecture for zero trust authentication." in candidate.notes
+    assert "Qualifications: Experience with cryptography, secure hardware, and protocol design." in candidate.notes
+    assert "contact copy" not in candidate.notes
+
+
+def test_extract_eightfold_detail_sections_prefers_jobposting_json_ld():
+    html = """
+    <html><head>
+      <script type="application/ld+json">
+        {
+          "@context": "http://schema.org",
+          "@type": "JobPosting",
+          "description": "<p>Lead security architecture for zero trust authentication.</p>"
+        }
+      </script>
+      <script>
+        {"themeOptions": {"compensationColor": "#000000"}}
+      </script>
+    </head><body></body></html>
+    """
+
+    sections = eightfold_provider.extract_eightfold_detail_sections(html)
+
+    assert sections["tasks"] == "Lead security architecture for zero trust authentication."
+    assert sections["qualifications"] == ""
+    assert sections["compensation"] == ""
+
+
 def test_discover_eightfold_api_infers_microsoft_domain_and_filters_results(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="Microsoft",

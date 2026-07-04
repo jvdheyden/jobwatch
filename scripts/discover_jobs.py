@@ -165,6 +165,7 @@ from discover.sources.generic_html import (
     discover_cybernetica_teamdash,
     discover_filtered_html_links,
     discover_html,
+    discover_knds_jobboard,
     discover_secunet_jobboard,
     is_same_page_link,
     looks_like_non_job_link,
