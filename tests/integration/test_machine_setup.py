@@ -1711,6 +1711,61 @@ echo "$*" >> "$ROOT/invocations.log"
     assert not (tmp_job_agent_root / "invocations.log").exists()
 
 
+def test_run_scheduled_jobs_runs_two_same_day_entries_independently(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    env_file = tmp_job_agent_root / ".env.local"
+    schedule_file = tmp_job_agent_root / ".schedule.local"
+    env_file.write_text(f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}\n")
+    schedule_file.write_text("daily 08:00 track demo\ndaily 18:00 track demo\n")
+
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "run_track.sh",
+        """#!/bin/bash
+set -euo pipefail
+ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
+echo "$*" >> "$ROOT/invocations.log"
+""",
+    )
+
+    base_env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_ENV_FILE": str(env_file),
+        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
+    }
+
+    # Morning tick: only the 08:00 entry is due. The stamp it writes must not
+    # suppress the 18:00 entry later the same day (scheduled_time is part of
+    # the dedup key).
+    morning = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "08:05", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-08:05"},
+        cwd=repo_root,
+    )
+    evening = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "18:20", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-18:20"},
+        cwd=repo_root,
+    )
+    # Both entries already ran today; a later tick runs nothing.
+    later = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_scheduled_jobs.sh"),
+        env=base_env | {"JOB_AGENT_SCHEDULE_TIME": "18:40", "JOB_AGENT_SCHEDULE_STAMP": "2030-01-15-18:40"},
+        cwd=repo_root,
+    )
+
+    assert morning.returncode == 0, morning.stderr
+    assert evening.returncode == 0, evening.stderr
+    assert later.returncode == 0, later.stderr
+    assert (tmp_job_agent_root / "invocations.log").read_text().splitlines() == [
+        "--track demo",
+        "--track demo",
+    ]
+
+
 def test_run_scheduled_jobs_catches_up_daily_after_missed_minute(
     tmp_job_agent_root: Path, repo_root: Path, run_cmd
 ) -> None:

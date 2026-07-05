@@ -225,34 +225,43 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 
   case "$cadence" in
     daily)
-      state_key="$(printf '%s-%s-%s' "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+      legacy_state_key="$(printf '%s-%s-%s' "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
       ;;
     weekly)
-      state_key="$(printf '%s-%s-%s-%s-%s' "$cadence" "$scheduled_weekday" "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+      legacy_state_key="$(printf '%s-%s-%s-%s-%s' "$cadence" "$scheduled_weekday" "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
       ;;
     monthly)
-      state_key="$(printf '%s-%s-%s-%s-%s' "$cadence" "$scheduled_month_day" "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
+      legacy_state_key="$(printf '%s-%s-%s-%s-%s' "$cadence" "$scheduled_month_day" "$job_type" "$job_arg" "${delivery_args[*]:-local}" | tr -cs 'A-Za-z0-9._-' '_')"
       ;;
   esac
+  # scheduled_time is part of the key so two entries for the same
+  # track+delivery at different times on one day dedup independently and
+  # both run.
+  state_key="$(printf '%s-%s' "$legacy_state_key" "$scheduled_time" | tr -cs 'A-Za-z0-9._-' '_')"
   state_file="$STATE_DIR/$state_key.stamp"
+  legacy_state_file="$STATE_DIR/$legacy_state_key.stamp"
 
   # Dedup per day, not per minute: with the catch-up window an entry is due on
   # every tick from its scheduled time onward, so it must run at most once per
-  # scheduled day. The stamp file is keyed by state_key (cadence/day-spec/track/
-  # delivery), not by scheduled time, so two entries for the same track+delivery
-  # on one day would share a stamp and run once; configure_schedule.py keeps a
-  # single entry per track, so that case does not arise via supported tooling.
-  # Older state files stored the full YYYY-MM-DD-HH:MM stamp; the date-prefix
-  # match keeps them recognized as "already ran today". A failed read must not
-  # abort the loop (it would silently skip every later entry), so treat an
-  # unreadable stamp as not-yet-run and let the job run.
+  # scheduled day. When no per-time stamp exists yet, fall back to the legacy
+  # time-less stamp file so a job that already ran today under a pre-upgrade
+  # key is not run twice on upgrade day. Older state files also stored the
+  # full YYYY-MM-DD-HH:MM stamp; the date-prefix match keeps them recognized
+  # as "already ran today". A failed read must not abort the loop (it would
+  # silently skip every later entry), so treat an unreadable stamp as
+  # not-yet-run and let the job run.
+  last_stamp=""
   if [[ -f "$state_file" ]]; then
     if ! last_stamp="$(cat "$state_file" 2>/dev/null)"; then
       last_stamp=""
     fi
-    if [[ "$last_stamp" == "$CURRENT_DATE" || "$last_stamp" == "$CURRENT_DATE"-* ]]; then
-      continue
+  elif [[ -f "$legacy_state_file" ]]; then
+    if ! last_stamp="$(cat "$legacy_state_file" 2>/dev/null)"; then
+      last_stamp=""
     fi
+  fi
+  if [[ "$last_stamp" == "$CURRENT_DATE" || "$last_stamp" == "$CURRENT_DATE"-* ]]; then
+    continue
   fi
 
   printf '%s\n' "$CURRENT_DATE" >"$state_file"
