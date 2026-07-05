@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
+from xml.etree import ElementTree
 
 from discover import helpers, http
 from discover.core import Candidate, Coverage, SourceConfig
@@ -34,13 +35,82 @@ def extract_personio_jobs_from_html(html: str) -> list[Any] | None:
     return None
 
 
+def _personio_xml_feed_url(base_url: str) -> str:
+    return base_url.rstrip("/") + "/xml"
+
+
+def _personio_job_url_from_id(base_url: str, position_id: str) -> str:
+    return base_url.rstrip("/") + f"/job/{position_id}"
+
+
+def extract_personio_jobs_from_xml(xml_text: str, base_url: str) -> list[dict[str, Any]] | None:
+    """Parse the canonical Personio /xml feed into job dicts compatible with the HTML path."""
+    try:
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError:
+        return None
+    if root.tag != "workzag-jobs":
+        return None
+    jobs: list[dict[str, Any]] = []
+    for position in root.findall("position"):
+        job: dict[str, Any] = {}
+        for child in position:
+            if child.tag == "jobDescriptions":
+                continue
+            text = (child.text or "").strip()
+            if text:
+                job[child.tag] = text
+        position_id = job.get("id")
+        if position_id:
+            job["url"] = _personio_job_url_from_id(base_url, position_id)
+        if job.get("name") or job.get("id"):
+            jobs.append(job)
+    return jobs
+
+
+def _fetch_personio_xml_jobs(base_url: str, timeout_seconds: int) -> list[dict[str, Any]] | None:
+    try:
+        xml_text = http.fetch_text(_personio_xml_feed_url(base_url), timeout_seconds)
+    except Exception:
+        return None
+    return extract_personio_jobs_from_xml(xml_text, base_url)
+
+
 def discover_personio_page(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
-    html = http.fetch_text(source.url, timeout_seconds)
-    jobs = extract_personio_jobs_from_html(html)
+    jobs: list[Any] | None = None
+    limitations: list[str] = []
+    html_fetch_error: Exception | None = None
+
+    try:
+        html = http.fetch_text(source.url, timeout_seconds)
+    except Exception as exc:
+        html_fetch_error = exc
+        html = ""
+    else:
+        jobs = extract_personio_jobs_from_html(html)
+
+    html_says_no_openings = (
+        not html_fetch_error
+        and ("Derzeit keine offenen Positionen" in html or "No open positions" in html)
+    )
+
+    if jobs is None and not html_says_no_openings:
+        xml_jobs = _fetch_personio_xml_jobs(source.url, timeout_seconds)
+        if xml_jobs is not None:
+            jobs = xml_jobs
+            if html_fetch_error is not None:
+                limitations.append(f"Personio HTML page unavailable ({html_fetch_error}); used XML feed.")
+            else:
+                limitations.append("Personio HTML page payload missing; used XML feed.")
+
     if jobs is None:
-        if "Derzeit keine offenen Positionen" in html or "No open positions" in html:
+        if html_says_no_openings:
             jobs = []
         else:
+            if html_fetch_error is not None:
+                failure_message = f"Personio page fetch failed ({html_fetch_error}); XML feed unavailable."
+            else:
+                failure_message = "Personio page did not expose a parseable jobs payload."
             return Coverage(
                 source=source.source,
                 source_url=source.url,
@@ -55,7 +125,7 @@ def discover_personio_page(source: SourceConfig, terms: list[str], timeout_secon
                 direct_job_pages_opened=0,
                 enumerated_jobs=0,
                 matched_jobs=0,
-                limitations=["Personio page did not expose a parseable jobs payload."],
+                limitations=[failure_message],
                 candidates=[],
             )
 
@@ -108,7 +178,7 @@ def discover_personio_page(source: SourceConfig, terms: list[str], timeout_secon
         direct_job_pages_opened=0,
         enumerated_jobs=len(jobs),
         matched_jobs=len(candidates_by_url),
-        limitations=[],
+        limitations=limitations,
         candidates=list(candidates_by_url.values()),
     )
 
