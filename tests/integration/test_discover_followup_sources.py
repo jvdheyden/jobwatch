@@ -183,28 +183,36 @@ def test_discover_ashby_api_uses_non_user_graphql_payload(monkeypatch):
     )
 
     def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
-        assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
-        assert payload["variables"] == {"organizationHostedJobsPageName": "example"}
         assert headers == {"Referer": source.url}
-        return {
-            "data": {
-                "jobBoard": {
-                    "teams": [{"id": "eng", "externalName": "Engineering"}],
-                    "jobPostings": [
-                        {
-                            "id": "job-1",
-                            "title": "Security Engineer",
-                            "teamId": "eng",
-                            "locationName": "Remote",
-                            "secondaryLocations": [],
-                            "workplaceType": "Remote",
-                            "employmentType": "Full-time",
-                            "compensationTierSummary": "",
-                        }
-                    ],
+        if payload["operationName"] == "ApiJobBoardWithTeams":
+            assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
+            assert payload["variables"] == {"organizationHostedJobsPageName": "example"}
+            return {
+                "data": {
+                    "jobBoard": {
+                        "teams": [{"id": "eng", "externalName": "Engineering"}],
+                        "jobPostings": [
+                            {
+                                "id": "job-1",
+                                "title": "Security Engineer",
+                                "teamId": "eng",
+                                "locationName": "Remote",
+                                "secondaryLocations": [],
+                                "workplaceType": "Remote",
+                                "employmentType": "Full-time",
+                                "compensationTierSummary": "",
+                            }
+                        ],
+                    }
                 }
             }
+        assert payload["operationName"] == "ApiJobPosting"
+        assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting"
+        assert payload["variables"] == {
+            "organizationHostedJobsPageName": "example",
+            "jobPostingId": "job-1",
         }
+        return {"data": {"jobPosting": {"descriptionHtml": "", "compensationTierSummary": ""}}}
 
     monkeypatch.setattr(discover_http, "post_json", fake_post_json)
 
@@ -229,28 +237,35 @@ def test_discover_ashby_api_decodes_percent_encoded_board_slug(monkeypatch):
     )
 
     def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
-        assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
-        assert payload["variables"] == {"organizationHostedJobsPageName": "Tools for Humanity"}
         assert headers == {"Referer": source.url}
-        return {
-            "data": {
-                "jobBoard": {
-                    "teams": [{"id": "eng", "externalName": "Engineering"}],
-                    "jobPostings": [
-                        {
-                            "id": "privacy-engineer",
-                            "title": "Privacy Engineer",
-                            "teamId": "eng",
-                            "locationName": "San Francisco, CA",
-                            "secondaryLocations": [{"locationName": "Munich, Germany"}],
-                            "workplaceType": "Hybrid",
-                            "employmentType": "Full-time",
-                            "compensationTierSummary": "",
-                        }
-                    ],
+        if payload["operationName"] == "ApiJobBoardWithTeams":
+            assert url == "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
+            assert payload["variables"] == {"organizationHostedJobsPageName": "Tools for Humanity"}
+            return {
+                "data": {
+                    "jobBoard": {
+                        "teams": [{"id": "eng", "externalName": "Engineering"}],
+                        "jobPostings": [
+                            {
+                                "id": "privacy-engineer",
+                                "title": "Privacy Engineer",
+                                "teamId": "eng",
+                                "locationName": "San Francisco, CA",
+                                "secondaryLocations": [{"locationName": "Munich, Germany"}],
+                                "workplaceType": "Hybrid",
+                                "employmentType": "Full-time",
+                                "compensationTierSummary": "",
+                            }
+                        ],
+                    }
                 }
             }
+        assert payload["operationName"] == "ApiJobPosting"
+        assert payload["variables"] == {
+            "organizationHostedJobsPageName": "Tools for Humanity",
+            "jobPostingId": "privacy-engineer",
         }
+        return {"data": {"jobPosting": {"descriptionHtml": "", "compensationTierSummary": ""}}}
 
     monkeypatch.setattr(discover_http, "post_json", fake_post_json)
 
@@ -1389,3 +1404,209 @@ def test_discover_alphatheta_falls_back_to_generic_enumeration(monkeypatch):
     candidate = coverage.candidates[0]
     assert candidate.title == "Security Engineer"
     assert candidate.url == "https://alphatheta.com/careers/security-engineer"
+
+
+def test_discover_ashby_api_enriches_candidates_with_detail_sections(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Ashby",
+        url="https://jobs.ashbyhq.com/example",
+        discovery_mode="ashby_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    description_html = (
+        "<h2>What You'll Do</h2>"
+        "<ul><li>Own the platform security roadmap.</li></ul>"
+        "<h2>Who You Are</h2>"
+        "<ul><li>7+ years of security engineering experience.</li></ul>"
+        "<h2>Compensation:</h2>"
+        "<p>$280,000 to $340,000 base salary (before equity)</p>"
+        "<h2>Perks &amp; Benefits</h2>"
+        "<p>Catalogue of benefits that should not appear in tasks or qualifications.</p>"
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        if payload["operationName"] == "ApiJobBoardWithTeams":
+            return {
+                "data": {
+                    "jobBoard": {
+                        "teams": [{"id": "sec", "externalName": "Security"}],
+                        "jobPostings": [
+                            {
+                                "id": "staff-security-engineer",
+                                "title": "Staff Security Engineer",
+                                "teamId": "sec",
+                                "locationName": "New York, NY",
+                                "secondaryLocations": [],
+                                "workplaceType": "On-site",
+                                "employmentType": "Full-time",
+                                "compensationTierSummary": "$280K – $340K",
+                            }
+                        ],
+                    }
+                }
+            }
+        assert payload["operationName"] == "ApiJobPosting"
+        assert payload["variables"]["jobPostingId"] == "staff-security-engineer"
+        return {
+            "data": {
+                "jobPosting": {
+                    "descriptionHtml": description_html,
+                    "compensationTierSummary": "$280K – $340K",
+                }
+            }
+        }
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_ashby_api(source, ["security"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.matched_jobs == 1
+    assert coverage.direct_job_pages_opened == 1
+    candidate = coverage.candidates[0]
+    assert "Tasks: Own the platform security roadmap." in candidate.notes
+    assert "Qualifications: 7+ years of security engineering experience." in candidate.notes
+    assert "Compensation: $280,000 to $340,000 base salary (before equity)" in candidate.notes
+    assert "Catalogue of benefits" not in candidate.notes
+
+
+def test_discover_ashby_api_falls_back_to_compensation_summary_when_section_missing(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Ashby",
+        url="https://jobs.ashbyhq.com/example",
+        discovery_mode="ashby_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        if payload["operationName"] == "ApiJobBoardWithTeams":
+            return {
+                "data": {
+                    "jobBoard": {
+                        "teams": [{"id": "sec", "externalName": "Security"}],
+                        "jobPostings": [
+                            {
+                                "id": "lead-security-engineer",
+                                "title": "Lead Security Engineer",
+                                "teamId": "sec",
+                                "locationName": "Remote",
+                                "secondaryLocations": [],
+                                "workplaceType": "Remote",
+                                "employmentType": "Full-time",
+                                "compensationTierSummary": "$180K – $280K • Offers Equity",
+                            }
+                        ],
+                    }
+                }
+            }
+        return {
+            "data": {
+                "jobPosting": {
+                    "descriptionHtml": (
+                        "<h2>Who You Are</h2>"
+                        "<ul><li>6+ years of security engineering experience.</li></ul>"
+                    ),
+                    "compensationTierSummary": "$180K – $280K • Offers Equity",
+                }
+            }
+        }
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_ashby_api(source, ["security"], timeout_seconds=5)
+
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert "Qualifications: 6+ years of security engineering experience." in candidate.notes
+    assert "Compensation: $180K – $280K" in candidate.notes
+
+
+def test_discover_ashby_api_marks_partial_when_detail_fetch_fails(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Ashby",
+        url="https://jobs.ashbyhq.com/example",
+        discovery_mode="ashby_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_post_json(url: str, payload: object, timeout_seconds: int, headers: dict[str, str] | None = None):
+        if payload["operationName"] == "ApiJobBoardWithTeams":
+            return {
+                "data": {
+                    "jobBoard": {
+                        "teams": [{"id": "sec", "externalName": "Security"}],
+                        "jobPostings": [
+                            {
+                                "id": "lead-security-engineer",
+                                "title": "Lead Security Engineer",
+                                "teamId": "sec",
+                                "locationName": "Remote",
+                                "secondaryLocations": [],
+                                "workplaceType": "Remote",
+                                "employmentType": "Full-time",
+                                "compensationTierSummary": "",
+                            }
+                        ],
+                    }
+                }
+            }
+        raise RuntimeError("detail endpoint unavailable")
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_ashby_api(source, ["security"], timeout_seconds=5)
+
+    assert coverage.matched_jobs == 1
+    assert coverage.direct_job_pages_opened == 0
+    assert coverage.status == "partial"
+    assert any("Detail fetch failed" in limitation for limitation in coverage.limitations)
+
+
+def test_discover_personio_page_falls_back_to_xml_feed(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Personio",
+        url="https://example.jobs.personio.de/",
+        discovery_mode="personio_page",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    xml_feed = """<?xml version="1.0" encoding="UTF-8"?>
+<workzag-jobs>
+  <position>
+    <id>4242</id>
+    <name>Senior Security Engineer</name>
+    <office>Berlin</office>
+    <department>Engineering</department>
+    <employmentType>permanent</employmentType>
+    <jobDescriptions><jobDescription><name>About</name><value>ignored</value></jobDescription></jobDescriptions>
+  </position>
+  <position>
+    <id>4243</id>
+    <name>Sales Lead</name>
+    <office>Berlin</office>
+  </position>
+</workzag-jobs>
+"""
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        if url == source.url:
+            return "<html><body><p>Careers page rendered without an embedded jobs payload.</p></body></html>"
+        if url == "https://example.jobs.personio.de/xml":
+            return xml_feed
+        raise AssertionError(f"unexpected fetch_text({url})")
+
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_personio_page(source, ["security"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    assert any("used XML feed" in limitation for limitation in coverage.limitations)
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Senior Security Engineer"
+    assert candidate.url == "https://example.jobs.personio.de/job/4242"
+    assert candidate.location == "Berlin"

@@ -30,7 +30,7 @@ MODE_DETAILS = {
     "ashby_api": {
         "url_shape": "`https://jobs.ashbyhq.com/<organization>`",
         "filters": "none",
-        "limitations": "Uses Ashby public GraphQL job-board data exposed by the hosted jobs page.",
+        "limitations": "Uses Ashby public GraphQL job-board data; matched candidates are enriched with task/qualification/compensation sections from the per-posting GraphQL detail query.",
     },
     "ashby_html": {
         "url_shape": "`https://jobs.ashbyhq.com/<organization>`",
@@ -215,7 +215,7 @@ MODE_DETAILS = {
     "personio_page": {
         "url_shape": "`https://<organization>.jobs.personio.de/`",
         "filters": "none",
-        "limitations": "Extracts Personio jobs from embedded page payloads.",
+        "limitations": "Extracts Personio jobs from embedded page payloads, falling back to the tenant /xml feed when the page payload is missing.",
     },
     "qedit_inline": {
         "url_shape": "QEDIT careers page.",

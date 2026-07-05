@@ -36,7 +36,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/ashby_api/`
 - Requirements: none
-- Known limitations: Uses Ashby public GraphQL job-board data exposed by the hosted jobs page.
+- Known limitations: Uses Ashby public GraphQL job-board data; matched candidates are enriched with task/qualification/compensation sections from the per-posting GraphQL detail query.
 
 ### `ashby_html`
 
@@ -406,7 +406,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/personio_page/`
 - Requirements: none
-- Known limitations: Extracts Personio jobs from embedded page payloads.
+- Known limitations: Extracts Personio jobs from embedded page payloads, falling back to the tenant /xml feed when the page payload is missing.
 
 ### `qedit_inline`
 
