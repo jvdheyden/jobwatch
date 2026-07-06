@@ -84,18 +84,17 @@ def _discover_successfactors_rss(
             matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
             if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
                 continue
-            helpers.merge_candidate(
-                candidates_by_url,
-                Candidate(
-                    employer=source.source,
-                    title=title,
-                    url=absolute_url,
-                    source_url=source.url,
-                    location=location,
-                    matched_terms=matched_terms,
-                    notes=notes,
-                ),
+            rss_candidate = Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                location=location,
+                matched_terms=matched_terms,
+                notes=notes,
             )
+            helpers.set_candidate_description(rss_candidate, description_text)
+            helpers.merge_candidate(candidates_by_url, rss_candidate)
 
     status = "complete" if listing_pages_scanned > 0 else "failed"
     return Coverage(

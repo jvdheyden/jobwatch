@@ -248,10 +248,12 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
             limitations.append(f"Detail fetch failed for {candidate_url}")
             continue
         direct_job_pages_opened += 1
-        sections = extract_workday_detail_sections(posting_info.get("jobDescription") or "")
+        job_description_html = posting_info.get("jobDescription") or ""
+        sections = extract_workday_detail_sections(job_description_html)
         detail_parts = build_workday_detail_note_parts(sections)
         if detail_parts:
             candidate.notes = "; ".join(part for part in [candidate.notes, *detail_parts] if part)
+        helpers.set_candidate_description(candidate, helpers.visible_text_from_html(job_description_html))
 
     if errored_terms:
         limitations.append("Errored terms: " + ", ".join(sorted(set(errored_terms))))

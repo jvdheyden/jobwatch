@@ -134,6 +134,9 @@ def test_discover_workday_api_posts_search_terms_and_builds_detail_urls(monkeypa
     assert "Tasks: Design and ship security-critical services." in candidate.notes
     assert "Qualifications: 5+ years in production security engineering." in candidate.notes
     assert "Compensation: $180,000 - $220,000 USD annually." in candidate.notes
+    assert "Design and ship security-critical services." in candidate.description
+    assert "5+ years in production security engineering." in candidate.description
+    assert candidate.description_truncated is False
 
 
 def test_discover_workday_api_keeps_candidate_when_detail_fetch_fails(monkeypatch):
@@ -1469,6 +1472,9 @@ def test_discover_ashby_api_enriches_candidates_with_detail_sections(monkeypatch
     assert "Qualifications: 7+ years of security engineering experience." in candidate.notes
     assert "Compensation: $280,000 to $340,000 base salary (before equity)" in candidate.notes
     assert "Catalogue of benefits" not in candidate.notes
+    assert "Own the platform security roadmap." in candidate.description
+    assert "7+ years of security engineering experience." in candidate.description
+    assert candidate.description_truncated is False
 
 
 def test_discover_ashby_api_falls_back_to_compensation_summary_when_section_missing(monkeypatch):

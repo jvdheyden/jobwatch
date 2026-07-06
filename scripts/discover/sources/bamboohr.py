@@ -240,18 +240,17 @@ def discover_bamboohr_jobs(source: SourceConfig, terms: list[str], timeout_secon
         note_parts = ["Enumerated through BambooHR careers API"]
         note_parts.extend(build_bamboohr_detail_note_parts(sections, department, employment_status))
 
-        helpers.merge_candidate(
-            candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=share_url,
-                source_url=source.url,
-                location=location,
-                matched_terms=matched_terms,
-                notes="; ".join(part for part in note_parts if part),
-            ),
+        bamboo_candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=share_url,
+            source_url=source.url,
+            location=location,
+            matched_terms=matched_terms,
+            notes="; ".join(part for part in note_parts if part),
         )
+        helpers.set_candidate_description(bamboo_candidate, helpers.visible_text_from_html(description_html))
+        helpers.merge_candidate(candidates_by_url, bamboo_candidate)
 
     return Coverage(
         source=source.source,

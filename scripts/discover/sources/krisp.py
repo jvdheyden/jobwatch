@@ -161,19 +161,18 @@ def discover_krisp_jobs(source: SourceConfig, terms: list[str], timeout_seconds:
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
         if not helpers.should_keep_candidate(clean_title, matched_terms, searchable_text):
             continue
-        helpers.merge_candidate(
-            candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=clean_title,
-                url=absolute_url,
-                source_url=source.url,
-                location=location,
-                remote=remote,
-                matched_terms=matched_terms,
-                notes="; ".join(part for part in note_parts if part),
-            ),
+        krisp_candidate = Candidate(
+            employer=source.source,
+            title=clean_title,
+            url=absolute_url,
+            source_url=source.url,
+            location=location,
+            remote=remote,
+            matched_terms=matched_terms,
+            notes="; ".join(part for part in note_parts if part),
         )
+        helpers.set_candidate_description(krisp_candidate, helpers.visible_text_from_html(detail_html))
+        helpers.merge_candidate(candidates_by_url, krisp_candidate)
 
     return Coverage(
         source=source.source,

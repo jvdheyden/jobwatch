@@ -10,6 +10,7 @@ Expected source URL shape:
 
 from __future__ import annotations
 
+from html import unescape
 from urllib.parse import urlparse
 
 from discover import helpers, http
@@ -151,18 +152,21 @@ def discover_greenhouse_api(source: SourceConfig, terms: list[str], timeout_seco
         matched = helpers.match_terms(searchable_text, terms)
         if not helpers.should_keep_candidate(title, matched, searchable_text):
             continue
-        helpers.merge_candidate(
-            candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=helpers.normalize_url_without_fragment(job.get("absolute_url") or source.url),
-                source_url=source.url,
-                location=location,
-                matched_terms=matched,
-                notes=build_greenhouse_candidate_notes(content),
-            ),
+        # The boards API returns HTML-entity-encoded HTML; unescape once before
+        # parsing notes/description. Matching above stays on the raw content so
+        # deterministic matching semantics are unchanged.
+        content_html = unescape(content or "")
+        candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=helpers.normalize_url_without_fragment(job.get("absolute_url") or source.url),
+            source_url=source.url,
+            location=location,
+            matched_terms=matched,
+            notes=build_greenhouse_candidate_notes(content_html),
         )
+        helpers.set_candidate_description(candidate, greenhouse_content_text(content_html))
+        helpers.merge_candidate(candidates_by_url, candidate)
 
     return Coverage(
         source=source.source,

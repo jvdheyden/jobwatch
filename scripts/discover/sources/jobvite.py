@@ -177,6 +177,7 @@ def discover_jobvite_jobs(source: SourceConfig, terms: list[str], timeout_second
         detail_parts = build_jobvite_detail_note_parts(sections)
         if detail_parts:
             candidate.notes = "; ".join(part for part in [candidate.notes, *detail_parts] if part)
+        helpers.set_candidate_description(candidate, helpers.visible_text_from_html(detail_html))
     return Coverage(
         source=source.source,
         source_url=source.url,

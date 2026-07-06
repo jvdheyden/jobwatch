@@ -343,6 +343,7 @@ def enrich_thales_candidate_details(
         direct_job_pages_opened += 1
         if not apply_thales_detail_text(candidate, detail_html, terms):
             missing_detail_urls.append(candidate.url)
+        helpers.set_candidate_description(candidate, helpers.visible_text_from_html(detail_html))
 
     if failed_urls:
         limitations.append(f"Thales detail page fetch errored for {len(failed_urls)} matched roles")

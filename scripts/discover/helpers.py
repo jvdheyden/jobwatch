@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from discover.constants import (
+    JD_DESCRIPTION_CHAR_BUDGET,
     NON_TECHNICAL_TITLE_HINTS,
     SPECIALIZED_SIGNAL_TERMS,
     TECHNICAL_TITLE_HINTS,
@@ -328,3 +329,34 @@ def merge_candidate(candidates_by_url: dict[str, Candidate], candidate: Candidat
         existing.remote = candidate.remote
     if candidate.notes and candidate.notes not in existing.notes:
         existing.notes = "; ".join(part for part in [existing.notes, candidate.notes] if part)
+    if candidate.description and candidate.description not in existing.description:
+        combined = " ".join(part for part in [existing.description, candidate.description] if part)
+        existing.description = ""
+        existing.description_truncated = existing.description_truncated or candidate.description_truncated
+        set_candidate_description(existing, combined)
+
+
+def visible_text_from_html(html: str) -> str:
+    """Shared JD cleanup: visible text only, tags stripped, whitespace normalized."""
+    return normalize_whitespace(" ".join(extract_visible_text_lines_from_html(html)))
+
+
+def set_candidate_description(
+    candidate: Candidate,
+    text: str,
+    *,
+    char_budget: int = JD_DESCRIPTION_CHAR_BUDGET,
+) -> None:
+    """Store a JD body on the candidate, bounded with a truncation flag.
+
+    Every writer of `Candidate.description` (providers and the fallback fetch)
+    must go through this helper so artifact fields stay bounded uniformly.
+    """
+    cleaned = normalize_whitespace(text or "")
+    if not cleaned:
+        return
+    if len(cleaned) > char_budget:
+        candidate.description = truncate_text(cleaned, char_budget)
+        candidate.description_truncated = True
+    else:
+        candidate.description = cleaned
