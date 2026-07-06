@@ -35,6 +35,8 @@ class Candidate:
     remote: str = "unknown"
     matched_terms: list[str] = field(default_factory=list)
     notes: str = ""
+    description: str = ""
+    description_truncated: bool = False
 
 
 @dataclass
@@ -138,6 +140,73 @@ def failed_coverage(source: SourceConfig, terms: list[str], limitation: str) -> 
     )
 
 
+def enrich_candidate_descriptions(
+    coverage: Coverage,
+    timeout_seconds: int,
+    *,
+    char_budget: int | None = None,
+    max_seconds: float | None = None,
+    max_fetches: int | None = None,
+) -> None:
+    """Fetch each matched candidate's URL and store the JD body in `description`.
+
+    Only candidates that survived term filtering reach `coverage.candidates`, so
+    unmatched postings never trigger a fetch. Candidates a provider already
+    populated are skipped. Fetches continue until the wall-clock budget
+    (`max_seconds`) is exhausted, or the hard ceiling (`max_fetches`) is reached
+    as a runaway-protection safety net. Per-candidate fetch failures are recorded
+    as a single coverage limitation rather than aborting; budget exhaustion is
+    recorded separately so coverage truncation stays visible.
+    """
+
+    import time
+
+    from discover import helpers, http
+    from discover.constants import (
+        JD_DESCRIPTION_CHAR_BUDGET,
+        JD_FETCH_HARD_CEILING,
+        JD_FETCH_WALL_CLOCK_BUDGET_SECONDS,
+    )
+
+    if char_budget is None:
+        char_budget = JD_DESCRIPTION_CHAR_BUDGET
+    if max_seconds is None:
+        max_seconds = JD_FETCH_WALL_CLOCK_BUDGET_SECONDS
+    if max_fetches is None:
+        max_fetches = JD_FETCH_HARD_CEILING
+
+    fetched = 0
+    failures = 0
+    budget_exhausted_at: int | None = None
+    started_at = time.monotonic()
+    for candidate in coverage.candidates:
+        if candidate.description:
+            continue
+        if fetched >= max_fetches or time.monotonic() - started_at >= max_seconds:
+            budget_exhausted_at = fetched
+            break
+        url = candidate.url
+        if not url or not url.lower().startswith(("http://", "https://")):
+            continue
+        try:
+            html = http.fetch_text(url, timeout_seconds)
+        except Exception:
+            failures += 1
+            continue
+        fetched += 1
+        helpers.set_candidate_description(
+            candidate, helpers.visible_text_from_html(html), char_budget=char_budget
+        )
+    if failures:
+        coverage.limitations.append(f"JD fetch failed for {failures} candidate(s)")
+    if budget_exhausted_at is not None:
+        unfilled = sum(1 for c in coverage.candidates if not c.description)
+        coverage.limitations.append(
+            f"JD fetch budget exhausted after {budget_exhausted_at} fetch(es); "
+            f"{unfilled} candidate(s) left without description"
+        )
+
+
 def discover_source(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     """Dispatch a source through the provider registry with legacy failure semantics."""
 
@@ -147,6 +216,8 @@ def discover_source(source: SourceConfig, terms: list[str], timeout_seconds: int
     if not adapter:
         return failed_coverage(source, terms, f"Unsupported discovery_mode: {source.discovery_mode}")
     try:
-        return attach_source_identity(source, adapter.discover(source, terms, timeout_seconds))
+        coverage = attach_source_identity(source, adapter.discover(source, terms, timeout_seconds))
     except Exception as exc:  # pragma: no cover - defensive output for live runs
         return failed_coverage(source, terms, f"{type(exc).__name__}: {exc}")
+    enrich_candidate_descriptions(coverage, timeout_seconds)
+    return coverage

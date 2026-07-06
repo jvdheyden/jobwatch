@@ -67,18 +67,17 @@ def discover_teamtailor_jobs(source: SourceConfig, terms: list[str], timeout_sec
         note_parts = ["Enumerated through Teamtailor jobs.json feed"]
         if description_text:
             note_parts.append(f"Description: {helpers.truncate_text(description_text, 260)}")
-        helpers.merge_candidate(
-            candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=helpers.normalize_url_without_fragment(url),
-                source_url=source.url,
-                location=location,
-                matched_terms=matched_terms,
-                notes="; ".join(note_parts),
-            ),
+        teamtailor_candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=helpers.normalize_url_without_fragment(url),
+            source_url=source.url,
+            location=location,
+            matched_terms=matched_terms,
+            notes="; ".join(note_parts),
         )
+        helpers.set_candidate_description(teamtailor_candidate, description_text)
+        helpers.merge_candidate(candidates_by_url, teamtailor_candidate)
 
     return Coverage(
         source=source.source,

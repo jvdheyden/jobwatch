@@ -54,6 +54,21 @@ def _detail_notes(detail: dict) -> str:
     return "; ".join(note_parts)
 
 
+def _detail_description(detail: dict) -> str:
+    content = detail.get("content") if isinstance(detail, dict) else None
+    if not isinstance(content, dict):
+        return ""
+    parts = [str(content.get("descriptionHtml") or "")]
+    for section in content.get("lists") or []:
+        if not isinstance(section, dict):
+            continue
+        heading = unescape(str(section.get("text") or "")).strip()
+        if heading:
+            parts.append(f"<p>{heading}</p>")
+        parts.append(str(section.get("content") or ""))
+    return helpers.visible_text_from_html(" ".join(part for part in parts if part))
+
+
 def _job_location(job: dict) -> str:
     locations = [
         unescape(str(entry.get("location") or ""))
@@ -83,6 +98,7 @@ def discover_lifeatspotify_jobs(source: SourceConfig, terms: list[str], timeout_
         if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
             continue
         detail_notes = "Enumerated through lifeatspotify.com jobs API"
+        detail_description = ""
         try:
             detail_payload = http.fetch_json(
                 f"{LIFEATSPOTIFY_API_ROOT}/job/single/{job_id}", timeout_seconds
@@ -92,19 +108,20 @@ def discover_lifeatspotify_jobs(source: SourceConfig, terms: list[str], timeout_
             limitations.append(f"Could not fetch detail for {job_id}: {type(exc).__name__}: {exc}")
             detail_payload = None
         if isinstance(detail_payload, dict):
-            detail_notes = _detail_notes(detail_payload.get("data") or {})
-        helpers.merge_candidate(
-            candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=f"{LIFEATSPOTIFY_DETAIL_ROOT}/{job_id}",
-                source_url=source.url,
-                location=_job_location(job),
-                matched_terms=matched_terms,
-                notes=detail_notes,
-            ),
+            detail_data = detail_payload.get("data") or {}
+            detail_notes = _detail_notes(detail_data)
+            detail_description = _detail_description(detail_data)
+        spotify_candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=f"{LIFEATSPOTIFY_DETAIL_ROOT}/{job_id}",
+            source_url=source.url,
+            location=_job_location(job),
+            matched_terms=matched_terms,
+            notes=detail_notes,
         )
+        helpers.set_candidate_description(spotify_candidate, detail_description)
+        helpers.merge_candidate(candidates_by_url, spotify_candidate)
 
     return Coverage(
         source=source.source,
