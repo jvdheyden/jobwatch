@@ -203,3 +203,98 @@ def test_enrich_skips_candidates_with_no_url(monkeypatch):
 
     assert candidate.description == ""
     assert coverage.limitations == []
+
+
+def test_enrich_counts_failed_fetches_toward_hard_ceiling(monkeypatch):
+    attempted_urls: list[str] = []
+
+    def failing_fetch_text(url: str, timeout_seconds: int) -> str:
+        attempted_urls.append(url)
+        raise RuntimeError("dead link")
+
+    monkeypatch.setattr(http, "fetch_text", failing_fetch_text)
+
+    candidates = [
+        Candidate(
+            employer="Example",
+            title=f"Role {idx}",
+            url=f"https://example.com/jobs/{idx}",
+            source_url="https://example.com/jobs",
+        )
+        for idx in range(5)
+    ]
+    coverage = _coverage(candidates)
+
+    enrich_candidate_descriptions(coverage, timeout_seconds=5, max_fetches=2)
+
+    # Failures consume the ceiling too; a source full of dead links cannot
+    # spin through unbounded fetch attempts.
+    assert len(attempted_urls) == 2
+    assert any("JD fetch failed for 2 candidate(s)" in lim for lim in coverage.limitations)
+    assert any("budget exhausted" in lim for lim in coverage.limitations)
+
+
+def test_runner_enriches_descriptions_only_after_track_filtering(tmp_path, monkeypatch):
+    import json
+
+    from discover import runner
+    from discover.core import SourceConfig
+
+    source = SourceConfig(
+        source="Example",
+        url="https://example.com/jobs",
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    kept = Candidate(
+        employer="Example",
+        title="Security Engineer",
+        url="https://example.com/jobs/keep",
+        source_url="https://example.com/jobs",
+        matched_terms=["security"],
+    )
+    dropped = Candidate(
+        employer="Example",
+        title="Security Engineer, Filtered Team",
+        url="https://example.com/jobs/drop",
+        source_url="https://example.com/jobs",
+        matched_terms=["security"],
+    )
+
+    def fake_load(track):
+        return [source], ["security"], {}
+
+    def fake_discover(src, terms, timeout_seconds):
+        return _coverage([dropped, kept])
+
+    def fake_filter(track, coverage):
+        coverage.candidates = [c for c in coverage.candidates if c.url.endswith("/keep")]
+        coverage.matched_jobs = len(coverage.candidates)
+        return coverage
+
+    fetched_urls: list[str] = []
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        fetched_urls.append(url)
+        return "<p>JD body for the kept security engineer role.</p>"
+
+    monkeypatch.setattr(http, "fetch_text", fake_fetch_text)
+
+    output = tmp_path / "artifact.json"
+    rc = runner.main(
+        ["--track", "demo", "--today", "2026-07-06", "--output", str(output)],
+        load_track_config_func=fake_load,
+        discover_source_func=fake_discover,
+        filter_coverage_func=fake_filter,
+    )
+
+    assert rc == 0
+    # The filtered-out candidate's URL is never fetched: enrichment runs after
+    # track filtering, not inside discover_source.
+    assert fetched_urls == ["https://example.com/jobs/keep"]
+    payload = json.loads(output.read_text())
+    candidates = payload["sources"][0]["candidates"]
+    assert len(candidates) == 1
+    assert candidates[0]["url"] == "https://example.com/jobs/keep"
+    assert "JD body for the kept security engineer role." in candidates[0]["description"]

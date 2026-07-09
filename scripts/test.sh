@@ -52,6 +52,7 @@ fi
   tests/unit/test_send_digest_email.py \
   tests/unit/test_send_digest_telegram.py \
   tests/unit/test_source_config.py \
+  tests/unit/test_enrich_candidate_descriptions.py \
   tests/unit/test_agent_support.py \
   tests/unit/test_machine_resolution.py \
   tests/unit/test_integrate_next_source.py \

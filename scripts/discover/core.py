@@ -150,9 +150,9 @@ def enrich_candidate_descriptions(
 ) -> None:
     """Fetch each matched candidate's URL and store the JD body in `description`.
 
-    Only candidates that survived term filtering reach `coverage.candidates`, so
-    unmatched postings never trigger a fetch. Candidates a provider already
-    populated are skipped. Fetches continue until the wall-clock budget
+    The runner calls this after track filtering, so only candidates that
+    survived both term matching and track filters trigger a fetch. Candidates a
+    provider already populated are skipped. Fetches continue until the wall-clock budget
     (`max_seconds`) is exhausted, or the hard ceiling (`max_fetches`) is reached
     as a runaway-protection safety net. Per-candidate fetch failures are recorded
     as a single coverage limitation rather than aborting; budget exhaustion is
@@ -175,25 +175,27 @@ def enrich_candidate_descriptions(
     if max_fetches is None:
         max_fetches = JD_FETCH_HARD_CEILING
 
-    fetched = 0
+    attempts = 0
     failures = 0
     budget_exhausted_at: int | None = None
     started_at = time.monotonic()
     for candidate in coverage.candidates:
         if candidate.description:
             continue
-        if fetched >= max_fetches or time.monotonic() - started_at >= max_seconds:
-            budget_exhausted_at = fetched
+        if attempts >= max_fetches or time.monotonic() - started_at >= max_seconds:
+            budget_exhausted_at = attempts
             break
         url = candidate.url
         if not url or not url.lower().startswith(("http://", "https://")):
             continue
+        # Failed fetches count toward the hard ceiling too, so a source full of
+        # dead links cannot spin through unbounded fetch attempts.
+        attempts += 1
         try:
             html = http.fetch_text(url, timeout_seconds)
         except Exception:
             failures += 1
             continue
-        fetched += 1
         helpers.set_candidate_description(
             candidate, helpers.visible_text_from_html(html), char_budget=char_budget
         )
@@ -202,7 +204,7 @@ def enrich_candidate_descriptions(
     if budget_exhausted_at is not None:
         unfilled = sum(1 for c in coverage.candidates if not c.description)
         coverage.limitations.append(
-            f"JD fetch budget exhausted after {budget_exhausted_at} fetch(es); "
+            f"JD fetch budget exhausted after {budget_exhausted_at} fetch attempt(s); "
             f"{unfilled} candidate(s) left without description"
         )
 
@@ -216,8 +218,6 @@ def discover_source(source: SourceConfig, terms: list[str], timeout_seconds: int
     if not adapter:
         return failed_coverage(source, terms, f"Unsupported discovery_mode: {source.discovery_mode}")
     try:
-        coverage = attach_source_identity(source, adapter.discover(source, terms, timeout_seconds))
+        return attach_source_identity(source, adapter.discover(source, terms, timeout_seconds))
     except Exception as exc:  # pragma: no cover - defensive output for live runs
         return failed_coverage(source, terms, f"{type(exc).__name__}: {exc}")
-    enrich_candidate_descriptions(coverage, timeout_seconds)
-    return coverage
