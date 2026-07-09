@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, TextIO
 
 from discover.constants import DEFAULT_TIMEOUT_SECONDS
-from discover.core import Coverage, SourceConfig, SourceTermRule, discover_source
+from discover.core import Coverage, SourceConfig, SourceTermRule, discover_source, enrich_candidate_descriptions
 from discover.track_filters import filter_coverage_for_track
 from source_config import SourceConfigError, load_source_state, load_sources_config
 
@@ -218,6 +218,9 @@ def main(
             )
             coverage = discover(source, terms, args.timeout_seconds)
             coverage = filter_coverage(args.track, coverage)
+            # Enrich after track filtering so JD fetches only run for
+            # candidates that survive every filter stage.
+            enrich_candidate_descriptions(coverage, args.timeout_seconds)
             coverage.due_today = source_due_today(source, today)
             emit_progress(
                 args.progress,
