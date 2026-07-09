@@ -45,6 +45,7 @@ fi
 "$PYTHON_BIN" -m pytest \
   tests/contract \
   tests/unit/test_discover_jobs_config.py \
+  tests/unit/test_discover_jobs_track_filters.py \
   tests/unit/test_discover_jobs_progress.py \
   tests/unit/test_digest_email.py \
   tests/unit/test_digest_json.py \
