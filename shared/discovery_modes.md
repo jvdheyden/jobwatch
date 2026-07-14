@@ -268,6 +268,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and extracts visible job cards from the jobs page.
 
+### `hibob_api`
+
+- Provider: `discover.sources.hibob` / `discover_hibob_api`
+- Emits candidates: yes
+- URL/source shape: `https://<company>.careers.hibob.com` hosted careers page.
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/hibob_api/`
+- Requirements: none
+- Known limitations: Reads every published posting from the HiBob `/api/job-ad` JSON endpoint (requires the `companyIdentifier` header derived from the careers subdomain); descriptions come from the same response, so no per-posting fetch is needed.
+
 ### `html`
 
 - Provider: `discover.sources.generic_html` / `discover_html`

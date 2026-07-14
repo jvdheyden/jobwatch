@@ -147,6 +147,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Requires Playwright and extracts visible job cards from the jobs page.",
     },
+    "hibob_api": {
+        "url_shape": "`https://<company>.careers.hibob.com` hosted careers page.",
+        "filters": "none",
+        "limitations": "Reads every published posting from the HiBob `/api/job-ad` JSON endpoint (requires the `companyIdentifier` header derived from the careers subdomain); descriptions come from the same response, so no per-posting fetch is needed.",
+    },
     "html": {
         "url_shape": "Any official static careers/listings page with direct job links.",
         "filters": "none",

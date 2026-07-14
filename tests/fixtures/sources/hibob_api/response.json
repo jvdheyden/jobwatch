@@ -1,0 +1,29 @@
+{
+  "filterGroups": {
+    "sites": [
+      {"serverId": "1", "value": "London Studio"},
+      {"serverId": "2", "value": "Berlin Studio"}
+    ]
+  },
+  "jobAdDetails": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "title": "Security Engineer",
+      "department": "Engineering",
+      "site": "London Studio",
+      "country": "United Kingdom",
+      "workspaceType": "Hybrid",
+      "description": "<p>Design and operate applied cryptography services across client products.</p>",
+      "requirements": "<ul><li>Production security engineering experience</li><li>Familiarity with zero-knowledge protocols</li></ul>"
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222222",
+      "title": "Marketing Copywriter",
+      "department": "Marketing",
+      "site": "Berlin Studio",
+      "country": "Germany",
+      "workspaceType": "On-site",
+      "description": "<p>Write launch copy for studio work.</p>"
+    }
+  ]
+}

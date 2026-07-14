@@ -57,6 +57,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "hackernews_whoishiring_api": "https://news.ycombinator.com/user?id=whoishiring",
         "harman_html": "https://jobsearch.harman.com/en_US/careers/SearchJobs",
         "helsing_browser": "https://helsing.ai/jobs",
+        "hibob_api": "https://example.careers.hibob.com",
         "html": "https://jobs.example.com/",
         "iacr_jobs": "https://www.iacr.org/jobs/",
         "ibm_api": "https://www.ibm.com/careers/search",
@@ -145,14 +146,14 @@ def _install_fixture(monkeypatch: pytest.MonkeyPatch, fixture_dir: Path, stem: s
     installed = False
     if html_path.exists():
         html = html_path.read_text()
-        monkeypatch.setattr(http, "fetch_text", lambda url, timeout_seconds: html)
+        monkeypatch.setattr(http, "fetch_text", lambda url, timeout_seconds, headers=None: html)
         installed = True
     if json_path.exists():
         payload = json.loads(json_path.read_text())
         monkeypatch.setattr(
             http,
             "fetch_json",
-            lambda url, timeout_seconds: payload[url] if isinstance(payload, dict) and url in payload else payload,
+            lambda url, timeout_seconds, headers=None: payload[url] if isinstance(payload, dict) and url in payload else payload,
         )
         monkeypatch.setattr(http, "post_json", lambda url, data, timeout_seconds, headers=None: payload)
         installed = True
@@ -306,8 +307,8 @@ def test_provider_network_error_returns_failed_coverage(mode: str, _adapter: Sou
     if mode in BROWSER_MODES:
         _install_missing_browser(monkeypatch)
 
-    def raise_url_error(url: str, timeout_seconds: int):
-        del url, timeout_seconds
+    def raise_url_error(url: str, timeout_seconds: int, headers: dict[str, str] | None = None):
+        del url, timeout_seconds, headers
         raise URLError("fixture network failure")
 
     monkeypatch.setattr(http, "fetch_text", raise_url_error)
