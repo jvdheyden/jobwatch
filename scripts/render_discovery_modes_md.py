@@ -112,6 +112,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Parses embedded Phenom search payloads from localized search-result pages.",
     },
+    "factorial": {
+        "url_shape": "`https://<tenant>.factorialhr.com/` company career page.",
+        "filters": "none",
+        "limitations": "Enumerates listing links like generic HTML, then opens each `/job_posting/` detail page to recover the real title, location, and role detail, since the listing only exposes anonymous apply links.",
+    },
     "getro_api": {
         "url_shape": "Getro collection jobs URL.",
         "filters": "none",

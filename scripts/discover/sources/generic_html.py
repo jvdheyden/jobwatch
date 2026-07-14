@@ -595,8 +595,165 @@ def discover_knds_jobboard(source: SourceConfig, terms: list[str], timeout_secon
     )
 
 
+FACTORIAL_JOB_PATH_FRAGMENT = "/job_posting/"
+FACTORIAL_NOTES_CHAR_BUDGET = 480
+# Factorial ATS pages inline the GTM/Sentry <script> and theme <style> blocks as
+# text nodes, so tag-stripping alone leaks them into extracted copy. Drop those
+# blocks wholesale before reading visible text.
+FACTORIAL_SCRIPT_STYLE_RE = re.compile(r"(?is)<(script|style)\b[^>]*>.*?</\1>")
+# Header/breadcrumb/footer chrome that repeats on every Factorial job page.
+FACTORIAL_CHROME_LINES = {
+    "values",
+    "benefits",
+    "jobs",
+    "offices",
+    ">",
+    "|",
+    "→",
+    "apply now",
+    "apply now! \U0001f680",
+}
+FACTORIAL_FOOTER_MARKERS = (
+    "privacy policy",
+    "cookie settings",
+    "manage cookies",
+    "this website uses cookies",
+    "factorial uses cookies",
+)
+# Single-token employment-type / work-model chips shown next to the title.
+FACTORIAL_META_LINES = {
+    "full time",
+    "part time",
+    "permanent",
+    "intern",
+    "internship",
+    "temporary",
+    "freelance",
+    "working student",
+    "contract",
+    "hybrid",
+    "remote",
+    "on-site",
+    "on site",
+    "onsite",
+}
+FACTORIAL_WORK_TYPE_LINES = {"hybrid", "remote", "on-site", "on site", "onsite"}
+
+
+def is_factorial_job_url(url: str) -> bool:
+    return FACTORIAL_JOB_PATH_FRAGMENT in urlparse(url).path
+
+
+def factorial_detail_lines(html: str) -> list[str]:
+    stripped = FACTORIAL_SCRIPT_STYLE_RE.sub(" ", html or "")
+    return helpers.extract_visible_text_lines_from_html(stripped)
+
+
+def factorial_body_lines(lines: list[str]) -> list[str]:
+    body: list[str] = []
+    for line in lines:
+        normalized = helpers.normalize_for_matching(line).strip()
+        if any(normalized.startswith(marker) for marker in FACTORIAL_FOOTER_MARKERS):
+            break
+        body.append(line)
+    return body
+
+
+def factorial_title(lines: list[str]) -> str:
+    """Prefer the breadcrumb target (``Jobs > <title>``), else the first real line."""
+    for index, line in enumerate(lines):
+        if line.strip() != ">":
+            continue
+        for candidate_line in lines[index + 1 :]:
+            cleaned = helpers.normalize_whitespace(candidate_line)
+            if cleaned and helpers.normalize_for_matching(cleaned) not in FACTORIAL_CHROME_LINES:
+                return cleaned
+    for line in lines:
+        cleaned = helpers.normalize_whitespace(line)
+        if cleaned and helpers.normalize_for_matching(cleaned) not in FACTORIAL_CHROME_LINES:
+            return cleaned
+    return ""
+
+
+def factorial_location(body_lines: list[str]) -> str:
+    for index, line in enumerate(body_lines):
+        if helpers.normalize_for_matching(line).strip() not in FACTORIAL_WORK_TYPE_LINES:
+            continue
+        for candidate_line in body_lines[index + 1 : index + 3]:
+            stripped = candidate_line.strip()
+            if stripped.startswith("(") and stripped.endswith(")"):
+                return helpers.normalize_whitespace(stripped[1:-1])
+    return ""
+
+
+def factorial_role_detail(title: str, body_lines: list[str]) -> str:
+    title_normalized = helpers.normalize_for_matching(title).strip()
+    content: list[str] = []
+    for line in body_lines:
+        cleaned = helpers.normalize_whitespace(line)
+        if not cleaned:
+            continue
+        normalized = helpers.normalize_for_matching(cleaned).strip()
+        if normalized in FACTORIAL_CHROME_LINES or normalized in FACTORIAL_META_LINES:
+            continue
+        if normalized == title_normalized:
+            continue
+        if cleaned.startswith("(") and cleaned.endswith(")"):
+            continue
+        content.append(cleaned)
+    return helpers.normalize_whitespace(" ".join(content))
+
+
+def enrich_factorial_candidate(candidate: Candidate, html: str) -> None:
+    lines = factorial_detail_lines(html)
+    if not lines:
+        return
+    title = factorial_title(lines)
+    if title:
+        candidate.title = title
+    body_lines = factorial_body_lines(lines)
+    location = factorial_location(body_lines)
+    if location:
+        candidate.location = location
+    detail = factorial_role_detail(candidate.title, body_lines)
+    if detail:
+        helpers.set_candidate_description(candidate, detail)
+        candidate.notes = helpers.truncate_text(detail, FACTORIAL_NOTES_CHAR_BUDGET)
+
+
+def discover_factorial(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    """Factorial ATS discovery: enumerate like generic HTML, then open each job
+    page to recover the real title, location, and substantive role detail.
+
+    The listing only exposes anonymous "Apply now" links, so titles and JD copy
+    come from the detail pages. Populating ``description``/``notes`` here also
+    stops the generic post-discovery enrichment from re-fetching the noisy raw
+    HTML.
+    """
+
+    coverage = discover_html(source, terms, timeout_seconds)
+    pages_opened = 0
+    failures = 0
+    for candidate in coverage.candidates:
+        if not is_factorial_job_url(candidate.url):
+            continue
+        try:
+            html = http.fetch_text(candidate.url, timeout_seconds)
+        except Exception:
+            failures += 1
+            continue
+        pages_opened += 1
+        enrich_factorial_candidate(candidate, html)
+    coverage.direct_job_pages_opened = pages_opened
+    coverage.result_pages_scanned = f"local_filter=1; factorial_detail_pages={pages_opened}"
+    if failures:
+        coverage.limitations.append(f"Factorial detail fetch failed for {failures} posting(s)")
+    return coverage
+
+
 SOURCES = [
     SourceAdapter(modes=("html", "icims_html"), discover=discover_html),
+    SourceAdapter(modes=("factorial",), discover=discover_factorial),
     SourceAdapter(modes=("cybernetica_teamdash",), discover=discover_cybernetica_teamdash),
     SourceAdapter(modes=("knds_jobboard",), discover=discover_knds_jobboard),
     SourceAdapter(modes=("secunet_jobboard",), discover=discover_secunet_jobboard),
