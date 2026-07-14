@@ -198,6 +198,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Parses embedded Phenom search payloads from localized search-result pages.
 
+### `factorial`
+
+- Provider: `discover.sources.generic_html` / `discover_factorial`
+- Emits candidates: yes
+- URL/source shape: `https://<tenant>.factorialhr.com/` company career page.
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/factorial/`
+- Requirements: none
+- Known limitations: Enumerates listing links like generic HTML, then opens each `/job_posting/` detail page to recover the real title, location, and role detail, since the listing only exposes anonymous apply links.
+
 ### `getro_api`
 
 - Provider: `discover.sources.getro` / `discover_getro_api`

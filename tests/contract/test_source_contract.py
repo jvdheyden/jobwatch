@@ -50,6 +50,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "ecb_avature_rss": "https://talent.ecb.europa.eu/careers/SearchJobs?jobRecordsPerPage=50",
         "eightfold_api": "https://apply.careers.microsoft.com/careers",
         "enbw_phenom": "https://careers.enbw.com/en_US/careers",
+        "factorial": "https://example.factorialhr.com/",
         "getro_api": "https://jobs.example-getro.com/jobs",
         "greenhouse_api": "https://job-boards.greenhouse.io/example",
         "hackernews_jobs": "https://news.ycombinator.com/jobs",
