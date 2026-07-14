@@ -1,0 +1,25 @@
+{
+  "filterGroups": {
+    "sites": [{"serverId": "1", "value": "London Studio"}]
+  },
+  "jobAdDetails": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "title": "Security Engineer",
+      "department": "Engineering",
+      "site": "London Studio",
+      "country": "United Kingdom",
+      "workspaceType": "Hybrid",
+      "description": "<p>Design and operate applied cryptography services.</p>"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "title": "Security Engineer",
+      "department": "Engineering",
+      "site": "London Studio",
+      "country": "United Kingdom",
+      "workspaceType": "Hybrid",
+      "description": "<p>Design and operate applied cryptography services.</p>"
+    }
+  ]
+}

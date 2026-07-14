@@ -67,11 +67,14 @@ class _IPv4HTTPSHandler(HTTPSHandler):
         )
 
 
-def fetch_text(url: str, timeout_seconds: int) -> str:
+def fetch_text(url: str, timeout_seconds: int, headers: dict[str, str] | None = None) -> str:
     last_error: Exception | None = None
     for attempt in range(3):
         try:
-            request = Request(url, headers={"User-Agent": USER_AGENT})
+            request_headers = {"User-Agent": USER_AGENT}
+            if headers:
+                request_headers.update(headers)
+            request = Request(url, headers=request_headers)
             context = ssl.create_default_context()
             with urlopen(request, timeout=timeout_seconds, context=context) as response:
                 content_type = response.headers.get_content_charset() or "utf-8"
@@ -112,8 +115,8 @@ def fetch_text_ipv4(url: str, timeout_seconds: int) -> str:
     raise last_error
 
 
-def fetch_json(url: str, timeout_seconds: int) -> Any:
-    return json.loads(fetch_text(url, timeout_seconds))
+def fetch_json(url: str, timeout_seconds: int, headers: dict[str, str] | None = None) -> Any:
+    return json.loads(fetch_text(url, timeout_seconds, headers=headers))
 
 
 def post_json(url: str, payload: Any, timeout_seconds: int, headers: dict[str, str] | None = None) -> Any:
