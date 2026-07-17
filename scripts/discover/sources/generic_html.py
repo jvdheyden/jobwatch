@@ -744,6 +744,10 @@ def discover_factorial(source: SourceConfig, terms: list[str], timeout_seconds: 
             continue
         pages_opened += 1
         enrich_factorial_candidate(candidate, html)
+        searchable_text = " ".join(
+            part for part in [candidate.title, candidate.location, candidate.description] if part
+        )
+        candidate.matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
     coverage.direct_job_pages_opened = pages_opened
     coverage.result_pages_scanned = f"local_filter=1; factorial_detail_pages={pages_opened}"
     if failures:
