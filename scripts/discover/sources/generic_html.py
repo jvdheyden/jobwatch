@@ -78,7 +78,109 @@ def collect_job_links(html: str, base_url: str, path_fragment: str) -> dict[str,
     return links
 
 
+def is_bwi_job_detail_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.netloc.lower() in {"bwi.de", "www.bwi.de"} and parsed.path.startswith(
+        "/karriere/stellenangebote/job/"
+    )
+
+
+def extract_bwi_job_detail(html: str) -> str:
+    text = helpers.strip_html_fragment(html)
+    marker = re.search(r"\bStellen-ID:\s*\d+\b", text, flags=re.IGNORECASE)
+    if not marker:
+        return ""
+    return helpers.normalize_whitespace(text[marker.start() :])
+
+
+def extract_bwi_title(detail: str, fallback: str) -> str:
+    match = re.match(
+        r"Stellen-ID:\s*\d+\s+(.+?)\s+(?:ab sofort\b|Stellenbeschreibung\b)",
+        detail,
+        flags=re.IGNORECASE,
+    )
+    return helpers.normalize_whitespace(match.group(1) if match else fallback) or "unknown"
+
+
+def extract_bwi_location(detail: str, title: str) -> str:
+    heading = detail.split("Stellenbeschreibung", 1)[0]
+    nationwide = re.search(
+        r"\b(bundesweit\s+an\s+einem\s+unserer\s+BWI\s+Standorte)\b",
+        heading,
+        flags=re.IGNORECASE,
+    )
+    if nationwide:
+        return helpers.normalize_whitespace(nationwide.group(1))
+    location_marker = heading.lower().rfind(" in ")
+    if location_marker >= 0:
+        return helpers.normalize_whitespace(heading[location_marker + 4 :].rstrip(". "))
+    title_location = re.search(r"\(m/w/d\)\s+in\s+(.+)$", title, flags=re.IGNORECASE)
+    return helpers.normalize_whitespace(title_location.group(1)) if title_location else "unknown"
+
+
+def discover_bwi_jobboard(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    listing_html = http.fetch_text(source.url, timeout_seconds)
+    parser = helpers.LinkCollector()
+    parser.feed(listing_html)
+    links: dict[str, str] = {}
+    for link in parser.links:
+        absolute_url = helpers.normalize_url_without_fragment(urljoin(source.url, link["href"]))
+        if is_bwi_job_detail_url(absolute_url):
+            links.setdefault(absolute_url, helpers.normalize_whitespace(link["text"]))
+
+    candidates: list[Candidate] = []
+    limitations: list[str] = []
+    opened_pages = 0
+    for url, link_text in links.items():
+        try:
+            detail_html = http.fetch_text(url, timeout_seconds)
+        except Exception as exc:
+            limitations.append(f"BWI job detail fetch failed for {url}: {exc}")
+            continue
+        opened_pages += 1
+        detail = extract_bwi_job_detail(detail_html)
+        if not detail:
+            limitations.append(f"BWI job detail marker was missing for {url}")
+            continue
+        title = extract_bwi_title(detail, link_text)
+        searchable_text = f"{title} {detail}"
+        matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
+        if not matched_terms or not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+            continue
+        candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=url,
+            source_url=source.url,
+            location=extract_bwi_location(detail, title),
+            matched_terms=matched_terms,
+            notes=f"BWI vacancy detail: {detail}",
+        )
+        helpers.set_candidate_description(candidate, detail)
+        candidates.append(candidate)
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"bwi_job_details={opened_pages}",
+        direct_job_pages_opened=opened_pages,
+        enumerated_jobs=len(links),
+        matched_jobs=len(candidates),
+        limitations=limitations,
+        candidates=candidates,
+    )
+
+
 def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    if urlparse(source.url).netloc.lower() in {"bwi.de", "www.bwi.de"}:
+        return discover_bwi_jobboard(source, terms, timeout_seconds)
     html = http.fetch_text(source.url, timeout_seconds)
     parser = helpers.LinkCollector()
     parser.feed(html)

@@ -365,6 +365,89 @@ def test_discover_knds_jobboard_follows_listing_and_rejects_navigation(monkeypat
     assert candidate.matched_terms == ["IT Security"]
 
 
+def test_discover_bwi_jobboard_extracts_vacancy_detail_and_rejects_navigation(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="BWI",
+        url="https://www.bwi.de/karriere/stellenangebote",
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    relevant_url = (
+        "https://www.bwi.de/karriere/stellenangebote/job/"
+        "security-architect-schwerpunkt-zero-trust-m-w-d-68876"
+    )
+    unrelated_url = "https://www.bwi.de/karriere/stellenangebote/job/experte-datenmanagement-sap-m-w-d-68908"
+    listing_html = f"""
+    <html><body>
+      <nav><a href="/karriere/berufserfahrene/system-engineer">System Engineer</a></nav>
+      <a href="{relevant_url}">Security Architect - Schwerpunkt Zero Trust (m/w/d)</a>
+      <a href="{unrelated_url}">Experte Datenmanagement SAP (m/w/d)</a>
+    </body></html>
+    """
+    relevant_html = """
+    <html><body>
+      <nav>Cyber Security Studium Karriere Datenschutz</nav>
+      <footer>Kontakt und allgemeine Navigation</footer>
+      <main>
+        <p>Stellen-ID: 68876 Security Architect - Schwerpunkt Zero Trust (m/w/d)
+           ab sofort und in Vollzeit in Bonn, Leipzig oder München.</p>
+        <h2>Stellenbeschreibung</h2>
+        <p>Wir entwickeln sichere Zero-Trust-Architekturen für die Bundeswehr.</p>
+        <h2>Deine Aufgaben:</h2>
+        <ul><li>Konzeption von IT-Sicherheit und Zero-Trust-Lösungen.</li></ul>
+        <h2>Dein Profil:</h2>
+        <ul><li>Mehrjährige Erfahrung mit Sicherheitsarchitekturen.</li></ul>
+      </main>
+    </body></html>
+    """
+    unrelated_html = """
+    <html><body>
+      <nav>Cyber Security Studium Karriere Datenschutz</nav>
+      <main>
+        <p>Stellen-ID: 68908 Experte Datenmanagement SAP (m/w/d)
+           ab sofort und in Vollzeit bundesweit an einem unserer BWI Standorte.</p>
+        <h2>Stellenbeschreibung</h2>
+        <p>Datenqualität und Data Governance für ERP-Produkte.</p>
+        <h2>Deine Aufgaben:</h2><p>Pflege von SAP-Stammdaten.</p>
+        <h2>Dein Profil:</h2><p>Erfahrung im Datenmanagement.</p>
+      </main>
+    </body></html>
+    """
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        if url == source.url:
+            return listing_html
+        if url == relevant_url:
+            return relevant_html
+        if url == unrelated_url:
+            return unrelated_html
+        raise AssertionError(f"unexpected URL: {url}")
+
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_html(
+        source,
+        ["IT-Sicherheit", "Cyber Security", "Security Architect", "Datenschutz"],
+        5,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.direct_job_pages_opened == 2
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Security Architect - Schwerpunkt Zero Trust (m/w/d)"
+    assert candidate.location == "Bonn, Leipzig oder München"
+    assert candidate.matched_terms == ["IT-Sicherheit", "Security Architect"]
+    assert candidate.description.startswith("Stellen-ID: 68876")
+    assert "Deine Aufgaben:" in candidate.description
+    assert "Dein Profil:" in candidate.description
+    assert "allgemeine Navigation" not in candidate.description
+    assert "BWI vacancy detail:" in candidate.notes
+
+
 def test_discover_knds_jobboard_uses_native_api_when_jobs_are_not_static(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="KNDS",
