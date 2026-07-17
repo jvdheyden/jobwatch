@@ -77,6 +77,36 @@ def test_discover_greenhouse_api_filters_and_builds_urls(monkeypatch):
     assert "complete benefits catalogue" not in candidate.notes
 
 
+def test_discover_greenhouse_api_builds_consensys_board_job_url(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Consensys",
+        url="https://job-boards.greenhouse.io/consensys",
+        discovery_mode="greenhouse_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    def fake_fetch_json(url: str, timeout_seconds: int):
+        assert url == "https://boards-api.greenhouse.io/v1/boards/consensys/jobs?content=true"
+        return {
+            "jobs": [
+                {
+                    "id": 7821125,
+                    "title": "Application Security Engineer",
+                    "absolute_url": "https://consensys.io/open-roles/7821125?gh_jid=7821125",
+                    "location": {"name": "Remote"},
+                    "content": "Build application security and wallet security systems.",
+                }
+            ]
+        }
+
+    monkeypatch.setattr(discover_http, "fetch_json", fake_fetch_json)
+
+    coverage = discover_jobs.discover_greenhouse_api(source, ["application security"], timeout_seconds=5)
+
+    assert coverage.candidates[0].url == "https://job-boards.greenhouse.io/consensys/jobs/7821125"
+
+
 def test_discover_workday_api_posts_search_terms_and_builds_detail_urls(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="Example Workday",

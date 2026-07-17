@@ -72,6 +72,13 @@ def greenhouse_board_token(source_url: str) -> str:
     return path_bits[0]
 
 
+def consensys_greenhouse_job_url(source_url: str, job: dict) -> str:
+    job_id = job.get("id")
+    if job_id:
+        return f"{source_url.rstrip('/')}/jobs/{job_id}"
+    return job.get("absolute_url") or source_url
+
+
 def greenhouse_content_text(content: str) -> str:
     return "\n".join(helpers.extract_visible_text_lines_from_html(content))
 
@@ -156,10 +163,13 @@ def discover_greenhouse_api(source: SourceConfig, terms: list[str], timeout_seco
         # parsing notes/description. Matching above stays on the raw content so
         # deterministic matching semantics are unchanged.
         content_html = unescape(content or "")
+        candidate_url = job.get("absolute_url") or source.url
+        if token.casefold() == "consensys":
+            candidate_url = consensys_greenhouse_job_url(source.url, job)
         candidate = Candidate(
             employer=source.source,
             title=title,
-            url=helpers.normalize_url_without_fragment(job.get("absolute_url") or source.url),
+            url=helpers.normalize_url_without_fragment(candidate_url),
             source_url=source.url,
             location=location,
             matched_terms=matched,
