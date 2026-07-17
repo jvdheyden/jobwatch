@@ -29,6 +29,11 @@ def is_same_page_link(source_url: str, candidate_url: str) -> bool:
     return helpers.normalize_url_without_fragment(source_url) == helpers.normalize_url_without_fragment(candidate_url)
 
 
+def is_lattica_news_source(source_url: str) -> bool:
+    parsed = urlparse(source_url)
+    return parsed.netloc.lower() in {"lattica.ai", "www.lattica.ai"} and parsed.path.rstrip("/") == "/news"
+
+
 def looks_like_non_job_link(text: str, href: str) -> bool:
     text_lower = helpers.normalize_whitespace(text).lower()
     href_lower = href.lower()
@@ -186,6 +191,7 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
     parser.feed(html)
     candidates: list[Candidate] = []
     seen_urls: set[str] = set()
+    require_term_match = is_lattica_news_source(source.url)
     for link in parser.links:
         href = link["href"]
         text = helpers.normalize_whitespace(link["text"])
@@ -201,7 +207,7 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
         if is_same_page_link(source.url, absolute_url):
             continue
         matched_terms = helpers.match_terms(f"{text} {absolute_url}", terms)
-        if not matched_terms and not helpers.looks_like_job_link(text, absolute_url):
+        if not matched_terms and (require_term_match or not helpers.looks_like_job_link(text, absolute_url)):
             continue
         if matched_terms and not helpers.should_keep_candidate(text or "unknown", matched_terms, f"{text} {absolute_url}"):
             continue
