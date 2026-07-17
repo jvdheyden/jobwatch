@@ -21,6 +21,33 @@ from discover.registry import SourceAdapter
 
 PERSONIO_NEXT_F_CHUNK_RE = re.compile(r'self\.__next_f\.push\(\[1,"(?P<chunk>.*?)"\]\)', flags=re.DOTALL)
 
+PERSONIO_TASK_HEADING_MARKERS = (
+    "mission",
+    "responsibil",
+    "task",
+    "aufgaben",
+    "what you will do",
+    "what you'll do",
+    "your impact",
+)
+PERSONIO_QUALIFICATION_HEADING_MARKERS = (
+    "profile",
+    "profil",
+    "qualification",
+    "requirement",
+    "anforderung",
+    "what you bring",
+    "experience",
+    "skills",
+)
+PERSONIO_COMPENSATION_HEADING_MARKERS = (
+    "compensation",
+    "salary",
+    "pay range",
+    "gehalt",
+    "vergutung",
+)
+
 
 def extract_personio_jobs_from_html(html: str) -> list[Any] | None:
     for match in PERSONIO_NEXT_F_CHUNK_RE.finditer(html):
@@ -56,6 +83,15 @@ def extract_personio_jobs_from_xml(xml_text: str, base_url: str) -> list[dict[st
         job: dict[str, Any] = {}
         for child in position:
             if child.tag == "jobDescriptions":
+                descriptions: list[dict[str, str]] = []
+                for description in child.findall("jobDescription"):
+                    heading = helpers.normalize_whitespace(description.findtext("name") or "")
+                    value_html = description.findtext("value") or ""
+                    value = helpers.visible_text_from_html(value_html)
+                    if value:
+                        descriptions.append({"name": heading, "value": value})
+                if descriptions:
+                    job[child.tag] = descriptions
                 continue
             text = (child.text or "").strip()
             if text:
@@ -76,8 +112,78 @@ def _fetch_personio_xml_jobs(base_url: str, timeout_seconds: int) -> list[dict[s
     return extract_personio_jobs_from_xml(xml_text, base_url)
 
 
+def _personio_job_identity(job: dict[str, Any]) -> tuple[str, str]:
+    position_id = helpers.normalize_whitespace(
+        helpers.join_text(job.get("id") or job.get("positionId") or job.get("position_id"))
+    )
+    title = helpers.normalize_for_matching(
+        helpers.normalize_whitespace(helpers.join_text(job.get("name") or job.get("title")))
+    )
+    return position_id, title
+
+
+def _personio_xml_job_lookup(xml_jobs: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    by_id: dict[str, dict[str, Any]] = {}
+    by_title: dict[str, dict[str, Any]] = {}
+    for job in xml_jobs:
+        position_id, title = _personio_job_identity(job)
+        if position_id:
+            by_id[position_id] = job
+        if title:
+            by_title.setdefault(title, job)
+    return by_id, by_title
+
+
+def _personio_xml_job_for_listing(
+    job: dict[str, Any],
+    by_id: dict[str, dict[str, Any]],
+    by_title: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    position_id, title = _personio_job_identity(job)
+    if position_id and position_id in by_id:
+        return by_id[position_id]
+    if title:
+        return by_title.get(title)
+    return None
+
+
+def _personio_description_parts(job: dict[str, Any]) -> list[tuple[str, str]]:
+    descriptions = job.get("jobDescriptions")
+    if not isinstance(descriptions, list):
+        return []
+    parts: list[tuple[str, str]] = []
+    for description in descriptions:
+        if not isinstance(description, dict):
+            continue
+        heading = helpers.normalize_whitespace(helpers.join_text(description.get("name")))
+        value = helpers.normalize_whitespace(helpers.join_text(description.get("value")))
+        if value:
+            parts.append((heading, value))
+    return parts
+
+
+def _personio_detail_label(heading: str) -> str:
+    normalized = helpers.normalize_for_matching(heading)
+    if any(marker in normalized for marker in PERSONIO_TASK_HEADING_MARKERS):
+        return "Tasks"
+    if any(marker in normalized for marker in PERSONIO_QUALIFICATION_HEADING_MARKERS):
+        return "Qualifications"
+    if any(marker in normalized for marker in PERSONIO_COMPENSATION_HEADING_MARKERS):
+        return "Compensation"
+    return heading or "Details"
+
+
+def _personio_candidate_notes(job: dict[str, Any], *, used_xml: bool) -> str:
+    provenance = "Enumerated through Personio XML feed" if used_xml else "Enumerated through Personio page payload"
+    parts = [provenance]
+    for heading, value in _personio_description_parts(job):
+        parts.append(f"{_personio_detail_label(heading)}: {helpers.truncate_text(value, 320)}")
+    return "; ".join(parts)
+
+
 def discover_personio_page(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     jobs: list[Any] | None = None
+    xml_jobs: list[dict[str, Any]] | None = None
     limitations: list[str] = []
     html_fetch_error: Exception | None = None
 
@@ -129,11 +235,27 @@ def discover_personio_page(source: SourceConfig, terms: list[str], timeout_secon
                 candidates=[],
             )
 
+    if xml_jobs is None and jobs:
+        xml_jobs = _fetch_personio_xml_jobs(source.url, timeout_seconds)
+
+    xml_jobs_by_id, xml_jobs_by_title = _personio_xml_job_lookup(xml_jobs or [])
+
     candidates_by_url: dict[str, Candidate] = {}
     for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        xml_job = _personio_xml_job_for_listing(job, xml_jobs_by_id, xml_jobs_by_title)
+        detail_job = xml_job or job
         title = helpers.normalize_whitespace(helpers.join_text(job.get("name") or job.get("title"))) or "unknown"
         location = helpers.normalize_whitespace(
-            helpers.join_text(job.get("office") or job.get("location") or job.get("locations"))
+            helpers.join_text(
+                job.get("office")
+                or job.get("location")
+                or job.get("locations")
+                or detail_job.get("office")
+                or detail_job.get("location")
+                or detail_job.get("locations")
+            )
         ) or "unknown"
         searchable_text = " ".join(
             part
@@ -149,19 +271,30 @@ def discover_personio_page(source: SourceConfig, terms: list[str], timeout_secon
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
         if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
             continue
-        job_url = helpers.normalize_url_without_fragment(helpers.join_text(job.get("url") or job.get("absoluteUrl") or source.url))
+        job_url = helpers.normalize_url_without_fragment(
+            helpers.join_text(
+                job.get("url")
+                or job.get("absoluteUrl")
+                or detail_job.get("url")
+                or detail_job.get("absoluteUrl")
+                or source.url
+            )
+        )
+        candidate = Candidate(
+            employer=source.source,
+            title=title,
+            url=job_url,
+            source_url=source.url,
+            location=location,
+            remote=helpers.infer_remote_status(location, searchable_text),
+            matched_terms=matched_terms,
+            notes=_personio_candidate_notes(detail_job, used_xml=xml_job is not None or jobs is xml_jobs),
+        )
+        description = " ".join(value for _heading, value in _personio_description_parts(detail_job))
+        helpers.set_candidate_description(candidate, description)
         helpers.merge_candidate(
             candidates_by_url,
-            Candidate(
-                employer=source.source,
-                title=title,
-                url=job_url,
-                source_url=source.url,
-                location=location,
-                remote=helpers.infer_remote_status(location, searchable_text),
-                matched_terms=matched_terms,
-                notes="Enumerated through Personio page payload",
-            ),
+            candidate,
         )
 
     return Coverage(

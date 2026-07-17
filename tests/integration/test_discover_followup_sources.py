@@ -661,6 +661,62 @@ def test_discover_personio_page_parses_embedded_jobs_payload(monkeypatch):
     assert candidate.matched_terms == ["software engineer"]
 
 
+def test_discover_personio_page_enriches_embedded_jobs_from_xml_feed(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="STARK",
+        url="https://stark.jobs.personio.com/",
+        discovery_mode="personio_page",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    decoded_chunk = (
+        '[["$","$L13"],{"jobs":[{"title":"Flight Test Engineer / UAV Pilot (All Genders)"}],'
+        '"subdomain":"stark"}]'
+    )
+    html = f"<html><body><script>self.__next_f.push([1,{json.dumps(decoded_chunk)}])</script></body></html>"
+    xml_feed = """<?xml version="1.0" encoding="UTF-8"?>
+<workzag-jobs>
+  <position>
+    <id>4242</id>
+    <name>Flight Test Engineer / UAV Pilot (All Genders)</name>
+    <office>Munich</office>
+    <department>Engineering</department>
+    <employmentType>permanent</employmentType>
+    <jobDescriptions>
+      <jobDescription>
+        <name>Your mission</name>
+        <value><![CDATA[<p>Plan and execute flight tests for autonomous UAV systems.</p>]]></value>
+      </jobDescription>
+      <jobDescription>
+        <name>Your profile</name>
+        <value><![CDATA[<p>Professional UAV flight-test and systems engineering experience.</p>]]></value>
+      </jobDescription>
+    </jobDescriptions>
+  </position>
+</workzag-jobs>
+"""
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        if url == source.url:
+            return html
+        if url == "https://stark.jobs.personio.com/xml":
+            return xml_feed
+        raise AssertionError(f"unexpected fetch_text({url})")
+
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_personio_page(source, ["UAV"], timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 1
+    assert coverage.matched_jobs == 1
+    candidate = coverage.candidates[0]
+    assert candidate.url == "https://stark.jobs.personio.com/job/4242"
+    assert candidate.location == "Munich"
+    assert "Tasks: Plan and execute flight tests for autonomous UAV systems." in candidate.notes
+    assert "Qualifications: Professional UAV flight-test and systems engineering experience." in candidate.notes
+
+
 def test_discover_ibm_api_filters_ibm_research_generic_noise_and_keeps_canary_detail(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="IBM Research",
