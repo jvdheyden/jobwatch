@@ -91,6 +91,11 @@ def test_factorial_provider_recovers_title_location_and_detail(monkeypatch):
     # Real title replaces the anonymous "Apply now" listing text.
     assert candidate.title == "Senior Product Manager (German-speaking)"
     assert candidate.location == "Munich, Barcelona, Spain"
+    # Terms are recomputed against the enriched title/location/detail, not the
+    # anonymous listing text the initial HTML pass saw.
+    assert candidate.matched_terms == ["product manager"]
+    dev_candidate = next(c for c in coverage.candidates if c.url == dev_detail_url)
+    assert dev_candidate.matched_terms == []
     # Substantive role detail lands in notes (what the detail_depth validator reads).
     assert "Own the product end-to-end" in candidate.notes
     assert "2-4 years in product management" in candidate.notes

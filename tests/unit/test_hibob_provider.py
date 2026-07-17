@@ -21,12 +21,12 @@ JOB_AD_PAYLOAD = {
         },
         {
             "id": "b8547f85-ccc9-4dcf-ac6b-f6d954f0ed28",
-            "title": "Senior Product Manager",
-            "department": "Strategy",
+            "title": "Senior Security Engineer",
+            "department": "Engineering",
             "site": "London Studio",
             "country": "United Kingdom",
             "workspaceType": "Hybrid",
-            "description": "<p>Own client product outcomes end to end.</p>",
+            "description": "<p>Own applied cryptography services end to end.</p>",
         },
     ],
 }
@@ -57,7 +57,7 @@ def test_hibob_provider_enumerates_all_postings_and_keeps_term_matches(monkeypat
 
     monkeypatch.setattr(http, "fetch_json", fake_fetch_json)
 
-    coverage = hibob.discover_hibob_api(_source(), ["product manager"], timeout_seconds=5)
+    coverage = hibob.discover_hibob_api(_source(), ["security"], timeout_seconds=5)
 
     # The endpoint is derived from the source host and carries the required header.
     assert captured["url"] == "https://ustwo.careers.hibob.com/api/job-ad"
@@ -68,10 +68,10 @@ def test_hibob_provider_enumerates_all_postings_and_keeps_term_matches(monkeypat
     assert len(coverage.candidates) == 1
     assert coverage.matched_jobs == 1
 
-    pm = coverage.candidates[0]
-    assert pm.title == "Senior Product Manager"
-    assert pm.url == "https://ustwo.careers.hibob.com/jobs/b8547f85-ccc9-4dcf-ac6b-f6d954f0ed28"
-    assert pm.location == "London Studio, United Kingdom"
-    assert pm.remote == "Hybrid"
-    assert pm.matched_terms == ["product manager"]
-    assert "end to end" in pm.description
+    kept = coverage.candidates[0]
+    assert kept.title == "Senior Security Engineer"
+    assert kept.url == "https://ustwo.careers.hibob.com/jobs/b8547f85-ccc9-4dcf-ac6b-f6d954f0ed28"
+    assert kept.location == "London Studio, United Kingdom"
+    assert kept.remote == "Hybrid"
+    assert kept.matched_terms == ["security"]
+    assert "end to end" in kept.description
