@@ -34,6 +34,20 @@ def is_lattica_news_source(source_url: str) -> bool:
     return parsed.netloc.lower() in {"lattica.ai", "www.lattica.ai"} and parsed.path.rstrip("/") == "/news"
 
 
+def is_duality_careers_source(source_url: str) -> bool:
+    parsed = urlparse(source_url)
+    return parsed.netloc.lower() in {"dualitytech.com", "www.dualitytech.com"} and parsed.path.rstrip(
+        "/"
+    ) == "/careers"
+
+
+def is_duality_job_detail_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.netloc.lower() in {"dualitytech.com", "www.dualitytech.com"} and parsed.path.rstrip(
+        "/"
+    ).startswith("/careers/")
+
+
 def looks_like_non_job_link(text: str, href: str) -> bool:
     text_lower = helpers.normalize_whitespace(text).lower()
     href_lower = href.lower()
@@ -186,12 +200,15 @@ def discover_bwi_jobboard(source: SourceConfig, terms: list[str], timeout_second
 def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     if urlparse(source.url).netloc.lower() in {"bwi.de", "www.bwi.de"}:
         return discover_bwi_jobboard(source, terms, timeout_seconds)
-    html = http.fetch_text(source.url, timeout_seconds)
+    duality_careers = is_duality_careers_source(source.url)
+    fetch_listing = http.fetch_text_ipv4 if duality_careers else http.fetch_text
+    html = fetch_listing(source.url, timeout_seconds)
     parser = helpers.LinkCollector()
     parser.feed(html)
     candidates: list[Candidate] = []
     seen_urls: set[str] = set()
-    require_term_match = is_lattica_news_source(source.url)
+    enumerated_urls: set[str] = set()
+    require_term_match = is_lattica_news_source(source.url) or duality_careers
     for link in parser.links:
         href = link["href"]
         text = helpers.normalize_whitespace(link["text"])
@@ -202,6 +219,10 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
             continue
         if urlparse(absolute_url).scheme not in {"file", "http", "https"}:
             continue
+        if duality_careers and not is_duality_job_detail_url(absolute_url):
+            continue
+        if duality_careers:
+            enumerated_urls.add(absolute_url)
         if looks_like_non_job_link(text, absolute_url):
             continue
         if is_same_page_link(source.url, absolute_url):
@@ -234,7 +255,7 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
         search_terms_tried=terms,
         result_pages_scanned="local_filter=1",
         direct_job_pages_opened=0,
-        enumerated_jobs=len(parser.links),
+        enumerated_jobs=len(enumerated_urls) if duality_careers else len(parser.links),
         matched_jobs=len(candidates),
         limitations=[],
         candidates=candidates,
