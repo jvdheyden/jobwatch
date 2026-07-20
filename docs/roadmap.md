@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-05-14_
+_Last updated: 2026-07-18_
 
 ## Conventions
 
@@ -29,9 +29,28 @@ RM-### — Title
 ## New
 
 ## In progress
+
 ## Parked
 
 ## Completed
+### RM-017 — Hosted version of jobwatch
+- Status: complete
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-07-18
+- Links: [plan](plans/2026-07-18-rm-017-hosted-version.md)
+- Next step: Compare hosted and packaged architectures, verify current cost inputs, and select the smallest implementation slice; selected follow-up is a provider-neutral API-backed digest builder with filesystem compatibility and parity benchmarks before any UI/database migration.
+- Notes: Research the simplest way to create a hosted version of this tool. Background: At the moment jobwatch is not really usable for non-technical people. Research what would be required to host the tool and how much it would cost. Also propose some alternatives, such as releasing versions of this tool in a docker container etc. Do not output results here, but in a new plan in docs/plans/ Research outcome: use a Railway/Docker single-tenant beta to validate packaging, then target a small Django/PostgreSQL/worker service on Render; containerization alone does not remove CLI credentials, secret, scheduling, backup, or update friction.
+
+### RM-016 — Make set-up process more efficient
+- Status: complete
+- Priority: H
+- Owner: Jonas
+- Last updated: 2026-07-18
+- Links: [plan](plans/2026-07-18-rm-016-setup-efficiency.md)
+- Next step: Audit per-phase setup cost, verify the source-discovery hypothesis, and prioritize measurable reductions; selected follow-up is privacy-safe phase/child-run telemetry, followed by A/B tests of cheaper model defaults and smaller launcher context.
+- Notes: At the moment the set-up process takes a lot of tokens, and users report that they run out of their weekly quota during set-up, especially with Claude Pro. Looking at $set-up, it seems that Step 3 (source disovery, skill $source-disovery) might hold the most potential for optimiziation: a) because in my experience it genuinely uses a lot of ressources, and b) source integration is already quite optimized with deterministic scripts that choose cheap agents with tight prompts and guardrails. Please verify this assumption. If it is true, give recommended actions how to make source discovery cheaper. If not, give other recommendations for how to make the set-up cheaper and more user-friendly. Do not output results here, but in a new plan in docs/plans/ Research outcome: the best current trace puts source discovery at about 16.5% of total input, while later normalization/probing and first-digest orchestration are larger; background integration avoids blocking but still consumes substantial model quota.
+
 ### RM-015 — Run source discovery for core\_crypto
 - Status: complete
 - Priority: M
@@ -94,3 +113,4 @@ RM-### — Title
 - Links: [plan](plans/2026-04-23-rm-011-email-output-cleanup.md)
 - Next step: none
 - Notes: The default digest email body now starts at `Executive summary`, the redundant body header/date lines are gone, and the ranked-overview attachment is no longer emitted by default.
+
