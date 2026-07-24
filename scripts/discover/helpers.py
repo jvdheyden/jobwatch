@@ -281,11 +281,16 @@ def infer_remote_status(*values: str) -> str:
 
 def should_keep_candidate(title: str, matched_terms: list[str], searchable_text: str) -> bool:
     title_lower = title.lower()
-    if any(token in title_lower for token in NON_TECHNICAL_TITLE_HINTS):
+    title_term_matches = match_terms(title, matched_terms)
+    # A full multi-word role term in the title (e.g. "product manager") outranks
+    # function excludes hit by an unrelated title fragment (e.g. the "operations"
+    # in "Product Manager, AI & Content Operations"). Single-word matches like
+    # "product" alone do not bypass the excludes.
+    title_role_matches = [term for term in title_term_matches if " " in term.strip()]
+    if not title_role_matches and any(token in title_lower for token in NON_TECHNICAL_TITLE_HINTS):
         return False
     if not matched_terms:
         return False
-    title_term_matches = match_terms(title, matched_terms)
     title_is_technical = any(token in title_lower for token in TECHNICAL_TITLE_HINTS)
     specialized_matches = [term for term in matched_terms if term.lower() in SPECIALIZED_SIGNAL_TERMS]
     if title_term_matches and title_is_technical:

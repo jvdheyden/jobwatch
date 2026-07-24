@@ -27,6 +27,7 @@ TECHNICAL_TITLE_HINTS = (
     "crypt",
     "protocol",
     "verification",
+    "product",
 )
 
 NON_TECHNICAL_TITLE_HINTS = (
