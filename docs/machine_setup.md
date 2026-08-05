@@ -40,9 +40,9 @@ Use the project skill $set-up for a guided first-track setup in this repo.
 
 Default behavior:
 - Propose recommended answers for missing profile and track preferences; let me override them.
-- If the source list is sparse, use $discover-sources as the recommended next step.
-- After discovery, apply the recommended keep/drop/cadence/filter defaults unless I object.
-- Continue automatically through canaries, probing, scaffolding, validation, and the first local digest preview.
+- Persist the reviewed brief in a validated setup.json artifact.
+- If the source list is sparse, run the bounded source_discovery worker and apply its recommended defaults unless I object.
+- Use deterministic scaffolding and the compact preview_ranker path for the first digest.
 - Do not move on to email or scheduling before the first digest preview.
 ```
 
@@ -66,6 +66,18 @@ In a normal terminal, the setup script prompts for missing machine-local values 
 When `scripts/setup_machine.sh` is run with `--agent claude`, it merges a repo-local `SessionStart` hook into `.claude/settings.local.json` that exports `CLAUDE_SESSION_ID`. The `coding` skill reads this variable to record a resumable `agent_id` in plan files. This merge is idempotent and preserves any existing permissions or settings.
 
 When `scripts/setup_machine.sh` is run with `--agent codex`, it writes a repo-local `.codex/config.toml` with a managed `shell_environment_policy` that puts the checkout's `./.venv/bin` first on `PATH`. This ensures that Codex shell commands use the project's virtualenv. If an existing unmanaged `shell_environment_policy` is present, setup reports a conflict and leaves it unchanged.
+
+Guided setup has three model roles without changing ordinary scheduled ranking or source-integration routing:
+
+| Role | Default posture | Invocation |
+| --- | --- | --- |
+| `setup_coordinator` | balanced, medium reasoning where supported | interactive `start_setup_agent.sh` |
+| `source_discovery` | economical, web-capable, read-only | fresh `run_setup_worker.py` process |
+| `preview_ranker` | economical, no-web, read-only | fresh `run_setup_worker.py` process |
+
+The default models are centralized in `scripts/agent_provider.py`: Codex uses `gpt-5.5`/medium for the coordinator and `gpt-5.4-mini`/low for both workers; Claude uses `sonnet` for the coordinator and `claude-haiku-4-5` for workers; Gemini uses `gemini-3-pro-preview` for the coordinator and `gemini-3-flash-preview` for workers.
+
+Override one role with `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, for example `JOB_AGENT_CODEX_PREVIEW_RANKER_MODEL`. Codex reasoning uses `JOB_AGENT_CODEX_<ROLE>_REASONING_EFFORT`. Explicit launcher/worker `--model` and `--reasoning` arguments take precedence. `JOB_AGENT_CODEX_SETUP_MODEL`, `JOB_AGENT_CODEX_SETUP_REASONING_EFFORT`, `JOB_AGENT_CLAUDE_SETUP_MODEL`, and `JOB_AGENT_GEMINI_SETUP_MODEL` remain compatibility aliases for `setup_coordinator`.
 
 ### Basic Options
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.
@@ -122,13 +134,12 @@ During first-track setup, the guided agent:
 - fills or defers `profile/cv.md` and `profile/prefs_global.md`
 - collects the minimum track brief before source discovery, but proposes recommended answers instead of waiting for the user to invent each field
 - proposes a starter source list, cadence defaults, and track-wide terms instead of making the user start from a blank sheet
-- treats `discover-sources` as the recommended next step when the source list is sparse and keeps its summary concise
-- applies recommended keep/drop/cadence/filter defaults after source discovery unless the user overrides them
-- probes accepted sources with `scripts/probe_career_source.py` where useful
-- stores canaries and mutable integration state in `tracks/<track>/source_state.json`
-- runs source-quality checks and treats a source as ready only when `eval_source_quality.py` reports `final_status: "pass"`
-- may start detached source-integration jobs with `scripts/start_source_integration.py`, then queues the rest for one-at-a-time follow-up with `scripts/integrate_next_source.py`; `scripts/source_integration.py` is the heavier repo-development loop used by that follow-up path when code is needed
-- runs the first local digest before email dry-run testing
+- persists reviewed decisions under `artifacts/setup/<setup-id>/setup.json`
+- runs source discovery in a fresh bounded worker and records only confirmed canonical sources back into `setup.json`
+- creates the track with `scripts/scaffold_track.py`, which invokes no model and refuses overwrites
+- runs deterministic discovery, a bounded no-web preview worker, and deterministic digest assembly through `scripts/run_setup_preview.py`
+- may probe or start detached source-integration jobs only after the first-preview milestone; `scripts/source_integration.py` remains the heavier repo-development loop used when code is needed
+- renders the first local digest before email or Telegram dry-run testing
 
 If a canary disappears later, refresh it instead of deleting quality checks:
 

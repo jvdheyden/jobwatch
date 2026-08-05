@@ -132,8 +132,10 @@ def _normalize_filters(value: Any, field: str) -> dict[str, list[str]]:
     return filters
 
 
-def load_sources_config(path: Path, track: str) -> dict[str, Any]:
-    payload = read_json_payload(path)
+def normalize_sources_payload(payload: dict[str, Any], track: str, *, field: str = "sources.json") -> dict[str, Any]:
+    """Validate and normalize an in-memory canonical sources.json payload."""
+
+    path = field
     if payload.get("schema_version") != 1:
         raise SourceConfigError(f"{path} schema_version must be 1")
     payload_track = _expect_string(payload.get("track"), f"{path}.track")
@@ -176,6 +178,11 @@ def load_sources_config(path: Path, track: str) -> dict[str, Any]:
         "track_terms": track_terms,
         "sources": sources,
     }
+
+
+def load_sources_config(path: Path, track: str) -> dict[str, Any]:
+    payload = read_json_payload(path)
+    return normalize_sources_payload(payload, track, field=str(path))
 
 
 def load_source_state(path: Path, track: str) -> dict[str, dict[str, Any]]:

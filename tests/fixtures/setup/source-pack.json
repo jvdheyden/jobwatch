@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "kind": "jobwatch_source_pack",
+  "setup_id": "20260720T155600Z-a1b2c3d4",
+  "input_hash": "REPLACED_BY_TEST",
+  "track_terms": ["cryptography", "privacy engineering"],
+  "recommended_sources": [
+    {
+      "id": "example_labs",
+      "name": "Example Labs",
+      "url": "https://jobs.example.test/careers",
+      "discovery_mode": "html",
+      "cadence_group": "every_3_runs",
+      "fit_reason": "Official careers page for a strong domain match.",
+      "confidence": "high"
+    }
+  ],
+  "follow_up_sources": [],
+  "dropped_sources": [],
+  "url_corrections": [],
+  "match_rule_suggestions": [],
+  "recommended_source_ids": ["example_labs"],
+  "decisions_needed": []
+}

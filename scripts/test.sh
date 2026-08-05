@@ -19,16 +19,23 @@ bash -n scripts/setup_machine.sh
 bash -n scripts/install_bwrap_apparmor.sh
 bash -n scripts/install_scheduler.sh
 bash -n scripts/run_scheduled_jobs.sh
+bash -n scripts/start_setup_agent.sh
 bash -n scripts/sync_to_logseq.sh
 bash -n scripts/test_track_workflow.sh
 bash -n scripts/sync_claude_skills.sh
 bash -n tests/e2e/fake_codex.sh
 "$PYTHON_BIN" -m py_compile scripts/configure_schedule.py
+"$PYTHON_BIN" -m py_compile scripts/agent_provider.py
+"$PYTHON_BIN" -m py_compile scripts/setup_contracts.py
+"$PYTHON_BIN" -m py_compile scripts/run_setup_worker.py
+"$PYTHON_BIN" -m py_compile scripts/scaffold_track.py
+"$PYTHON_BIN" -m py_compile scripts/run_setup_preview.py
 "$PYTHON_BIN" -m py_compile scripts/source_config.py
 "$PYTHON_BIN" -m py_compile scripts/render_discovery_modes_md.py
 "$PYTHON_BIN" -m py_compile scripts/render_sources_md.py
 "$PYTHON_BIN" -m py_compile scripts/send_digest_telegram.py
 "$PYTHON_BIN" -m py_compile scripts/update_source_state.py
+"$PYTHON_BIN" -m py_compile scripts/update_seen_jobs.py
 "$PYTHON_BIN" -m py_compile scripts/source_integration.py
 "$PYTHON_BIN" -m py_compile scripts/integrate_next_source.py
 "$PYTHON_BIN" -m py_compile scripts/start_source_integration.py
@@ -58,11 +65,15 @@ fi
   tests/unit/test_enrich_candidate_descriptions.py \
   tests/unit/test_agent_support.py \
   tests/unit/test_machine_resolution.py \
+  tests/unit/test_setup_agent_provider.py \
+  tests/unit/test_setup_contracts.py \
+  tests/unit/test_run_setup_worker.py \
   tests/unit/test_integrate_next_source.py \
   tests/unit/test_probe_career_source.py \
   tests/unit/test_telegram_chat_id.py \
   tests/unit/test_source_quality.py \
   tests/unit/test_update_ranked_overview.py \
+  tests/unit/test_update_seen_jobs.py \
   tests/integration/test_machine_setup.py \
   tests/integration/test_run_track.py \
   tests/integration/test_eval_source_quality.py \
@@ -80,4 +91,5 @@ fi
   tests/integration/test_discover_service_bund.py \
   tests/integration/test_discover_yc_and_hn_jobs.py \
   tests/e2e/test_track_workflow.py \
+  tests/e2e/test_setup_workflow.py \
   "${PYTEST_ARGS[@]}"

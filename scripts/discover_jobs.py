@@ -7,6 +7,7 @@ should be added there and registered through the provider registry.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from discover.constants import (
@@ -289,7 +290,7 @@ from sap_odata import (
 from source_config import SourceConfigError
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 DISCOVERY_HANDLERS = {mode: adapter.discover for mode, adapter in load_registry().items()}
 
 

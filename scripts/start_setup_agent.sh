@@ -7,10 +7,12 @@ ROOT="${JOB_AGENT_ROOT:-$REPO_ROOT}"
 ENV_FILE="${JOB_AGENT_ENV_FILE:-$ROOT/.env.local}"
 AGENT_VALUE=""
 AGENT_BIN_VALUE=""
+MODEL_VALUE=""
+REASONING_VALUE=""
 
 usage() {
   cat <<EOF
-Usage: $0 [--agent codex|claude|gemini] [--agent-bin <path>]
+Usage: $0 [--agent codex|claude|gemini] [--agent-bin <path>] [--model <model>] [--reasoning <level>]
 
 Launch the guided jobwatch setup agent from the repo root.
 If omitted, --agent and --agent-bin are read from .env.local or the environment.
@@ -84,6 +86,24 @@ while [[ $# -gt 0 ]]; do
       AGENT_BIN_VALUE="$2"
       shift 2
       ;;
+    --model)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --model" >&2
+        usage >&2
+        exit 2
+      fi
+      MODEL_VALUE="$2"
+      shift 2
+      ;;
+    --reasoning)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --reasoning" >&2
+        usage >&2
+        exit 2
+      fi
+      REASONING_VALUE="$2"
+      shift 2
+      ;;
     --help|-h)
       usage
       exit 0
@@ -124,6 +144,43 @@ if ! AGENT_BIN_VALUE="$(resolve_command_path "$AGENT_BIN_VALUE")"; then
   exit 1
 fi
 
+if [[ -x "$SCRIPT_DIR/../.venv/bin/python" ]]; then
+  PYTHON_BIN="$SCRIPT_DIR/../.venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="$(command -v python3)"
+else
+  echo "Python is required to resolve setup model policy." >&2
+  exit 1
+fi
+
+mapfile -d '' -t SETUP_COMMAND < <(
+  "$PYTHON_BIN" - "$SCRIPT_DIR" "$AGENT_VALUE" "$AGENT_BIN_VALUE" "$ROOT" "$MODEL_VALUE" "$REASONING_VALUE" <<'PY'
+import sys
+from pathlib import Path
+
+script_dir, provider, agent_bin, root, model, reasoning = sys.argv[1:]
+sys.path.insert(0, script_dir)
+from agent_provider import build_setup_coordinator_command, resolve_setup_policy
+
+try:
+    policy = resolve_setup_policy(
+        provider,
+        "setup_coordinator",
+        model=model or None,
+        reasoning=reasoning or None,
+    )
+    command = build_setup_coordinator_command(policy, Path(root), Path(agent_bin))
+except ValueError as exc:
+    print(f"start_setup_agent.sh: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+sys.stdout.buffer.write(b"\0".join(item.encode() for item in command) + b"\0")
+PY
+)
+if [[ ${#SETUP_COMMAND[@]} -eq 0 ]]; then
+  echo "Could not resolve setup model policy." >&2
+  exit 2
+fi
+
 # Never pass plaintext SMTP secrets into agent processes. Password commands are
 # local retrieval recipes and may remain visible for setup guidance.
 unset JOB_AGENT_SMTP_PASSWORD
@@ -135,24 +192,12 @@ Contract:
 - Treat setup as a single guided onboarding flow, not a sequence the user has to discover.
 - For every missing preference or track field, propose a recommended answer grounded in the CV and current context; let the user override it.
 - If the user replies with partial answers or delegation phrases such as `suggest`, `use your suggestions`, `pick whatever you think is best`, `default`, or `go ahead`, treat the remaining low-risk choices as delegated and continue automatically.
-- Write local user data only under profile/ and tracks/. Never edit shared/templates/profile/*.
-- First make profile/cv.md ready. If it is still the template, look for an existing Markdown CV or a PDF in profile/. If exactly one PDF exists and pdftotext is available, draft profile/cv.md from it and ask the user to review. If multiple PDFs exist, ask which one. If no PDF exists, use this wording: "If you want me to read a PDF, tell me the path or copy it into profile/ now; then I will extract it. Otherwise complete profile/cv.md now and tell me when ready."
-- Then make profile/prefs_global.md ready. Infer only safe facts from the CV, then ask short questions for work mode, geography, seniority, contract type, compensation or practical constraints, authorization, dealbreakers, strong signals, and borderline signals. Write the reviewed answers.
-- Collect the minimum track brief before source discovery: user name, track display name and slug, broad search area, goals or role types, keep-only keywords, constraints or red flags, and geography or remote preferences.
-- After the minimum brief exists, propose a starter seed list, cadence defaults, track-wide terms, and native-filter posture instead of making the user invent them from scratch.
-- If the known source list is sparse or missing, treat invoking $discover-sources as the recommended default next step rather than a neutral menu choice. Discovery will exclude the user's current or most recent employer by default.
-- Keep the $discover-sources user-facing summary concise: recommended sources, dropped sources, URL corrections, caveats, recommended defaults to apply now, and only the truly necessary decisions.
-- After discovery, continue automatically: present one recommended keep/drop/cadence/filter package, apply it unless the user objects, infer source-specific terms and native filters from profile and preferences, and auto-pick canaries where possible.
-- Use scripts/probe_career_source.py for source probing when possible instead of guessing from WebFetch alone.
-- Scaffold and validate the track. Setup aims for a **first-digest milestone**: a rendered digest from a valid scaffold that proves the track works. Do not let failed or complex secondary sources block this milestone.
-- For sources that need code, tune config first. **Do not run synchronous scripts/source_integration.py** during interactive setup. Instead, use scripts/start_source_integration.py to start a background job for top sources and report the log path. Queue the rest in source_state.json and validate with scripts/integrate_next_source.py --dry-run.
-- End guided setup by running a first local digest with bash scripts/run_track.sh --track <track> and pasting a preview of tracks/<track>/digests/YYYY-MM-DD.md into the conversation before moving on to delivery or scheduling. If run_track.sh fails, treat it as a blocker rather than skipping the preview.
-- After the first digest preview, if source notes say several sources were partial/landing-page-only, you must offer: "I can start background source integration for the top N deferred sources now while we continue delivery setup. Recommended: start the top 2-3 by priority, report log paths, and continue with delivery." If the user says yes or delegates, start them via `scripts/start_source_integration.py`. Do not synchronously wait for integration unless explicitly asked. List background jobs in the final response.
-- Only after the digest JSON exists, dry-run any requested delivery method first: scripts/send_digest_email.py --dry-run for email and scripts/send_digest_telegram.py --dry-run for Telegram.
-- For Telegram setup: Instruct the user to create a bot via BotFather, save the token to JOB_AGENT_SECRETS_FILE, open the bot, press Start, and send a short message such as "hi" (pressing Start alone is not enough). Then run scripts/telegram_chat_id.py. Do not run helper commands as `source .env.local && source "$JOB_AGENT_SECRETS_FILE" && ...`; run the script directly and let runtime_env load secrets.
-- Guide delivery and scheduling last. Do not install the scheduler or send real email or Telegram messages unless the user explicitly confirms.
-- Note on Ignored Files: Gemini/Claude may report that local profile/track files are gitignored. Always use shell commands (cat/grep) to read them when standard tools fail.
-- Remove repo-development drift from final responses. Generated profile/track artifacts are local and gitignored; suggest a commit message only if repository files were changed.
+- Treat the canonical $set-up skill as authoritative for profile readiness, setup.json creation, worker handoffs, deterministic scaffolding, compact first preview, delivery, and scheduling.
+- Persist reviewed decisions under artifacts/setup/<setup-id>/setup.json; do not put transcripts, prompts, CV prose, credentials, or environment dumps in setup artifacts.
+- Use scripts/run_setup_worker.py for source_discovery and scripts/run_setup_preview.py for preview_ranker. Do not do routine source browsing or consume the full discovery artifact in this coordinator session.
+- Use scripts/scaffold_track.py for create-only track generation. Do not hand-render track files or invoke a model for scaffolding.
+- Do not move on to delivery or scheduling until the compact first digest preview has been rendered and shown, unless the user explicitly defers it.
+- Never send real email or Telegram messages or install scheduling without explicit confirmation.
 EOF
 
 SETUP_USER_PROMPT="Start guided setup now. Use the project skill \$set-up and keep following the repo's first-track setup flow until the first local digest preview is shown."
@@ -162,9 +207,9 @@ Use the project skill $set-up for a guided first-track setup in this repo.
 
 Default behavior:
 - Propose recommended answers for missing profile and track preferences; let me override them.
-- If the source list is sparse, use $discover-sources as the recommended next step.
-- After discovery, apply the recommended keep/drop/cadence/filter defaults unless I object.
-- Continue automatically through canaries, probing, scaffolding, validation, and the first local digest preview.
+- Persist reviewed decisions in a bounded setup.json artifact.
+- If the source list is sparse, run the fresh source_discovery worker and apply its recommended defaults unless I object.
+- Use deterministic scaffolding and the compact preview_ranker path for the first digest.
 - Do not move on to email or scheduling before the first digest preview.
 EOF
 
@@ -200,29 +245,16 @@ cd "$ROOT"
 
 case "$AGENT_VALUE" in
   codex)
-    exec "$AGENT_BIN_VALUE" \
-      --search \
-      -a never \
-      -m "${JOB_AGENT_CODEX_SETUP_MODEL:-gpt-5.5}" \
-      -c "model_reasoning_effort=\"${JOB_AGENT_CODEX_SETUP_REASONING_EFFORT:-xhigh}\"" \
-      -C "$ROOT" \
-      -s workspace-write \
-      "$SETUP_PROMPT"
+    exec "${SETUP_COMMAND[@]}" "$SETUP_PROMPT"
       ;;
   claude)
     print_claude_interactive_guidance
-    exec "$AGENT_BIN_VALUE" \
-      --model opus \
-      --permission-mode acceptEdits \
-      --allowedTools "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,WebSearch,WebFetch,TodoWrite" \
+    exec "${SETUP_COMMAND[@]}" \
       --append-system-prompt "$SETUP_PROMPT"
       ;;
   gemini)
     print_gemini_interactive_guidance
-    exec "$AGENT_BIN_VALUE" \
-      --skip-trust \
-      -m "${JOB_AGENT_GEMINI_SETUP_MODEL:-gemini-3-pro-preview}" \
-      --approval-mode "${JOB_AGENT_GEMINI_SETUP_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-yolo}}" \
+    exec "${SETUP_COMMAND[@]}" \
       --prompt-interactive "$SETUP_PROMPT
 
 $SETUP_USER_PROMPT"

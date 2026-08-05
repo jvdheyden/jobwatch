@@ -1213,16 +1213,19 @@ pwd > "{cwd_file}"
 
     assert result.returncode == 0, result.stderr
     args = args_file.read_text().splitlines()
-    assert "--search" in args
+    assert "--search" not in args
     assert "-a" in args
     assert "never" in args
     assert "-C" in args
     assert str(tmp_job_agent_root) in args
     assert "-s" in args
     assert "workspace-write" in args
+    assert args[args.index("-m") + 1] == "gpt-5.5"
+    assert 'model_reasoning_effort="medium"' in args
     assert "Use the project skill $set-up" in prompt_file.read_text()
     assert "pick whatever you think is best" in prompt_file.read_text()
-    assert "scripts/probe_career_source.py" in prompt_file.read_text()
+    assert "scripts/scaffold_track.py" in prompt_file.read_text()
+    assert "scripts/run_setup_preview.py" in prompt_file.read_text()
     assert password_file.read_text() == "\n"
     assert password_cmd_file.read_text() == "pass show email/jobwatch-smtp\n"
     assert cwd_file.read_text().strip() == str(tmp_job_agent_root)
@@ -1268,10 +1271,10 @@ printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
     assert "acceptEdits" in args
     assert "--allowedTools" in args
     assert "--append-system-prompt" in args
-    assert any("WebSearch" in arg for arg in args)
-    assert any("WebFetch" in arg for arg in args)
+    assert not any("WebSearch" in arg for arg in args)
+    assert not any("WebFetch" in arg for arg in args)
     assert "Use the project skill $set-up" in args_file.read_text()
-    assert "scripts/probe_career_source.py" in args_file.read_text()
+    assert "scripts/scaffold_track.py" in args_file.read_text()
     assert "workspace trust dialog" in result.stderr
     assert "guided setup contract" in result.stderr
 
@@ -1321,7 +1324,7 @@ printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD_CMD-}}" > "{password_cmd_file}"
 
     assert "--prompt-interactive" in args_text
     assert "Use the project skill $set-up" in args_text
-    assert "scripts/probe_career_source.py" in args_text
+    assert "scripts/scaffold_track.py" in args_text
     assert "Start guided setup now." in args_text
     assert "Gemini interactive note:" in result.stderr
     assert "guided setup contract" in result.stderr

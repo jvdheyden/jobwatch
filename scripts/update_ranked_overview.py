@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import unicodedata
 from dataclasses import asdict, dataclass
@@ -21,7 +22,7 @@ from digest_json import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 DIGEST_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
 ROLE_HEADER_RE = re.compile(r"^(#{3,4})\s+(.+?)\s*$")
 LINK_RE = re.compile(r"^\s*-?\s*Link:\s*(\S+)\s*$", flags=re.MULTILINE)
@@ -151,7 +152,9 @@ def render_markdown(
     *,
     as_of: date | None = None,
     recent_days: int = RECENT_CUTOFF_DAYS,
+    root: Path | None = None,
 ) -> str:
+    root = root or ROOT
     job_dicts = [asdict(job) for job in jobs]
     visible_keys = {j["job_key"] for j in filter_recent_ranked_jobs(job_dicts, as_of=as_of, days=recent_days)}
     visible = [job for job in jobs if job.job_key in visible_keys]
@@ -165,7 +168,7 @@ def render_markdown(
         f"# Ranked Overview — {track_display_name(track)}",
         "",
         f"Generated: {datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')}",
-        f"Source of truth: `{state_path.relative_to(ROOT)}`",
+        f"Source of truth: `{state_path.relative_to(root)}`",
         total_label,
         f"Tags: [[job digest {track}]]",
         "",
@@ -183,17 +186,24 @@ def render_markdown(
     return "\n".join(lines)
 
 
-def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
-    digests_dir = ROOT / "tracks" / track / "digests"
-    state_path = ROOT / "shared" / "ranked_jobs" / f"{track}.json"
-    markdown_path = ROOT / "tracks" / track / "ranked_overview.md"
+def rebuild_track_state(track: str, *, root: Path | None = None) -> tuple[Path, Path, list[RankedJob]]:
+    root = root or ROOT
+    digests_dir = root / "tracks" / track / "digests"
+    state_path = root / "shared" / "ranked_jobs" / f"{track}.json"
+    markdown_path = root / "tracks" / track / "ranked_overview.md"
 
     digest_paths = sorted(path for path in digests_dir.iterdir() if DIGEST_FILE_RE.match(path.name))
     records: dict[str, dict[str, object]] = {}
 
     for digest_path in digest_paths:
         digest_date = digest_path.stem
-        json_path = digest_artifact_path(track, digest_date)
+        # Preserve the two-argument call on the normal/module ROOT path so
+        # existing consumers that monkeypatch this helper remain compatible.
+        json_path = (
+            digest_artifact_path(track, digest_date)
+            if root is ROOT
+            else digest_artifact_path(track, digest_date, root=root)
+        )
         if json_path.exists():
             payload = load_digest_payload(json_path, expected_track=track, expected_date=digest_date)
             roles = extract_ranked_roles(payload)
@@ -228,7 +238,7 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
             if not record["url"] and role["url"]:
                 record["url"] = role["url"]
 
-    seen_jobs_path = ROOT / "tracks" / track / "seen_jobs.json"
+    seen_jobs_path = root / "tracks" / track / "seen_jobs.json"
     if seen_jobs_path.exists():
         for seen in _load_seen_jobs_json(seen_jobs_path):
             job_key = make_job_key(seen["company"], seen["title"], seen.get("location", "unknown"))
@@ -279,20 +289,26 @@ def rebuild_track_state(track: str) -> tuple[Path, Path, list[RankedJob]]:
     return state_path, markdown_path, jobs
 
 
-def main() -> int:
-    args = build_parser().parse_args()
-    state_path, markdown_path, jobs = rebuild_track_state(args.track)
+def write_ranked_outputs(track: str, *, root: Path | None = None) -> tuple[Path, Path, list[RankedJob]]:
+    """Rebuild and write the canonical ranked state and overview for one track."""
 
+    root = root or ROOT
+    state_path, markdown_path, jobs = rebuild_track_state(track, root=root)
     state_path.parent.mkdir(parents=True, exist_ok=True)
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
-
     state_payload = {
-        "track": args.track,
+        "track": track,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "jobs": [asdict(job) for job in jobs],
     }
     state_path.write_text(json.dumps(state_payload, indent=2, ensure_ascii=False) + "\n")
-    markdown_path.write_text(render_markdown(args.track, jobs, state_path, as_of=date.today()))
+    markdown_path.write_text(render_markdown(track, jobs, state_path, as_of=date.today(), root=root))
+    return state_path, markdown_path, jobs
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    write_ranked_outputs(args.track)
     return 0
 
 

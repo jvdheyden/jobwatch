@@ -81,6 +81,9 @@ def extract_new_roles(artifact: dict[str, Any], run_date: str) -> list[dict[str,
 
 def main() -> int:
     args = build_parser().parse_args()
+    # Resolve the root at invocation time so in-process callers can select an
+    # isolated workspace after importing this module.
+    root = Path(os.environ.get("JOB_AGENT_ROOT", ROOT))
     try:
         date.fromisoformat(args.date)
     except ValueError:
@@ -90,9 +93,9 @@ def main() -> int:
     artifact_path = (
         Path(args.artifact)
         if args.artifact
-        else ROOT / "artifacts" / "digests" / args.track / f"{args.date}.json"
+        else root / "artifacts" / "digests" / args.track / f"{args.date}.json"
     )
-    seen_path = ROOT / "tracks" / args.track / "seen_jobs.json"
+    seen_path = root / "tracks" / args.track / "seen_jobs.json"
 
     if not artifact_path.exists():
         print(f"No digest artifact at {artifact_path}; skipping seen-jobs update")

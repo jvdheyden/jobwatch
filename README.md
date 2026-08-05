@@ -110,7 +110,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/start_setup_agent.sh --agent gemini
    ```
 
-   The setup flow fills local profile files, creates the track files, discovers and validates sources, runs the first local digest before email testing, asks which delivery methods you want, configures scheduling if requested, and validates the track.
+   The setup flow fills local profile files, stores reviewed decisions as bounded JSON under `artifacts/setup/<setup-id>/`, discovers sources in a fresh economical worker, creates the track with a deterministic no-model scaffolder, and ranks the first preview from a compact context in a second fresh worker. It then asks which delivery methods you want, configures scheduling if requested, and validates the track. Ordinary scheduled runs remain unchanged.
 
    Track-specific preferences live in `tracks/<track-slug>/prefs.md`. They are still required even when `profile/cv.md` and `profile/prefs_global.md` are filled, because each track can have narrower goals, keywords, constraints, and red flags.
 
@@ -164,6 +164,8 @@ Successful source integrations land as edits in your working tree. To upstream t
 ## Agent Provider
 
 Select the provider explicitly during setup. The setup scripts write the selected provider and executable path into `.env.local`.
+
+Guided setup routes three roles independently: interactive `setup_coordinator`, web-capable `source_discovery`, and no-web `preview_ranker`. Override a setup role with `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, such as `JOB_AGENT_CODEX_PREVIEW_RANKER_MODEL`; Codex reasoning overrides use the matching `_REASONING_EFFORT` suffix. Explicit `--model` and `--reasoning` arguments on `start_setup_agent.sh` or `run_setup_worker.py` take precedence. Existing `JOB_AGENT_CODEX_SETUP_MODEL`, `JOB_AGENT_CODEX_SETUP_REASONING_EFFORT`, `JOB_AGENT_CLAUDE_SETUP_MODEL`, and `JOB_AGENT_GEMINI_SETUP_MODEL` values remain coordinator aliases.
 
 For Codex:
 

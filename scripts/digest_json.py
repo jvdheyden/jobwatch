@@ -6,11 +6,12 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import json
+import os
 import re
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 SCHEMA_VERSION = 1
 RECENT_CUTOFF_DAYS = 30
 

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "jobwatch_setup",
+  "setup_id": "20260720T155600Z-a1b2c3d4",
+  "profile": {
+    "user_name": "Example User",
+    "seniority": ["senior"],
+    "skills": ["Rust", "protocol security"],
+    "experience_signals": ["production cryptography"],
+    "positive_signals": ["hands-on technical ownership"],
+    "borderline_signals": ["management-heavy roles"],
+    "current_or_recent_employers": ["Previous Employer"]
+  },
+  "track": {
+    "slug": "applied_crypto",
+    "display_name": "Applied Cryptography",
+    "search_area": "Applied cryptography and privacy engineering",
+    "goals_or_role_types": ["Applied cryptography engineer"],
+    "keep_only_keywords": ["cryptography", "privacy engineering"],
+    "constraints_or_red_flags": ["No mandatory relocation"],
+    "geography_or_remote_preferences": ["Europe", "remote"],
+    "fit_language": "Hands-on cryptography roles compatible with the reviewed location constraints."
+  },
+  "source_seeds": {
+    "employers": ["Example Labs"],
+    "sectors_or_organizations": ["privacy engineering"],
+    "career_pages_or_boards": ["https://jobs.example.test/careers"]
+  },
+  "selected_sources": {
+    "track_terms": [],
+    "sources": [],
+    "match_rules": []
+  }
+}

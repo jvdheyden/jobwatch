@@ -13,6 +13,78 @@ This repo runs an agent-assisted job-search workflow. Each track combines determ
 | Existing-track source curation | Prompt to add/evaluate a single named employer or source for an existing track | `existing-source-curation` skill, `tracks/<track>/sources.json`, `scripts/render_sources_md.py` |
 | Repo development | Prompt to change code, tests, skills, or docs | `coding` skill, `scripts/`, `tests/` |
 
+## Guided setup boundary
+
+Guided setup keeps one interactive coordinator but moves costly source discovery and first-preview ranking into two fresh bounded workers. The coordinator persists reviewed decisions under `artifacts/setup/<setup-id>/setup.json`; it does not pass its transcript to either worker.
+
+```mermaid
+flowchart LR
+  Coordinator[setup_coordinator] --> Setup[setup.json]
+  Setup --> SourceWorker[source_discovery]
+  SourceWorker --> Pack[source-pack.json]
+  Pack --> Confirm[confirm source ids]
+  Confirm --> Setup
+  Setup --> Scaffold[scaffold_track.py]
+  Scaffold --> Track[tracks/slug]
+  Track --> Discovery[discover_jobs.py]
+  Discovery --> Full[full discovery artifact]
+  Full --> Compact[preview-context builder]
+  Setup --> Compact
+  Compact --> Context[preview-context.json]
+  Context --> Ranker[preview_ranker]
+  Ranker --> Result[preview-result.json]
+  Result --> Assemble[deterministic digest assembly]
+  Context --> Assemble
+  Assemble --> Digest[standard digest JSON + Markdown]
+```
+
+All setup artifacts use schema version 1 plus `kind` and `setup_id`, are size-capped, validated before consumption, and atomically written. `setup.json` is capped at 32 KiB and contains only a reviewed profile projection, track brief, source seeds, and confirmed canonical source configuration. `source-pack.json` is capped at 128 KiB and binds to the setup hash. `preview-context.json` is capped at 256 KiB, carries at most 40 unseen URL-deduplicated candidates, and limits each job description to 12 KiB. It deliberately excludes discovery `notes` as description evidence. `preview-result.json` is capped at 128 KiB, binds to the context hash, refers only to stable candidate ids, and must give every candidate exactly one disposition.
+
+A minimal setup artifact has this synthetic shape:
+
+```json
+{
+  "schema_version": 1,
+  "kind": "jobwatch_setup",
+  "setup_id": "20260720T155600Z-a1b2c3d4",
+  "profile": {
+    "user_name": "Example User",
+    "seniority": ["senior"],
+    "skills": ["Rust"],
+    "experience_signals": ["production cryptography"],
+    "positive_signals": ["hands-on ownership"],
+    "borderline_signals": ["management-heavy roles"],
+    "current_or_recent_employers": ["Previous Employer"]
+  },
+  "track": {
+    "slug": "applied_crypto",
+    "display_name": "Applied Cryptography",
+    "search_area": "Applied cryptography and privacy engineering",
+    "goals_or_role_types": ["Applied cryptography engineer"],
+    "keep_only_keywords": ["cryptography"],
+    "constraints_or_red_flags": ["No mandatory relocation"],
+    "geography_or_remote_preferences": ["Europe", "remote"],
+    "fit_language": "Hands-on cryptography roles compatible with reviewed location constraints."
+  },
+  "source_seeds": {
+    "employers": [],
+    "sectors_or_organizations": [],
+    "career_pages_or_boards": []
+  },
+  "selected_sources": {
+    "track_terms": [],
+    "sources": [],
+    "match_rules": []
+  }
+}
+```
+
+An empty selected source list is valid before confirmation but blocks `scaffold_track.py`. Source entries and match rules use the same canonical schemas as track `sources.json` and `match_rules.json`.
+
+The deterministic assembler joins candidate judgments back to URLs and source coverage, then emits the existing digest schema. The two workers cannot write the workspace and never resume the coordinator conversation. Source discovery is web-capable; preview ranking is instructed and configured without routine web access. `scaffold_track.py` has no model role because it makes no model call.
+
+Setup model defaults and provider command construction live in `scripts/agent_provider.py`. Explicit CLI arguments override provider/role environment values, which override tested defaults. These setup-only policies do not change `run_track.sh`, `source_reviewer`, or `source_coder` behavior.
+
 ## Component map
 
 The flowchart shows how the agent skills, deterministic scripts, and on-disk artifacts interact across all four modes. Solid arrows are direct calls or invocations; dashed arrows are read/write of artifacts.

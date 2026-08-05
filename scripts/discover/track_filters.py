@@ -41,11 +41,15 @@ def _string_list(value: Any, field: str) -> list[str]:
     return result
 
 
-def load_track_match_rules(track: str, tracks_root: Path = DEFAULT_TRACKS_ROOT) -> list[dict[str, Any]]:
-    path = tracks_root / track / "match_rules.json"
-    if not path.exists():
-        return []
-    payload = json.loads(path.read_text())
+def normalize_track_match_rules_payload(
+    payload: dict[str, Any],
+    track: str,
+    *,
+    field: str = "match_rules.json",
+) -> list[dict[str, Any]]:
+    """Validate and normalize an in-memory canonical match_rules.json payload."""
+
+    path = field
     if payload.get("schema_version") != 1:
         raise ValueError(f"{path} schema_version must be 1")
     if payload.get("track") != track:
@@ -81,6 +85,14 @@ def load_track_match_rules(track: str, tracks_root: Path = DEFAULT_TRACKS_ROOT) 
         rule["limitation"] = limitation or "Track match rule {rule_id} removed {removed} candidate(s)."
         rules.append(rule)
     return rules
+
+
+def load_track_match_rules(track: str, tracks_root: Path = DEFAULT_TRACKS_ROOT) -> list[dict[str, Any]]:
+    path = tracks_root / track / "match_rules.json"
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text())
+    return normalize_track_match_rules_payload(payload, track, field=str(path))
 
 
 def _rule_applies(rule: dict[str, Any], coverage: Coverage) -> bool:
