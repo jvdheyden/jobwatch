@@ -206,7 +206,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/factorial/`
 - Requirements: none
-- Known limitations: Enumerates listing links like generic HTML, then opens each `/job_posting/` detail page to recover the real title, location, and role detail, since the listing only exposes anonymous apply links.
+- Known limitations: Enumerates explicit `/job_posting/` links, opens each detail page to recover searchable title, location, and role content, then retains configured term matches; the listing itself exposes only anonymous apply links.
 
 ### `getro_api`
 

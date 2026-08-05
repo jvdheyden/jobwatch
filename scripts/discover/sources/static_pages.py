@@ -90,7 +90,7 @@ def discover_pcd_team(source: SourceConfig, terms: list[str], timeout_seconds: i
     matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
 
     candidates: list[Candidate] = []
-    if helpers.should_keep_candidate(title, matched_terms, searchable_text):
+    if matched_terms:
         candidate = Candidate(
             employer=source.source,
             title=title,
@@ -135,7 +135,7 @@ def discover_qedit_inline(source: SourceConfig, terms: list[str], timeout_second
         enumerated_jobs = 1
         snippet = helpers.normalize_whitespace(f"{title} {match.group(1)}")
         matched_terms = sorted(set(helpers.match_terms(snippet, terms)))
-        if helpers.should_keep_candidate(title, matched_terms, snippet):
+        if matched_terms:
             candidates.append(
                 Candidate(
                     employer=source.source,
@@ -197,7 +197,7 @@ def _discover_filtered_html_links(
         title = visible_lines[0] if visible_lines else text
         searchable_text = f"{title} {text} {absolute_url}"
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         helpers.merge_candidate(
             candidates_by_url,

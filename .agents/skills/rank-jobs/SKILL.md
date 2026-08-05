@@ -24,16 +24,19 @@ Use these files as the source of truth for fit.
 
 For each candidate role:
 
-1. Compare the job against the user's CV and preferences.
-2. Score the role holistically on a 1-10 scale.
-3. Record concrete reasons for fit.
-4. Record concrete concerns.
-5. Assign one recommendation:
+1. Evaluate role-family fit from the title and responsibilities.
+2. Evaluate domain fit against the track's stated domain and keyword requirements.
+3. Evaluate practical fit, including hard constraints and red flags, against the user's CV and preferences.
+4. Score the combined fit holistically on a 1-10 scale.
+5. Record concrete reasons and concerns that make the role, domain, and practical fit visible.
+6. Assign one recommendation:
    - `apply_now`
    - `watch`
    - `skip`
 
 Then return the roles ordered from strongest to weakest.
+
+The candidates are already downstream of discovery and `find-jobs` admission. Do not search for replacements or try to recover postings absent from that input. Assign `skip`, or omit a weak role when auditability does not require it, if any fit dimension is insufficient.
 
 ## What to optimize for
 

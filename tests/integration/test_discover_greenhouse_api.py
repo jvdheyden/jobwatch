@@ -74,3 +74,38 @@ def test_discover_greenhouse_api_unescapes_html_entities_in_content(monkeypatch)
     assert "Build applied cryptography systems for privacy products." in candidate.description
     assert "<p>" not in candidate.description
     assert "&lt;" not in candidate.description
+
+
+def test_discover_greenhouse_api_admits_configured_management_and_legal_titles(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Example Greenhouse",
+        url="https://job-boards.greenhouse.io/example",
+        discovery_mode="greenhouse_api",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    titles = ["Engineering Manager", "Marketing Manager", "Legal Counsel"]
+
+    monkeypatch.setattr(
+        discover_http,
+        "fetch_json",
+        lambda url, timeout_seconds: {
+            "jobs": [
+                {
+                    "title": title,
+                    "absolute_url": f"https://job-boards.greenhouse.io/example/jobs/{index}",
+                    "location": {"name": "Remote"},
+                    "content": f"<p>Responsibilities for the {title} role.</p>",
+                }
+                for index, title in enumerate(titles)
+            ]
+        },
+    )
+
+    coverage = discover_jobs.discover_greenhouse_api(
+        source,
+        ["engineering manager", "marketing manager", "legal counsel"],
+        timeout_seconds=5,
+    )
+
+    assert {candidate.title for candidate in coverage.candidates} == set(titles)

@@ -83,7 +83,7 @@ def discover_iacr_jobs(source: SourceConfig, terms: list[str], timeout_seconds: 
             if part
         )
         matched_terms = helpers.match_terms(searchable_text, terms)
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         note_parts = ["IACR Jobs board listing"]

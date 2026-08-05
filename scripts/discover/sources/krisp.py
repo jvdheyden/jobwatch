@@ -159,7 +159,7 @@ def discover_krisp_jobs(source: SourceConfig, terms: list[str], timeout_seconds:
             note_parts.extend(build_krisp_detail_note_parts(sections))
         searchable_text = " ".join(part for part in (clean_title, listing_text, absolute_url) if part)
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(clean_title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         krisp_candidate = Candidate(
             employer=source.source,

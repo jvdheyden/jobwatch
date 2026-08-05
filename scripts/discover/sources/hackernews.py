@@ -100,7 +100,7 @@ def discover_hackernews_jobs(source: SourceConfig, terms: list[str], timeout_sec
             employer = infer_hn_employer(title)
             searchable_text = " ".join(part for part in [title, employer, age_text, job_url] if part)
             matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-            if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+            if not matched_terms:
                 continue
             helpers.merge_candidate(
                 candidates_by_url,
@@ -190,7 +190,7 @@ def discover_hackernews_whoishiring_api(source: SourceConfig, terms: list[str], 
         remote = helpers.infer_remote_status(location, clean_text)
         searchable_text = " ".join(part for part in [title, employer, location, clean_text] if part)
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         comment_url = helpers.normalize_url_without_fragment(f"https://news.ycombinator.com/item?id={comment_id}")

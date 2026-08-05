@@ -157,7 +157,7 @@ def discover_greenhouse_api(source: SourceConfig, terms: list[str], timeout_seco
         content = job.get("content", "")
         searchable_text = f"{title} {location} {content}"
         matched = helpers.match_terms(searchable_text, terms)
-        if not helpers.should_keep_candidate(title, matched, searchable_text):
+        if not matched:
             continue
         # The boards API returns HTML-entity-encoded HTML; unescape once before
         # parsing notes/description. Matching above stays on the raw content so

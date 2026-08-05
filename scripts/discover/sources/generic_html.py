@@ -164,7 +164,7 @@ def discover_bwi_jobboard(source: SourceConfig, terms: list[str], timeout_second
         title = extract_bwi_title(detail, link_text)
         searchable_text = f"{title} {detail}"
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not matched_terms or not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         candidate = Candidate(
             employer=source.source,
@@ -208,7 +208,6 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
     candidates: list[Candidate] = []
     seen_urls: set[str] = set()
     enumerated_urls: set[str] = set()
-    require_term_match = is_lattica_news_source(source.url) or duality_careers
     for link in parser.links:
         href = link["href"]
         text = helpers.normalize_whitespace(link["text"])
@@ -228,9 +227,7 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
         if is_same_page_link(source.url, absolute_url):
             continue
         matched_terms = helpers.match_terms(f"{text} {absolute_url}", terms)
-        if not matched_terms and (require_term_match or not helpers.looks_like_job_link(text, absolute_url)):
-            continue
-        if matched_terms and not helpers.should_keep_candidate(text or "unknown", matched_terms, f"{text} {absolute_url}"):
+        if not matched_terms:
             continue
         seen_urls.add(absolute_url)
         candidates.append(
@@ -288,7 +285,7 @@ def discover_filtered_html_links(
         title = visible_lines[0] if visible_lines else text
         searchable_text = f"{title} {text} {absolute_url}"
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         helpers.merge_candidate(
             candidates_by_url,
@@ -722,21 +719,39 @@ def enrich_factorial_candidate(candidate: Candidate, html: str) -> None:
 
 
 def discover_factorial(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
-    """Factorial ATS discovery: enumerate like generic HTML, then open each job
-    page to recover the real title, location, and substantive role detail.
+    """Enumerate Factorial job paths, then admit matches after detail enrichment.
 
     The listing only exposes anonymous "Apply now" links, so titles and JD copy
-    come from the detail pages. Populating ``description``/``notes`` here also
-    stops the generic post-discovery enrichment from re-fetching the noisy raw
-    HTML.
+    come from the detail pages. The explicit Factorial job-path predicate is the
+    source-protocol enumeration boundary; configured term evidence is applied
+    only after enrichment recovers searchable content.
     """
+    listing_html = http.fetch_text(source.url, timeout_seconds)
+    parser = helpers.LinkCollector()
+    parser.feed(listing_html)
+    candidates_by_url: dict[str, Candidate] = {}
+    enumerated_urls: set[str] = set()
+    for link in parser.links:
+        url = helpers.normalize_url_without_fragment(urljoin(source.url, link["href"]))
+        if not is_factorial_job_url(url):
+            continue
+        enumerated_urls.add(url)
+        candidates_by_url.setdefault(
+            url,
+            Candidate(
+                employer=source.source,
+                title=helpers.normalize_whitespace(link["text"]) or "unknown",
+                url=url,
+                source_url=source.url,
+                matched_terms=[],
+                notes="Enumerated through Factorial careers listing",
+            ),
+        )
 
-    coverage = discover_html(source, terms, timeout_seconds)
     pages_opened = 0
     failures = 0
-    for candidate in coverage.candidates:
-        if not is_factorial_job_url(candidate.url):
-            continue
+    matched_candidates: list[Candidate] = []
+    for candidate in candidates_by_url.values():
         try:
             html = http.fetch_text(candidate.url, timeout_seconds)
         except Exception:
@@ -748,11 +763,29 @@ def discover_factorial(source: SourceConfig, terms: list[str], timeout_seconds: 
             part for part in [candidate.title, candidate.location, candidate.description] if part
         )
         candidate.matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-    coverage.direct_job_pages_opened = pages_opened
-    coverage.result_pages_scanned = f"local_filter=1; factorial_detail_pages={pages_opened}"
+        if candidate.matched_terms:
+            matched_candidates.append(candidate)
+
+    limitations: list[str] = []
     if failures:
-        coverage.limitations.append(f"Factorial detail fetch failed for {failures} posting(s)")
-    return coverage
+        limitations.append(f"Factorial detail fetch failed for {failures} posting(s)")
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial" if failures else "complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned=f"local_filter=1; factorial_detail_pages={pages_opened}",
+        direct_job_pages_opened=pages_opened,
+        enumerated_jobs=len(enumerated_urls),
+        matched_jobs=len(matched_candidates),
+        limitations=limitations,
+        candidates=matched_candidates,
+    )
 
 
 SOURCES = [

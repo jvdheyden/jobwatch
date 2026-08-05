@@ -74,7 +74,7 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
             if part
         )
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         note_parts = ["Enumerated through Workable jobs API"]

@@ -16,6 +16,7 @@ from typing import Any, Callable, Mapping
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from digest_json import normalize_digest_payload
+from discover.helpers import match_terms
 from discover.registry import load_registry
 from discover.track_filters import normalize_track_match_rules_payload
 from source_config import SourceConfigError, normalize_sources_payload
@@ -921,13 +922,19 @@ def build_preview_context(
             continue
         seen_candidate_urls.add(candidate["url"])
         deduplicated.append((original_index, candidate))
-    deduplicated.sort(key=lambda pair: (-len(pair[1]["matched_terms"]), pair[0]))
+    deduplicated.sort(
+        key=lambda pair: (
+            -len(match_terms(pair[1]["title"], pair[1]["matched_terms"])),
+            -len(pair[1]["matched_terms"]),
+            pair[0],
+        )
+    )
     total_unseen = len(deduplicated)
     limited = deduplicated[:MAX_PREVIEW_CANDIDATES]
     coverage_limitations: list[str] = []
     if total_unseen > len(limited):
         coverage_limitations.append(
-            f"Preview context retained {len(limited)} of {total_unseen} unseen candidates by matched-term count and discovery order."
+            f"Preview context retained {len(limited)} of {total_unseen} unseen candidates by title evidence, matched-term count, and discovery order."
         )
     inputs = {
         "setup": {"path": _display_path(setup_path, root), "sha256": file_hash(setup_path)},

@@ -76,19 +76,6 @@ SOFTGARDEN_STOP_HEADINGS = (
     "Impressum",
     "Datenschutz",
 )
-SOFTGARDEN_RELEVANT_TITLE_MARKERS = (
-    "security",
-    "cyber",
-    "devsecops",
-    "sina",
-    "kritischer infrastruktur",
-    "hochsichere",
-    "requirements engineer",
-    "consultant",
-    "operator",
-)
-
-
 @dataclass(frozen=True)
 class SoftgardenJobCard:
     job_id: str
@@ -192,15 +179,6 @@ def apply_softgarden_detail_text(candidate: Candidate, detail_html: str, terms: 
     return candidate.notes != original_notes or candidate.matched_terms != original_terms
 
 
-def _should_keep_softgarden_card(card: SoftgardenJobCard, matched_terms: list[str], searchable_text: str) -> bool:
-    if helpers.should_keep_candidate(card.title, matched_terms, searchable_text):
-        return True
-    if not matched_terms:
-        return False
-    title_and_category = helpers.normalize_for_matching(f"{card.title} {card.category}")
-    return any(marker in title_and_category for marker in SOFTGARDEN_RELEVANT_TITLE_MARKERS)
-
-
 def discover_softgarden_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     html = http.fetch_text(source.url, timeout_seconds)
     cards = extract_softgarden_job_cards(html, source.url)
@@ -213,7 +191,7 @@ def discover_softgarden_html(source: SourceConfig, terms: list[str], timeout_sec
             part for part in [card.title, card.category, card.location, card.company, card.url] if part
         )
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not _should_keep_softgarden_card(card, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         notes = "Enumerated through Softgarden vacancy board"
         if card.category and card.category != "unknown":

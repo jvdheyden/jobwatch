@@ -339,7 +339,7 @@ def discover_eightfold_api(source: SourceConfig, terms: list[str], timeout_secon
                 matched_terms = sorted(
                     set(helpers.match_terms_with_aliases(searchable_text, terms, THALES_PAYLOAD_TERM_ALIASES))
                 )
-                if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+                if not matched_terms:
                     continue
                 helpers.merge_candidate(
                     candidates_by_url,

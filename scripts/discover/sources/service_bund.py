@@ -12,7 +12,6 @@ from html import unescape
 from urllib.parse import parse_qsl, urlencode, urljoin, urlparse
 
 from discover import helpers, http
-from discover.constants import NON_TECHNICAL_TITLE_HINTS
 from discover.core import Candidate, Coverage, SourceConfig
 from discover.registry import SourceAdapter
 
@@ -225,24 +224,18 @@ def apply_service_bund_detail_text(candidate: Candidate, detail_html: str, terms
 
 
 def should_keep_service_bund_candidate(
-    title: str,
+    _title: str,
     matched_terms: list[str],
     searchable_text: str,
     *,
     allow_curated_without_term: bool = False,
 ) -> bool:
-    if helpers.should_keep_candidate(title, matched_terms, searchable_text):
+    if matched_terms:
         return True
-    if any(token in title.lower() for token in NON_TECHNICAL_TITLE_HINTS):
+    if not allow_curated_without_term:
         return False
     haystack = helpers.normalize_for_matching(searchable_text)
-    has_public_interest_tech_hint = any(token in haystack for token in SERVICE_BUND_PUBLIC_INTEREST_HINTS)
-    normalized_terms = {helpers.normalize_for_matching(term) for term in matched_terms}
-    if normalized_terms == {"referent"}:
-        return has_public_interest_tech_hint
-    if normalized_terms:
-        return has_public_interest_tech_hint
-    return allow_curated_without_term and has_public_interest_tech_hint
+    return any(token in haystack for token in SERVICE_BUND_PUBLIC_INTEREST_HINTS)
 
 
 def build_service_bund_search_url(source_url: str, term: str, gtp: str | None = None) -> str:

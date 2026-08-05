@@ -145,7 +145,7 @@ def discover_jobvite_jobs(source: SourceConfig, terms: list[str], timeout_second
         absolute_url = helpers.normalize_url_without_fragment(urljoin(source.url, href))
         searchable_text = " ".join(part for part in (title, reqid, location, absolute_url) if part)
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         note_parts = ["Enumerated through Jobvite careers listing HTML"]
         if reqid:

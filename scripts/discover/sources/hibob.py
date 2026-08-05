@@ -62,7 +62,7 @@ def discover_hibob_api(source: SourceConfig, terms: list[str], timeout_seconds: 
             if part
         )
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         candidate = Candidate(
             employer=source.source,

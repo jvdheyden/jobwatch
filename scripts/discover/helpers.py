@@ -10,12 +10,7 @@ from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urlparse
 
-from discover.constants import (
-    JD_DESCRIPTION_CHAR_BUDGET,
-    NON_TECHNICAL_TITLE_HINTS,
-    SPECIALIZED_SIGNAL_TERMS,
-    TECHNICAL_TITLE_HINTS,
-)
+from discover.constants import JD_DESCRIPTION_CHAR_BUDGET
 from discover.core import Candidate
 
 
@@ -277,44 +272,6 @@ def infer_remote_status(*values: str) -> str:
     if "on-site" in haystack or "onsite" in haystack:
         return "on-site"
     return "unknown"
-
-
-def should_keep_candidate(title: str, matched_terms: list[str], searchable_text: str) -> bool:
-    title_lower = title.lower()
-    if any(token in title_lower for token in NON_TECHNICAL_TITLE_HINTS):
-        return False
-    if not matched_terms:
-        return False
-    title_term_matches = match_terms(title, matched_terms)
-    title_is_technical = any(token in title_lower for token in TECHNICAL_TITLE_HINTS)
-    specialized_matches = [term for term in matched_terms if term.lower() in SPECIALIZED_SIGNAL_TERMS]
-    if title_term_matches and title_is_technical:
-        return True
-    if title_is_technical and specialized_matches:
-        return True
-    body_specialized_matches = [
-        term for term in match_terms(searchable_text, matched_terms) if term.lower() in SPECIALIZED_SIGNAL_TERMS
-    ]
-    return title_is_technical and bool(body_specialized_matches)
-
-
-def looks_like_job_link(text: str, href: str) -> bool:
-    combined = f"{text} {href}".lower()
-    patterns = (
-        "job",
-        "career",
-        "opening",
-        "position",
-        "apply",
-        "vacanc",
-        "role",
-        "engineer",
-        "research",
-        "security",
-        "privacy",
-        "crypt",
-    )
-    return any(pattern in combined for pattern in patterns)
 
 
 def merge_candidate(candidates_by_url: dict[str, Candidate], candidate: Candidate) -> None:

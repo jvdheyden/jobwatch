@@ -146,7 +146,7 @@ def discover_ultipro_jobs(source: SourceConfig, terms: list[str], timeout_second
             category = helpers.normalize_whitespace(unescape(str(opportunity.get("JobCategoryName") or "")))
             searchable_text = " ".join(part for part in (title, location, category, brief) if part)
             matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-            if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+            if not matched_terms:
                 continue
             detail_url = f"{detail_root}?opportunityId={job_id}"
             helpers.merge_candidate(

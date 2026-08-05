@@ -95,7 +95,13 @@ Do not invent details.
 
 ## Inclusion rule
 
-Include a role only if it is a plausible match for the current track based on the current track's preferences.
+Evaluate these questions separately for every candidate, using the active track's preferences as the source of truth:
+
+1. Does the title or the described work plausibly belong to a role family requested by the track?
+2. Does the posting satisfy the track's stated domain or keyword requirements?
+3. Does a hard constraint or red flag require exclusion?
+
+Include a role only when the combined answers make it a plausible match for the current track. A domain mention alone does not establish role-family fit, and a role-title match alone does not satisfy a required domain constraint. Hard constraints and red flags override otherwise positive evidence.
 
 Use titles and listing snippets only for discovery priority.
 

@@ -15,26 +15,6 @@ ECB_DEFAULT_FEED_URL = "https://talent.ecb.europa.eu/careers/SearchJobs/feed/?jo
 ECB_DETAIL_FIELD_RE = re.compile(r'<p class="paragraph[^"]*">(?P<body>.*?)</p>', re.DOTALL)
 ECB_FIELD_TITLE_RE = re.compile(r'<span data-map="item-title">\s*<strong>(?P<title>.*?)</strong>\s*</span>', re.DOTALL)
 ECB_FIELD_VALUE_RE = re.compile(r'<span data-map="item-value">\s*(?P<value>.*?)\s*</span>', re.DOTALL)
-ECB_STRONG_RELEVANCE_MARKERS = (
-    "digital euro",
-    "privacy",
-    "cryptograph",
-    "security",
-    "cyber",
-    "offline technology",
-)
-ECB_DIGITAL_EURO_CONTEXT_MARKERS = (
-    "market infrastructure",
-    "offline",
-    "privacy",
-    "security",
-    "cryptograph",
-    "technology",
-    "technical",
-    "rulebook",
-)
-
-
 def ecb_avature_feed_url(source_url: str) -> str:
     if "/feed/" in source_url:
         return source_url
@@ -106,17 +86,6 @@ def _notes_from_fields(fields: dict[str, str], published: str) -> str:
     return "; ".join(parts)
 
 
-def _should_keep_ecb_candidate(title: str, searchable_text: str, matched_terms: list[str]) -> bool:
-    if not matched_terms:
-        return False
-    normalized = helpers.normalize_for_matching(searchable_text)
-    if any(marker in normalized for marker in ECB_STRONG_RELEVANCE_MARKERS):
-        return True
-    if "digital euro" in normalized and any(marker in normalized for marker in ECB_DIGITAL_EURO_CONTEXT_MARKERS):
-        return True
-    return helpers.should_keep_candidate(title, matched_terms, searchable_text)
-
-
 def discover_ecb_avature_rss(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     feed_url = ecb_avature_feed_url(source.url)
     xml_text = http.fetch_text(feed_url, timeout_seconds)
@@ -128,7 +97,7 @@ def discover_ecb_avature_rss(source: SourceConfig, terms: list[str], timeout_sec
     for item in items:
         initial_text = " ".join([item["title"], item["description"], item["url"]])
         initial_matches = helpers.match_terms(initial_text, terms)
-        if not _should_keep_ecb_candidate(item["title"], initial_text, initial_matches):
+        if not initial_matches:
             continue
 
         fields: dict[str, str] = {}
@@ -141,10 +110,6 @@ def discover_ecb_avature_rss(source: SourceConfig, terms: list[str], timeout_sec
 
         detail_text = " ".join(fields.values())
         matched_terms = sorted(set(initial_matches + helpers.match_terms(detail_text, terms)))
-        searchable_text = " ".join([initial_text, detail_text])
-        if not _should_keep_ecb_candidate(item["title"], searchable_text, matched_terms):
-            continue
-
         helpers.merge_candidate(
             candidates_by_url,
             Candidate(

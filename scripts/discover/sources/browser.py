@@ -68,7 +68,6 @@ match_terms = helpers.match_terms
 normalize_for_matching = helpers.normalize_for_matching
 normalize_url_without_fragment = helpers.normalize_url_without_fragment
 normalize_whitespace = helpers.normalize_whitespace
-should_keep_candidate = helpers.should_keep_candidate
 slugify_title = helpers.slugify_title
 split_visible_lines = helpers.split_visible_lines
 strip_html_fragment = helpers.strip_html_fragment
@@ -405,7 +404,7 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
         )
         matched_terms = sorted(set(match_terms(searchable_text, terms)))
         raw_ids.append(job_id)
-        if not should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         candidates.append(
             Candidate(
@@ -457,7 +456,7 @@ def extract_meta_jobs(page: Any, source: SourceConfig, term: str, terms: list[st
         location = next((line for line in lines[1:] if "," in line or "Multiple Locations" in line), "unknown")
         searchable_text = " ".join(lines)
         matched_terms = sorted(set(match_terms(searchable_text, terms)))
-        if not should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         candidates.append(
@@ -510,7 +509,7 @@ def extract_helsing_jobs(page: Any, source: SourceConfig, term: str, terms: list
         location = lines[3] if len(lines) > 3 else "unknown"
         searchable_text = " ".join(part for part in [title, team, employment_type, location] if part)
         matched_terms = sorted(set(match_terms(searchable_text, terms)))
-        if not should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         note = f"Helsing jobs page browser enumeration page={page_num}"
@@ -572,7 +571,7 @@ def extract_asml_jobs(page: Any, source: SourceConfig, terms: list[str], page_nu
             team = lines[2] if len(lines) > 2 else ""
         searchable_text = " ".join(part for part in [title, location, team] if part)
         matched_terms = sorted(set(match_terms(searchable_text, terms)))
-        if not should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         note = f"ASML browser enumeration page={page_num}"
@@ -815,7 +814,7 @@ def extract_bosch_jobs(page: Any, source: SourceConfig, term: str, terms: list[s
         location_match = re.search(r"(?:Standort|Location):\s*(.*?)(?:\s+Arbeitsbereich:|\s+Job veröffentlicht|\s+Job posted|$)", text)
         location = location_match.group(1).strip() if location_match else "unknown"
         matched_terms = sorted(set(match_terms(text, terms)))
-        if not should_keep_candidate(title, matched_terms, text):
+        if not matched_terms:
             continue
         candidates.append(
             Candidate(
@@ -867,7 +866,7 @@ def discover_trailofbits_browser(source: SourceConfig, terms: list[str], timeout
                 title = lines[0] if lines else "unknown"
                 searchable_text = " ".join(lines) or title
                 matched_terms = sorted(set(match_terms(searchable_text, terms)))
-                if not should_keep_candidate(title, matched_terms, searchable_text):
+                if not matched_terms:
                     continue
                 merge_candidate(
                     candidates_by_url,
@@ -937,7 +936,7 @@ def discover_automattic_browser(source: SourceConfig, terms: list[str], timeout_
                 title = lines[0] if lines else "unknown"
                 searchable_text = " ".join(lines) or title
                 matched_terms = sorted(set(match_terms(searchable_text, terms)))
-                if not should_keep_candidate(title, matched_terms, searchable_text):
+                if not matched_terms:
                     continue
                 merge_candidate(
                     candidates_by_url,
@@ -1082,7 +1081,7 @@ def discover_thales_browser(source: SourceConfig, terms: list[str], timeout_seco
 """
             )
             matched_terms = sorted(set(match_terms(card_text, terms)))
-            if not should_keep_candidate(title, matched_terms, card_text):
+            if not matched_terms:
                 continue
             location_match = re.search(r"Work Location\\s+(.+?)(?:\\s+Join our team|\\s+Save|$)", card_text, flags=re.DOTALL)
             location = re.sub(r"\\s+", " ", location_match.group(1)).strip() if location_match else "unknown"

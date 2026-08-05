@@ -43,6 +43,16 @@ Minimum behavior:
   provenance notes
 - use shared helpers from `discover.helpers` and transport from `discover.http`
 
+The track's `track_terms` and source-specific `search_terms` are retrieval
+vocabulary, not a taxonomy of technical or non-technical roles. Once a
+provider has enumerated a posting and found at least one configured term in its
+searchable payload, it should emit the candidate for downstream track
+evaluation. Do not add shared title allowlists or denylists for user-fit policy.
+Provider-native filters and source-specific predicates required to enumerate a
+board correctly are still appropriate; document and test those as protocol
+behavior. Semantic role-family, domain, and exclusion decisions belong to the
+active track's preferences and the `find-jobs`/`rank-jobs` stages.
+
 ## Fixtures And Tests
 
 Add mocked provider fixtures under:

@@ -118,7 +118,7 @@ def discover_recruitee_inline(source: SourceConfig, terms: list[str], timeout_se
             if part
         )
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         note_parts = ["Recruitee inline offers payload"]

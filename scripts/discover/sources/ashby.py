@@ -241,7 +241,7 @@ def discover_ashby_api(source: SourceConfig, terms: list[str], timeout_seconds: 
             if part
         )
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         posting_id = posting.get("id") or ""
         candidate_url = f"{source.url.rstrip('/')}/{posting_id}"

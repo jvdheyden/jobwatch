@@ -83,7 +83,7 @@ def discover_dover_jobs(source: SourceConfig, terms: list[str], timeout_seconds:
         location = _job_location(job)
         searchable_text = f"{title} {location}"
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         helpers.merge_candidate(
             candidates_by_url,

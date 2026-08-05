@@ -269,7 +269,7 @@ def discover_personio_page(source: SourceConfig, terms: list[str], timeout_secon
             if part
         )
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         job_url = helpers.normalize_url_without_fragment(
             helpers.join_text(

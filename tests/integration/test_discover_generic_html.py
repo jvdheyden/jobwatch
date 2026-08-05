@@ -89,3 +89,26 @@ def test_discover_lattica_news_requires_explicit_hiring_term(monkeypatch):
     assert candidate.title == "We're hiring cryptography engineers"
     assert candidate.url == "https://www.lattica.ai/news/we-are-hiring.html"
     assert candidate.matched_terms == ["hiring", "we're hiring"]
+
+
+def test_discover_html_admits_configured_sales_title_and_excludes_no_match(monkeypatch):
+    html = """
+    <html><body>
+      <a href="/jobs/sales-engineer">Sales Engineer</a>
+      <a href="/jobs/customer-success">Customer Success Associate</a>
+    </body></html>
+    """
+    source = discover_jobs.SourceConfig(
+        source="Example Careers",
+        url="https://example.test/careers",
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: html)
+
+    coverage = discover_jobs.discover_html(source, ["sales engineer"], 5)
+
+    assert coverage.matched_jobs == 1
+    assert coverage.candidates[0].title == "Sales Engineer"
+    assert coverage.candidates[0].matched_terms == ["sales engineer"]

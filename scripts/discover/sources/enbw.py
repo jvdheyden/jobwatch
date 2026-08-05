@@ -85,7 +85,7 @@ def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds
                     part for part in [title, employer, location, category, remote, description] if part
                 )
                 matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-                if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+                if not matched_terms:
                     continue
                 helpers.merge_candidate(
                     candidates_by_url,

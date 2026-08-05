@@ -95,7 +95,7 @@ def discover_lifeatspotify_jobs(source: SourceConfig, terms: list[str], timeout_
         title = helpers.normalize_whitespace(unescape(str(job.get("text") or ""))) or "unknown"
         searchable_text = _searchable_text(job)
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
         detail_notes = "Enumerated through lifeatspotify.com jobs API"
         detail_description = ""

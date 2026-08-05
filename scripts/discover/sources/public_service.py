@@ -399,7 +399,7 @@ def discover_bosch_autocomplete(source: SourceConfig, terms: list[str], timeout_
                 if part
             )
             matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-            if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+            if not matched_terms:
                 continue
 
             notes = f"Bosch autocomplete hit for '{term}'"

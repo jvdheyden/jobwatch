@@ -82,7 +82,7 @@ def _discover_successfactors_rss(
             description_text = " ".join(helpers.extract_visible_text_lines_from_html(raw_description))
             searchable_text = " ".join(part for part in (title, location, description_text) if part)
             matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-            if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+            if not matched_terms:
                 continue
             rss_candidate = Candidate(
                 employer=source.source,

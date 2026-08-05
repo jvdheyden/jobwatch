@@ -188,6 +188,8 @@ def test_preview_context_is_bounded_stable_and_excludes_seen_jobs(tmp_path: Path
     setup = setup_contracts.write_setup(setup_path, selected_setup())
     discovery_path = tmp_path / "artifacts" / "discovery" / "applied_crypto" / "2026-07-20.json"
     candidates = [_candidate(index, terms=(index % 4) + 1, description="x" * 14000) for index in range(45)]
+    candidates[-1]["title"] = "Product Manager"
+    candidates[-1]["matched_terms"] = ["product manager"]
     candidates.append(copy.deepcopy(candidates[3]))
     _write_discovery(discovery_path, track="applied_crypto", candidates=candidates)
     seen_path = tmp_path / "tracks" / "applied_crypto" / "seen_jobs.json"
@@ -225,7 +227,35 @@ def test_preview_context_is_bounded_stable_and_excludes_seen_jobs(tmp_path: Path
     assert all(len(candidate["description"].encode()) <= setup_contracts.MAX_DESCRIPTION_BYTES for candidate in first["candidates"])
     assert "diagnostic note" not in json.dumps(first["candidates"])
     assert "https://jobs.example.test/jobs/0" not in {candidate["url"] for candidate in first["candidates"]}
+    assert "https://jobs.example.test/jobs/44" in {candidate["url"] for candidate in first["candidates"]}
     assert len(json.dumps(first, sort_keys=True, separators=(",", ":")).encode()) <= setup_contracts.PREVIEW_CONTEXT_MAX_BYTES
+
+
+def test_preview_context_prioritizes_title_evidence_at_candidate_cap(tmp_path: Path) -> None:
+    setup_path = tmp_path / "artifacts" / "setup" / "id" / "setup.json"
+    setup = setup_contracts.write_setup(setup_path, selected_setup())
+    discovery_path = tmp_path / "artifacts" / "discovery" / "applied_crypto" / "2026-07-20.json"
+    candidates = [_candidate(index, description="Work on cryptography products.") for index in range(45)]
+    for index, candidate in enumerate(candidates):
+        candidate["title"] = f"Office Coordinator {index}"
+        candidate["matched_terms"] = ["cryptography"]
+    candidates[-1]["title"] = "Product Manager"
+    candidates[-1]["matched_terms"] = ["product manager"]
+    _write_discovery(discovery_path, track="applied_crypto", candidates=candidates)
+    seen_path = tmp_path / "tracks" / "applied_crypto" / "seen_jobs.json"
+    seen_path.parent.mkdir(parents=True)
+    seen_path.write_text(json.dumps({"schema_version": 1, "track": "applied_crypto", "jobs": []}) + "\n")
+
+    context = setup_contracts.build_preview_context(
+        setup, discovery_path, seen_path, setup_path=setup_path, root=tmp_path
+    )
+
+    retained_urls = {candidate["url"] for candidate in context["candidates"]}
+    assert len(context["candidates"]) == setup_contracts.MAX_PREVIEW_CANDIDATES
+    assert context["omitted_candidate_count"] == 5
+    assert "https://jobs.example.test/jobs/44" in retained_urls
+    assert "https://jobs.example.test/jobs/39" not in retained_urls
+    assert context["candidates"][0]["title"] == "Product Manager"
 
 
 def test_preview_result_requires_one_identity_preserving_judgment_per_candidate(tmp_path: Path) -> None:

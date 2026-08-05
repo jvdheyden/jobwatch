@@ -233,7 +233,7 @@ def discover_bamboohr_jobs(source: SourceConfig, terms: list[str], timeout_secon
         description_text = " ".join(helpers.extract_visible_text_lines_from_html(description_html))
         searchable_text = " ".join(part for part in (title, department, employment_status, location, description_text, share_url) if part)
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-        if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+        if not matched_terms:
             continue
 
         sections = extract_bamboohr_detail_sections(description_html)

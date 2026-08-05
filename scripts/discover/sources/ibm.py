@@ -141,7 +141,7 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
             level = source_payload.get("field_keyword_18") or ""
             searchable_text = " ".join(part for part in [title, description, location, remote, team, level] if part)
             matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
-            if not helpers.should_keep_candidate(title, matched_terms, searchable_text):
+            if not matched_terms:
                 continue
             if not should_keep_ibm_candidate(source, title, matched_terms):
                 continue

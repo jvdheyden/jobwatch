@@ -85,6 +85,38 @@ The deterministic assembler joins candidate judgments back to URLs and source co
 
 Setup model defaults and provider command construction live in `scripts/agent_provider.py`. Explicit CLI arguments override provider/role environment values, which override tested defaults. These setup-only policies do not change `run_track.sh`, `source_reviewer`, or `source_coder` behavior.
 
+## Candidate filtering boundary
+
+Configured `sources.json` `track_terms` and source-specific `search_terms` are
+retrieval vocabulary. Providers extract postings and compute generic term
+evidence; ordinary candidate admission requires non-empty `matched_terms`, not
+shared technical/non-technical role policy. Provider-native filters and narrow
+source-protocol predicates remain part of enumeration.
+
+```mermaid
+flowchart LR
+  Provider[Provider enumeration] --> Terms[Configured term evidence]
+  Terms --> Rules[Optional source-scoped track match rules]
+  Rules --> Enrich[Description enrichment]
+  Enrich --> Artifact[Discovery artifact]
+  Artifact --> Find[find-jobs: role + domain + hard-constraint admission]
+  Find --> Rank[rank-jobs: holistic score + recommendation]
+```
+
+The existing optional `tracks/<track>/match_rules.json` hook runs before
+fallback description enrichment and reports deterministic removals through
+coverage limitations. Its source-scoped rules do not replace semantic track
+preferences. `find-jobs` reads those preferences and decides candidate
+admission by evaluating role-family fit, domain fit, and hard constraints as
+separate questions. `rank-jobs` then re-evaluates the surviving candidates and
+assigns `apply_now`, `watch`, or `skip`; it does not search for candidates that
+were absent from the artifact.
+
+First-preview selection remains capped at 40 unseen, URL-deduplicated
+candidates. Candidates with more configured terms matched in their titles are
+ordered first, followed by total matched-term count and stable discovery order.
+This priority affects bounded selection only, not eligibility or semantic fit.
+
 ## Component map
 
 The flowchart shows how the agent skills, deterministic scripts, and on-disk artifacts interact across all four modes. Solid arrows are direct calls or invocations; dashed arrows are read/write of artifacts.
@@ -217,7 +249,8 @@ sequenceDiagram
   Track->>Disc: discover_jobs.py --track <slug> --today <date>
   Disc-->>Track: artifacts/discovery/<track>/<date>.json
   Track->>Agent: invoke with prompt + tracks/<track>/AGENTS.md
-  Agent->>Agent: find-jobs (filter, dedupe), rank-jobs (score)
+  Agent->>Agent: find-jobs (role/domain/constraint admission, dedupe)
+  Agent->>Agent: rank-jobs (holistic score and recommendation)
   Agent-->>Track: artifacts/digests/<track>/<date>.json
   Track->>Post: update_source_state.py
   Track->>Post: render_digest.py (markdown)

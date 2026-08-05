@@ -48,11 +48,13 @@ def test_discover_apple_jobs_extracts_search_result_details(monkeypatch):
 
     assert coverage.status == "complete"
     assert coverage.enumerated_jobs == 2
-    assert coverage.matched_jobs == 1
-    candidate = coverage.candidates[0]
+    assert coverage.matched_jobs == 2
+    by_title = {item.title: item for item in coverage.candidates}
+    candidate = by_title["Software Engineer - Secure Enclave, Core OS"]
     assert candidate.title == "Software Engineer - Secure Enclave, Core OS"
     assert candidate.url == "https://jobs.apple.com/en-us/details/200662871-0836/software-engineer-secure-enclave-core-os?team=SFTWR"
     assert candidate.location == "Cupertino"
     assert candidate.matched_terms == ["cryptography", "secure hardware", "security"]
     assert "Responsibilities: Design Secure Enclave services" in candidate.notes
+    assert by_title["Corporate Security Partner"].matched_terms == ["security"]
     assert "Careers at Apple" not in {item.title for item in coverage.candidates}

@@ -76,7 +76,7 @@ def discover_lever_json(source: SourceConfig, terms: list[str], timeout_seconds:
             )
         )
         matched = helpers.match_terms(payload, terms)
-        if not helpers.should_keep_candidate(title, matched, payload):
+        if not matched:
             continue
         raw_url = posting.get("hostedUrl") or posting.get("applyUrl") or source.url
         candidate = Candidate(
