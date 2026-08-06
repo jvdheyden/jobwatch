@@ -153,7 +153,11 @@ else
   exit 1
 fi
 
-mapfile -d '' -t SETUP_COMMAND < <(
+# bash 3.2 (macOS /bin/bash) has no mapfile; read NUL-delimited items manually.
+SETUP_COMMAND=()
+while IFS= read -r -d '' setup_command_item; do
+  SETUP_COMMAND+=("$setup_command_item")
+done < <(
   "$PYTHON_BIN" - "$SCRIPT_DIR" "$AGENT_VALUE" "$AGENT_BIN_VALUE" "$ROOT" "$MODEL_VALUE" "$REASONING_VALUE" <<'PY'
 import sys
 from pathlib import Path
