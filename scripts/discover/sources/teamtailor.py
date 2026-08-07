@@ -60,7 +60,11 @@ def discover_teamtailor_jobs(source: SourceConfig, terms: list[str], timeout_sec
             job_posting.get("description") if isinstance(job_posting, dict) else ""
         ) or ""
         description_text = " ".join(helpers.extract_visible_text_lines_from_html(description_html))
-        searchable_text = " ".join(part for part in (title, location, description_text) if part)
+        # Match on the role identity (title + location) only. The description body is
+        # generic company/collaboration boilerplate that routinely name-drops other roles
+        # ("work alongside product managers, designers"), which produces wrong-content
+        # matches when it is searched. The description is still retained below for detail.
+        searchable_text = " ".join(part for part in (title, location) if part)
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
         if not matched_terms:
             continue

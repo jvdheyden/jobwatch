@@ -1130,7 +1130,8 @@ def test_discover_teamtailor_jobs_reads_feed_and_locations(monkeypatch):
                 {
                     "url": "https://www.rolandcareers.com/jobs/456-sales-lead",
                     "title": "Sales Lead",
-                    "content_html": "<p>Grow retail partnerships.</p>",
+                    # Body name-drops another role; this must not produce a match.
+                    "content_html": "<p>Grow retail partnerships alongside our security engineers.</p>",
                 },
             ]
         }
@@ -1141,6 +1142,8 @@ def test_discover_teamtailor_jobs_reads_feed_and_locations(monkeypatch):
 
     assert coverage.status == "complete"
     assert coverage.enumerated_jobs == 2
+    # Only the role whose title carries the term matches; the Sales Lead body mention
+    # of "security engineers" must not pull it in as wrong content.
     assert coverage.matched_jobs == 1
     candidate = coverage.candidates[0]
     assert candidate.url == "https://www.rolandcareers.com/jobs/123-senior-security-engineer"
