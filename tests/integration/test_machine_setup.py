@@ -955,6 +955,7 @@ printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_PLATFORM": "Linux",
+        "JOB_AGENT_PDFTOTEXT_BIN": str(agent_bin),
     }
 
     result = run_cmd(
@@ -1036,6 +1037,7 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
     env = os.environ | {
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_PLATFORM": "Darwin",
+        "JOB_AGENT_PDFTOTEXT_BIN": str(agent_bin),
     }
 
     result = run_cmd("bash", str(bootstrap_script), "--agent", "codex", "--agent-bin", str(agent_bin), env=env, cwd=tmp_job_agent_root)
@@ -1044,6 +1046,52 @@ def test_bootstrap_machine_omits_linux_only_followup_on_non_linux(
     assert "Next:" in result.stdout
     assert "bash scripts/start_setup_agent.sh --agent codex" in result.stdout
     assert "install_bwrap_apparmor" not in result.stdout
+
+
+def test_bootstrap_machine_installs_poppler_with_homebrew_when_pdftotext_is_missing(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    bootstrap_script = tmp_job_agent_root / "scripts" / "bootstrap_machine.sh"
+    setup_script = tmp_job_agent_root / "scripts" / "setup_machine.sh"
+    bootstrap_venv_script = tmp_job_agent_root / "scripts" / "bootstrap_venv.sh"
+    fake_bin_dir = tmp_job_agent_root / "bin"
+    log_file = tmp_job_agent_root / "brew.log"
+    agent_bin = fake_bin_dir / "codex"
+    _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
+    _write_executable(
+        fake_bin_dir / "brew",
+        """#!/bin/bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${BREW_LOG:?missing BREW_LOG}"
+touch "$(dirname "$0")/pdftotext"
+chmod +x "$(dirname "$0")/pdftotext"
+""",
+    )
+    _write_executable(bootstrap_script, (repo_root / "scripts" / "bootstrap_machine.sh").read_text())
+    _write_executable(setup_script, "#!/bin/bash\nset -euo pipefail\n")
+    _write_executable(bootstrap_venv_script, "#!/bin/bash\nset -euo pipefail\n")
+
+    env = os.environ | {
+        "BREW_LOG": str(log_file),
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_PLATFORM": "Darwin",
+        "PATH": f"{fake_bin_dir}:/usr/bin:/bin",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(bootstrap_script),
+        "--agent",
+        "codex",
+        "--agent-bin",
+        str(agent_bin),
+        env=env,
+        cwd=tmp_job_agent_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert log_file.read_text() == "install poppler\n"
+    assert "pdftotext was not found; installing Poppler" in result.stdout
 
 
 def test_bootstrap_machine_starts_setup_agent_only_when_requested(
@@ -1084,6 +1132,7 @@ printf 'start_setup_agent %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTS
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_PLATFORM": "Linux",
+        "JOB_AGENT_PDFTOTEXT_BIN": str(agent_bin),
     }
 
     result = run_cmd(
@@ -1144,6 +1193,7 @@ printf 'start_setup_agent %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTS
         "BOOTSTRAP_MACHINE_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_PLATFORM": "Linux",
+        "JOB_AGENT_PDFTOTEXT_BIN": str(agent_bin),
     }
 
     result = _run_interactive(

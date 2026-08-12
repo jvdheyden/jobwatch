@@ -18,6 +18,7 @@ This script:
 1. Generates machine-local config via scripts/setup_machine.sh
 2. Creates local profile placeholders under profile/
 3. Bootstraps the repo-local virtualenv via scripts/bootstrap_venv.sh
+4. Installs pdftotext (Poppler) when it is not already available
 
 It does not install the scheduler or the optional Linux AppArmor profile.
 In an interactive terminal, it asks whether to start the guided setup agent.
@@ -84,6 +85,59 @@ check_agent_installed() {
     return 1
   fi
   command -v "$agent" >/dev/null 2>&1
+}
+
+install_pdftotext() {
+  local pdftotext_bin="${JOB_AGENT_PDFTOTEXT_BIN:-pdftotext}"
+  local privilege_command=()
+
+  if command -v "$pdftotext_bin" >/dev/null 2>&1; then
+    echo "pdftotext: already installed"
+    return 0
+  fi
+
+  echo "pdftotext was not found; installing Poppler..."
+  if [[ "$PLATFORM" == "Darwin" ]]; then
+    if ! command -v brew >/dev/null 2>&1; then
+      echo "Homebrew is required to install pdftotext on macOS: https://brew.sh" >&2
+      return 1
+    fi
+    brew install poppler
+  elif [[ "$PLATFORM" == "Linux" ]]; then
+    if [[ "$(id -u)" -ne 0 ]]; then
+      if ! command -v sudo >/dev/null 2>&1; then
+        echo "sudo is required to install pdftotext on Linux." >&2
+        return 1
+      fi
+      privilege_command=(sudo)
+    fi
+
+    if command -v apt-get >/dev/null 2>&1; then
+      "${privilege_command[@]}" apt-get update
+      "${privilege_command[@]}" apt-get install -y poppler-utils
+    elif command -v dnf >/dev/null 2>&1; then
+      "${privilege_command[@]}" dnf install -y poppler-utils
+    elif command -v yum >/dev/null 2>&1; then
+      "${privilege_command[@]}" yum install -y poppler-utils
+    elif command -v pacman >/dev/null 2>&1; then
+      "${privilege_command[@]}" pacman -Sy --noconfirm poppler
+    elif command -v zypper >/dev/null 2>&1; then
+      "${privilege_command[@]}" zypper --non-interactive install poppler-tools
+    elif command -v apk >/dev/null 2>&1; then
+      "${privilege_command[@]}" apk add poppler-utils
+    else
+      echo "Could not find a supported package manager to install pdftotext (Poppler)." >&2
+      return 1
+    fi
+  else
+    echo "Automatic pdftotext installation is not supported on platform '$PLATFORM'." >&2
+    return 1
+  fi
+
+  if ! command -v "$pdftotext_bin" >/dev/null 2>&1; then
+    echo "Poppler installation completed, but pdftotext is still not available on PATH." >&2
+    return 1
+  fi
 }
 
 is_interactive() {
@@ -223,6 +277,7 @@ fi
 
 /bin/bash "$SCRIPT_DIR/setup_machine.sh" "${SETUP_ARGS[@]}"
 /bin/bash "$SCRIPT_DIR/bootstrap_venv.sh" --quiet
+install_pdftotext
 
 if [[ -z "$START_SETUP_AGENT" ]]; then
   if is_interactive; then

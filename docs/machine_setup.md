@@ -15,6 +15,7 @@ That will:
 - create machine-local config via `scripts/setup_machine.sh`
 - create local profile placeholders under `profile/`
 - bootstrap the repo-local virtualenv via `scripts/bootstrap_venv.sh`
+- install `pdftotext` (Poppler) when it is not already available, so guided setup can read a PDF CV
 - print a final next-step block with the guided setup command
 
 In an interactive terminal, bootstrap asks whether to launch the guided setup agent now; the default answer is yes. In non-interactive mode, it never launches the agent unless you pass `--start-setup-agent`. Use `--no-start-setup-agent` to suppress the prompt in interactive runs.

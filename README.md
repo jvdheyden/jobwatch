@@ -63,7 +63,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/bootstrap_machine.sh --agent gemini
    ```
 
-   This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, and generates scheduler artifacts under `.scheduler/`. In an interactive terminal, bootstrap offers to start the guided setup agent; in non-interactive runs, pass `--start-setup-agent` to launch it automatically.
+   This writes machine-local config, creates local profile placeholders, bootstraps the repo-local virtualenv, installs `pdftotext` (Poppler) for CV extraction when needed, and generates scheduler artifacts under `.scheduler/`. In an interactive terminal, bootstrap offers to start the guided setup agent; in non-interactive runs, pass `--start-setup-agent` to launch it automatically.
 
    <details><summary>What the bootstrap script writes</summary>
    Machine-local config lives in `.env.local`, which is gitignored. `setup_machine.sh` writes:
