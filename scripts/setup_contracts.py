@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
-from digest_json import normalize_digest_payload
+from digest_json import FIT_SCORE_MAX, FIT_SCORE_MIN, normalize_digest_payload
 from discover.helpers import match_terms
 from discover.registry import load_registry
 from discover.track_filters import normalize_track_match_rules_payload
@@ -976,8 +976,10 @@ def _score(value: Any, field: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise SetupContractError(f"{field} must be numeric")
     score = float(value)
-    if not 0 <= score <= 10:
-        raise SetupContractError(f"{field} must be between 0 and 10")
+    if not FIT_SCORE_MIN <= score <= FIT_SCORE_MAX:
+        raise SetupContractError(
+            f"{field} must be between {FIT_SCORE_MIN:g} and {FIT_SCORE_MAX:g}"
+        )
     return score
 
 
@@ -1263,7 +1265,12 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
         "properties": {
             "candidate_id": {"type": "string", "enum": candidate_ids},
             "disposition": {"type": "string", "const": "top_match"},
-            "score": {"type": "number", "minimum": 0, "maximum": 10},
+            "score": {
+                "type": "number",
+                "minimum": FIT_SCORE_MIN,
+                "maximum": FIT_SCORE_MAX,
+                "description": "Holistic fit score on a 1-10 scale; use 8.5, not 0.85.",
+            },
             "recommendation": {"type": "string", "enum": ["apply_now", "watch", "skip"]},
             "match_reasons": {"type": "array", "items": {"type": "string"}},
             "concerns": {"type": "array", "items": {"type": "string"}},
@@ -1276,7 +1283,12 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
         "properties": {
             "candidate_id": {"type": "string", "enum": candidate_ids},
             "disposition": {"type": "string", "const": "other_role"},
-            "score": {"type": "number", "minimum": 0, "maximum": 10},
+            "score": {
+                "type": "number",
+                "minimum": FIT_SCORE_MIN,
+                "maximum": FIT_SCORE_MAX,
+                "description": "Holistic fit score on a 1-10 scale; use 6.5, not 0.65.",
+            },
             "recommendation": {"type": "string", "enum": ["apply_now", "watch", "skip"]},
             "short_note": {"type": "string"},
         },
@@ -1340,7 +1352,8 @@ def build_worker_prompt(role: str, input_payload: dict[str, Any]) -> str:
             "JOBWATCH_SETUP_WORKER_ROLE=preview_ranker\n"
             + common
             + "Do not use web search. Judge only the bounded profile, track, and candidates in the input. Give every "
-            "candidate exactly one disposition. Use top_match with score, recommendation, match_reasons, and concerns; "
+            "candidate exactly one disposition. Score holistic fit on a 1-10 scale (for example 8.5, never 0.85). "
+            "Use top_match with score, recommendation, match_reasons, and concerns; "
             "other_role with score, recommendation, and short_note; or filtered with a concrete reason. Treat hard "
             "constraints conservatively and do not invent evidence when descriptions are missing. Do not repeat URLs, "
             "descriptions, profile data, or source coverage.\n"

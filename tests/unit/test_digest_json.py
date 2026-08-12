@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from datetime import date
 
 import pytest
@@ -33,6 +34,15 @@ def test_invalid_digest_payload_is_rejected(load_json_fixture):
     payload["schema_version"] = 999
 
     with pytest.raises(digest_json.DigestValidationError):
+        digest_json.normalize_digest_payload(payload)
+
+
+@pytest.mark.parametrize("score", [0.9, 10.1])
+def test_digest_payload_rejects_fit_score_outside_one_to_ten(load_json_fixture, score):
+    payload = copy.deepcopy(load_json_fixture("digests/core_crypto_minimal.json"))
+    payload["runs"][0]["top_matches"][0]["fit_score"] = score
+
+    with pytest.raises(digest_json.DigestValidationError, match="between 1 and 10"):
         digest_json.normalize_digest_payload(payload)
 
 

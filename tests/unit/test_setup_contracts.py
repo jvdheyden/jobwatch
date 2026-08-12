@@ -181,6 +181,10 @@ def test_worker_json_schemas_type_const_and_enum_fields() -> None:
     }
     preview_schema = setup_contracts.worker_json_schema("preview_ranker", preview_context)
     _assert_const_and_enum_schemas_are_typed(preview_schema)
+    scored_judgments = preview_schema["properties"]["judgments"]["items"]["anyOf"][:2]
+    assert all(item["properties"]["score"]["minimum"] == 1 for item in scored_judgments)
+    assert all(item["properties"]["score"]["maximum"] == 10 for item in scored_judgments)
+    assert "1-10 scale" in setup_contracts.build_worker_prompt("preview_ranker", preview_context)
 
 
 def _write_discovery(path: Path, *, track: str, candidates: list[dict]) -> None:
@@ -357,6 +361,11 @@ def test_preview_result_requires_one_identity_preserving_judgment_per_candidate(
     assert normalize_digest_payload(digest) == digest
     assert digest["runs"][0]["top_matches"][0]["listing_url"] == context["candidates"][0]["url"]
     assert len(digest["runs"][0]["filtered_roles"]) == 1
+
+    normalized_score = copy.deepcopy(result)
+    normalized_score["judgments"][0]["score"] = 0.9
+    with pytest.raises(setup_contracts.SetupContractError, match="between 1 and 10"):
+        setup_contracts.normalize_preview_result(normalized_score, context)
 
     missing = copy.deepcopy(result)
     missing["judgments"].pop()

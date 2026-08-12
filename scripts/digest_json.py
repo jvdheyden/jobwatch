@@ -14,6 +14,8 @@ from typing import Any
 ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 SCHEMA_VERSION = 1
 RECENT_CUTOFF_DAYS = 30
+FIT_SCORE_MIN = 1.0
+FIT_SCORE_MAX = 10.0
 
 
 def filter_recent_ranked_jobs(
@@ -107,7 +109,12 @@ def _optional_float(value: Any, field: str) -> float | None:
     if isinstance(value, bool):
         raise DigestValidationError(f"{field} must not be boolean")
     if isinstance(value, (int, float)):
-        return float(value)
+        score = float(value)
+        if not FIT_SCORE_MIN <= score <= FIT_SCORE_MAX:
+            raise DigestValidationError(
+                f"{field} must be between {FIT_SCORE_MIN:g} and {FIT_SCORE_MAX:g}"
+            )
+        return score
     raise DigestValidationError(f"{field} must be numeric or null")
 
 
