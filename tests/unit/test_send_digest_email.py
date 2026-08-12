@@ -16,6 +16,7 @@ def test_load_smtp_config_reads_required_env_and_defaults_port():
             "JOB_AGENT_SMTP_HOST": "smtp.example.com",
             "JOB_AGENT_SMTP_FROM": "jobs@example.com",
             "JOB_AGENT_SMTP_TO": "one@example.com, two@example.com",
+            "JOB_AGENT_SMTP_CC": "cc@example.com",
             "JOB_AGENT_SMTP_USERNAME": "user",
             "JOB_AGENT_SMTP_PASSWORD": "secret",
             "JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED": "1",
@@ -26,6 +27,7 @@ def test_load_smtp_config_reads_required_env_and_defaults_port():
     assert config.port == 587
     assert config.sender == "jobs@example.com"
     assert config.recipients == ("one@example.com", "two@example.com")
+    assert config.cc_recipients == ("cc@example.com",)
     assert config.username == "user"
     assert config.password == "secret"
     assert config.tls_mode == "starttls"
@@ -46,6 +48,7 @@ def test_load_smtp_config_uses_provider_defaults_and_account():
     assert config.port == 587
     assert config.sender == "jobs@example.com"
     assert config.recipients == ("one@example.com", "two@example.com")
+    assert config.cc_recipients == ()
     assert config.username == "jobs@example.com"
     assert config.password == "secret"
     assert config.tls_mode == "starttls"
@@ -257,7 +260,7 @@ def test_dry_run_does_not_load_smtp_or_execute_password_command(tmp_path, monkey
     assert "Attachment:" not in output
 
 
-def test_build_email_message_adds_ranked_attachment():
+def test_build_email_message_adds_cc_header_and_ranked_attachment():
     rendered = RenderedDigestEmail(
         subject="Digest",
         body="Body\n",
@@ -265,12 +268,18 @@ def test_build_email_message_adds_ranked_attachment():
         attachment_text="# Ranked\n",
     )
 
-    message = send_digest_email.build_email_message(rendered, sender="jobs@example.com", recipients=("me@example.com",))
+    message = send_digest_email.build_email_message(
+        rendered,
+        sender="jobs@example.com",
+        recipients=("me@example.com",),
+        cc_recipients=("other@example.com",),
+    )
     attachments = list(message.iter_attachments())
 
     assert message["Subject"] == "Digest"
     assert message["From"] == "jobs@example.com"
     assert message["To"] == "me@example.com"
+    assert message["Cc"] == "other@example.com"
     assert message.get_body(preferencelist=("plain",)).get_content() == "Body\n"
     assert len(attachments) == 1
     assert attachments[0].get_filename() == "ranked-overview-demo.md"
@@ -306,6 +315,7 @@ def test_send_email_message_uses_starttls_login_and_recipients(monkeypatch):
         port=587,
         sender="jobs@example.com",
         recipients=("one@example.com", "two@example.com"),
+        cc_recipients=("cc@example.com",),
         username="user",
         password="secret",
         tls_mode="starttls",
@@ -321,6 +331,6 @@ def test_send_email_message_uses_starttls_login_and_recipients(monkeypatch):
         ("enter",),
         ("starttls", True),
         ("login", "user", "secret"),
-        ("send_message", "Digest", "jobs@example.com", ("one@example.com", "two@example.com")),
+        ("send_message", "Digest", "jobs@example.com", ("one@example.com", "two@example.com", "cc@example.com")),
         ("exit", None),
     ]

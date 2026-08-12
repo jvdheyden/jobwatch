@@ -32,6 +32,7 @@ class SMTPConfig:
     port: int
     sender: str
     recipients: tuple[str, ...]
+    cc_recipients: tuple[str, ...]
     username: str | None
     password: str | None
     tls_mode: str
@@ -135,7 +136,12 @@ def main() -> int:
 
     try:
         config = load_smtp_config(os.environ)
-        message = build_email_message(rendered, sender=config.sender, recipients=config.recipients)
+        message = build_email_message(
+            rendered,
+            sender=config.sender,
+            recipients=config.recipients,
+            cc_recipients=config.cc_recipients,
+        )
         send_email_message(config, message)
     except DigestEmailError as exc:
         print(f"send_digest_email.py: {exc}", file=sys.stderr)
@@ -178,6 +184,11 @@ def load_smtp_config(env: Mapping[str, str], *, execute_password_cmd: bool = Tru
     if not sender:
         raise DigestEmailError("JOB_AGENT_SMTP_FROM is required")
     recipients = _parse_recipients(_required_env(env, "JOB_AGENT_SMTP_TO"))
+    cc_recipients = _parse_recipients(
+        env.get("JOB_AGENT_SMTP_CC", ""),
+        env_name="JOB_AGENT_SMTP_CC",
+        allow_empty=True,
+    )
     secrets_loaded = _runtime_secrets_loaded(env)
 
     if password and not secrets_loaded:
@@ -204,17 +215,26 @@ def load_smtp_config(env: Mapping[str, str], *, execute_password_cmd: bool = Tru
         port=port,
         sender=sender,
         recipients=recipients,
+        cc_recipients=cc_recipients,
         username=username,
         password=password,
         tls_mode=tls_mode,
     )
 
 
-def build_email_message(rendered: RenderedDigestEmail, *, sender: str, recipients: tuple[str, ...]) -> EmailMessage:
+def build_email_message(
+    rendered: RenderedDigestEmail,
+    *,
+    sender: str,
+    recipients: tuple[str, ...],
+    cc_recipients: tuple[str, ...] = (),
+) -> EmailMessage:
     message = EmailMessage()
     message["Subject"] = rendered.subject
     message["From"] = sender
     message["To"] = ", ".join(recipients)
+    if cc_recipients:
+        message["Cc"] = ", ".join(cc_recipients)
     message.set_content(rendered.body)
 
     if rendered.html_body is not None:
@@ -241,7 +261,11 @@ def send_email_message(config: SMTPConfig, message: EmailMessage) -> None:
             smtp.starttls(context=ssl.create_default_context())
         if config.username and config.password:
             smtp.login(config.username, config.password)
-        smtp.send_message(message, from_addr=config.sender, to_addrs=list(config.recipients))
+        smtp.send_message(
+            message,
+            from_addr=config.sender,
+            to_addrs=list(config.recipients + config.cc_recipients),
+        )
 
 
 def _required_env(env: Mapping[str, str], name: str) -> str:
@@ -309,10 +333,15 @@ def _parse_port(value: str) -> int:
     return port
 
 
-def _parse_recipients(value: str) -> tuple[str, ...]:
+def _parse_recipients(
+    value: str,
+    *,
+    env_name: str = "JOB_AGENT_SMTP_TO",
+    allow_empty: bool = False,
+) -> tuple[str, ...]:
     recipients = tuple(item.strip() for item in value.split(",") if item.strip())
-    if not recipients:
-        raise DigestEmailError("JOB_AGENT_SMTP_TO must contain at least one recipient")
+    if not recipients and not allow_empty:
+        raise DigestEmailError(f"{env_name} must contain at least one recipient")
     return recipients
 
 

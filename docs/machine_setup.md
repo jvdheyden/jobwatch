@@ -194,6 +194,7 @@ For common providers, start with the provider/account shorthand and then add rec
 export JOB_AGENT_EMAIL_PROVIDER=gmail
 export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com
 export JOB_AGENT_SMTP_TO=you@example.com
+export JOB_AGENT_SMTP_CC=other@example.com
 export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'
 ```
 

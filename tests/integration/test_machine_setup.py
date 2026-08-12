@@ -250,6 +250,7 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
                 "export JOB_AGENT_SMTP_PORT=2525",
                 "export JOB_AGENT_SMTP_FROM=jobs@test.invalid",
                 "export JOB_AGENT_SMTP_TO=user@test.invalid",
+                "export JOB_AGENT_SMTP_CC=cc@test.invalid",
                 "export JOB_AGENT_SMTP_USERNAME=smtp-user",
                 "export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'",
                 "export JOB_AGENT_SMTP_PASSWORD=smtp-secret",
@@ -278,6 +279,7 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
     assert "export JOB_AGENT_SMTP_PORT=2525" in env_text
     assert "export JOB_AGENT_SMTP_FROM=jobs@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_TO=user@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_CC=cc@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_USERNAME=smtp-user" in env_text
     assert f"export JOB_AGENT_SECRETS_FILE={bash_quote(secrets_file)}" in env_text
     assert "export JOB_AGENT_SMTP_PASSWORD_CMD=pass\\ show\\ email/jobwatch-smtp" in env_text
@@ -305,6 +307,7 @@ def test_setup_machine_delivery_flags_precedence(
                 "export JOB_AGENT_EMAIL_PROVIDER=fastmail",
                 "export JOB_AGENT_EMAIL_ACCOUNT=old@test.invalid",
                 "export JOB_AGENT_SMTP_TO=old-to@test.invalid",
+                "export JOB_AGENT_SMTP_CC=old-cc@test.invalid",
                 "export JOB_AGENT_TELEGRAM_CHAT_ID=111111",
                 "",
             ]
@@ -328,6 +331,7 @@ def test_setup_machine_delivery_flags_precedence(
         "--email-provider", "gmail",
         "--email-account", "new@test.invalid",
         "--smtp-to", "new-to@test.invalid",
+        "--smtp-cc", "new-cc@test.invalid",
         "--telegram-chat-id", "222222",
         env=env,
         cwd=repo_root,
@@ -338,6 +342,7 @@ def test_setup_machine_delivery_flags_precedence(
     assert "export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
     assert "export JOB_AGENT_EMAIL_ACCOUNT=new@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_TO=new-to@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_CC=new-cc@test.invalid" in env_text
     assert "export JOB_AGENT_TELEGRAM_CHAT_ID=222222" in env_text
 
     # Without CLI args, existing should be preserved
@@ -354,6 +359,7 @@ def test_setup_machine_delivery_flags_precedence(
     assert "export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
     assert "export JOB_AGENT_EMAIL_ACCOUNT=new@test.invalid" in env_text
     assert "export JOB_AGENT_SMTP_TO=new-to@test.invalid" in env_text
+    assert "export JOB_AGENT_SMTP_CC=new-cc@test.invalid" in env_text
     assert "export JOB_AGENT_TELEGRAM_CHAT_ID=222222" in env_text
 
 

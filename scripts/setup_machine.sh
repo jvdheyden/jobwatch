@@ -30,6 +30,7 @@ SMTP_HOST_VALUE=""
 SMTP_PORT_VALUE=""
 SMTP_FROM_VALUE=""
 SMTP_TO_VALUE=""
+SMTP_CC_VALUE=""
 SMTP_USERNAME_VALUE=""
 SMTP_PASSWORD_CMD_VALUE=""
 SMTP_TLS_VALUE=""
@@ -39,6 +40,7 @@ ENV_SMTP_HOST_VALUE="${JOB_AGENT_SMTP_HOST:-}"
 ENV_SMTP_PORT_VALUE="${JOB_AGENT_SMTP_PORT:-}"
 ENV_SMTP_FROM_VALUE="${JOB_AGENT_SMTP_FROM:-}"
 ENV_SMTP_TO_VALUE="${JOB_AGENT_SMTP_TO:-}"
+ENV_SMTP_CC_VALUE="${JOB_AGENT_SMTP_CC:-}"
 ENV_SMTP_USERNAME_VALUE="${JOB_AGENT_SMTP_USERNAME:-}"
 ENV_SMTP_PASSWORD_VALUE="${JOB_AGENT_SMTP_PASSWORD:-}"
 ENV_SMTP_PASSWORD_CMD_VALUE="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
@@ -108,6 +110,7 @@ Options:
   --email-provider <name>    Email provider preset (gmail, fastmail, etc.)
   --email-account <addr>     Sender email address
   --smtp-to <addr>           Recipient email address
+  --smtp-cc <addr>           Optional CC recipient email address
   --quiet                    Suppress explanatory success chatter
   --no-logseq-prompt         Never prompt for Logseq graph directory
 
@@ -436,6 +439,15 @@ while [[ $# -gt 0 ]]; do
       SMTP_TO_VALUE="$2"
       shift 2
       ;;
+    --smtp-cc)
+      if [[ $# -lt 2 ]]; then
+        echo "missing value for --smtp-cc" >&2
+        usage >&2
+        exit 2
+      fi
+      SMTP_CC_VALUE="$2"
+      shift 2
+      ;;
     --quiet)
       QUIET_MODE=1
       shift
@@ -468,6 +480,7 @@ existing_smtp_host=""
 existing_smtp_port=""
 existing_smtp_from=""
 existing_smtp_to=""
+existing_smtp_cc=""
 existing_smtp_username=""
 existing_smtp_password=""
 existing_smtp_password_cmd=""
@@ -494,6 +507,7 @@ if [[ -f "$ENV_FILE" ]]; then
   existing_smtp_port="${JOB_AGENT_SMTP_PORT:-}"
   existing_smtp_from="${JOB_AGENT_SMTP_FROM:-}"
   existing_smtp_to="${JOB_AGENT_SMTP_TO:-}"
+  existing_smtp_cc="${JOB_AGENT_SMTP_CC:-}"
   existing_smtp_username="${JOB_AGENT_SMTP_USERNAME:-}"
   existing_smtp_password="${JOB_AGENT_SMTP_PASSWORD:-}"
   existing_smtp_password_cmd="${JOB_AGENT_SMTP_PASSWORD_CMD:-}"
@@ -554,6 +568,7 @@ SMTP_HOST_VALUE="${ENV_SMTP_HOST_VALUE:-$existing_smtp_host}"
 SMTP_PORT_VALUE="${ENV_SMTP_PORT_VALUE:-$existing_smtp_port}"
 SMTP_FROM_VALUE="${ENV_SMTP_FROM_VALUE:-$existing_smtp_from}"
 SMTP_TO_VALUE="${SMTP_TO_VALUE:-${ENV_SMTP_TO_VALUE:-$existing_smtp_to}}"
+SMTP_CC_VALUE="${SMTP_CC_VALUE:-${ENV_SMTP_CC_VALUE:-$existing_smtp_cc}}"
 SMTP_USERNAME_VALUE="${ENV_SMTP_USERNAME_VALUE:-$existing_smtp_username}"
 SMTP_PASSWORD_CMD_VALUE="${ENV_SMTP_PASSWORD_CMD_VALUE:-$existing_smtp_password_cmd}"
 SMTP_TLS_VALUE="${ENV_SMTP_TLS_VALUE:-$existing_smtp_tls}"
@@ -701,6 +716,11 @@ fi
     printf 'export JOB_AGENT_SMTP_TO=%s\n' "$(shell_escape "$SMTP_TO_VALUE")"
   else
     echo "# export JOB_AGENT_SMTP_TO=you@example.com"
+  fi
+  if [[ -n "$SMTP_CC_VALUE" ]]; then
+    printf 'export JOB_AGENT_SMTP_CC=%s\n' "$(shell_escape "$SMTP_CC_VALUE")"
+  else
+    echo "# export JOB_AGENT_SMTP_CC=other@example.com"
   fi
   if [[ -n "$SMTP_USERNAME_VALUE" ]]; then
     printf 'export JOB_AGENT_SMTP_USERNAME=%s\n' "$(shell_escape "$SMTP_USERNAME_VALUE")"
