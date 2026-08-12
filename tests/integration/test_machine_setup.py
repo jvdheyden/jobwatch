@@ -1057,6 +1057,7 @@ def test_bootstrap_machine_installs_poppler_with_homebrew_when_pdftotext_is_miss
     fake_bin_dir = tmp_job_agent_root / "bin"
     log_file = tmp_job_agent_root / "brew.log"
     agent_bin = fake_bin_dir / "codex"
+    pdftotext_bin = fake_bin_dir / "pdftotext"
     _write_executable(agent_bin, "#!/bin/bash\nexit 0\n")
     _write_executable(
         fake_bin_dir / "brew",
@@ -1075,6 +1076,7 @@ chmod +x "$(dirname "$0")/pdftotext"
         "BREW_LOG": str(log_file),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_PLATFORM": "Darwin",
+        "JOB_AGENT_PDFTOTEXT_BIN": str(pdftotext_bin),
         "PATH": f"{fake_bin_dir}:/usr/bin:/bin",
     }
 

@@ -1155,25 +1155,81 @@ def assemble_preview_digest(
 
 def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, Any]:
     common = {
-        "schema_version": {"const": 1},
-        "setup_id": {"const": input_payload["setup_id"]},
-        "input_hash": {"const": artifact_hash(input_payload)},
+        "schema_version": {"type": "integer", "const": 1},
+        "setup_id": {"type": "string", "const": input_payload["setup_id"]},
+        "input_hash": {"type": "string", "const": artifact_hash(input_payload)},
     }
     if role == "source_discovery":
+        search_terms = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["mode", "terms"],
+            "properties": {
+                "mode": {"type": "string", "enum": ["append", "override"]},
+                "terms": {"type": "array", "items": {"type": "string"}},
+            },
+        }
+        filters = {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {},
+        }
         source = {
             "type": "object",
             "additionalProperties": False,
-            "required": ["id", "name", "url", "discovery_mode", "cadence_group", "fit_reason", "confidence"],
+            "required": [
+                "id",
+                "name",
+                "url",
+                "discovery_mode",
+                "cadence_group",
+                "search_terms",
+                "filters",
+                "fit_reason",
+                "confidence",
+            ],
             "properties": {
                 "id": {"type": "string"},
                 "name": {"type": "string"},
                 "url": {"type": "string"},
                 "discovery_mode": {"type": "string"},
-                "cadence_group": {"enum": ["every_run", "every_3_runs", "every_month"]},
-                "search_terms": {"type": "object"},
-                "filters": {"type": "object"},
+                "cadence_group": {"type": "string", "enum": ["every_run", "every_3_runs", "every_month"]},
+                "search_terms": {"anyOf": [search_terms, {"type": "null"}]},
+                "filters": filters,
                 "fit_reason": {"type": "string"},
-                "confidence": {"enum": ["high", "medium", "low"]},
+                "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+            },
+        }
+        dropped_source = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["name", "url", "reason"],
+            "properties": {
+                "name": {"type": "string"},
+                "url": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "reason": {"type": "string"},
+            },
+        }
+        url_correction = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["original_url", "corrected_url", "reason"],
+            "properties": {
+                "original_url": {"type": "string"},
+                "corrected_url": {"type": "string"},
+                "reason": {"type": "string"},
+            },
+        }
+        match_rule = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["id", "source_ids", "source_names", "keep_if_any_text_term", "limitation"],
+            "properties": {
+                "id": {"type": "string"},
+                "source_ids": {"type": "array", "items": {"type": "string"}},
+                "source_names": {"type": "array", "items": {"type": "string"}},
+                "keep_if_any_text_term": {"type": "array", "items": {"type": "string"}},
+                "limitation": {"anyOf": [{"type": "string"}, {"type": "null"}]},
             },
         }
         return {
@@ -1186,13 +1242,13 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
             ],
             "properties": {
                 **common,
-                "kind": {"const": SOURCE_PACK_KIND},
+                "kind": {"type": "string", "const": SOURCE_PACK_KIND},
                 "track_terms": {"type": "array", "items": {"type": "string"}},
                 "recommended_sources": {"type": "array", "maxItems": MAX_PRIMARY_SOURCES, "items": source},
                 "follow_up_sources": {"type": "array", "maxItems": MAX_FOLLOW_UP_SOURCES, "items": source},
-                "dropped_sources": {"type": "array"},
-                "url_corrections": {"type": "array", "maxItems": MAX_URL_CORRECTIONS},
-                "match_rule_suggestions": {"type": "array"},
+                "dropped_sources": {"type": "array", "items": dropped_source},
+                "url_corrections": {"type": "array", "maxItems": MAX_URL_CORRECTIONS, "items": url_correction},
+                "match_rule_suggestions": {"type": "array", "items": match_rule},
                 "recommended_source_ids": {"type": "array", "items": {"type": "string"}},
                 "decisions_needed": {"type": "array", "items": {"type": "string"}},
             },
@@ -1200,27 +1256,55 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
     if role != "preview_ranker":
         raise SetupContractError("worker role must be source_discovery or preview_ranker")
     candidate_ids = [candidate["candidate_id"] for candidate in input_payload["candidates"]]
+    top_match_judgment = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["candidate_id", "disposition", "score", "recommendation", "match_reasons", "concerns"],
+        "properties": {
+            "candidate_id": {"type": "string", "enum": candidate_ids},
+            "disposition": {"type": "string", "const": "top_match"},
+            "score": {"type": "number", "minimum": 0, "maximum": 10},
+            "recommendation": {"type": "string", "enum": ["apply_now", "watch", "skip"]},
+            "match_reasons": {"type": "array", "items": {"type": "string"}},
+            "concerns": {"type": "array", "items": {"type": "string"}},
+        },
+    }
+    other_role_judgment = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["candidate_id", "disposition", "score", "recommendation", "short_note"],
+        "properties": {
+            "candidate_id": {"type": "string", "enum": candidate_ids},
+            "disposition": {"type": "string", "const": "other_role"},
+            "score": {"type": "number", "minimum": 0, "maximum": 10},
+            "recommendation": {"type": "string", "enum": ["apply_now", "watch", "skip"]},
+            "short_note": {"type": "string"},
+        },
+    }
+    filtered_judgment = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["candidate_id", "disposition", "reason"],
+        "properties": {
+            "candidate_id": {"type": "string", "enum": candidate_ids},
+            "disposition": {"type": "string", "const": "filtered"},
+            "reason": {"type": "string"},
+        },
+    }
     return {
         "type": "object",
         "additionalProperties": False,
         "required": ["schema_version", "kind", "setup_id", "input_hash", "executive_summary", "recommended_actions", "judgments"],
         "properties": {
             **common,
-            "kind": {"const": PREVIEW_RESULT_KIND},
+            "kind": {"type": "string", "const": PREVIEW_RESULT_KIND},
             "executive_summary": {"type": "string"},
             "recommended_actions": {"type": "array", "items": {"type": "string"}},
             "judgments": {
                 "type": "array",
                 "minItems": len(candidate_ids),
                 "maxItems": len(candidate_ids),
-                "items": {
-                    "type": "object",
-                    "required": ["candidate_id", "disposition"],
-                    "properties": {
-                        "candidate_id": {"enum": candidate_ids},
-                        "disposition": {"enum": ["top_match", "other_role", "filtered"]},
-                    },
-                },
+                "items": {"anyOf": [top_match_judgment, other_role_judgment, filtered_judgment]},
             },
         },
     }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,14 @@ def bash_quote(value: object) -> str:
     """
     text = str(value)
     return text.replace("\\", "\\\\").replace(" ", "\\ ")
+
+
+@pytest.fixture(autouse=True)
+def isolate_machine_local_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in list(os.environ):
+        if name.startswith("JOB_AGENT_"):
+            monkeypatch.delenv(name, raising=False)
+    monkeypatch.delenv("LOGSEQ_GRAPH_DIR", raising=False)
 
 
 @pytest.fixture(scope="session")

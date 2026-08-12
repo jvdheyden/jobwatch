@@ -130,6 +130,59 @@ def test_source_pack_rejects_budget_hash_employer_and_unknown_rule_ids() -> None
         setup_contracts.normalize_source_pack(foreign_rule, setup)
 
 
+def _assert_const_and_enum_schemas_are_typed(schema: dict, path: str = "$") -> None:
+    if "const" in schema or "enum" in schema:
+        assert "type" in schema, path
+    if schema.get("type") == "object":
+        assert schema.get("additionalProperties") is False, path
+    for key in ("properties", "$defs", "definitions"):
+        for name, nested in schema.get(key, {}).items():
+            _assert_const_and_enum_schemas_are_typed(nested, f"{path}.{key}.{name}")
+    if isinstance(schema.get("items"), dict):
+        _assert_const_and_enum_schemas_are_typed(schema["items"], f"{path}.items")
+    for key in ("anyOf", "oneOf", "allOf"):
+        for index, nested in enumerate(schema.get(key, [])):
+            _assert_const_and_enum_schemas_are_typed(nested, f"{path}.{key}[{index}]")
+
+
+def test_worker_json_schemas_type_const_and_enum_fields() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    source_schema = setup_contracts.worker_json_schema("source_discovery", setup)
+    _assert_const_and_enum_schemas_are_typed(source_schema)
+
+    preview_context = {
+        "schema_version": 1,
+        "kind": "jobwatch_preview_context",
+        "setup_id": setup["setup_id"],
+        "input_hash": setup_contracts.artifact_hash(setup),
+        "date": "2026-07-20",
+        "track": setup["track"],
+        "profile": setup["profile"],
+        "source_notes": [],
+        "coverage_limitations": [],
+        "omitted_candidate_count": 0,
+        "inputs": {"setup": {"path": "setup.json"}, "discovery": {"path": "discovery.json"}},
+        "candidates": [
+            {
+                "candidate_id": "candidate-1",
+                "employer": "Example Labs",
+                "title": "Cryptography Engineer",
+                "url": "https://jobs.example.test/jobs/1",
+                "alternate_url": "",
+                "location": "Remote Europe",
+                "remote": "remote",
+                "source": "Example Labs",
+                "source_url": "https://jobs.example.test/careers",
+                "matched_terms": ["cryptography"],
+                "description": "Role description",
+                "description_truncated": False,
+            }
+        ],
+    }
+    preview_schema = setup_contracts.worker_json_schema("preview_ranker", preview_context)
+    _assert_const_and_enum_schemas_are_typed(preview_schema)
+
+
 def _write_discovery(path: Path, *, track: str, candidates: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
