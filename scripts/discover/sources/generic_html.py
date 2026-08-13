@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
 from urllib.parse import unquote, urljoin, urlparse
 
@@ -23,6 +24,10 @@ KNDS_TERM_ALIASES: dict[str, tuple[str, ...]] = {
     "it security": ("IT-Security",),
     "it-sicherheit": ("IT Sicherheit", "Informationssicherheit"),
 }
+SECUNET_JSON_LD_RE = re.compile(
+    r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(?P<payload>.*?)</script>',
+    flags=re.IGNORECASE | re.DOTALL,
+)
 
 
 def is_same_page_link(source_url: str, candidate_url: str) -> bool:
@@ -330,9 +335,81 @@ def discover_cybernetica_teamdash(source: SourceConfig, terms: list[str], timeou
     )
 
 
+def iter_secunet_json_objects(value: object) -> Iterator[dict[str, object]]:
+    if isinstance(value, dict):
+        yield value
+        for nested in value.values():
+            yield from iter_secunet_json_objects(nested)
+    elif isinstance(value, list):
+        for item in value:
+            yield from iter_secunet_json_objects(item)
+
+
+def extract_secunet_job_posting(content: str) -> dict[str, object]:
+    for match in SECUNET_JSON_LD_RE.finditer(content or ""):
+        try:
+            payload = json.loads(match.group("payload").strip())
+        except json.JSONDecodeError:
+            continue
+        for item in iter_secunet_json_objects(payload):
+            item_type = item.get("@type")
+            item_types = item_type if isinstance(item_type, list) else [item_type]
+            if "JobPosting" in item_types:
+                return item
+    return {}
+
+
+def secunet_job_field_text(value: object) -> str:
+    text = helpers.join_text(value)
+    for _ in range(3):
+        cleaned = helpers.visible_text_from_html(text)
+        if cleaned == text or ("<" not in cleaned and "&lt;" not in cleaned):
+            return cleaned
+        text = cleaned
+    return cleaned
+
+
+def enrich_secunet_candidate(candidate: Candidate, content: str, terms: list[str]) -> bool:
+    job_posting = extract_secunet_job_posting(content)
+    if not job_posting:
+        return False
+
+    title = secunet_job_field_text(job_posting.get("title"))
+    if title:
+        candidate.title = title
+
+    sections = {
+        "Description": secunet_job_field_text(job_posting.get("description")),
+        "Tasks": secunet_job_field_text(job_posting.get("responsibilities")),
+        "Qualifications": secunet_job_field_text(
+            job_posting.get("qualifications")
+            or job_posting.get("experienceRequirements")
+            or job_posting.get("skills")
+        ),
+        "Benefits": secunet_job_field_text(job_posting.get("jobBenefits")),
+    }
+    detail_text = " ".join(section for section in sections.values() if section)
+    if not detail_text:
+        return False
+
+    candidate.matched_terms = sorted(
+        set(candidate.matched_terms + helpers.match_terms(f"{candidate.title} {detail_text}", terms))
+    )
+    note_parts = [candidate.notes] if candidate.notes else []
+    for label in ("Tasks", "Qualifications"):
+        if sections[label]:
+            note_parts.append(f"{label}: {helpers.truncate_text(sections[label], 600)}")
+    candidate.notes = "; ".join(dict.fromkeys(note_parts))
+    helpers.set_candidate_description(
+        candidate,
+        " ".join(f"{label}: {text}" for label, text in sections.items() if text),
+    )
+    return True
+
+
 def discover_secunet_jobboard(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     pattern = re.compile(r"^https://jobs\.secunet\.com/.+-j\d+\.html$")
-    return discover_filtered_html_links(
+    coverage = discover_filtered_html_links(
         source,
         terms,
         timeout_seconds,
@@ -340,6 +417,18 @@ def discover_secunet_jobboard(source: SourceConfig, terms: list[str], timeout_se
         notes="Enumerated through direct secunet job-detail links",
         limitation_if_empty="No secunet job-detail links matching the standard job pattern were visible.",
     )
+    for candidate in coverage.candidates:
+        try:
+            detail_html = http.fetch_text(candidate.url, timeout_seconds)
+        except Exception as exc:
+            coverage.limitations.append(f"secunet job detail fetch failed for {candidate.url}: {exc}")
+            continue
+        coverage.direct_job_pages_opened += 1
+        if not enrich_secunet_candidate(candidate, detail_html, terms):
+            coverage.limitations.append(f"secunet JobPosting detail was missing for {candidate.url}")
+    if coverage.direct_job_pages_opened:
+        coverage.result_pages_scanned = f"filtered_links=1; secunet_job_details={coverage.direct_job_pages_opened}"
+    return coverage
 
 
 def is_knds_job_detail_url(url: str) -> bool:
