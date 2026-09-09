@@ -428,6 +428,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Extracts Personio jobs from embedded page payloads, falling back to the tenant /xml feed when the page payload is missing.
 
+### `phenom_html`
+
+- Provider: `discover.sources.phenom` / `discover_phenom_html`
+- Emits candidates: yes
+- URL/source shape: Phenom-hosted `https://<host>/<locale-path>/search-results` page, optionally with `keywords=` and other native query parameters, e.g. `https://careers.bcg.com/global/en/search-results?keywords=BCG%20X`.
+- Supported filters/options: encode `keywords=` and other native Phenom parameters in the source URL
+- Contract fixtures: `tests/fixtures/sources/phenom_html/`
+- Requirements: none
+- Known limitations: Runs one embedded-payload keyword search per configured term (URL keywords are prepended and act as a scope filter) with a cap of 5 result pages per term; opens matched job-detail pages for the embedded description.
+
 ### `qedit_inline`
 
 - Provider: `discover.sources.static_pages` / `discover_qedit_inline`

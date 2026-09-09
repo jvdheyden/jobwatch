@@ -10,7 +10,7 @@ entrypoint.
 
 Prefer a reusable board-family provider when the source is hosted by a known
 ATS or job board, such as Greenhouse, Lever, Workday, Ashby, Workable, Personio,
-Getro, or Eightfold. Add bespoke company-specific providers only when the site
+Getro, Eightfold, or Phenom. Add bespoke company-specific providers only when the site
 does not expose a reusable board/API shape.
 
 Each provider module should document:

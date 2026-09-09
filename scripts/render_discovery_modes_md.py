@@ -227,6 +227,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Extracts Personio jobs from embedded page payloads, falling back to the tenant /xml feed when the page payload is missing.",
     },
+    "phenom_html": {
+        "url_shape": "Phenom-hosted `https://<host>/<locale-path>/search-results` page, optionally with `keywords=` and other native query parameters, e.g. `https://careers.bcg.com/global/en/search-results?keywords=BCG%20X`.",
+        "filters": "encode `keywords=` and other native Phenom parameters in the source URL",
+        "limitations": "Runs one embedded-payload keyword search per configured term (URL keywords are prepended and act as a scope filter) with a cap of 5 result pages per term; opens matched job-detail pages for the embedded description.",
+    },
     "qedit_inline": {
         "url_shape": "QEDIT careers page.",
         "filters": "none",

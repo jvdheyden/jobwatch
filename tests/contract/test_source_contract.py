@@ -73,6 +73,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "partisia_site": "https://partisiablockchain.com/",
         "pcd_team": "https://pcd.team/jd",
         "personio_page": "https://example.jobs.personio.de/",
+        "phenom_html": "https://careers.bcg.com/global/en/search-results",
         "qedit_inline": "https://qed-it.com/careers",
         "qusecure_careers": "https://www.qusecure.com/careers/",
         "recruitee_inline": "https://career.quantum-systems.com/",
