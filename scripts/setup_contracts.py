@@ -1325,7 +1325,9 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
 def build_worker_prompt(role: str, input_payload: dict[str, Any]) -> str:
     compact_input = json.dumps(input_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     common = (
-        "Return exactly one JSON object and no prose, Markdown fences, or commentary. "
+        "Deliver your final answer as exactly one JSON object matching the contract schema. Use the CLI's "
+        "structured-output mechanism when one is provided; otherwise print only the bare JSON object with no "
+        "prose, Markdown fences, or commentary. "
         "Do not read other user files, invoke another model, or write files. "
         "Copy setup_id exactly and set input_hash to the SHA-256 supplied by the contract instructions.\n"
     )

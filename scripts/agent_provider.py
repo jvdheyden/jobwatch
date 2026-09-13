@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
+from typing import Any, Mapping
 
 
 SUPPORTED_PROVIDERS = ("codex", "claude", "gemini")
@@ -340,6 +341,7 @@ def build_claude_setup_worker_command(
     policy: SetupModelPolicy,
     agent_bin: Path,
     *,
+    schema: Mapping[str, Any],
     env: Mapping[str, str] | None = None,
 ) -> list[str]:
     _ = env
@@ -348,6 +350,8 @@ def build_claude_setup_worker_command(
         if policy.role == "source_discovery"
         else DEFAULT_CLAUDE_PREVIEW_RANKER_ALLOWED_TOOLS
     )
+    # `claude --json-schema` takes the schema inline and returns the validated
+    # object under `structured_output` in the JSON result envelope.
     return [
         str(agent_bin),
         "-p",
@@ -356,6 +360,8 @@ def build_claude_setup_worker_command(
         policy.model,
         "--output-format",
         "json",
+        "--json-schema",
+        json.dumps(schema, separators=(",", ":")),
         "--permission-mode",
         "default",
         "--allowedTools",
@@ -383,6 +389,7 @@ def build_setup_worker_command(
     *,
     final_output_path: Path,
     schema_path: Path,
+    schema: Mapping[str, Any],
     env: Mapping[str, str] | None = None,
 ) -> list[str]:
     if policy.role not in {"source_discovery", "preview_ranker"}:
@@ -396,7 +403,7 @@ def build_setup_worker_command(
             schema_path=schema_path,
         )
     if policy.provider == "claude":
-        return build_claude_setup_worker_command(policy, agent_bin, env=env)
+        return build_claude_setup_worker_command(policy, agent_bin, schema=schema, env=env)
     if policy.provider == "gemini":
         return build_gemini_setup_worker_command(policy, agent_bin)
     raise ValueError(f"unsupported agent provider: {policy.provider}")
