@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from conftest import bash_quote
 
 
@@ -155,6 +157,7 @@ set -euo pipefail
 ROOT="${JOB_AGENT_ROOT:?missing JOB_AGENT_ROOT}"
 TRACK="${JOB_AGENT_TRACK:?missing JOB_AGENT_TRACK}"
 TODAY="${JOB_AGENT_TODAY:?missing JOB_AGENT_TODAY}"
+printf '%s\\n' "$@" > "$ROOT/codex-args.txt"
 cat > "$ROOT/codex-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
@@ -400,6 +403,10 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Wrote discovery artifact" in log_text
     assert "Codex phase started" in log_text
     assert "Codex phase finished successfully" in log_text
+    args = (tmp_job_agent_root / "codex-args.txt").read_text().splitlines()
+    assert args[args.index("-m") + 1] == "gpt-5.6-sol"
+    assert args[args.index("-c") + 1] == 'model_reasoning_effort="medium"'
+    assert "Using Codex scheduled model: gpt-5.6-sol (reasoning effort: medium)" in log_text
     assert "Source state update finished successfully" in log_text
     assert "Markdown digest rendered successfully" in log_text
     assert "Seen jobs updated successfully" in log_text
@@ -432,6 +439,8 @@ def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
                 f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}",
                 "export JOB_AGENT_PROVIDER=codex",
                 f"export JOB_AGENT_BIN={bash_quote(tmp_job_agent_root / 'fake_codex.sh')}",
+                "export JOB_AGENT_CODEX_SCHEDULED_MODEL=custom-scheduled-model",
+                "export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=low",
                 "",
             ]
         )
@@ -460,6 +469,43 @@ def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
     assert (tmp_job_agent_root / "codex-prompt.txt").exists()
     log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
     assert "Using Codex provider via" in log_text
+    args = (tmp_job_agent_root / "codex-args.txt").read_text().splitlines()
+    assert args[args.index("-m") + 1] == "custom-scheduled-model"
+    assert args[args.index("-c") + 1] == 'model_reasoning_effort="low"'
+    assert "Using Codex scheduled model: custom-scheduled-model (reasoning effort: low)" in log_text
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("JOB_AGENT_CODEX_SCHEDULED_MODEL", ""),
+        ("JOB_AGENT_CODEX_SCHEDULED_MODEL", "bad model"),
+        ("JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT", ""),
+        ("JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT", "invalid"),
+    ],
+    ids=["empty-model", "malformed-model", "empty-reasoning", "invalid-reasoning"],
+)
+def test_run_track_rejects_invalid_codex_policy_before_discovery(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd, key: str, value: str
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_PROVIDER": "codex",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        key: value,
+    }
+
+    result = run_cmd(
+        "bash", str(repo_root / "scripts" / "run_track.sh"), "--track", "demo", env=env, cwd=repo_root
+    )
+
+    assert result.returncode == 2
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert key in log_text
+    assert "Discovery phase started" not in log_text
+    assert not (tmp_job_agent_root / "codex-args.txt").exists()
 
 
 def test_run_track_logseq_delivery_runs_sync_and_preserves_caffeinate_args(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

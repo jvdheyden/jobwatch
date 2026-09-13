@@ -144,10 +144,15 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert "<string>com.jvdh.jobwatch.scheduler." in plist_files[0].read_text()
 
     schedule_file.write_text("daily 08:00 track demo\n")
+    with env_file.open("a") as handle:
+        handle.write("export JOB_AGENT_CODEX_SCHEDULED_MODEL=custom-scheduled-model\n")
+        handle.write("export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=low\n")
 
     second = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert second.returncode == 0, second.stderr
     assert schedule_file.read_text() == "daily 08:00 track demo\n"
+    assert "export JOB_AGENT_CODEX_SCHEDULED_MODEL=custom-scheduled-model\n" in env_file.read_text()
+    assert "export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=low\n" in env_file.read_text()
 
 
 def test_setup_machine_prefers_xdg_config_home_for_linux_secrets_path(

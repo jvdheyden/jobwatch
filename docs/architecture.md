@@ -232,6 +232,8 @@ flowchart LR
 
 The sequence diagram shows what happens for a single scheduled run.
 
+Before discovery, `run_track.sh` resolves the Codex scheduled model policy from `.env.local` through `agent_provider.py`, validates it, and logs the model and reasoning effort. It passes both explicitly to Codex. `find-jobs` and `rank-jobs` run within that same session. The policy also applies when `run_track.sh` is invoked manually.
+
 ```mermaid
 sequenceDiagram
   autonumber
