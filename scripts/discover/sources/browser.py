@@ -558,11 +558,17 @@ def extract_asml_jobs(page: Any, source: SourceConfig, terms: list[str], page_nu
         raw_ids.append(absolute_url)
 
         try:
-            title = element.locator("h2").first.inner_text().strip() or "unknown"
-            field_items = element.locator("ul.search-results__fields li")
-            location = field_items.nth(0).inner_text().strip() if field_items.count() > 0 else "unknown"
-            team = field_items.nth(1).inner_text().strip() if field_items.count() > 1 else ""
+            # ASML uses h3 titles now. Snapshot optional fields so an absent
+            # heading never triggers Playwright's per-card auto-wait timeout.
+            titles = element.locator(".search-results-title-text, h2, h3").all_inner_texts()
+            fields = element.locator("ul.search-results__fields li").all_inner_texts()
         except Exception:
+            titles, fields = [], []
+        if titles:
+            title = titles[0].strip() or "unknown"
+            location = fields[0].strip() if fields else "unknown"
+            team = fields[1].strip() if len(fields) > 1 else ""
+        else:
             lines = [line for line in split_visible_lines(element.inner_text()) if line]
             while lines and lines[0].upper() == "NEW":
                 lines.pop(0)

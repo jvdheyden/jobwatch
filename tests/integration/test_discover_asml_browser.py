@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 from types import ModuleType
 
+import pytest
+
 import discover_jobs
 
 
@@ -37,6 +39,81 @@ class FakePage:
     def locator(self, selector: str) -> FakeLocator:
         assert selector == "a.search-results__item"
         return FakeLocator(self._links)
+
+
+class FakeTextLocator:
+    def __init__(self, texts: list[str], missing_reads: list[str]) -> None:
+        self._texts = texts
+        self._missing_reads = missing_reads
+
+    @property
+    def first(self):
+        return self
+
+    def inner_text(self) -> str:
+        if not self._texts:
+            self._missing_reads.append("waited for absent element")
+            raise TimeoutError("Playwright would wait 30 seconds here")
+        return self._texts[0]
+
+    def all_inner_texts(self) -> list[str]:
+        return self._texts
+
+
+class FakeStructuredLink(FakeLink):
+    def __init__(self, heading: str | None, fields: list[str]) -> None:
+        super().__init__(
+            "/en/careers/find-your-job/cryptography-engineer-j00330001",
+            "NEW\nCryptography Engineer\nVeldhoven, Netherlands\nSecurity",
+        )
+        self.heading = heading
+        self.fields = fields
+        self.missing_reads: list[str] = []
+
+    def locator(self, selector: str) -> FakeTextLocator:
+        if selector == "ul.search-results__fields li":
+            texts = self.fields
+        elif self.heading in [part.strip() for part in selector.split(",")]:
+            texts = ["Cryptography Engineer"]
+        else:
+            texts = []
+        return FakeTextLocator(texts, self.missing_reads)
+
+
+@pytest.mark.parametrize("heading", ["h3", "h2", None])
+def test_asml_title_variants_and_missing_headings_never_wait_for_absent_elements(heading):
+    link = FakeStructuredLink(heading, ["Veldhoven, Netherlands", "Security"])
+    source = discover_jobs.SourceConfig(
+        source="ASML",
+        url="https://www.asml.com/en/careers/find-your-job",
+        discovery_mode="asml_browser",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    result = discover_jobs.extract_asml_jobs(FakePage([link]), source, ["cryptography"], page_num=1)
+
+    assert link.missing_reads == []
+    assert result.visible_results == 1
+    assert len(result.candidates) == 1
+    assert result.candidates[0].title == "Cryptography Engineer"
+    assert result.candidates[0].location == "Veldhoven, Netherlands"
+
+
+def test_asml_missing_metadata_is_unknown_without_waiting():
+    link = FakeStructuredLink("h3", [])
+    source = discover_jobs.SourceConfig(
+        source="ASML",
+        url="https://www.asml.com/en/careers/find-your-job",
+        discovery_mode="asml_browser",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    result = discover_jobs.extract_asml_jobs(FakePage([link]), source, ["cryptography"], page_num=1)
+
+    assert link.missing_reads == []
+    assert result.candidates[0].location == "unknown"
 
 
 def test_extract_asml_jobs_extracts_and_filters_visible_result_cards():
