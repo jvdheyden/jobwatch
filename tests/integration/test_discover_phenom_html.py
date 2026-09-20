@@ -187,6 +187,45 @@ def test_phenom_html_stops_at_page_cap_and_reports_partial_coverage(monkeypatch)
     ]
 
 
+def test_phenom_html_repeated_page_reports_partial_coverage(monkeypatch):
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        if "/job/" in url:
+            return _detail_page("<p>Detail.</p>")
+        jobs = [_job(str(1000 + index), f"BCG X Product Lead {index}", "Own the product roadmap.") for index in range(10)]
+        return _search_page(jobs, hits=10, total=100)
+
+    monkeypatch.setattr(http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_phenom_html(_source(), ["product lead"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.enumerated_jobs == 10
+    assert coverage.result_pages_scanned == "BCG X product lead=2p/10of100"
+    assert coverage.limitations == [
+        "Phenom search repeated or returned an empty page before exhausting the listing for 1 of 1 searches"
+    ]
+
+
+def test_phenom_html_empty_page_before_total_reports_partial_coverage(monkeypatch):
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        if "/job/" in url:
+            return _detail_page("<p>Detail.</p>")
+        if int(_query(url).get("from", ["0"])[0]) > 0:
+            return _search_page([], hits=0, total=100)
+        jobs = [_job(str(1000 + index), f"BCG X Product Lead {index}", "Own the product roadmap.") for index in range(10)]
+        return _search_page(jobs, hits=10, total=100)
+
+    monkeypatch.setattr(http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_phenom_html(_source(), ["product lead"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.enumerated_jobs == 10
+    assert coverage.limitations == [
+        "Phenom search repeated or returned an empty page before exhausting the listing for 1 of 1 searches"
+    ]
+
+
 def test_phenom_html_bounds_long_detail_descriptions(monkeypatch):
     long_description = "<p>" + " ".join(f"sentence{index}" for index in range(1200)) + "</p>"
 

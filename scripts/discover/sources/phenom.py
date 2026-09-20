@@ -25,8 +25,9 @@ Behaviour:
 Supported source ``filters``: none; encode native Phenom parameters in the
 source URL.
 
-Known limitations: queries whose results exceed the per-term page cap are
-reported as a coverage limitation. Tenants with bespoke URL layouts keep their
+Known limitations: queries whose results exceed the per-term page cap, or whose
+pagination repeats or runs empty before the reported total, are reported as a
+coverage limitation. Tenants with bespoke URL layouts keep their
 dedicated providers (``thales_html``, ``enbw_phenom``).
 """
 
@@ -152,6 +153,7 @@ def discover_phenom_html(source: SourceConfig, terms: list[str], timeout_seconds
     result_summaries: list[str] = []
     errored_queries: list[str] = []
     capped_queries: list[str] = []
+    stalled_queries: list[str] = []
     listing_pages_scanned = 0
     scope_keywords = phenom_url_keywords(source.url)
 
@@ -179,11 +181,14 @@ def discover_phenom_html(source: SourceConfig, terms: list[str], timeout_seconds
             pages += 1
             listing_pages_scanned += 1
             if not jobs:
+                if seen < total:
+                    stalled_queries.append(keywords)
                 break
             signature = ",".join(
                 str(job.get("jobSeqNo") or job.get("jobId") or job.get("reqId") or "") for job in jobs
             )
             if signature in page_signatures:
+                stalled_queries.append(keywords)
                 break
             page_signatures.add(signature)
             seen += len(jobs)
@@ -231,6 +236,11 @@ def discover_phenom_html(source: SourceConfig, terms: list[str], timeout_seconds
         limitations.append(
             f"Phenom page cap of {PHENOM_MAX_PAGES_PER_TERM} pages per term reached for "
             f"{len(capped_queries)} of {len(terms)} searches"
+        )
+    if stalled_queries:
+        limitations.append(
+            "Phenom search repeated or returned an empty page before exhausting the listing for "
+            f"{len(stalled_queries)} of {len(terms)} searches"
         )
     direct_job_pages_opened = enrich_phenom_candidate_details(candidates_by_url, timeout_seconds, limitations)
 
