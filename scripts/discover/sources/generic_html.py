@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import unquote, urljoin, urlparse
 
@@ -23,6 +24,46 @@ KNDS_TERM_ALIASES: dict[str, tuple[str, ...]] = {
     "it security": ("IT-Security",),
     "it-sicherheit": ("IT Sicherheit", "Informationssicherheit"),
 }
+WUPPERTAL_HR4YOU_LISTING_URL = "https://wuppertal.hr4you.org/job/listing/external"
+WUPPERTAL_HR4YOU_JOB_RE = re.compile(
+    r"window\.open\(\s*(['\"])(?P<url>https://wuppertal\.hr4you\.org/job/view/\d+(?:\?[^'\"]*)?)\1",
+    flags=re.IGNORECASE,
+)
+
+
+class Hr4YouOnclickLinkCollector(HTMLParser):
+    """Collect HR4YOU listing anchors whose job URLs live in ``onclick``."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._current_url: str | None = None
+        self._current_text: list[str] = []
+        self.links: list[dict[str, str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "a":
+            return
+        onclick = dict(attrs).get("onclick") or ""
+        match = WUPPERTAL_HR4YOU_JOB_RE.search(onclick)
+        if match:
+            self._current_url = match.group("url")
+            self._current_text = []
+
+    def handle_data(self, data: str) -> None:
+        if self._current_url is not None and helpers.normalize_whitespace(data):
+            self._current_text.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag != "a" or self._current_url is None:
+            return
+        self.links.append(
+            {
+                "href": self._current_url,
+                "text": helpers.normalize_whitespace(" ".join(self._current_text)),
+            }
+        )
+        self._current_url = None
+        self._current_text = []
 
 
 def is_same_page_link(source_url: str, candidate_url: str) -> bool:
@@ -197,7 +238,63 @@ def discover_bwi_jobboard(source: SourceConfig, terms: list[str], timeout_second
     )
 
 
+def is_wuppertal_jobs_source(source_url: str) -> bool:
+    parsed = urlparse(source_url)
+    return parsed.netloc.lower() in {"wuppertal.de", "www.wuppertal.de"} and parsed.path.endswith(
+        "/ausbildung_stellen/stellenangebote/stellenangebote.php"
+    )
+
+
+def discover_wuppertal_hr4you(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    listing_html = http.fetch_text(WUPPERTAL_HR4YOU_LISTING_URL, timeout_seconds)
+    parser = Hr4YouOnclickLinkCollector()
+    parser.feed(listing_html)
+    raw_urls: set[str] = set()
+    candidates_by_url: dict[str, Candidate] = {}
+
+    for link in parser.links:
+        url = helpers.normalize_url_without_fragment(link["href"])
+        raw_urls.add(url)
+        title = helpers.normalize_whitespace(link["text"]) or "unknown"
+        matched_terms = sorted(set(helpers.match_terms(f"{title} {url}", terms)))
+        if not matched_terms:
+            continue
+        helpers.merge_candidate(
+            candidates_by_url,
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=url,
+                source_url=source.url,
+                location="Wuppertal",
+                matched_terms=matched_terms,
+                notes="Enumerated through the Stadt Wuppertal HR4YOU listing",
+            ),
+        )
+
+    limitations = [] if raw_urls else ["No job links were found in the Stadt Wuppertal HR4YOU listing."]
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="complete",
+        listing_pages_scanned=1,
+        search_terms_tried=terms,
+        result_pages_scanned="wuppertal_hr4you_listing=1",
+        direct_job_pages_opened=0,
+        enumerated_jobs=len(raw_urls),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
+
+
 def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    if is_wuppertal_jobs_source(source.url):
+        return discover_wuppertal_hr4you(source, terms, timeout_seconds)
     if urlparse(source.url).netloc.lower() in {"bwi.de", "www.bwi.de"}:
         return discover_bwi_jobboard(source, terms, timeout_seconds)
     duality_careers = is_duality_careers_source(source.url)

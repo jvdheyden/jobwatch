@@ -448,6 +448,53 @@ def test_discover_bwi_jobboard_extracts_vacancy_detail_and_rejects_navigation(mo
     assert "BWI vacancy detail:" in candidate.notes
 
 
+def test_discover_wuppertal_uses_hr4you_listing_with_onclick_job_links(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Stadt Wuppertal - Stellenangebote",
+        url=(
+            "https://www.wuppertal.de/rathaus-buergerservice/"
+            "ausbildung_stellen/stellenangebote/stellenangebote.php"
+        ),
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    listing_html = """
+    <html><body>
+      <a class="list-group-item"
+         onclick="window.open('https://wuppertal.hr4you.org/job/view/4203?page_lang=',
+                  'Wissenschaftliche*r Mitarbeiter*in für die Umweltplanung')">
+        Wissenschaftliche*r Mitarbeiter*in für die Umweltplanung
+      </a>
+      <a class="list-group-item"
+         onclick="window.open('https://wuppertal.hr4you.org/job/view/4299?page_lang=',
+                  'Gärtner*in im Ressort Grünflächen und Forsten')">
+        Gärtner*in im Ressort Grünflächen und Forsten
+      </a>
+      <a href="/applicant/login">Bewerberlogin</a>
+    </body></html>
+    """
+    seen_urls: list[str] = []
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        seen_urls.append(url)
+        assert timeout_seconds == 5
+        assert url == "https://wuppertal.hr4you.org/job/listing/external"
+        return listing_html
+
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
+
+    coverage = discover_jobs.discover_html(source, ["Umweltplanung"], 5)
+
+    assert seen_urls == ["https://wuppertal.hr4you.org/job/listing/external"]
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert coverage.matched_jobs == 1
+    assert coverage.candidates[0].title == "Wissenschaftliche*r Mitarbeiter*in für die Umweltplanung"
+    assert coverage.candidates[0].url == "https://wuppertal.hr4you.org/job/view/4203?page_lang="
+    assert coverage.candidates[0].matched_terms == ["Umweltplanung"]
+
+
 def test_discover_knds_jobboard_uses_native_api_when_jobs_are_not_static(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="KNDS",

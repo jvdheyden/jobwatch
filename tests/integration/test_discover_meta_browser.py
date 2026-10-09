@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import discover_jobs
+from discover.sources import browser as browser_source
 
 
 class FakeLink:
-    def __init__(self, href: str, text: str) -> None:
+    def __init__(self, href: str, text: str, row_text: str | None = None) -> None:
         self._href = href
         self._text = text
+        self._row_text = row_text or text
 
     def get_attribute(self, name: str) -> str:
         assert name == "href"
@@ -14,6 +16,10 @@ class FakeLink:
 
     def inner_text(self) -> str:
         return self._text
+
+    def evaluate(self, script: str) -> str:
+        assert "closest('tr')" in script
+        return self._row_text
 
 
 class FakeLocator:
@@ -34,6 +40,32 @@ class FakePage:
     def locator(self, selector: str) -> FakeLocator:
         assert selector == 'a[href^="/profile/job_details/"]'
         return FakeLocator(self._links)
+
+
+class FakeGizPage:
+    def __init__(self, links: list[FakeLink]) -> None:
+        self._links = links
+
+    def locator(self, selector: str) -> FakeLocator | FakeHitLocator:
+        if selector == 'a[href*="ac=jobad"]':
+            return FakeLocator(self._links)
+        assert selector == ".js-gjb-hits"
+        return FakeHitLocator(str(len(self._links)))
+
+
+class FakeHitLocator:
+    def __init__(self, text: str) -> None:
+        self._text = text
+
+    @property
+    def first(self) -> FakeHitLocator:
+        return self
+
+    def count(self) -> int:
+        return 1
+
+    def inner_text(self) -> str:
+        return self._text
 
 
 class FakeBodyLocator:
@@ -121,6 +153,131 @@ def test_extract_meta_jobs_extracts_visible_result_cards():
     assert candidate.location == "Redmond, WA"
     assert candidate.url == "https://www.metacareers.com/profile/job_details/1884811572142821"
     assert candidate.matched_terms == ["research scientist"]
+
+
+def test_extract_giz_jobs_extracts_visible_job_links():
+    page = FakeGizPage(
+        [
+            FakeLink(
+                "index.php?ac=jobad&id=81770",
+                "Advisor (m/f/d) Agricultural Value Chains",
+                "Advisor (m/f/d) Agricultural Value Chains\nBonn\nAdvisory services\n8/31/26",
+            ),
+            FakeLink(
+                "https://jobs.giz.de/index.php?ac=jobad&id=81771",
+                "IT Support Specialist (m/f/d)",
+                "IT Support Specialist (m/f/d)\nEschborn\nIT\n8/31/26",
+            ),
+        ]
+    )
+    source = discover_jobs.SourceConfig(
+        source="GIZ Career Opportunities",
+        url="https://www.giz.de/en/career/jobs",
+        discovery_mode="browser",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+
+    result = discover_jobs.extract_giz_jobs(
+        page,
+        source,
+        term="agricultural value chain",
+        terms=["agricultural value chain", "rural development"],
+        page_num=1,
+    )
+
+    assert result.visible_results == 2
+    assert result.declared_total == 2
+    assert result.raw_ids == [
+        "https://jobs.giz.de/index.php?ac=jobad&id=81770",
+        "https://jobs.giz.de/index.php?ac=jobad&id=81771",
+    ]
+    assert len(result.candidates) == 1
+    candidate = result.candidates[0]
+    assert candidate.title == "Advisor (m/f/d) Agricultural Value Chains"
+    assert candidate.location == "Bonn"
+    assert candidate.matched_terms == ["agricultural value chain"]
+
+
+def test_discover_giz_jobs_uses_search_api_without_playwright(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="GIZ Career Opportunities",
+        url="https://www.giz.de/en/career/jobs",
+        discovery_mode="browser",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    search_payload = {
+        "SearchResult": {
+            "SearchResultCount": 1,
+            "SearchResultCountAll": 1,
+            "SearchResultItems": [
+                {
+                    "MatchedObjectDescriptor": {
+                        "ID": "81770",
+                        "PositionTitle": "Advisor (m/f/d) Agricultural Value Chains",
+                        "PositionURI": "https://jobs.giz.de/index.php?ac=jobad&id=81770",
+                        "PositionLocation": [{"CountryName": "Germany", "CityName": "Bonn"}],
+                    }
+                }
+            ],
+        }
+    }
+    empty_search_payload = {
+        "SearchResult": {
+            "SearchResultCount": 0,
+            "SearchResultCountAll": 0,
+            "SearchResultItems": [],
+        }
+    }
+    detail_html = """
+    <main>
+      <nav>Login | Language | Bookmark job ad | Share</nav>
+      <h1>Advisor (m/f/d) Agricultural Value Chains</h1>
+      <dl>
+        <dt>Einsatzort</dt><dd>Bonn</dd>
+      </dl>
+      <h2>Your tasks</h2>
+      <p>Advise agricultural value-chain programmes and rural producer organisations.</p>
+      <h2>Your profile</h2>
+      <p>Several years of international rural-development experience.</p>
+      <footer>JavaScript is disabled | Login | Share</footer>
+    </main>
+    """
+
+    monkeypatch.setattr(
+        browser_source.http,
+        "fetch_json",
+        lambda url, timeout_seconds: empty_search_payload if "rural+development" in url else search_payload,
+    )
+    monkeypatch.setattr(browser_source.http, "fetch_text", lambda url, timeout_seconds: detail_html)
+    monkeypatch.setattr(
+        browser_source,
+        "load_sync_playwright",
+        lambda: (_ for _ in ()).throw(AssertionError("GIZ catalog discovery must not launch Playwright")),
+    )
+
+    coverage = discover_jobs.discover_browser(
+        source,
+        terms=["agricultural value chain", "rural development"],
+        timeout_seconds=30,
+    )
+
+    assert coverage.status == "complete"
+    assert coverage.listing_pages_scanned == 2
+    assert coverage.result_pages_scanned == (
+        "agricultural value chain=1page/1of1, rural development=1page/0of0"
+    )
+    assert coverage.direct_job_pages_opened == 1
+    assert coverage.enumerated_jobs == 1
+    assert coverage.matched_jobs == 1
+    assert coverage.limitations == []
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Advisor (m/f/d) Agricultural Value Chains"
+    assert candidate.location == "Bonn"
+    assert "agricultural value-chain programmes" in candidate.description
+    assert "Bookmark job ad" not in candidate.description
+    assert "JavaScript is disabled" not in candidate.description
 
 
 def test_extract_meta_detail_sections_reads_role_details_from_detail_text():
