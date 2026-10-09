@@ -55,6 +55,8 @@ serialized = json.dumps(payload)
 if "--output-last-message" in sys.argv:
     output = Path(sys.argv[sys.argv.index("--output-last-message") + 1])
     output.write_text(serialized)
+elif "--json-schema" in sys.argv:
+    print(json.dumps({"result": "Done.", "structured_output": payload}))
 else:
     print(json.dumps({"result": serialized}))
 """
@@ -99,6 +101,10 @@ def test_source_worker_uses_fresh_artifact_only_process_and_validates_output(
         assert "--search" in invocation["args"]
     elif provider == "claude":
         assert "--no-session-persistence" in invocation["args"]
+        inline_schema = json.loads(invocation["args"][invocation["args"].index("--json-schema") + 1])
+        assert inline_schema == setup_contracts.worker_json_schema(
+            "source_discovery", setup_contracts.load_setup(setup_path)
+        )
     else:
         assert invocation["args"][invocation["args"].index("--approval-mode") + 1] == "plan"
 
@@ -131,3 +137,58 @@ output.write_text("Here is the JSON you requested: {}")
             timeout_seconds=30,
         )
     assert not output_path.exists()
+
+
+_PACK = {"kind": "jobwatch_source_pack", "recommended_sources": []}
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        "```json\n{}\n```",
+        "```\n{}\n```",
+        "  ```json  \n{}\n```  \n",
+        "```json{}```",
+        "``` json\n{}\n```",
+        "````json\n{}\n````",
+        "~~~json\n{}\n~~~",
+    ],
+)
+def test_provider_payload_strips_single_markdown_fence(template: str) -> None:
+    fenced = template.format(json.dumps(_PACK, indent=1))
+    assert run_setup_worker._provider_payload(json.dumps({"result": fenced}).encode()) == _PACK
+    assert run_setup_worker._provider_payload(fenced.encode()) == _PACK
+
+
+def test_provider_payload_keeps_fences_inside_json_strings() -> None:
+    payload = {**_PACK, "decisions_needed": ["do not use ``` in ids"]}
+    envelope = json.dumps({"result": "```json\n" + json.dumps(payload) + "\n```"}).encode()
+    assert run_setup_worker._provider_payload(envelope) == payload
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "Here is the JSON you requested: {}",
+        "```json\nHere is the JSON you requested: {}\n```",
+        "Sure!\n```json\n{\"kind\": \"jobwatch_source_pack\"}\n```",
+        "```json\n{\"kind\": \"jobwatch_source_pack\"}\n```\nLet me know if you need changes.",
+        "```json\n{\"kind\": \"jobwatch_source_pack\"}\n~~~",
+    ],
+)
+def test_provider_payload_still_rejects_prose_around_fences(prose: str) -> None:
+    envelope = json.dumps({"result": prose}).encode()
+    with pytest.raises(setup_contracts.SetupContractError, match="prose or malformed JSON"):
+        run_setup_worker._provider_payload(envelope)
+
+
+def test_provider_payload_fails_fast_on_unclosed_fence() -> None:
+    for tail in ("a" * 1_000_000, " " * 1_000_000 + "x"):
+        envelope = json.dumps({"result": "```json" + tail}).encode()
+        with pytest.raises(setup_contracts.SetupContractError, match="prose or malformed JSON"):
+            run_setup_worker._provider_payload(envelope)
+
+
+def test_provider_payload_prefers_structured_output_over_prose_result() -> None:
+    envelope = json.dumps({"result": "Done.", "structured_output": _PACK}).encode()
+    assert run_setup_worker._provider_payload(envelope) == _PACK

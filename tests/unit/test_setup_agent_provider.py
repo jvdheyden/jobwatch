@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -81,6 +82,7 @@ def test_codex_worker_commands_enforce_fresh_read_only_and_web_boundaries(tmp_pa
         agent_bin,
         final_output_path=tmp_path / "final.json",
         schema_path=tmp_path / "schema.json",
+        schema={"type": "object"},
     )
     preview_command = agent_provider.build_setup_worker_command(
         preview,
@@ -88,6 +90,7 @@ def test_codex_worker_commands_enforce_fresh_read_only_and_web_boundaries(tmp_pa
         agent_bin,
         final_output_path=tmp_path / "final.json",
         schema_path=tmp_path / "schema.json",
+        schema={"type": "object"},
     )
     assert "--search" in source_command
     assert "--search" not in preview_command
@@ -102,12 +105,14 @@ def test_codex_worker_commands_enforce_fresh_read_only_and_web_boundaries(tmp_pa
 def test_claude_and_gemini_worker_commands_are_read_only_and_role_scoped(tmp_path: Path) -> None:
     claude_source = agent_provider.resolve_setup_policy("claude", "source_discovery", env={})
     claude_preview = agent_provider.resolve_setup_policy("claude", "preview_ranker", env={})
+    schema = {"type": "object", "required": ["recommended_sources"]}
     source_command = agent_provider.build_setup_worker_command(
         claude_source,
         tmp_path,
         Path("/opt/bin/claude"),
         final_output_path=tmp_path / "final.json",
         schema_path=tmp_path / "schema.json",
+        schema=schema,
         env={},
     )
     preview_command = agent_provider.build_setup_worker_command(
@@ -116,9 +121,12 @@ def test_claude_and_gemini_worker_commands_are_read_only_and_role_scoped(tmp_pat
         Path("/opt/bin/claude"),
         final_output_path=tmp_path / "final.json",
         schema_path=tmp_path / "schema.json",
+        schema=schema,
         env={},
     )
     assert "--no-session-persistence" in source_command
+    for command in (source_command, preview_command):
+        assert json.loads(command[command.index("--json-schema") + 1]) == schema
     assert source_command[source_command.index("--allowedTools") + 1] == "WebSearch,WebFetch"
     assert preview_command[preview_command.index("--allowedTools") + 1] == ""
     assert not any(tool in preview_command for tool in ("WebSearch", "WebFetch", "Bash", "Write", "Edit"))
@@ -131,6 +139,7 @@ def test_claude_and_gemini_worker_commands_are_read_only_and_role_scoped(tmp_pat
             Path("/opt/bin/gemini"),
             final_output_path=tmp_path / "final.json",
             schema_path=tmp_path / "schema.json",
+            schema={"type": "object"},
         )
         assert command[command.index("--approval-mode") + 1] == "plan"
         assert command[command.index("--output-format") + 1] == "json"

@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
+from typing import Any, Mapping
 
 
 SUPPORTED_PROVIDERS = ("codex", "claude", "gemini")
@@ -23,7 +24,9 @@ DEFAULT_GEMINI_SCHEDULED_APPROVAL_MODE = DEFAULT_GEMINI_CODER_APPROVAL_MODE
 DEFAULT_GEMINI_SETUP_APPROVAL_MODE = "auto_edit"
 
 SETUP_ROLES = ("setup_coordinator", "source_discovery", "preview_ranker")
-CODEX_SETUP_REASONING_LEVELS = ("none", "low", "medium", "high", "xhigh")
+CODEX_REASONING_LEVELS = ("none", "low", "medium", "high", "xhigh")
+DEFAULT_CODEX_SCHEDULED_MODEL = "gpt-5.6-sol"
+DEFAULT_CODEX_SCHEDULED_REASONING_EFFORT = "medium"
 DEFAULT_CLAUDE_SETUP_ALLOWED_TOOLS = "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite"
 DEFAULT_CLAUDE_SOURCE_DISCOVERY_ALLOWED_TOOLS = "WebSearch,WebFetch"
 DEFAULT_CLAUDE_PREVIEW_RANKER_ALLOWED_TOOLS = ""
@@ -38,8 +41,14 @@ class SetupModelPolicy:
     reasoning: str | None = None
 
 
-# Setup-only policy. Reviewer, coder, and scheduled ranking defaults remain on
-# their existing paths below.
+@dataclass(frozen=True)
+class CodexScheduledModelPolicy:
+    model: str
+    reasoning: str
+
+
+# Setup-only policy. Scheduled Codex runs use their own defaults above;
+# reviewer and coder commands retain their existing behavior below.
 SETUP_MODEL_DEFAULTS: dict[str, dict[str, tuple[str, str | None]]] = {
     "codex": {
         "setup_coordinator": ("gpt-5.5", "medium"),
@@ -71,6 +80,22 @@ def _validate_model_identifier(model: str, field: str) -> str:
     if not _MODEL_IDENTIFIER_RE.fullmatch(candidate):
         raise ValueError(f"{field} contains an invalid model identifier")
     return candidate
+
+
+def resolve_codex_scheduled_policy(
+    *, env: Mapping[str, str] | None = None
+) -> CodexScheduledModelPolicy:
+    """Resolve checkout overrides, falling back to explicit scheduled defaults."""
+    values = os.environ if env is None else env
+    model_key = "JOB_AGENT_CODEX_SCHEDULED_MODEL"
+    reasoning_key = "JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT"
+    model = _validate_model_identifier(
+        values.get(model_key, DEFAULT_CODEX_SCHEDULED_MODEL), model_key
+    )
+    reasoning = values.get(reasoning_key, DEFAULT_CODEX_SCHEDULED_REASONING_EFFORT).strip().lower()
+    if reasoning not in CODEX_REASONING_LEVELS:
+        raise ValueError(f"{reasoning_key} must be one of: {', '.join(CODEX_REASONING_LEVELS)}")
+    return CodexScheduledModelPolicy(model, reasoning)
 
 
 def resolve_setup_policy(
@@ -110,9 +135,9 @@ def resolve_setup_policy(
         selected_reasoning = selected_reasoning.strip().lower()
         if resolved_provider != "codex":
             raise ValueError("--reasoning and setup reasoning overrides are supported only for codex")
-        if selected_reasoning not in CODEX_SETUP_REASONING_LEVELS:
+        if selected_reasoning not in CODEX_REASONING_LEVELS:
             raise ValueError(
-                f"codex setup reasoning must be one of: {', '.join(CODEX_SETUP_REASONING_LEVELS)}"
+                f"codex setup reasoning must be one of: {', '.join(CODEX_REASONING_LEVELS)}"
             )
     return SetupModelPolicy(resolved_provider, resolved_role, selected_model, selected_reasoning)
 
@@ -340,6 +365,7 @@ def build_claude_setup_worker_command(
     policy: SetupModelPolicy,
     agent_bin: Path,
     *,
+    schema: Mapping[str, Any],
     env: Mapping[str, str] | None = None,
 ) -> list[str]:
     _ = env
@@ -348,6 +374,8 @@ def build_claude_setup_worker_command(
         if policy.role == "source_discovery"
         else DEFAULT_CLAUDE_PREVIEW_RANKER_ALLOWED_TOOLS
     )
+    # `claude --json-schema` takes the schema inline and returns the validated
+    # object under `structured_output` in the JSON result envelope.
     return [
         str(agent_bin),
         "-p",
@@ -356,6 +384,8 @@ def build_claude_setup_worker_command(
         policy.model,
         "--output-format",
         "json",
+        "--json-schema",
+        json.dumps(schema, separators=(",", ":")),
         "--permission-mode",
         "default",
         "--allowedTools",
@@ -383,6 +413,7 @@ def build_setup_worker_command(
     *,
     final_output_path: Path,
     schema_path: Path,
+    schema: Mapping[str, Any],
     env: Mapping[str, str] | None = None,
 ) -> list[str]:
     if policy.role not in {"source_discovery", "preview_ranker"}:
@@ -396,7 +427,7 @@ def build_setup_worker_command(
             schema_path=schema_path,
         )
     if policy.provider == "claude":
-        return build_claude_setup_worker_command(policy, agent_bin, env=env)
+        return build_claude_setup_worker_command(policy, agent_bin, schema=schema, env=env)
     if policy.provider == "gemini":
         return build_gemini_setup_worker_command(policy, agent_bin)
     raise ValueError(f"unsupported agent provider: {policy.provider}")

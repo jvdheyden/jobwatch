@@ -73,7 +73,7 @@ Optional fields:
 - `updated_date`
 - `source`
 - `source_url`
-- `fit_score`: number or null; omitted/null renders as `unknown`
+- `fit_score`: number from 1 through 10, or null; omitted/null renders as `unknown`
 - `why_match`: array of short bullets; omitted renders as an empty array
 - `concerns`
 
@@ -96,7 +96,7 @@ Optional fields:
 - `alternate_url`
 - `location`
 - `source`
-- `fit_score`: number or null; omitted/null renders as `unknown`
+- `fit_score`: number from 1 through 10, or null; omitted/null renders as `unknown`
 
 For useful digests, include `fit_score` whenever the role is reportable. Use
 null only when the score is genuinely unknown.

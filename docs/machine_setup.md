@@ -53,7 +53,6 @@ If you only need to refresh the generated machine-local config later, run `bash 
 - `.codex/config.toml` when the provider is Codex
 - `.schedule.local` for local scheduled jobs
 - `.scheduler/` for generated cron and launchd artifacts
-- `.scheduler/bwrap-userns-restrict` on Linux when the provider is Codex and `bwrap` is on `PATH`
 - `profile/cv.md` and `profile/prefs_global.md` if they do not already exist
 
 The `profile/` directory is local user data and is ignored by Git. `profile/cv.md` is the primary agent-readable CV context. `profile/prefs_global.md` stores durable cross-track preferences. You can also place a PDF CV in `profile/`; the setup agent can use it to draft `profile/cv.md` when the Markdown CV is still the default placeholder.
@@ -89,16 +88,6 @@ Override one role with `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, for example `JOB_AGE
 On Linux, the setup script canonicalizes an auto-detected `codex` path via `readlink -f` before writing `JOB_AGENT_BIN`. This helps scheduled runs use the real executable path when host policies such as AppArmor are tied to that path. On macOS, setup keeps the detected path as-is. Claude and Gemini paths are written as detected.
 
 For Codex, the setup script also writes `.codex/config.toml` with a managed `shell_environment_policy` that puts this checkout's `.venv/bin` first on `PATH`. This keeps Codex shell commands and patch helpers on the repo-local Python while preserving the rest of the setup-time PATH. If an existing unmanaged `shell_environment_policy` is present, setup leaves it unchanged and reports a conflict instead of overwriting local Codex preferences.
-
-On Linux with `JOB_AGENT_PROVIDER=codex`, if `bwrap` is available on `PATH`, the setup script also writes `.scheduler/bwrap-userns-restrict`, a minimal AppArmor profile that grants `userns create` to the detected `bwrap` binary. This is meant for hosts that enforce AppArmor restrictions on unprivileged user namespaces. Claude and Gemini setups do not generate Codex/bwrap AppArmor guidance.
-
-To install and reload that generated profile on Linux, run:
-
-```bash
-sudo bash scripts/install_bwrap_apparmor.sh
-```
-
-The installer copies the generated profile into `/etc/apparmor.d/bwrap-userns-restrict` and reloads it with `apparmor_parser -r`.
 
 In non-interactive mode, the script does not prompt. `JOB_AGENT_BIN` must already be supplied via `--agent-bin`, the environment, existing `.env.local`, or the selected provider binary must be on `PATH`.
 
@@ -249,3 +238,58 @@ test -f artifacts/digests/<track>/YYYY-MM-DD.json
 ```
 
 Only test a real send or schedule email delivery after the digest exists and the dry run renders correctly.
+
+### Linux Bubblewrap and AppArmor
+
+Use the distribution's `bubblewrap` package and AppArmor policy. On Ubuntu with
+`/etc/apparmor.d/bwrap-userns-restrict` enabled, no additional jobwatch profile is
+needed if the checks below pass. Keep AppArmor and
+`kernel.apparmor_restrict_unprivileged_userns=1` enabled.
+
+Jobwatch launches Codex with `-a never exec -s workspace-write`. Codex launches
+Bubblewrap to enforce its sandbox. Network access follows the existing Codex
+configuration; jobwatch does not change that policy.
+
+Setup no longer generates `.scheduler/bwrap-userns-restrict`, and the legacy
+`install_bwrap_apparmor.sh` command refuses to install or load policy. Older
+generated files are left untouched but must not be installed: their unconfined
+attachment can conflict with Ubuntu's policy, and the old installer could overwrite
+Ubuntu's profile. A filename containing `job-agent` does not scope an attachment
+to the job agent if the attachment itself is `/usr/bin/bwrap`.
+
+Run this from an ordinary host terminal, outside an existing Codex sandbox:
+
+```bash
+sysctl kernel.apparmor_restrict_unprivileged_userns
+bwrap --ro-bind / / --proc /proc --dev /dev \
+  --unshare-user --unshare-pid --unshare-net --die-with-parent \
+  sh -c 'cat /proc/self/attr/current; echo "Bubblewrap works"'
+bash scripts/run_track.sh --track <track-slug>
+```
+
+The track command produces local artifacts; it sends nothing without `--delivery`.
+On Ubuntu, the probe's child normally has the `bwrap//&unpriv_bwrap` label.
+A nested Bubblewrap invocation inside Codex can fail because the outer sandbox
+already restricts namespaces and capabilities. Diagnose a host failure by
+repeating the probe in a normal terminal before changing AppArmor.
+
+If the host probe fails, inspect `sudo aa-status` and
+`journalctl -k -b | grep -E 'apparmor|bwrap'`. Check package ownership with
+`dpkg-query -S /etc/apparmor.d/bwrap-userns-restrict`. Resolve duplicate attachments
+and restore the distribution's policy with administrator review; do not add a
+second `/usr/bin/bwrap` attachment, overwrite the distribution profile, turn off
+the user namespace restriction, or disable Codex sandboxing. If a distribution
+lacks a working profile, investigate that host separately before installing any
+policy; a dedicated executable and narrowly scoped attachment may be appropriate.
+
+Before an approved policy change, back up the affected file and any disable
+symlink outside `/etc/apparmor.d`. Check syntax without loading or caching:
+
+```bash
+apparmor_parser -Q -K /etc/apparmor.d/bwrap-userns-restrict
+```
+
+After approval, use `sudo systemctl reload apparmor`, then repeat the host probe,
+track run and journal check. After the next planned reboot, repeat those checks
+and confirm graphical login and other Bubblewrap applications still work.
+Keep any obsolete duplicate disabled across reloads and boots.

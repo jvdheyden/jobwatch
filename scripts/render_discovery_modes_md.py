@@ -227,6 +227,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Extracts Personio jobs from embedded page payloads, falling back to the tenant /xml feed when the page payload is missing.",
     },
+    "phenom_html": {
+        "url_shape": "Phenom-hosted `https://<host>/<locale-path>/search-results` page, optionally with `keywords=` and other native query parameters, e.g. `https://careers.bcg.com/global/en/search-results?keywords=BCG%20X`.",
+        "filters": "encode `keywords=` and other native Phenom parameters in the source URL",
+        "limitations": "Runs one embedded-payload keyword search per configured term (URL keywords are prepended and act as a scope filter) with a cap of 5 result pages per term; opens matched job-detail pages for the embedded description.",
+    },
     "qedit_inline": {
         "url_shape": "QEDIT careers page.",
         "filters": "none",
@@ -256,6 +261,11 @@ MODE_DETAILS = {
         "url_shape": "`https://jobs.sennheiser.com/`",
         "filters": "none",
         "limitations": "Reads the full jobs.sennheiser.com RSS feed in a single fetch.",
+    },
+    "successfactors_rss": {
+        "url_shape": "SAP SuccessFactors / Jobs2Web careers URL; the RSS endpoint is derived from its origin.",
+        "filters": "encode a non-default `locale` in the source URL query",
+        "limitations": "Runs one official RSS keyword search per configured term; each feed may be capped by SuccessFactors.",
     },
     "service_bund_links": {
         "url_shape": "Official employer page exposing `service.bund.de/.../IMPORTE/Stellenangebote/...` links.",

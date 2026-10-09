@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -52,24 +53,46 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+_FENCE_OPENER = re.compile(r"(`{3,}|~{3,})[ \t]*[\w-]*[ \t]*\n?")
+
+
+def _strip_code_fence(text: str) -> str:
+    """Remove one surrounding Markdown code fence (```json ... ```), if present.
+
+    Uses a prefix match plus string slicing (no backtracking) so a malformed
+    reply near the 1 MiB limit still fails fast.
+    """
+    stripped = text.strip()
+    opener = _FENCE_OPENER.match(stripped)
+    if opener is None:
+        return stripped
+    fence = opener.group(1)
+    body = stripped[opener.end():]
+    if not body.endswith(fence):
+        return stripped
+    return body[: -len(fence)].strip()
+
+
 def _provider_payload(stdout: bytes) -> dict[str, Any]:
     if len(stdout) > PROVIDER_RESPONSE_MAX_BYTES:
         raise SetupContractError("provider response exceeds the 1 MiB limit")
     try:
-        envelope = json.loads(stdout)
+        envelope = json.loads(_strip_code_fence(stdout.decode("utf-8")))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise SetupContractError("provider returned prose or malformed JSON") from exc
     if not isinstance(envelope, dict):
         raise SetupContractError("provider response must be a JSON object")
     if envelope.get("kind") in {"jobwatch_source_pack", "jobwatch_preview_result"}:
         return envelope
-    for key in ("result", "response", "output", "text"):
+    # `structured_output` comes first: claude --json-schema puts the validated
+    # object there while `result` holds the model's closing prose.
+    for key in ("structured_output", "result", "response", "output", "text"):
         nested = envelope.get(key)
         if isinstance(nested, dict):
             return nested
         if isinstance(nested, str):
             try:
-                payload = json.loads(nested)
+                payload = json.loads(_strip_code_fence(nested))
             except json.JSONDecodeError as exc:
                 raise SetupContractError(f"provider field {key!r} contained prose or malformed JSON") from exc
             if not isinstance(payload, dict):
@@ -133,14 +156,16 @@ def run_worker(
     with tempfile.TemporaryDirectory(prefix=f"jobwatch-{role}-") as temp_dir_value:
         temp_dir = Path(temp_dir_value)
         final_output_path = temp_dir / "final.json"
+        schema = worker_json_schema(role, input_payload)
         schema_path = temp_dir / "output-schema.json"
-        schema_path.write_text(json.dumps(worker_json_schema(role, input_payload), separators=(",", ":")) + "\n")
+        schema_path.write_text(json.dumps(schema, separators=(",", ":")) + "\n")
         command = build_setup_worker_command(
             policy,
             temp_dir,
             agent_bin,
             final_output_path=final_output_path,
             schema_path=schema_path,
+            schema=schema,
         )
         try:
             completed = subprocess.run(

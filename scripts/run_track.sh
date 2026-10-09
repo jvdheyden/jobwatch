@@ -255,6 +255,28 @@ fi
 log "Using discovery Python interpreter: $PYTHON_BIN"
 log "Using $AGENT_LABEL provider via $AGENT_BIN"
 
+if [[ "$AGENT_PROVIDER" == "codex" ]]; then
+  if ! CODEX_SCHEDULED_POLICY="$("$PYTHON_BIN" - "$SCRIPT_DIR" <<'PY'
+import sys
+
+sys.path.insert(0, sys.argv[1])
+from agent_provider import resolve_codex_scheduled_policy
+
+try:
+    policy = resolve_codex_scheduled_policy()
+except ValueError as exc:
+    print(f"run_track.sh: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+print(policy.model, policy.reasoning)
+PY
+)"; then
+    log "Could not resolve Codex scheduled model policy"
+    exit 2
+  fi
+  read -r CODEX_SCHEDULED_MODEL CODEX_SCHEDULED_REASONING_EFFORT <<<"$CODEX_SCHEDULED_POLICY"
+  log "Using Codex scheduled model: $CODEX_SCHEDULED_MODEL (reasoning effort: $CODEX_SCHEDULED_REASONING_EFFORT)"
+fi
+
 LAST_BG_PID=""
 
 stop_helper() {
@@ -474,7 +496,10 @@ EOF
 run_agent_command() {
   case "$AGENT_PROVIDER" in
     codex)
-      "$AGENT_BIN" --search -a never exec -C "$ROOT" -s workspace-write - <"$PROMPT_FILE"
+      "$AGENT_BIN" --search -a never exec \
+        -m "$CODEX_SCHEDULED_MODEL" \
+        -c "model_reasoning_effort=\"$CODEX_SCHEDULED_REASONING_EFFORT\"" \
+        -C "$ROOT" -s workspace-write - <"$PROMPT_FILE"
       ;;
     claude)
       (

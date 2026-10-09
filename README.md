@@ -92,13 +92,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    ```
    </details>
 
-3. If you are on Ubuntu and using Codex with `bwrap`, install the generated AppArmor profile:
-
-   ```bash
-   sudo bash scripts/install_bwrap_apparmor.sh
-   ```
-
-   Skip this on macOS. On Linux, this is only needed on hosts where AppArmor restricts unprivileged user namespaces.
+3. On Ubuntu with Codex, use the distribution’s `bubblewrap` package and existing AppArmor profile. No jobwatch-specific profile is needed when the standard profile works. Do not install an additional profile attached to `/usr/bin/bwrap`. See [Linux sandbox verification](docs/machine_setup.md#linux-bubblewrap-and-apparmor).
 
 4. Run the guided setup agent to create your first search track:
 
@@ -173,6 +167,17 @@ For Codex:
 export JOB_AGENT_PROVIDER=codex
 export JOB_AGENT_BIN=/absolute/path/to/codex
 ```
+
+Codex track runs launched through `scripts/run_track.sh` (scheduled or manual) use `gpt-5.6-sol` with `medium` reasoning by default. The runner passes both settings explicitly, so changing your interactive Codex defaults does not change track runs. Both `find-jobs` and `rank-jobs` share this model within one session.
+
+Override these settings in each checkout's gitignored `.env.local`:
+
+```bash
+export JOB_AGENT_CODEX_SCHEDULED_MODEL=gpt-5.6-sol
+export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=medium
+```
+
+The runner logs the resolved settings before discovery and rejects empty or malformed overrides. Reasoning levels are `none`, `low`, `medium`, `high`, and `xhigh`; the selected model must support the chosen level. Defaults and validation live in `scripts/agent_provider.py`. `setup_machine.sh` preserves these overrides when rerun. Setup, coding, and reviewer sessions use their own existing policies.
 
 For Claude Code:
 

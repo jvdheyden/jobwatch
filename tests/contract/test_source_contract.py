@@ -73,11 +73,13 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "partisia_site": "https://partisiablockchain.com/",
         "pcd_team": "https://pcd.team/jd",
         "personio_page": "https://example.jobs.personio.de/",
+        "phenom_html": "https://careers.bcg.com/global/en/search-results",
         "qedit_inline": "https://qed-it.com/careers",
         "qusecure_careers": "https://www.qusecure.com/careers/",
         "recruitee_inline": "https://career.quantum-systems.com/",
         "rheinmetall_html": "https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote",
         "sennheiser_rss": "https://jobs.sennheiser.com/",
+        "successfactors_rss": "https://careers.example.com/search/?locale=en_US",
         "service_bund_links": "https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html",
         "service_bund_search": (
             "https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html"
@@ -220,6 +222,58 @@ def test_provider_candidates_have_required_fields(
         parsed = urlparse(candidate.url)
         assert parsed.scheme in {"http", "https"}
         assert parsed.netloc
+
+
+def test_secunet_jobboard_enriches_kept_candidates_from_jobposting_json_ld(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    listing_html = """
+    <html><body>
+      <a href="https://jobs.secunet.com/Security-Engineer-de-j123.html">Security Engineer</a>
+    </body></html>
+    """
+    detail_html = """
+    <html><body>
+      <header>Navigation and employer marketing must not become role detail.</header>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          "title": "Security Engineer (m/w/d)",
+          "description": "&lt;p&gt;Develop high-assurance products for public-sector customers.&lt;/p&gt;",
+          "responsibilities": "&lt;ul&gt;&lt;li&gt;Design cryptographic protocols and review security architectures.&lt;/li&gt;&lt;li&gt;Implement secure services in Rust.&lt;/li&gt;&lt;/ul&gt;",
+          "qualifications": "&lt;ul&gt;&lt;li&gt;Experience with applied cryptography and embedded security.&lt;/li&gt;&lt;li&gt;Strong software engineering skills.&lt;/li&gt;&lt;/ul&gt;",
+          "jobBenefits": "Flexible work and individual professional development."
+        }
+      </script>
+      <footer>Cookie settings and generic careers content.</footer>
+    </body></html>
+    """
+    fetched_urls: list[str] = []
+
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        assert timeout_seconds == 5
+        fetched_urls.append(url)
+        if url.endswith("-j123.html"):
+            return detail_html
+        return listing_html
+
+    monkeypatch.setattr(http, "fetch_text", fake_fetch_text)
+
+    coverage = core.discover_source(_source_for_mode("secunet_jobboard"), TERMS, 5)
+
+    assert coverage.status == "complete"
+    assert coverage.direct_job_pages_opened == 1
+    assert len(fetched_urls) == 2
+    candidate = coverage.candidates[0]
+    assert candidate.title == "Security Engineer (m/w/d)"
+    assert "Tasks: Design cryptographic protocols and review security architectures." in candidate.notes
+    assert "Qualifications: Experience with applied cryptography and embedded security." in candidate.notes
+    assert "Develop high-assurance products" in candidate.description
+    assert "Implement secure services in Rust." in candidate.description
+    assert "employer marketing" not in candidate.description
+    assert "Cookie settings" not in candidate.description
+    assert "<li>" not in candidate.description
 
 
 def test_thales_html_enriches_kept_candidates_from_detail_pages(monkeypatch: pytest.MonkeyPatch):
