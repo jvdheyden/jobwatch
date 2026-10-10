@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from conftest import bash_quote
 
 
@@ -722,7 +724,10 @@ def test_setup_machine_installs_codex_project_config(tmp_job_agent_root: Path, r
     assert f'PATH = "{tmp_job_agent_root / ".venv" / "bin"}:{fake_bin_dir}:' in config_text
 
 
-def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+@pytest.mark.parametrize("stale_profile", [False, True])
+def test_setup_machine_does_not_generate_bwrap_apparmor_profile_on_linux(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd, stale_profile: bool
+) -> None:
     env_file = tmp_job_agent_root / ".env.local"
     schedule_file = tmp_job_agent_root / ".schedule.local"
     scheduler_dir = tmp_job_agent_root / ".scheduler"
@@ -732,6 +737,10 @@ def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_r
     _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
     _write_executable(canonical_bwrap, "#!/bin/bash\nexit 0\n")
     _write_symlink(fake_bin_dir / "bwrap", canonical_bwrap)
+
+    if stale_profile:
+        apparmor_profile.parent.mkdir(parents=True, exist_ok=True)
+        apparmor_profile.write_text("legacy generated artifact\n")
 
     env = os.environ | {
         "HOME": str(tmp_job_agent_root / "home"),
@@ -746,10 +755,11 @@ def test_setup_machine_generates_bwrap_apparmor_profile_on_linux(tmp_job_agent_r
     result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert result.returncode == 0, result.stderr
 
-    profile_text = apparmor_profile.read_text()
-    assert "abi <abi/4.0>," in profile_text
-    assert f"{canonical_bwrap} flags=(unconfined)" in profile_text
-    assert "userns create," in profile_text
+    if stale_profile:
+        assert apparmor_profile.read_text() == "legacy generated artifact\n"
+    else:
+        assert not apparmor_profile.exists()
+    assert "sudo bash scripts/install_bwrap_apparmor.sh" not in result.stdout
 
 
 def test_setup_machine_skips_bwrap_apparmor_profile_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -994,7 +1004,7 @@ printf 'setup_machine %s\\n' "$*" >> "${BOOTSTRAP_MACHINE_LOG:?missing BOOTSTRAP
     assert "shared/templates/profile/*" in result.stdout
 
     assert "bash scripts/start_setup_agent.sh --agent codex" in result.stdout
-    assert "sudo bash scripts/install_bwrap_apparmor.sh" in result.stdout
+    assert "sudo bash scripts/install_bwrap_apparmor.sh" not in result.stdout
 
 
 def test_bootstrap_machine_requires_agent_selection(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -2102,50 +2112,51 @@ echo "$*" >> "{launchctl_log}"
     assert f"kickstart -k gui/{os.getuid()}/{label}" in launchctl_lines
 
 
-def test_install_bwrap_apparmor_installs_generated_profile(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
-    env_file = tmp_job_agent_root / ".env.local"
-    schedule_file = tmp_job_agent_root / ".schedule.local"
+@pytest.mark.parametrize("existing_policy", [False, True])
+def test_retired_bwrap_installer_never_writes_or_loads_policy(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd, existing_policy: bool
+) -> None:
     scheduler_dir = tmp_job_agent_root / ".scheduler"
-    fake_bin_dir = tmp_job_agent_root / "bin"
     apparmor_dir = tmp_job_agent_root / "etc" / "apparmor.d"
+    fake_bin_dir = tmp_job_agent_root / "bin"
     parser_log = tmp_job_agent_root / "apparmor_parser.log"
+    install_log = tmp_job_agent_root / "install.log"
     dest_profile = apparmor_dir / "bwrap-userns-restrict"
-    canonical_bwrap = tmp_job_agent_root / "tools" / "bubblewrap" / "bin" / "bwrap"
-    _write_executable(fake_bin_dir / "codex", "#!/bin/bash\nexit 0\n")
-    _write_executable(canonical_bwrap, "#!/bin/bash\nexit 0\n")
-    _write_symlink(fake_bin_dir / "bwrap", canonical_bwrap)
-    _write_executable(
-        fake_bin_dir / "apparmor_parser",
-        f"""#!/bin/bash
-set -euo pipefail
-echo "$*" >> "{parser_log}"
-""",
+    apparmor_dir.mkdir(parents=True)
+    scheduler_dir.mkdir(parents=True)
+    # A stale artifact must never be installed, even with the old overrides.
+    (scheduler_dir / "bwrap-userns-restrict").write_text(
+        "/usr/bin/bwrap flags=(unconfined) { userns create, }\n"
     )
-
+    if existing_policy:
+        dest_profile.write_text("distribution policy\n")
+    disable_dir = apparmor_dir / "disable"
+    disable_dir.mkdir()
+    disabled = disable_dir / "usr.bin.bwrap-job-agent"
+    disabled.symlink_to(apparmor_dir / "usr.bin.bwrap-job-agent")
+    for name, log in [("apparmor_parser", parser_log), ("install", install_log)]:
+        _write_executable(fake_bin_dir / name, f'#!/bin/bash\necho "$*" >> "{log}"\n')
     env = os.environ | {
-        "HOME": str(tmp_job_agent_root / "home"),
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
-        "JOB_AGENT_ENV_FILE": str(env_file),
-        "JOB_AGENT_SCHEDULE_FILE": str(schedule_file),
         "JOB_AGENT_SCHEDULER_DIR": str(scheduler_dir),
         "JOB_AGENT_PLATFORM": "Linux",
         "JOB_AGENT_BWRAP_APPARMOR_DEST": str(dest_profile),
         "JOB_AGENT_BWRAP_APPARMOR_REQUIRE_ROOT": "0",
         "APPARMOR_PARSER_BIN": str(fake_bin_dir / "apparmor_parser"),
+        "INSTALL_BIN": str(fake_bin_dir / "install"),
         "PATH": f"{fake_bin_dir}:{os.environ['PATH']}",
     }
-
-    setup_result = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
-    assert setup_result.returncode == 0, setup_result.stderr
-
     result = run_cmd("bash", str(repo_root / "scripts" / "install_bwrap_apparmor.sh"), env=env, cwd=repo_root)
-    assert result.returncode == 0, result.stderr
-    assert dest_profile.exists()
-
-    profile_text = dest_profile.read_text()
-    assert f"{canonical_bwrap} flags=(unconfined)" in profile_text
-    assert "userns create," in profile_text
-    assert parser_log.read_text().splitlines() == [f"-r {dest_profile}"]
+    assert result.returncode == 1
+    assert "No AppArmor policy was changed" in result.stderr
+    assert not parser_log.exists()
+    assert not install_log.exists()
+    assert disabled.is_symlink()
+    assert disabled.readlink() == apparmor_dir / "usr.bin.bwrap-job-agent"
+    if existing_policy:
+        assert dest_profile.read_text() == "distribution policy\n"
+    else:
+        assert not dest_profile.exists()
 
 
 def test_install_bwrap_apparmor_is_noop_on_non_linux(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

@@ -20,7 +20,7 @@ This script:
 3. Bootstraps the repo-local virtualenv via scripts/bootstrap_venv.sh
 4. Installs pdftotext (Poppler) when it is not already available
 
-It does not install the scheduler or the optional Linux AppArmor profile.
+It does not install the scheduler or change system AppArmor policy.
 In an interactive terminal, it asks whether to start the guided setup agent.
 In non-interactive mode, it starts the setup agent only with --start-setup-agent.
 EOF
@@ -198,9 +198,9 @@ EOF
   if [[ "$PLATFORM" == "Linux" && "$AGENT_VALUE" == "codex" ]]; then
     cat <<EOF
 
-  3. Optional Linux/Codex AppArmor fix:
-     Run this only if the host restricts bwrap user namespaces:
-     sudo bash scripts/install_bwrap_apparmor.sh
+  3. Linux/Codex sandbox:
+     Use the distribution Bubblewrap package and AppArmor profile.
+     See docs/machine_setup.md for verification and troubleshooting.
 EOF
   fi
 

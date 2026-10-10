@@ -92,13 +92,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    ```
    </details>
 
-3. If you are on Ubuntu and using Codex with `bwrap`, install the generated AppArmor profile:
-
-   ```bash
-   sudo bash scripts/install_bwrap_apparmor.sh
-   ```
-
-   Skip this on macOS. On Linux, this is only needed on hosts where AppArmor restricts unprivileged user namespaces.
+3. On Ubuntu with Codex, use the distribution’s `bubblewrap` package and existing AppArmor profile. No jobwatch-specific profile is needed when the standard profile works. Do not install an additional profile attached to `/usr/bin/bwrap`. See [Linux sandbox verification](docs/machine_setup.md#linux-bubblewrap-and-apparmor).
 
 4. Run the guided setup agent to create your first search track:
 
