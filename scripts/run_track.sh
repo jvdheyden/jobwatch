@@ -414,7 +414,33 @@ AGENT_IDLE_FLAG="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-idle.$$"
 AGENT_ACTIVITY_FILE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-activity.$$"
 AGENT_OUTPUT_PIPE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-output.$$"
 rm -f "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
-trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"' EXIT
+ALERT_BY_EMAIL=0
+for delivery_target in "${DELIVERY_TARGETS[@]+"${DELIVERY_TARGETS[@]}"}"; do
+  if [[ "$delivery_target" == "email" ]]; then
+    ALERT_BY_EMAIL=1
+  fi
+done
+
+# Runs that requested email delivery send a failure alert instead of failing
+# silently, so an expired agent login does not go unnoticed for weeks.
+on_exit() {
+  local exit_status=$?
+  rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
+  if [[ $exit_status -ne 0 && $ALERT_BY_EMAIL -eq 1 ]]; then
+    if env \
+      -u JOB_AGENT_SMTP_PASSWORD \
+      -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
+      -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
+      JOB_AGENT_ROOT="$ROOT" \
+      "$PYTHON_BIN" "$ROOT/scripts/send_run_failure_alert.py" \
+        --track "$TRACK" --date "$TODAY" --status "$exit_status" --log-file "$LOG_FILE"; then
+      log "Sent failure alert email"
+    else
+      log "Failure alert email could not be sent"
+    fi
+  fi
+}
+trap on_exit EXIT
 
 log "Starting $TRACK daily run"
 log "Discovery phase started"
