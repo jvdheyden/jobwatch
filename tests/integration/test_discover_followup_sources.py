@@ -562,6 +562,72 @@ def test_discover_workable_api_filters_and_builds_job_urls(monkeypatch):
     assert candidate.matched_terms == ["security engineer"]
 
 
+def _workable_job(shortcode: str, title: str) -> dict:
+    return {"shortcode": shortcode, "title": title, "location": "London", "department": "Product"}
+
+
+def test_discover_workable_api_follows_next_page_tokens_until_total(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Beyond",
+        url="https://apply.workable.com/qodea/",
+        discovery_mode="workable_api",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    # Mirrors the real v3 board: 10 jobs per page, and `nextPage` is still set
+    # on the final page.
+    pages = {
+        None: {"total": 12, "nextPage": "tok-2", "results": [_workable_job(f"A{i}", f"Engineer {i}") for i in range(10)]},
+        "tok-2": {
+            "total": 12,
+            "nextPage": "tok-3",
+            "results": [_workable_job("B1", "Senior Product Manager"), _workable_job("B2", "Designer")],
+        },
+    }
+    payloads: list[object] = []
+
+    def fake_post_json(url: str, payload: dict, timeout_seconds: int, headers: dict[str, str] | None = None):
+        del url, timeout_seconds, headers
+        payloads.append(payload)
+        return pages[payload.get("token")]
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_workable_api(source, ["product manager"], timeout_seconds=5)
+
+    assert payloads == [{"query": ""}, {"query": "", "token": "tok-2"}]
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 12
+    assert coverage.listing_pages_scanned == 2
+    assert [candidate.title for candidate in coverage.candidates] == ["Senior Product Manager"]
+
+
+def test_discover_workable_api_stops_when_a_page_repeats(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Beyond",
+        url="https://apply.workable.com/qodea/",
+        discovery_mode="workable_api",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    page = {"total": 30, "nextPage": "same", "results": [_workable_job(f"A{i}", f"Engineer {i}") for i in range(10)]}
+    calls: list[object] = []
+
+    def fake_post_json(url: str, payload: dict, timeout_seconds: int, headers: dict[str, str] | None = None):
+        del url, timeout_seconds, headers
+        calls.append(payload)
+        return page
+
+    monkeypatch.setattr(discover_http, "post_json", fake_post_json)
+
+    coverage = discover_jobs.discover_workable_api(source, ["product manager"], timeout_seconds=5)
+
+    assert len(calls) == 2
+    assert coverage.status == "partial"
+    assert coverage.enumerated_jobs == 10
+    assert coverage.limitations == ["Workable reported 30 openings but 10 were enumerated within 2 page(s)."]
+
+
 def test_discover_getro_api_paginates_collection_results(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="Spirit Tech Collective Jobs",
