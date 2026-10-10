@@ -24,8 +24,12 @@ USER_AGENT = "job-agent-source-quality/0.1"
 DEFAULT_TIMEOUT_SECONDS = 20
 DEFAULT_REVIEW_TIMEOUT_SECONDS = 120
 REVIEWER_MAX_CANDIDATES = 10
+LISTING_SAMPLE_CHAR_BUDGET = 3000
+LISTING_SAMPLE_MAX_LINKS = 120
 REVIEWER_REASONING_EFFORT = "low"
 HTML_TAG_RE = re.compile(r"<[^>]+>")
+SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1\s*>", flags=re.IGNORECASE | re.DOTALL)
+ANCHOR_RE = re.compile(r"<a\b[^>]*?href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a\s*>", flags=re.IGNORECASE | re.DOTALL)
 NON_JOB_TITLE_MARKERS = (
     "open positions",
     "open jobs",
@@ -339,7 +343,20 @@ def validate_source_coverage(
     results: list[ValidatorResult] = []
     warnings: list[str] = []
 
-    if source.get("enumerated_jobs", 0) or candidates:
+    if not candidates and source.get("discovery_mode") == "html" and source.get("enumerated_jobs", 0):
+        # Generic html counts every link on the page, so a nonzero count with no
+        # matches cannot tell a postings page from a navigation-only one (for
+        # example a JavaScript-rendered board). Leave that call to the reviewer.
+        warnings.append("Generic html enumeration matched no links; the listing page may show no postings.")
+        results.append(
+            ValidatorResult(
+                "artifact_nonempty",
+                "warn",
+                "major",
+                "Generic html enumeration counts every page link and none matched; the listing page may show no postings.",
+            )
+        )
+    elif source.get("enumerated_jobs", 0) or candidates:
         results.append(ValidatorResult("artifact_nonempty", "pass", "info", "Source enumerated at least one posting or candidate."))
     else:
         results.append(ValidatorResult("artifact_nonempty", "fail", "blocking", "Source artifact enumerated no postings and produced no candidates."))
@@ -678,6 +695,12 @@ def _build_reviewer_context(
     if canary_url:
         sample_urls.append(canary_url)
     sample_urls.extend(candidate.get("url", "") for candidate in reviewer_candidates[:3])
+    # With no candidates or canary there is nothing to sample, so share the
+    # listing page itself. Its links are the evidence that matters: page text
+    # often opens with long cookie banners before any job list.
+    listing_only = not sample_urls and bool(source.get("source_url"))
+    if listing_only:
+        sample_urls.append(source["source_url"])
 
     seen_urls: set[str] = set()
     for url in sample_urls:
@@ -686,10 +709,21 @@ def _build_reviewer_context(
             continue
         seen_urls.add(normalized)
         try:
-            raw_text = truncate_text(strip_html_fragment(raw_text_fetcher(normalized, timeout_seconds)), 2000)
+            raw_html = raw_text_fetcher(normalized, timeout_seconds)
         except Exception as exc:
-            raw_text = f"FETCH_FAILED: {exc}"
-        samples.append({"url": normalized, "raw_text": raw_text})
+            samples.append({"url": normalized, "raw_text": f"FETCH_FAILED: {exc}"})
+            continue
+        if listing_only:
+            visible_html = SCRIPT_STYLE_RE.sub(" ", raw_html)
+            samples.append(
+                {
+                    "url": normalized,
+                    "raw_text": truncate_text(strip_html_fragment(visible_html), LISTING_SAMPLE_CHAR_BUDGET),
+                    "links": _listing_links(visible_html),
+                }
+            )
+        else:
+            samples.append({"url": normalized, "raw_text": truncate_text(strip_html_fragment(raw_html), 2000)})
 
     return {
         "artifact_path": str(artifact_path),
@@ -710,6 +744,21 @@ def _build_reviewer_context(
         "canary": {"title": canary_title, "url": canary_url},
         "raw_samples": samples,
     }
+
+
+def _listing_links(html: str) -> list[str]:
+    links: list[str] = []
+    seen: set[str] = set()
+    for href, inner in ANCHOR_RE.findall(html):
+        href = unescape(href.strip())
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")) or href in seen:
+            continue
+        seen.add(href)
+        text = strip_html_fragment(inner)
+        links.append(f"{truncate_text(text, 80)} -> {href}" if text else href)
+        if len(links) >= LISTING_SAMPLE_MAX_LINKS:
+            break
+    return links
 
 
 def build_reviewer_command(root: Path, reviewer_bin: Path, provider: str | None = None) -> list[str]:
@@ -737,11 +786,15 @@ def review_source_with_llm(
     context = _build_reviewer_context(artifact_path, source, canary_title, canary_url, timeout_seconds)
     canary_instruction = (
         "If canary.title and canary.url are both empty, treat the canary as not provided and do not emit canary_missing.\n"
+        "If source.candidate_count_total is 0, raw_samples holds the listing page with its visible text and its links. "
+        "If neither shows job postings (only navigation, marketing copy, or a general application form, e.g. a "
+        "JavaScript-rendered board), emit one blocking no_postings defect whose observed text says what the page shows instead. If it lists postings that simply do not match the search terms, "
+        "emit no defect for that.\n"
     )
     prompt = (
         "You are a non-interactive source-quality reviewer. Return JSON only per the contract below.\n"
         "Review this job-source extraction and return JSON only.\n"
-        "Allowed defect types: missing_field, wrong_content, navigation_noise, partial_description, canary_missing, bad_url, duplication, other.\n"
+        "Allowed defect types: missing_field, wrong_content, navigation_noise, no_postings, partial_description, canary_missing, bad_url, duplication, other.\n"
         "Allowed severities: blocking, major, minor.\n"
         "Return exactly: {\"defects\": [...]}.\n"
         "If no issues, return {\"defects\": []}.\n\n"
@@ -957,6 +1010,8 @@ def _failure_mode_from_defect(defect: dict[str, Any]) -> str:
         return "duplication"
     if defect_type == "partial_description":
         return "missing_detail"
+    if defect_type == "no_postings":
+        return "no_postings"
     if defect_type in {"navigation_noise", "wrong_content"}:
         return "candidate_noise"
     if defect_type == "missing_field":
@@ -1026,6 +1081,8 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
         return "Fresh discovery artifact proves the browser fallback is usable: complete status, direct job URLs, substantive detail, stable pagination behavior, and canary coverage." + canary_clause
     if failure_mode == "validator_failure":
         return "Fresh discovery artifact satisfies the failing deterministic validator for this source." + canary_clause
+    if failure_mode == "no_postings":
+        return "Fresh discovery artifact enumerates the source's real postings (for example through the board's API or embedded payload) instead of page navigation links." + canary_clause
     return "Fresh discovery artifact addresses the primary evidence in the integration ticket with the narrowest source-specific fix." + canary_clause
 
 
