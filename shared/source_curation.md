@@ -20,6 +20,8 @@ Use this guide when a skill needs to identify the best official source URL for a
   - Ashby boards with usable API responses: `ashby_api`
   - Ashby boards without reliable API clues: `ashby_html`
   - Workable boards: `workable_api`
+  - SmartRecruiters boards: `smartrecruiters_api`
+  - Pinpoint boards (`<company>.pinpointhq.com`): `pinpoint_api`
   - Getro collection boards: `getro_api`
   - Personio pages: `personio_page`
   - Recruitee inline pages: `recruitee_inline`
