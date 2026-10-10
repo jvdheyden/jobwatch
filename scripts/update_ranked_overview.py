@@ -24,6 +24,7 @@ from digest_json import (
 
 ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
 DIGEST_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
+DISCOVERY_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\.json$")
 ROLE_HEADER_RE = re.compile(r"^(#{3,4})\s+(.+?)\s*$")
 LINK_RE = re.compile(r"^\s*-?\s*Link:\s*(\S+)\s*$", flags=re.MULTILINE)
 FIT_SCORE_RE = re.compile(r"^\s*-?\s*Fit score:\s*([0-9]+(?:\.[0-9]+)?)\s*/10\s*$", flags=re.MULTILINE)
@@ -41,6 +42,7 @@ class RankedJob:
     date_seen_page: str
     last_seen: str
     times_seen: int
+    closed_on: str | None = None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -138,6 +140,43 @@ def _load_seen_jobs_json(path: Path) -> list[dict[str, str]]:
     if not isinstance(jobs, list):
         return []
     return jobs
+
+
+def load_listing_history(track: str, *, root: Path) -> tuple[dict[str, tuple[str, str]], dict[str, str]]:
+    """Read discovery artifacts for listing presence.
+
+    Returns `url -> (source, last date listed)` and `source -> last date the
+    source was scanned with status complete`.
+    """
+    discovery_dir = root / "artifacts" / "discovery" / track
+    listed: dict[str, tuple[str, str]] = {}
+    last_complete_scan: dict[str, str] = {}
+    if not discovery_dir.is_dir():
+        return listed, last_complete_scan
+
+    for path in sorted(p for p in discovery_dir.iterdir() if DISCOVERY_FILE_RE.match(p.name)):
+        scan_date = path.stem
+        try:
+            payload = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        sources = payload.get("sources") if isinstance(payload, dict) else None
+        if not isinstance(sources, list):
+            continue
+        for source in sources:
+            if not isinstance(source, dict) or not source.get("source"):
+                continue
+            name = str(source["source"])
+            if source.get("status") == "complete":
+                last_complete_scan[name] = scan_date
+            for candidate in source.get("candidates") or []:
+                if not isinstance(candidate, dict):
+                    continue
+                for key in ("url", "alternate_url"):
+                    url = normalize_url(str(candidate.get(key) or ""))
+                    if url:
+                        listed[url] = (name, scan_date)
+    return listed, last_complete_scan
 
 
 def role_sort_key(role: RankedJob) -> tuple[float, str, str, str]:
@@ -267,10 +306,21 @@ def rebuild_track_state(track: str, *, root: Path | None = None) -> tuple[Path, 
             if not record["url"] and seen.get("url"):
                 record["url"] = seen["url"]
 
+    # A job is closed when its source was scanned completely after the last
+    # scan that listed it. Jobs never seen in discovery stay open.
+    listed, last_complete_scan = load_listing_history(track, root=root)
     jobs: list[RankedJob] = []
     for record in records.values():
         seen_dates = record.pop("seen_dates")
         assert isinstance(seen_dates, set)
+        closed_on = None
+        listing = listed.get(normalize_url(str(record["url"])))
+        if listing is not None:
+            source, last_listed = listing
+            record["last_seen"] = max(str(record["last_seen"]), last_listed)
+            last_scan = last_complete_scan.get(source, "")
+            if last_scan > last_listed:
+                closed_on = last_scan
         jobs.append(
             RankedJob(
                 job_key=str(record["job_key"]),
@@ -282,6 +332,7 @@ def rebuild_track_state(track: str, *, root: Path | None = None) -> tuple[Path, 
                 date_seen_page=str(record["date_seen_page"]),
                 last_seen=str(record["last_seen"]),
                 times_seen=len(seen_dates),
+                closed_on=closed_on,
             )
         )
 
