@@ -606,7 +606,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/workable_api/`
 - Requirements: none
-- Known limitations: Uses Workable public board endpoints.
+- Known limitations: Uses the Workable public v3 board endpoint, following `nextPage` tokens (10 jobs per page, capped at 30 pages); reports `partial` when fewer jobs are enumerated than the board total.
 
 ### `workday_api`
 
