@@ -44,6 +44,20 @@ raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_EMAIL_STATUS", "0")))
 """,
     )
     _write_executable(
+        root / "scripts" / "send_run_failure_alert.py",
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+(root / "alert.log").write_text("alert " + " ".join(sys.argv[1:]) + "\\n")
+""",
+    )
+    _write_executable(
         root / "scripts" / "send_digest_telegram.py",
         """#!/usr/bin/env python3
 from __future__ import annotations
@@ -874,6 +888,50 @@ def test_run_track_fails_when_requested_delivery_fails(tmp_job_agent_root: Path,
     assert "Finished demo daily run" not in log_text
 
 
+def test_run_track_sends_failure_alert_when_agent_fails_with_email_delivery(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(
+        tmp_job_agent_root / "failing_agent.sh",
+        "#!/bin/bash\ncat >/dev/null\necho 'API Error: 401 OAuth access token has expired.'\nexit 1\n",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "failing_agent.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 1, result.stderr
+
+    log_path = tmp_job_agent_root / "logs" / "demo-2030-01-15.log"
+    log_text = log_path.read_text()
+    assert "Codex exited with status 1" in log_text
+    assert "Sent failure alert email" in log_text
+    assert not (tmp_job_agent_root / "email.log").exists()
+    assert (tmp_job_agent_root / "alert.log").read_text() == (
+        f"alert --track demo --date 2030-01-15 --status 1 --log-file {log_path}\n"
+    )
+
+
 def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)
@@ -1184,6 +1242,7 @@ def test_run_track_fails_when_codex_times_out_even_if_codex_exits_zero_on_term(
     assert "Codex phase finished successfully" not in log_text
     assert not (tmp_job_agent_root / "tracks" / "demo" / "digests" / "2030-01-15.md").exists()
     assert not (tmp_job_agent_root / "sync.log").exists()
+    assert not (tmp_job_agent_root / "alert.log").exists()
 
 
 def test_run_track_aborts_idle_codex_and_logs_heartbeat(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
