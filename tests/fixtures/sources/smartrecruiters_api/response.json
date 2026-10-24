@@ -1,0 +1,69 @@
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 2,
+  "content": [
+    {
+      "id": "6000000001",
+      "name": "Security Engineer",
+      "company": {
+        "identifier": "Example",
+        "name": "Example"
+      },
+      "location": {
+        "city": "Sydney",
+        "country": "au",
+        "remote": false,
+        "hybrid": true,
+        "fullLocation": "Sydney, NSW, Australia"
+      },
+      "function": {
+        "label": "Engineering"
+      },
+      "department": {},
+      "typeOfEmployment": {
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "label": "Mid-Senior Level"
+      },
+      "customField": [
+        {
+          "fieldLabel": "Specialty",
+          "valueLabel": "Engineering"
+        }
+      ]
+    },
+    {
+      "id": "6000000002",
+      "name": "Legal Counsel",
+      "company": {
+        "identifier": "Example",
+        "name": "Example"
+      },
+      "location": {
+        "city": "Sydney",
+        "country": "au",
+        "remote": false,
+        "hybrid": true,
+        "fullLocation": "Sydney, NSW, Australia"
+      },
+      "function": {
+        "label": "Legal"
+      },
+      "department": {},
+      "typeOfEmployment": {
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "label": "Mid-Senior Level"
+      },
+      "customField": [
+        {
+          "fieldLabel": "Specialty",
+          "valueLabel": "Legal"
+        }
+      ]
+    }
+  ]
+}
