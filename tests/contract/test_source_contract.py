@@ -70,6 +70,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "lever_json": "https://jobs.lever.co/example",
         "lifeatspotify_api": "https://www.lifeatspotify.com/jobs",
         "neclab_jobs": "https://jobs.neclab.eu/",
+        "notion_site": "https://example.notion.site/Careers-0123456789abcdef0123456789abcdef",
         "partisia_site": "https://partisiablockchain.com/",
         "pcd_team": "https://pcd.team/jd",
         "personio_page": "https://example.jobs.personio.de/",

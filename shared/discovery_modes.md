@@ -398,6 +398,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Static page provider for visible job links.
 
+### `notion_site`
+
+- Provider: `discover.sources.notion` / `discover_notion_site`
+- Emits candidates: yes
+- URL/source shape: Public Notion page `https://<workspace>.notion.site/<Page-Title>-<32-hex-page-id>` that embeds a jobs database.
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/notion_site/`
+- Requirements: none
+- Known limitations: Reads the page and each embedded database through Notion's undocumented public `/api/v3` endpoints (`loadPageChunk`, `queryCollection`, 200 rows per database) and matches terms against the row title and text properties; property values such as deadlines go into notes.
+
 ### `partisia_site`
 
 - Provider: `discover.sources.static_pages` / `discover_partisia_site`

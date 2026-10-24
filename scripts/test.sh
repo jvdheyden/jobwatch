@@ -54,6 +54,7 @@ fi
   tests/unit/test_discover_jobs_config.py \
   tests/unit/test_generic_html_factorial.py \
   tests/unit/test_hibob_provider.py \
+  tests/unit/test_notion_provider.py \
   tests/unit/test_discover_jobs_track_filters.py \
   tests/unit/test_discover_jobs_progress.py \
   tests/unit/test_digest_email.py \

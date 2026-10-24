@@ -212,6 +212,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Static page provider for visible job links.",
     },
+    "notion_site": {
+        "url_shape": "Public Notion page `https://<workspace>.notion.site/<Page-Title>-<32-hex-page-id>` that embeds a jobs database.",
+        "filters": "none",
+        "limitations": "Reads the page and each embedded database through Notion's undocumented public `/api/v3` endpoints (`loadPageChunk`, `queryCollection`, 200 rows per database) and matches terms against the row title and text properties; property values such as deadlines go into notes.",
+    },
     "partisia_site": {
         "url_shape": "Partisia careers/company site URLs.",
         "filters": "none",
