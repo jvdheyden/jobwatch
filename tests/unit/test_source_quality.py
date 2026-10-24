@@ -673,3 +673,93 @@ def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fiel
             "repro_step": "raw_samples",
         }
     ]
+
+
+def _navigation_only_html_source() -> dict:
+    # Mirrors a JavaScript-rendered Pinpoint board scanned in generic html mode:
+    # every page link is counted as enumerated, but none is a posting.
+    return {
+        "source": "inMusic",
+        "source_url": "https://inmusicbrands.pinpointhq.com/",
+        "discovery_mode": "html",
+        "status": "complete",
+        "search_terms_tried": ["product manager"],
+        "enumerated_jobs": 13,
+        "matched_jobs": 0,
+        "candidates": [],
+    }
+
+
+def test_validate_source_coverage_does_not_trust_html_link_count_without_candidates():
+    result = source_quality.validate_source_coverage(_navigation_only_html_source())
+
+    check = next(check for check in result["checks"] if check["name"] == "artifact_nonempty")
+    assert check["status"] == "warn"
+    assert result["confidence"] == "low"
+
+
+def test_validate_source_coverage_keeps_trusting_api_enumeration_without_candidates():
+    source = _navigation_only_html_source() | {"discovery_mode": "pinpoint_api"}
+
+    result = source_quality.validate_source_coverage(source)
+
+    check = next(check for check in result["checks"] if check["name"] == "artifact_nonempty")
+    assert check["status"] == "pass"
+
+
+def test_build_reviewer_context_samples_listing_page_without_scripts_when_no_candidates():
+    fetched: list[str] = []
+
+    def fetch(url: str, _timeout: int) -> str:
+        fetched.append(url)
+        return (
+            "<html><head><script>window.app = {big: 'bundle'}</script></head><body>"
+            '<a href="#main">Skip</a><a href="/register-your-interest/new">Join <b>us</b></a>'
+            '<a href="/register-your-interest/new">Again</a></body></html>'
+        )
+
+    context = source_quality._build_reviewer_context(
+        Path("artifacts/discovery/music_audio_pm/2026-10-10.json"),
+        _navigation_only_html_source(),
+        canary_title="",
+        canary_url="",
+        timeout_seconds=5,
+        raw_text_fetcher=fetch,
+    )
+
+    assert fetched == ["https://inmusicbrands.pinpointhq.com/"]
+    assert context["raw_samples"] == [
+        {
+            "url": "https://inmusicbrands.pinpointhq.com/",
+            "raw_text": "Skip Join us Again",
+            "links": ["Join us -> /register-your-interest/new"],
+        }
+    ]
+
+
+def test_build_integration_ticket_routes_reviewer_no_postings_to_provider_logic():
+    deterministic = source_quality.validate_source_coverage(_navigation_only_html_source())
+    reviewer = {
+        "status": "completed",
+        "defects": [
+            {
+                "type": "no_postings",
+                "severity": "blocking",
+                "observed": "Listing page shows only navigation and a register-your-interest link; jobs render client-side.",
+            }
+        ],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm",
+        _navigation_only_html_source(),
+        deterministic,
+        reviewer,
+        canary_title="",
+        canary_url="",
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "no_postings"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert "real postings" in ticket["target_outcome"]
