@@ -438,6 +438,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Runs one embedded-payload keyword search per configured term (URL keywords are prepended and act as a scope filter) with a cap of 5 result pages per term; opens matched job-detail pages for the embedded description.
 
+### `pinpoint_api`
+
+- Provider: `discover.sources.pinpoint` / `discover_pinpoint_api`
+- Emits candidates: yes
+- URL/source shape: `https://<company>.pinpointhq.com/`
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/pinpoint_api/`
+- Requirements: none
+- Known limitations: Reads the board's public `postings.json` feed in one request and matches terms against title, department, division, location, and the posting description.
+
 ### `qedit_inline`
 
 - Provider: `discover.sources.static_pages` / `discover_qedit_inline`
@@ -517,6 +527,16 @@ New source support should usually add or extend one of these provider modules ra
 - Contract fixtures: `tests/fixtures/sources/service_bund_search/`
 - Requirements: none
 - Known limitations: Parses service.bund search results and next-page tokens.
+
+### `smartrecruiters_api`
+
+- Provider: `discover.sources.smartrecruiters` / `discover_smartrecruiters_api`
+- Emits candidates: yes
+- URL/source shape: `https://careers.smartrecruiters.com/<CompanyIdentifier>` or `https://jobs.smartrecruiters.com/<CompanyIdentifier>`
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/smartrecruiters_api/`
+- Requirements: none
+- Known limitations: Pages the public postings API (100 per page, capped at 20 pages) and matches terms against title, function, department, location, level, and custom-field labels; the list API carries no description text. Reports `partial` when fewer postings are enumerated than `totalFound`.
 
 ### `softgarden_html`
 
