@@ -191,3 +191,17 @@ def test_render_digest_email_filters_stale_ranked_jobs_when_as_of_given(load_jso
     assert "Ranked overview (top 1 of 1)" in rendered.body
     assert rendered.attachment_filename is None
     assert rendered.attachment_text is None
+
+
+def test_render_digest_email_hides_closed_ranked_jobs(load_json_fixture):
+    digest = load_json_fixture("digests/core_crypto_minimal.json")
+    ranked = _ranked_payload(count=2)
+    ranked["jobs"][1]["closed_on"] = "2026-03-28"
+
+    rendered = render_digest_email(digest, ranked, as_of=date(2026, 3, 29))
+
+    assert "Role 1 - Company 1" in rendered.body
+    assert "Role 2 - Company 2" not in rendered.body
+    assert "Ranked overview (top 1 of 1)" in rendered.body
+    assert "Role 2" not in (rendered.html_body or "")
+

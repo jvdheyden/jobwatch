@@ -127,3 +127,95 @@ def test_render_markdown_filters_stale_jobs_when_as_of_given(tmp_path):
     assert "Fresh Role" in rendered
     assert "Stale Role" not in rendered
     assert "Jobs last seen within 30 days: 1 (of 2 in state)" in rendered
+
+
+def _write_discovery_fixture(root, date_stamp: str, sources: list[dict]) -> None:
+    discovery_dir = root / "artifacts" / "discovery" / "core_crypto"
+    discovery_dir.mkdir(parents=True, exist_ok=True)
+    payload = {"schema_version": 1, "track": "core_crypto", "today": date_stamp, "sources": sources}
+    (discovery_dir / f"{date_stamp}.json").write_text(json.dumps(payload) + "\n")
+
+
+def _source(status: str, *urls: str) -> dict:
+    return {"source": "IACR Jobs", "status": status, "candidates": [{"url": url} for url in urls]}
+
+
+def _rebuild_single_job(root, load_json_fixture) -> update_ranked_overview.RankedJob:
+    payload = load_json_fixture("digests/core_crypto_minimal.json")
+    _write_digest_fixture(root, payload, "2026-03-29")
+    _, _, jobs = update_ranked_overview.rebuild_track_state("core_crypto", root=root)
+    assert len(jobs) == 1
+    return jobs[0]
+
+
+LISTING_URL = "https://www.iacr.org/jobs/item/4189"
+
+
+def test_job_missing_from_later_complete_scan_is_closed(tmp_job_agent_root, load_json_fixture):
+    _write_discovery_fixture(tmp_job_agent_root, "2026-03-29", [_source("complete", LISTING_URL)])
+    _write_discovery_fixture(tmp_job_agent_root, "2026-04-05", [_source("complete", "https://www.iacr.org/jobs/item/9999")])
+
+    job = _rebuild_single_job(tmp_job_agent_root, load_json_fixture)
+
+    assert job.closed_on == "2026-04-05"
+
+
+def test_job_still_listed_stays_open_and_refreshes_last_seen(tmp_job_agent_root, load_json_fixture):
+    _write_discovery_fixture(tmp_job_agent_root, "2026-03-29", [_source("complete", LISTING_URL)])
+    _write_discovery_fixture(tmp_job_agent_root, "2026-04-05", [_source("complete")])
+    _write_discovery_fixture(tmp_job_agent_root, "2026-04-12", [_source("complete", LISTING_URL + "/")])
+
+    job = _rebuild_single_job(tmp_job_agent_root, load_json_fixture)
+
+    assert job.closed_on is None
+    assert job.last_seen == "2026-04-12"
+    assert job.times_seen == 1
+
+
+def test_partial_or_failed_scan_does_not_close_job(tmp_job_agent_root, load_json_fixture):
+    _write_discovery_fixture(tmp_job_agent_root, "2026-03-29", [_source("complete", LISTING_URL)])
+    _write_discovery_fixture(tmp_job_agent_root, "2026-04-05", [_source("partial")])
+    _write_discovery_fixture(tmp_job_agent_root, "2026-04-12", [_source("failed")])
+
+    job = _rebuild_single_job(tmp_job_agent_root, load_json_fixture)
+
+    assert job.closed_on is None
+
+
+def test_job_never_seen_in_discovery_stays_open(tmp_job_agent_root, load_json_fixture):
+    _write_discovery_fixture(tmp_job_agent_root, "2026-04-05", [_source("complete", "https://www.iacr.org/jobs/item/9999")])
+
+    job = _rebuild_single_job(tmp_job_agent_root, load_json_fixture)
+
+    assert job.closed_on is None
+
+
+def test_render_markdown_hides_closed_jobs(tmp_path):
+    common = dict(
+        fit_score=9.0,
+        date_seen="2026-04-10",
+        date_seen_page="Core Crypto Job Digest 2026-04-10",
+        last_seen="2026-04-10",
+        times_seen=1,
+    )
+    open_job = update_ranked_overview.RankedJob(
+        job_key="open", company="Open Corp", title="Open Role", url="https://example.com/open", **common
+    )
+    closed_job = update_ranked_overview.RankedJob(
+        job_key="closed",
+        company="Closed Corp",
+        title="Closed Role",
+        url="https://example.com/closed",
+        closed_on="2026-04-17",
+        **common,
+    )
+    state_path = tmp_path / "shared" / "ranked_jobs" / "core_crypto.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.touch()
+
+    rendered = update_ranked_overview.render_markdown(
+        "core_crypto", [open_job, closed_job], state_path, as_of=date(2026, 4, 18), root=tmp_path
+    )
+
+    assert "Open Role" in rendered
+    assert "Closed Role" not in rendered
