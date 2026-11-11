@@ -406,25 +406,37 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
         raw_ids.append(job_id)
         if not matched_terms:
             continue
-        candidates.append(
-            Candidate(
-                employer=employer,
-                title=title,
-                url=url,
-                source_url=source.url,
-                alternate_url=apply_url if apply_url and apply_url != url else "",
-                location=location,
-                matched_terms=matched_terms,
-                notes=build_google_candidate_notes(
-                    source,
-                    term,
-                    page_num,
-                    summary=summary,
-                    responsibilities=responsibilities,
-                    requirements=requirements,
-                ),
-            )
+        candidate = Candidate(
+            employer=employer,
+            title=title,
+            url=url,
+            source_url=source.url,
+            alternate_url=apply_url if apply_url and apply_url != url else "",
+            location=location,
+            matched_terms=matched_terms,
+            notes=build_google_candidate_notes(
+                source,
+                term,
+                page_num,
+                summary=summary,
+                responsibilities=responsibilities,
+                requirements=requirements,
+            ),
         )
+        if responsibilities or requirements or summary:
+            # Keep role evidence ahead of boilerplate in the bounded description.
+            description = " ".join(
+                f"{heading}: {text}"
+                for heading, text in (
+                    ("Responsibilities", responsibilities),
+                    ("Qualifications", requirements),
+                    ("Working location", working_location),
+                    ("About the job", summary),
+                )
+                if text
+            )
+            helpers.set_candidate_description(candidate, description)
+        candidates.append(candidate)
     page_signature = ",".join(raw_ids[:10]) if raw_ids else f"{term}:{page_num}:empty"
     return BrowserPageResult(
         candidates=candidates,
