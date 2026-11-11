@@ -67,14 +67,24 @@ def discover_smartrecruiters_api(source: SourceConfig, terms: list[str], timeout
     for page in range(MAX_PAGES):
         payload = http.fetch_json(f"{endpoint}?limit={PAGE_SIZE}&offset={page * PAGE_SIZE}", timeout_seconds)
         pages_scanned += 1
-        content = payload.get("content") if isinstance(payload, dict) else []
-        content = [posting for posting in content or [] if isinstance(posting, dict)]
-        reported_total = int(payload.get("totalFound", 0) or 0) if isinstance(payload, dict) else 0
+        # A legitimate empty board still carries `content: []` and `totalFound: 0`;
+        # a page without both is an unexpected response, not an empty board.
+        if (
+            not isinstance(payload, dict)
+            or not isinstance(payload.get("content"), list)
+            or not isinstance(payload.get("totalFound"), int)
+        ):
+            raise ValueError(
+                f"SmartRecruiters postings page {pages_scanned} did not contain a `content` list and integer `totalFound`"
+            )
+        content = [posting for posting in payload["content"] if isinstance(posting, dict)]
+        reported_total = payload["totalFound"]
         postings.extend(content)
         if len(content) < PAGE_SIZE or len(postings) >= reported_total:
             break
 
     candidates_by_url: dict[str, Candidate] = {}
+    missing_id = 0
     for posting in postings:
         title = helpers.normalize_whitespace(helpers.join_text(posting.get("name"))) or "unknown"
         posting_id = helpers.normalize_whitespace(helpers.join_text(posting.get("id")))
@@ -95,6 +105,9 @@ def discover_smartrecruiters_api(source: SourceConfig, terms: list[str], timeout
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
         if not matched_terms:
             continue
+        if not posting_id:
+            missing_id += 1
+            continue
 
         note_parts = ["Enumerated through SmartRecruiters postings API"]
         if function:
@@ -111,7 +124,7 @@ def discover_smartrecruiters_api(source: SourceConfig, terms: list[str], timeout
             Candidate(
                 employer=source.source,
                 title=title,
-                url=build_smartrecruiters_job_url(company_id, posting_id, title) if posting_id else source.url,
+                url=build_smartrecruiters_job_url(company_id, posting_id, title),
                 source_url=source.url,
                 location=location,
                 remote=remote,
@@ -122,6 +135,9 @@ def discover_smartrecruiters_api(source: SourceConfig, terms: list[str], timeout
 
     limitations: list[str] = []
     status = "complete"
+    if missing_id:
+        status = "partial"
+        limitations.append(f"{missing_id} matching SmartRecruiters posting(s) had no posting id and were skipped.")
     if reported_total > len(postings):
         status = "partial"
         limitations.append(

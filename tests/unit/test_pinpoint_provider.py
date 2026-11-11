@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from discover import http
 from discover.core import SourceConfig
 from discover.sources import pinpoint
@@ -68,3 +70,38 @@ def test_matches_description_text_and_keeps_posting_url(monkeypatch):
     assert "Division: inMusic Europe Limited" in candidate.notes
     assert "Work with the product manager on data tooling." in candidate.description
     assert "<li>" not in candidate.description
+
+
+def test_unexpected_feed_shape_raises_instead_of_reading_as_empty(monkeypatch):
+    monkeypatch.setattr(http, "fetch_json", lambda url, timeout_seconds, headers=None: {"error": "maintenance"})
+
+    with pytest.raises(ValueError, match="data"):
+        pinpoint.discover_pinpoint_api(_source(), ["product manager"], 5)
+
+
+def test_empty_data_list_is_a_complete_empty_board(monkeypatch):
+    monkeypatch.setattr(http, "fetch_json", lambda url, timeout_seconds, headers=None: {"data": []})
+
+    coverage = pinpoint.discover_pinpoint_api(_source(), ["product manager"], 5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 0
+
+
+def test_postings_without_url_use_path_or_are_flagged(monkeypatch):
+    base = POSTINGS_PAYLOAD["data"][0]
+    payload = {
+        "data": [
+            base | {"id": "1", "url": "", "path": "/en/postings/from-path"},
+            base | {"id": "2", "url": "", "path": "", "title": "Product Manager"},
+        ]
+    }
+    monkeypatch.setattr(http, "fetch_json", lambda url, timeout_seconds, headers=None: payload)
+
+    coverage = pinpoint.discover_pinpoint_api(_source(), ["product manager"], 5)
+
+    assert [candidate.url for candidate in coverage.candidates] == [
+        "https://inmusicbrands.pinpointhq.com/en/postings/from-path"
+    ]
+    assert coverage.status == "partial"
+    assert coverage.limitations == ["1 matching Pinpoint posting(s) had no posting URL or path and were skipped."]

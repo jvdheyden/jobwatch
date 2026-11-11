@@ -235,7 +235,7 @@ MODE_DETAILS = {
     "pinpoint_api": {
         "url_shape": "`https://<company>.pinpointhq.com/`",
         "filters": "none",
-        "limitations": "Reads the board's public `postings.json` feed in one request and matches terms against title, department, division, location, and the posting description.",
+        "limitations": "Reads the board's public `postings.json` feed in one request and matches terms against title, department, division, location, and the posting description. A feed without a `data` list fails the source; matching postings with no URL or path are skipped and reported as `partial`.",
     },
     "qedit_inline": {
         "url_shape": "QEDIT careers page.",
@@ -260,7 +260,7 @@ MODE_DETAILS = {
     "smartrecruiters_api": {
         "url_shape": "`https://careers.smartrecruiters.com/<CompanyIdentifier>` or `https://jobs.smartrecruiters.com/<CompanyIdentifier>`",
         "filters": "none",
-        "limitations": "Pages the public postings API (100 per page, capped at 20 pages) and matches terms against title, function, department, location, level, and custom-field labels; the list API carries no description text. Reports `partial` when fewer postings are enumerated than `totalFound`.",
+        "limitations": "Pages the public postings API (100 per page, capped at 20 pages) and matches terms against title, function, department, location, level, and custom-field labels; the list API carries no description text. A page without a `content` list and integer `totalFound` fails the source; `partial` when fewer postings are enumerated than `totalFound` or matching postings lack an id.",
     },
     "secunet_jobboard": {
         "url_shape": "secunet careers or `https://jobs.secunet.com/` page with `*-j<id>.html` job links.",

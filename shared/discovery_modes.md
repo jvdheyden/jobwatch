@@ -446,7 +446,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/pinpoint_api/`
 - Requirements: none
-- Known limitations: Reads the board's public `postings.json` feed in one request and matches terms against title, department, division, location, and the posting description.
+- Known limitations: Reads the board's public `postings.json` feed in one request and matches terms against title, department, division, location, and the posting description. A feed without a `data` list fails the source; matching postings with no URL or path are skipped and reported as `partial`.
 
 ### `qedit_inline`
 
@@ -536,7 +536,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/smartrecruiters_api/`
 - Requirements: none
-- Known limitations: Pages the public postings API (100 per page, capped at 20 pages) and matches terms against title, function, department, location, level, and custom-field labels; the list API carries no description text. Reports `partial` when fewer postings are enumerated than `totalFound`.
+- Known limitations: Pages the public postings API (100 per page, capped at 20 pages) and matches terms against title, function, department, location, level, and custom-field labels; the list API carries no description text. A page without a `content` list and integer `totalFound` fails the source; `partial` when fewer postings are enumerated than `totalFound` or matching postings lack an id.
 
 ### `softgarden_html`
 
