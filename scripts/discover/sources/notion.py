@@ -8,7 +8,9 @@ Expected source URL shape:
 
 Notion renders these pages client-side and job cards are not links, so the
 provider reads the page through the site's public `/api/v3` endpoints
-(`loadPageChunk`, then `queryCollection` for each embedded database). These
+(`loadPageChunk`, then `queryCollection` for each embedded database). Matched
+postings get their descriptions from `fetch_notion_description`, which reads
+each row's page through `loadPageChunk` during description enrichment. These
 endpoints are undocumented and may change.
 """
 
@@ -25,6 +27,9 @@ from discover.registry import SourceAdapter
 
 PAGE_ID_RE = re.compile(r"([0-9a-f]{32})(?:[/?#]|$)", re.IGNORECASE)
 ROW_LIMIT = 200
+MAX_PAGE_CHUNKS = 10
+# Child pages and embedded databases inside a posting are separate documents.
+NON_CONTENT_BLOCK_TYPES = {"page", "collection_view", "collection_view_page"}
 
 
 def notion_page_id(source_url: str) -> str:
@@ -81,6 +86,77 @@ def _collection_views(record_map: dict[str, Any]) -> list[tuple[str, str, str]]:
         if block.get("collection_id") and view_ids and block.get("space_id"):
             views.append((block["collection_id"], view_ids[0], block["space_id"]))
     return views
+
+
+def load_notion_page_blocks(api_base: str, page_id: str, timeout_seconds: int) -> dict[str, dict[str, Any]]:
+    """Load every block of one Notion page, following `loadPageChunk` cursors."""
+    blocks: dict[str, dict[str, Any]] = {}
+    cursor: dict[str, Any] = {"stack": []}
+    for chunk_number in range(MAX_PAGE_CHUNKS):
+        response = http.post_json(
+            f"{api_base}/loadPageChunk",
+            {"pageId": page_id, "limit": 100, "cursor": cursor, "chunkNumber": chunk_number, "verticalColumns": False},
+            timeout_seconds,
+        )
+        if not isinstance(response, dict) or not isinstance(response.get("recordMap"), dict):
+            raise ValueError("Notion loadPageChunk response did not contain a `recordMap`")
+        for block_id, record in (response["recordMap"].get("block") or {}).items():
+            block = _record_value(record)
+            if block:
+                blocks[block_id] = block
+        next_cursor = response.get("cursor")
+        if not isinstance(next_cursor, dict) or not next_cursor.get("stack"):
+            return blocks
+        cursor = next_cursor
+    raise ValueError(f"Notion page {page_id} needed more than {MAX_PAGE_CHUNKS} loadPageChunk requests")
+
+
+def notion_page_text(blocks: dict[str, dict[str, Any]], page_id: str) -> str:
+    """Extract a page's own content in document order.
+
+    Walks only the page's child blocks (descending into nested lists, toggles
+    and columns); the response also carries the parent careers page and
+    database, and sub-pages or embedded databases inside the posting are not
+    part of its description.
+    """
+    root = blocks.get(page_id)
+    if root is None:
+        raise ValueError(f"Notion page block {page_id} was not returned")
+    lines: list[str] = []
+    visited: set[str] = {page_id}
+
+    def walk(block_ids: Any) -> None:
+        for block_id in block_ids if isinstance(block_ids, list) else []:
+            if not isinstance(block_id, str) or block_id in visited:
+                continue
+            visited.add(block_id)
+            block = blocks.get(block_id)
+            if block is None:
+                raise ValueError(f"Notion block {block_id} referenced by page {page_id} was not returned")
+            if block.get("type") in NON_CONTENT_BLOCK_TYPES:
+                continue
+            text = notion_rich_text((block.get("properties") or {}).get("title"))
+            if text:
+                lines.append(text)
+            walk(block.get("content"))
+
+    walk(root.get("content"))
+    return "\n".join(lines)
+
+
+def fetch_notion_description(url: str, timeout_seconds: int) -> str:
+    """Return the text of the Notion page behind a `notion_site` candidate URL.
+
+    Used by description enrichment in place of an HTML fetch: the public HTML
+    of a notion.site page is only a JavaScript shell.
+    """
+    parsed = urlparse(url)
+    api_base = f"{parsed.scheme or 'https'}://{parsed.netloc}/api/v3"
+    page_id = notion_page_id(url)
+    text = notion_page_text(load_notion_page_blocks(api_base, page_id, timeout_seconds), page_id)
+    if not text:
+        raise ValueError(f"Notion page {page_id} has no text content")
+    return text
 
 
 def discover_notion_site(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:

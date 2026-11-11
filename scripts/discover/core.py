@@ -150,6 +150,9 @@ def enrich_candidate_descriptions(
 ) -> None:
     """Fetch each matched candidate's URL and store the JD body in `description`.
 
+    `notion_site` candidates are read through the Notion page API instead of
+    their HTML, which is only a JavaScript shell.
+
     The runner calls this after track filtering, so only candidates that
     survived both term matching and track filters trigger a fetch. Candidates a
     provider already populated are skipped. Fetches continue until the wall-clock budget
@@ -175,6 +178,17 @@ def enrich_candidate_descriptions(
     if max_fetches is None:
         max_fetches = JD_FETCH_HARD_CEILING
 
+    if coverage.discovery_mode == "notion_site":
+        # A notion.site page's HTML is only a JavaScript shell, so read the
+        # posting's blocks through the Notion API and never fall back to HTML.
+        from discover.sources.notion import fetch_notion_description
+
+        fetch_description = fetch_notion_description
+    else:
+
+        def fetch_description(url: str, timeout: int) -> str:
+            return helpers.visible_text_from_html(http.fetch_text(url, timeout))
+
     attempts = 0
     failures = 0
     budget_exhausted_at: int | None = None
@@ -192,13 +206,11 @@ def enrich_candidate_descriptions(
         # dead links cannot spin through unbounded fetch attempts.
         attempts += 1
         try:
-            html = http.fetch_text(url, timeout_seconds)
+            text = fetch_description(url, timeout_seconds)
         except Exception:
             failures += 1
             continue
-        helpers.set_candidate_description(
-            candidate, helpers.visible_text_from_html(html), char_budget=char_budget
-        )
+        helpers.set_candidate_description(candidate, text, char_budget=char_budget)
     if failures:
         coverage.limitations.append(f"JD fetch failed for {failures} candidate(s)")
     if budget_exhausted_at is not None:
