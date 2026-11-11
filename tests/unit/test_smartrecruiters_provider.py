@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from urllib.parse import parse_qs, urlparse
 
+import pytest
+
 from discover import http
 from discover.core import SourceConfig
 from discover.sources import smartrecruiters
@@ -89,3 +91,31 @@ def test_reports_partial_when_page_cap_stops_enumeration(monkeypatch):
 
 def test_derives_company_identifier_from_jobs_host():
     assert smartrecruiters.smartrecruiters_company_id("https://jobs.smartrecruiters.com/Canva/") == "Canva"
+
+
+def test_unexpected_page_shape_raises_instead_of_reading_as_empty(monkeypatch):
+    monkeypatch.setattr(http, "fetch_json", lambda url, timeout_seconds, headers=None: {"message": "rate limited"})
+
+    with pytest.raises(ValueError, match="content"):
+        smartrecruiters.discover_smartrecruiters_api(_source(), ["product manager"], 5)
+
+
+def test_empty_board_is_complete(monkeypatch):
+    _install_pages(monkeypatch, [[]], total=0)
+
+    coverage = smartrecruiters.discover_smartrecruiters_api(_source(), ["product manager"], 5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 0
+
+
+def test_postings_without_id_are_flagged_not_collapsed_onto_listing_url(monkeypatch):
+    first = _posting("6000000001", "Product Manager, Growth")
+    no_id = _posting("", "Product Manager, Payments")
+    _install_pages(monkeypatch, [[first, no_id]], total=2)
+
+    coverage = smartrecruiters.discover_smartrecruiters_api(_source(), ["product manager"], 5)
+
+    assert [candidate.title for candidate in coverage.candidates] == ["Product Manager, Growth"]
+    assert coverage.status == "partial"
+    assert coverage.limitations == ["1 matching SmartRecruiters posting(s) had no posting id and were skipped."]

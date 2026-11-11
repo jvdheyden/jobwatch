@@ -34,9 +34,14 @@ def _name(value: object) -> str:
 
 def discover_pinpoint_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     payload = http.fetch_json(pinpoint_postings_url(source.url), timeout_seconds)
-    postings = payload.get("data") if isinstance(payload, dict) else []
-    postings = [posting for posting in postings or [] if isinstance(posting, dict)]
+    # An empty `data` list is a legitimate empty board; anything else without a
+    # `data` list is an unexpected response and must not read as "no jobs".
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+        raise ValueError("Pinpoint postings feed did not contain a `data` list")
+    postings = [posting for posting in payload["data"] if isinstance(posting, dict)]
+    parsed_source = urlparse(source.url)
     candidates_by_url: dict[str, Candidate] = {}
+    missing_url = 0
 
     for posting in postings:
         title = helpers.normalize_whitespace(helpers.join_text(posting.get("title"))) or "unknown"
@@ -57,7 +62,13 @@ def discover_pinpoint_api(source: SourceConfig, terms: list[str], timeout_second
         if not matched_terms:
             continue
 
-        url = helpers.normalize_whitespace(helpers.join_text(posting.get("url"))) or source.url
+        url = helpers.normalize_whitespace(helpers.join_text(posting.get("url")))
+        path = helpers.normalize_whitespace(helpers.join_text(posting.get("path")))
+        if not url and path.startswith("/"):
+            url = f"{parsed_source.scheme or 'https'}://{parsed_source.netloc}{path}"
+        if not url:
+            missing_url += 1
+            continue
         note_parts = ["Enumerated through Pinpoint postings feed"]
         if division:
             note_parts.append(f"Division: {division}")
@@ -81,6 +92,10 @@ def discover_pinpoint_api(source: SourceConfig, terms: list[str], timeout_second
         helpers.set_candidate_description(candidate, description)
         helpers.merge_candidate(candidates_by_url, candidate)
 
+    limitations: list[str] = []
+    if missing_url:
+        limitations.append(f"{missing_url} matching Pinpoint posting(s) had no posting URL or path and were skipped.")
+
     return Coverage(
         source=source.source,
         source_url=source.url,
@@ -88,14 +103,14 @@ def discover_pinpoint_api(source: SourceConfig, terms: list[str], timeout_second
         cadence_group=source.cadence_group,
         last_checked=source.last_checked,
         due_today=False,
-        status="complete",
+        status="partial" if limitations else "complete",
         listing_pages_scanned=1,
         search_terms_tried=terms,
         result_pages_scanned="local_filter=1",
         direct_job_pages_opened=0,
         enumerated_jobs=len(postings),
         matched_jobs=len(candidates_by_url),
-        limitations=[],
+        limitations=limitations,
         candidates=list(candidates_by_url.values()),
     )
 
