@@ -45,6 +45,11 @@ For each allowed source:
 
 When an artifact is used, verify that it is fresh for the current run and covers the sources you are about to treat as checked.
 
+Review the unseen candidates in manageable batches by source or stable slices.
+After deduplication and explicit hard exclusions, read each candidate's description
+before deciding fit. Track which batches remain; if review is incomplete, name
+the unreviewed sources or candidates in coverage notes.
+
 A source is only fully checked if the artifact shows the coverage work that was actually done: the enumeration strategy, search terms applied, and result counts.
 
 Do not broaden to external search engines unless the active track explicitly allows it.
@@ -86,8 +91,11 @@ marks bodies that were cut. Base the responsibilities and requirements
 summaries on that field. The `notes` field is enumeration/diagnostic metadata;
 do not treat it as the JD body.
 
-If `description` is empty or missing, the JD could not be fetched — say so in
-`Missing / uncertain` rather than guessing from the title.
+If `description` is empty, missing, or unusable (for example, only scripts or
+page navigation), record the evidence gap in `Missing / uncertain`. Treat fit
+as unknown, not poor, and do not guess responsibilities from the title. If the
+gap prevents admission, identify the candidate and missing evidence in coverage
+notes rather than silently dropping it.
 
 If a fact is not visible, write `unknown`.
 
@@ -103,7 +111,10 @@ Evaluate these questions separately for every candidate, using the active track'
 
 Include a role only when the combined answers make it a plausible match for the current track. A domain mention alone does not establish role-family fit, and a role-title match alone does not satisfy a required domain constraint. Hard constraints and red flags override otherwise positive evidence.
 
-Use titles and listing snippets only for discovery priority.
+Use titles and listing snippets only for discovery priority. Do not use a title
+keyword allowlist or regex to discard candidates before reading their
+descriptions. A missing title keyword is not a rejection reason; assess the
+described work against the track's preferences, including equivalent wording.
 
 When in doubt, exclude rather than include.
 

@@ -54,6 +54,8 @@ fi
   tests/unit/test_discover_jobs_config.py \
   tests/unit/test_generic_html_factorial.py \
   tests/unit/test_hibob_provider.py \
+  tests/unit/test_pinpoint_provider.py \
+  tests/unit/test_smartrecruiters_provider.py \
   tests/unit/test_notion_provider.py \
   tests/unit/test_discover_jobs_track_filters.py \
   tests/unit/test_discover_jobs_progress.py \
@@ -82,6 +84,7 @@ fi
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_apple_jobs.py \
   tests/integration/test_discover_asml_browser.py \
+  tests/integration/test_discover_google_browser.py \
   tests/integration/test_discover_greenhouse_api.py \
   tests/integration/test_discover_followup_sources.py \
   tests/integration/test_discover_iacr_jobs.py \

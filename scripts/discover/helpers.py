@@ -293,9 +293,31 @@ def merge_candidate(candidates_by_url: dict[str, Candidate], candidate: Candidat
         set_candidate_description(existing, combined)
 
 
+class _VisibleTextCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+        self._ignored_tag: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"script", "style"}:
+            self._ignored_tag = tag
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == self._ignored_tag:
+            self._ignored_tag = None
+
+    def handle_data(self, data: str) -> None:
+        if self._ignored_tag is None:
+            self.parts.append(data)
+
+
 def visible_text_from_html(html: str) -> str:
-    """Shared JD cleanup: visible text only, tags stripped, whitespace normalized."""
-    return normalize_whitespace(" ".join(extract_visible_text_lines_from_html(html)))
+    """Strip markup and script/style bodies before applying the JD text budget."""
+    parser = _VisibleTextCollector()
+    parser.feed(html or "")
+    parser.close()
+    return normalize_whitespace(" ".join(parser.parts))
 
 
 def set_candidate_description(
