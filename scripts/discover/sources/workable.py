@@ -46,10 +46,16 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
     while pages_scanned < MAX_PAGES:
         response = http.post_json(endpoint, payload, timeout_seconds, headers=headers)
         pages_scanned += 1
-        if not isinstance(response, dict):
-            break
-        page_jobs = [job for job in response.get("results") or [] if isinstance(job, dict)]
-        reported_total = int(response.get("total", 0) or 0)
+        # An empty board still returns `results: []` and `total: 0`; a page
+        # without both is an unexpected response, not an empty board.
+        if (
+            not isinstance(response, dict)
+            or not isinstance(response.get("results"), list)
+            or not isinstance(response.get("total"), int)
+        ):
+            raise ValueError(f"Workable jobs page {pages_scanned} did not contain a `results` list and integer `total`")
+        page_jobs = [job for job in response["results"] if isinstance(job, dict)]
+        reported_total = response["total"]
         new_jobs = []
         for job in page_jobs:
             shortcode = helpers.normalize_whitespace(helpers.join_text(job.get("shortcode")))
@@ -65,6 +71,7 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
         payload = {"query": "", "token": str(next_page)}
     reported_total = reported_total or len(jobs)
     candidates_by_url: dict[str, Candidate] = {}
+    missing_shortcode = 0
 
     for job in jobs:
         title = helpers.normalize_whitespace(helpers.join_text(job.get("title"))) or "unknown"
@@ -100,6 +107,9 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
         if not matched_terms:
             continue
+        if not shortcode:
+            missing_shortcode += 1
+            continue
 
         note_parts = ["Enumerated through Workable jobs API"]
         if department:
@@ -125,6 +135,9 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
 
     limitations: list[str] = []
     status = "complete"
+    if missing_shortcode:
+        status = "partial"
+        limitations.append(f"{missing_shortcode} matching Workable job(s) had no shortcode and were skipped.")
     if reported_total > len(jobs):
         status = "partial"
         limitations.append(
