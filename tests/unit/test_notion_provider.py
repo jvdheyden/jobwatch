@@ -104,3 +104,48 @@ def test_reads_embedded_database_rows_with_property_notes(monkeypatch):
 def test_rejects_url_without_page_id():
     with pytest.raises(ValueError):
         notion.notion_page_id("https://zinc-hub.notion.site/Careers")
+
+
+def _install(monkeypatch, query_result):
+    monkeypatch.setattr(
+        http,
+        "post_json",
+        lambda url, payload, timeout_seconds, headers=None: PAGE_CHUNK if url.endswith("/loadPageChunk") else query_result,
+    )
+
+
+def test_page_chunk_without_record_map_raises(monkeypatch):
+    monkeypatch.setattr(http, "post_json", lambda url, payload, timeout_seconds, headers=None: {"errorId": "x"})
+
+    with pytest.raises(ValueError, match="recordMap"):
+        notion.discover_notion_site(_source(), ["venture"], 5)
+
+
+def test_query_without_block_ids_is_partial_not_an_empty_board(monkeypatch):
+    _install(monkeypatch, {"result": {"reducerResults": {}}, "recordMap": {}})
+
+    coverage = notion.discover_notion_site(_source(), ["venture"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.enumerated_jobs == 0
+    assert coverage.limitations == ["Notion collection coll-1 returned an unexpected queryCollection response."]
+
+
+def test_valid_empty_database_is_complete(monkeypatch):
+    _install(monkeypatch, {"result": {"reducerResults": {"collection_group_results": {"blockIds": []}}}, "recordMap": {}})
+
+    coverage = notion.discover_notion_site(_source(), ["venture"], 5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 0
+
+
+def test_block_ids_without_readable_rows_are_flagged(monkeypatch):
+    group = {"blockIds": ["3979f6bf-423f-80db-8cf6-edb1b2fbfc0f", "missing-row-id"]}
+    _install(monkeypatch, QUERY_RESULT | {"result": {"reducerResults": {"collection_group_results": group}}})
+
+    coverage = notion.discover_notion_site(_source(), ["venture"], 5)
+
+    assert [candidate.title for candidate in coverage.candidates] == ["Head of Venture Growth and Funding"]
+    assert coverage.status == "partial"
+    assert coverage.limitations == ["1 Notion row(s) in collection coll-1 did not resolve to a readable record."]

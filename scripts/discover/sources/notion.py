@@ -63,6 +63,14 @@ def notion_rich_text(value: Any) -> str:
     return helpers.normalize_whitespace(" ".join(part for part in parts if part))
 
 
+def _nested_dict(value: Any, *keys: str) -> dict[str, Any] | None:
+    for key in keys:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value if isinstance(value, dict) else None
+
+
 def _collection_views(record_map: dict[str, Any]) -> list[tuple[str, str, str]]:
     views: list[tuple[str, str, str]] = []
     for record in (record_map.get("block") or {}).values():
@@ -84,10 +92,11 @@ def discover_notion_site(source: SourceConfig, terms: list[str], timeout_seconds
         {"pageId": page_id, "limit": 100, "cursor": {"stack": []}, "chunkNumber": 0, "verticalColumns": False},
         timeout_seconds,
     )
-    page_record_map = page.get("recordMap") if isinstance(page, dict) else {}
-    views = _collection_views(page_record_map or {})
+    if not isinstance(page, dict) or not isinstance(page.get("recordMap"), dict):
+        raise ValueError("Notion loadPageChunk response did not contain a `recordMap`")
+    views = _collection_views(page["recordMap"])
 
-    rows: list[tuple[dict[str, Any], dict[str, str]]] = []
+    rows: list[tuple[str, dict[str, Any], dict[str, str]]] = []
     seen_row_ids: set[str] = set()
     limitations: list[str] = []
     for collection_id, view_id, space_id in views:
@@ -105,28 +114,36 @@ def discover_notion_site(source: SourceConfig, terms: list[str], timeout_seconds
             },
             timeout_seconds,
         )
-        if not isinstance(result, dict):
+        # A valid empty database still returns `blockIds: []`; a response without
+        # that list is an unexpected shape and must not read as "no jobs".
+        group = _nested_dict(result, "result", "reducerResults", "collection_group_results")
+        block_ids = group.get("blockIds") if group is not None else None
+        record_map = result.get("recordMap") if isinstance(result, dict) else None
+        if not isinstance(block_ids, list) or not isinstance(record_map, dict):
+            limitations.append(f"Notion collection {collection_id} returned an unexpected queryCollection response.")
             continue
-        record_map = result.get("recordMap") or {}
         collection = _record_value((record_map.get("collection") or {}).get(collection_id, {}))
         schema = {key: spec.get("name", key) for key, spec in (collection.get("schema") or {}).items() if isinstance(spec, dict)}
-        group = ((result.get("result") or {}).get("reducerResults") or {}).get("collection_group_results") or {}
-        block_ids = [block_id for block_id in group.get("blockIds") or [] if isinstance(block_id, str)]
         if len(block_ids) >= ROW_LIMIT:
             limitations.append(f"Notion collection {collection_id} returned the {ROW_LIMIT}-row query limit; later rows may be missing.")
+        unresolved = 0
         for block_id in block_ids:
-            if block_id in seen_row_ids:
+            if not isinstance(block_id, str) or block_id in seen_row_ids:
                 continue
             seen_row_ids.add(block_id)
             row = _record_value((record_map.get("block") or {}).get(block_id, {}))
-            if row:
-                rows.append((row, schema))
+            if not isinstance(row.get("properties"), dict):
+                unresolved += 1
+                continue
+            rows.append((block_id, row, schema))
+        if unresolved:
+            limitations.append(f"{unresolved} Notion row(s) in collection {collection_id} did not resolve to a readable record.")
 
     if not views:
         limitations.append("No Notion database was found on the page.")
 
     candidates_by_url: dict[str, Candidate] = {}
-    for row, schema in rows:
+    for row_id, row, schema in rows:
         properties = row.get("properties") or {}
         title = notion_rich_text(properties.get("title")) or "unknown"
         fields = {
@@ -145,7 +162,7 @@ def discover_notion_site(source: SourceConfig, terms: list[str], timeout_seconds
             Candidate(
                 employer=source.source,
                 title=title,
-                url=f"{parsed.scheme or 'https'}://{parsed.netloc}/{str(row.get('id', '')).replace('-', '')}",
+                url=f"{parsed.scheme or 'https'}://{parsed.netloc}/{row_id.replace('-', '')}",
                 source_url=source.url,
                 location=location,
                 remote=helpers.infer_remote_status(location),
