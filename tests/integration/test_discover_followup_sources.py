@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from urllib.parse import parse_qs, urlparse
 
+import pytest
+
 import discover_jobs
 from discover import http as discover_http
 from discover.sources import alphatheta as alphatheta_provider
@@ -626,6 +628,38 @@ def test_discover_workable_api_stops_when_a_page_repeats(monkeypatch):
     assert coverage.status == "partial"
     assert coverage.enumerated_jobs == 10
     assert coverage.limitations == ["Workable reported 30 openings but 10 were enumerated within 2 page(s)."]
+
+
+def test_discover_workable_api_raises_on_unexpected_response(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Beyond",
+        url="https://apply.workable.com/qodea/",
+        discovery_mode="workable_api",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    monkeypatch.setattr(discover_http, "post_json", lambda url, payload, timeout_seconds, headers=None: {"error": "x"})
+
+    with pytest.raises(ValueError, match="results"):
+        discover_jobs.discover_workable_api(source, ["product manager"], timeout_seconds=5)
+
+
+def test_discover_workable_api_flags_jobs_without_shortcode(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Beyond",
+        url="https://apply.workable.com/qodea/",
+        discovery_mode="workable_api",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    page = {"total": 2, "results": [_workable_job("A1", "Product Manager"), _workable_job("", "Senior Product Manager")]}
+    monkeypatch.setattr(discover_http, "post_json", lambda url, payload, timeout_seconds, headers=None: page)
+
+    coverage = discover_jobs.discover_workable_api(source, ["product manager"], timeout_seconds=5)
+
+    assert [candidate.url for candidate in coverage.candidates] == ["https://apply.workable.com/qodea/j/A1"]
+    assert coverage.status == "partial"
+    assert coverage.limitations == ["1 matching Workable job(s) had no shortcode and were skipped."]
 
 
 def test_discover_getro_api_paginates_collection_results(monkeypatch):

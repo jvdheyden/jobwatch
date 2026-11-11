@@ -325,7 +325,7 @@ MODE_DETAILS = {
     "workable_api": {
         "url_shape": "`https://apply.workable.com/<board>/`",
         "filters": "none",
-        "limitations": "Uses the Workable public v3 board endpoint, following `nextPage` tokens (10 jobs per page, capped at 30 pages); reports `partial` when fewer jobs are enumerated than the board total.",
+        "limitations": "Uses the Workable public v3 board endpoint, following `nextPage` tokens (10 jobs per page, capped at 30 pages); reports `partial` when fewer jobs are enumerated than the board total or matching jobs lack a shortcode. A page without a `results` list and integer `total` fails the source.",
     },
     "workday_api": {
         "url_shape": "`https://<tenant>.wd<region>.myworkdayjobs.com/<site>`",
