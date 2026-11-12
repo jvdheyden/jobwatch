@@ -31,6 +31,7 @@ from setup_contracts import (
     normalize_source_pack,
     render_source_pack_summary,
     worker_json_schema,
+    write_json_atomic,
     write_preview_result,
     write_source_pack,
 )
@@ -107,6 +108,11 @@ def _read_final_message(path: Path) -> dict[str, Any]:
     except OSError as exc:
         raise SetupContractError("Codex did not write its final JSON result") from exc
     return _provider_payload(raw)
+
+
+def raw_output_path(output_path: Path) -> Path:
+    """Where a worker payload that failed validation is kept for inspection."""
+    return output_path.with_name(f"{output_path.stem}.raw.json")
 
 
 def _worker_environment(provider: str) -> dict[str, str]:
@@ -190,12 +196,24 @@ def run_worker(
             else _provider_payload(completed.stdout)
         )
 
-    if role == "source_discovery":
-        normalized = normalize_source_pack(raw_payload, input_payload)
-        write_source_pack(output_path, normalized, input_payload)
-    else:
-        normalized = normalize_preview_result(raw_payload, input_payload)
-        write_preview_result(output_path, normalized, input_payload)
+    raw_path = raw_output_path(output_path)
+    try:
+        if role == "source_discovery":
+            normalized = normalize_source_pack(raw_payload, input_payload)
+            write_source_pack(output_path, normalized, input_payload)
+        else:
+            normalized = normalize_preview_result(raw_payload, input_payload)
+            write_preview_result(output_path, normalized, input_payload)
+    except SetupContractError as exc:
+        # Keep the rejected payload so it can be inspected or repaired by hand
+        # instead of paying for another worker run.
+        try:
+            # Pretty-printing can grow a payload that arrived near the limit.
+            write_json_atomic(raw_path, raw_payload, max_bytes=4 * PROVIDER_RESPONSE_MAX_BYTES)
+        except (OSError, SetupContractError) as save_exc:
+            raise SetupContractError(f"{exc} (could not save raw worker output: {save_exc})") from exc
+        raise SetupContractError(f"{exc} (raw worker output saved to {raw_path})") from exc
+    raw_path.unlink(missing_ok=True)
     status = {
         "status": "written",
         "role": role,

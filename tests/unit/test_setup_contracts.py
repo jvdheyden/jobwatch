@@ -187,6 +187,61 @@ def test_worker_json_schemas_type_const_and_enum_fields() -> None:
     assert "1-10 scale" in setup_contracts.build_worker_prompt("preview_ranker", preview_context)
 
 
+def test_source_pack_folds_kebab_and_mixed_case_ids_consistently() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    pack = source_pack_payload(setup)
+    pack["recommended_sources"][0]["id"] = "Example-Labs"
+    pack["recommended_source_ids"] = ["example-labs"]
+    pack["match_rule_suggestions"] = [
+        {
+            "id": "example-labs-crypto",
+            "source_ids": ["EXAMPLE-LABS"],
+            "source_names": [],
+            "keep_if_any_text_term": ["cryptography"],
+        }
+    ]
+
+    normalized = setup_contracts.normalize_source_pack(pack, setup)
+
+    assert normalized["recommended_sources"][0]["id"] == "example_labs"
+    assert normalized["recommended_source_ids"] == ["example_labs"]
+    assert normalized["match_rule_suggestions"][0]["id"] == "example_labs_crypto"
+    assert normalized["match_rule_suggestions"][0]["source_ids"] == ["example_labs"]
+    selected = setup_contracts.apply_source_selection(setup, normalized, match_rule_ids=["example_labs_crypto"])
+    assert [source["id"] for source in selected["selected_sources"]["sources"]] == ["example_labs"]
+
+    unsafe = copy.deepcopy(pack)
+    unsafe["recommended_sources"][0]["id"] = "example/labs"
+    with pytest.raises(setup_contracts.SetupContractError, match="lowercase underscore identifier"):
+        setup_contracts.normalize_source_pack(unsafe, setup)
+
+
+def test_source_worker_schema_constrains_ids_to_identifier_pattern() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    schema = setup_contracts.worker_json_schema("source_discovery", setup)["properties"]
+    rule = schema["match_rule_suggestions"]["items"]["properties"]
+    for id_schema in (
+        schema["recommended_sources"]["items"]["properties"]["id"],
+        schema["follow_up_sources"]["items"]["properties"]["id"],
+        schema["recommended_source_ids"]["items"],
+        rule["id"],
+        rule["source_ids"]["items"],
+    ):
+        assert id_schema == {"type": "string", "pattern": setup_contracts.IDENTIFIER_PATTERN}
+
+
+def test_source_pack_summary_warns_about_track_terms_too_long_for_titles() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    pack = source_pack_payload(setup)
+    pack["track_terms"] = ["product manager", "head of product games now"]
+
+    summary = setup_contracts.render_source_pack_summary(pack, setup)
+
+    assert "head of product games now" in summary
+    assert "'product manager'" not in summary
+    assert setup_contracts.track_term_warnings(["product manager", "head of product"]) == []
+
+
 def _write_discovery(path: Path, *, track: str, candidates: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -416,3 +471,69 @@ def test_scaffold_track_creates_complete_track_and_refuses_overwrite(tmp_path: P
     with pytest.raises(setup_contracts.SetupContractError, match="refusing to overwrite"):
         scaffold_track.scaffold_track(setup_path, root=tmp_path)
     assert (track_dir / "sources.json").read_bytes() == before
+
+
+def test_preview_digest_orders_matches_by_fit_score(tmp_path: Path) -> None:
+    setup_path = tmp_path / "setup.json"
+    setup = setup_contracts.write_setup(setup_path, selected_setup())
+    discovery_path = tmp_path / "discovery.json"
+    _write_discovery(discovery_path, track="applied_crypto", candidates=[_candidate(index) for index in range(6)])
+    seen_path = tmp_path / "seen_jobs.json"
+    seen_path.write_text(json.dumps({"schema_version": 1, "track": "applied_crypto", "jobs": []}) + "\n")
+    context = setup_contracts.build_preview_context(
+        setup, discovery_path, seen_path, setup_path=setup_path, root=tmp_path
+    )
+    ids = [candidate["candidate_id"] for candidate in context["candidates"]]
+    scores = [6.5, 5.5, 7.5, 4, 6, 4.5]
+    judgments = [
+        {
+            "candidate_id": candidate_id,
+            "disposition": "top_match",
+            "score": score,
+            "recommendation": "watch",
+            "match_reasons": ["Relevant."],
+            "concerns": [],
+        }
+        for candidate_id, score in zip(ids[:3], scores[:3])
+    ] + [
+        {
+            "candidate_id": candidate_id,
+            "disposition": "other_role",
+            "score": score,
+            "recommendation": "skip",
+            "short_note": "Adjacent.",
+        }
+        for candidate_id, score in zip(ids[3:], scores[3:])
+    ]
+    result = {
+        "schema_version": 1,
+        "kind": setup_contracts.PREVIEW_RESULT_KIND,
+        "setup_id": setup["setup_id"],
+        "input_hash": setup_contracts.artifact_hash(context),
+        "executive_summary": "Mixed preview.",
+        "recommended_actions": [],
+        "judgments": judgments,
+    }
+
+    run = setup_contracts.assemble_preview_digest(context, result, generated_at="2026-07-20T12:00:00Z")["runs"][0]
+
+    assert [item["fit_score"] for item in run["top_matches"]] == [7.5, 6.5, 5.5]
+    assert [item["fit_score"] for item in run["other_new_roles"]] == [6, 4.5, 4]
+
+
+def test_empty_preview_result_is_valid_for_contexts_without_candidates(tmp_path: Path) -> None:
+    setup_path = tmp_path / "setup.json"
+    setup = setup_contracts.write_setup(setup_path, selected_setup())
+    discovery_path = tmp_path / "discovery.json"
+    _write_discovery(discovery_path, track="applied_crypto", candidates=[])
+    seen_path = tmp_path / "seen_jobs.json"
+    seen_path.write_text(json.dumps({"schema_version": 1, "track": "applied_crypto", "jobs": []}) + "\n")
+    context = setup_contracts.build_preview_context(
+        setup, discovery_path, seen_path, setup_path=setup_path, root=tmp_path
+    )
+
+    result = setup_contracts.empty_preview_result(context)
+
+    assert result["judgments"] == []
+    digest = setup_contracts.assemble_preview_digest(context, result, generated_at="2026-07-20T12:00:00Z")
+    assert digest["runs"][0]["top_matches"] == []
