@@ -160,7 +160,7 @@ def test_job_missing_from_later_complete_scan_is_closed(tmp_job_agent_root, load
     assert job.closed_on == "2026-04-05"
 
 
-def test_job_still_listed_stays_open_and_refreshes_last_seen(tmp_job_agent_root, load_json_fixture):
+def test_job_still_listed_stays_open_without_refreshing_last_seen(tmp_job_agent_root, load_json_fixture):
     _write_discovery_fixture(tmp_job_agent_root, "2026-03-29", [_source("complete", LISTING_URL)])
     _write_discovery_fixture(tmp_job_agent_root, "2026-04-05", [_source("complete")])
     _write_discovery_fixture(tmp_job_agent_root, "2026-04-12", [_source("complete", LISTING_URL + "/")])
@@ -168,7 +168,7 @@ def test_job_still_listed_stays_open_and_refreshes_last_seen(tmp_job_agent_root,
     job = _rebuild_single_job(tmp_job_agent_root, load_json_fixture)
 
     assert job.closed_on is None
-    assert job.last_seen == "2026-04-12"
+    assert job.last_seen == "2026-03-29"
     assert job.times_seen == 1
 
 
