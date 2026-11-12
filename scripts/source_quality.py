@@ -1050,10 +1050,17 @@ def _failure_mode_from_defect(defect: dict[str, Any]) -> str:
     return "unknown"
 
 
+# Checks a listing page without postings fails as a side effect: the canary is
+# not found, and every navigation link counts toward a broad enumeration.
+NO_POSTINGS_SYMPTOM_CHECKS = {"canary_present", "result_volume"}
+
+
 def _determine_failure_mode(failing_checks: list[dict[str, Any]], blocking_defects: list[dict[str, Any]]) -> str:
-    # A listing page with no postings also leaves the canary unfound; route the
-    # cause, not the symptom. The canary stays part of the success condition.
-    if _no_postings_defect(blocking_defects) and all(check.get("name") == "canary_present" for check in failing_checks):
+    # Route a confirmed no_postings defect by its cause, not its symptoms. The
+    # canary stays part of the success condition.
+    if _no_postings_defect(blocking_defects) and all(
+        check.get("name") in NO_POSTINGS_SYMPTOM_CHECKS for check in failing_checks
+    ):
         return "no_postings"
     if failing_checks:
         return _failure_mode_from_check(failing_checks[0])
@@ -1249,6 +1256,9 @@ def _suggested_strategy(
     search_terms_tried = source.get("search_terms_tried") if isinstance(source.get("search_terms_tried"), list) else []
     if failure_mode in {"bad_url", "url_allowlist"} and _url_correction_suggestion(source):
         return "config_url_correction"
+    if failure_mode == "no_postings":
+        # Filters cannot narrow a page that lists no postings.
+        return "dedicated_provider_logic"
 
     if "result_volume" in failing_check_names:
         return "provider_filter_support" if configured_filters else "config_native_filters"

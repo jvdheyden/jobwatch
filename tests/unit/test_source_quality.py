@@ -878,3 +878,40 @@ def test_build_integration_ticket_keeps_missing_canary_routing_without_no_postin
     assert ticket is not None
     assert ticket["failure_mode"] == "missing_canary"
     assert ticket["suggested_strategy"] == "config_terms_append"
+
+
+def test_build_integration_ticket_routes_no_postings_ahead_of_navigation_link_volume():
+    # The maintainer's repro: 121 navigation links counted as enumerated, no candidates.
+    source = _navigation_only_html_source() | {"enumerated_jobs": 121}
+    canary_url = "https://inmusicbrands.pinpointhq.com/postings/123"
+    deterministic = source_quality.validate_source_coverage(source, canary_title="PM", canary_url=canary_url)
+    assert {check["name"] for check in deterministic["checks"] if check["status"] == "fail"} == {
+        "canary_present",
+        "result_volume",
+    }
+    reviewer = {
+        "status": "completed",
+        "defects": [{"type": "no_postings", "severity": "blocking", "observed": "Only navigation links."}],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, reviewer, canary_title="PM", canary_url=canary_url
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "no_postings"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert set(ticket["failing_checks"]) == {"canary_present", "result_volume"}
+
+
+def test_build_integration_ticket_keeps_volume_routing_without_no_postings():
+    source = _navigation_only_html_source() | {"enumerated_jobs": 121}
+    deterministic = source_quality.validate_source_coverage(source)
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, {"status": "completed", "defects": []}, canary_title="", canary_url=""
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "candidate_noise"
+    assert ticket["suggested_strategy"] == "config_native_filters"
