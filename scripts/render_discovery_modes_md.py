@@ -143,9 +143,9 @@ MODE_DETAILS = {
         "limitations": "Parses the active Who Is Hiring thread and infers employer/title fields from post text.",
     },
     "harman_html": {
-        "url_shape": "`https://jobsearch.harman.com/<locale>/careers/...` listing page.",
+        "url_shape": "`https://jobsearch.harman.com/<locale>/careers/SearchJobs` Avature search listing.",
         "filters": "none",
-        "limitations": "Only direct Avature JobDetail links visible in the listing HTML are enumerated.",
+        "limitations": "Compatibility alias for the `avature_html` provider.",
     },
     "helsing_browser": {
         "url_shape": "`https://helsing.ai/jobs`",
