@@ -3,7 +3,7 @@ name: reviewing
 description: Review pull requests and local code changes, including revisions; publish reviews and merge PRs when requested.
 ---
 
-Produce actionable findings about correctness, reliability, security, and repository contracts. Before you start, check if there are existing reports for this PR under `docs/reviews/`.
+Produce actionable findings about correctness, reliability, security, and repository contracts. Before you start, read existing reports for this PR under `docs/reviews/` and begin the mandatory review record described below.
 
 ## Requested actions
 
@@ -19,7 +19,7 @@ Determine the authorized actions from the user's request and prior session instr
 | "Approve and merge if ready; otherwise request changes" | Approve and merge when ready, or request changes for substantiated blockers. |
 
 - Approval and merging are separate actions. Approval alone does not authorize merging. A merge request includes permission to request changes for confirmed merge conflicts; other review publication follows the requested scope. Explicit limits such as "do not post" take precedence, and prior session authorization still applies.
-- Complete the authorized actions without asking for confirmation again. If requirements prevent an action, complete other authorized work and report the blocker.
+- Complete the authorized work without asking for confirmation again. Publication still follows the duplicate-feedback rules below: permission to publish does not require a submission on every PR. If requirements prevent an action, complete other authorized work and report the blocker.
 
 ## Scope and evidence
 
@@ -38,8 +38,11 @@ Determine the authorized actions from the user's request and prior session instr
 
 ## Publishing reviews
 
-- Read the [comment guidelines and templates](../../../.agents/skills/reviewing/references/pr-comments.md) when drafting a GitHub review. Batch findings into one review per pass and continue existing threads for the same issue.
-- When authorized, approve (`APPROVE`) only after the reviewed scope is complete, relevant verification is sufficient, and no blockers or material validation gaps remain. Pending or failing required checks prevent approval. Request changes (`REQUEST_CHANGES`) for substantiated blockers within scope; comment (`COMMENT`) for nonblocking feedback, questions, or verification gaps.
+- Before deciding to publish, read existing GitHub comments, reviews, and threads alongside local reports. Compare proposed feedback by its underlying issue and conclusion, not wording or author; top-level and inline comments both count as existing findings.
+- Do not republish an unchanged finding or verdict, including through a formal review. Publish only for a new finding, materially new evidence, a new or changed conclusion, or an explicit request to change review status. The absence of a formal review does not make an already documented finding or verdict new. Broad permission to comment, approve, or request changes is not an explicit status-change request. A new commit or another reproduction with the same result does not by itself justify repeating a finding.
+- For a meaningful update to an existing finding, continue its thread where possible and explain only what changed. If an explicit status-change request requires a formal review, link existing findings without repeating their explanations. Do not create a second finding thread merely because the original was a top-level comment.
+- Read the [comment guidelines and examples](../../../.agents/skills/reviewing/references/pr-comments.md) when drafting a GitHub review. Batch new findings into one review per pass. When no publication is warranted, record why locally and report that outcome in chat; the review is complete without a GitHub submission.
+- When publication is warranted and authorized, approve (`APPROVE`) only after the reviewed scope is complete, relevant verification is sufficient, and no blockers or material validation gaps remain. Pending or failing required checks prevent approval. Request changes (`REQUEST_CHANGES`) for substantiated blockers within scope; comment (`COMMENT`) for nonblocking feedback, questions, or verification gaps.
 - Refresh the PR's head and relevant base before submission; review any intervening changes. Anchor the review to the reviewed `commit_id`; this identifies the reviewed revision but does not lock the branch.
 - Confirm the published outcome and URL. After an ambiguous timeout, inspect existing reviews before retrying. Report the outcome and link in chat; if publication fails, report the failure and preserve the prepared review.
 
@@ -53,9 +56,24 @@ Determine the authorized actions from the user's request and prior session instr
 - Use a required merge queue rather than bypassing it. Do not use administrative overrides or change protection rules to force a merge; do not enable auto-merge for unmet requirements unless the user requested it.
 - Confirm the actual result. After an ambiguous timeout, check PR state before retrying. Report merged, queued, or blocked accurately, with the PR URL and merge commit when available. Explicit branch deletion requires separate authorization.
 
-## Handoff and report
+## Mandatory review record and handoff
 
-- For substantial or repeated reviews, save a compact checkpoint under `docs/reviews/`: base/head SHAs, scope, findings, reproduction commands, checks and results, and remaining uncertainties.
+- Every review takeover or follow-up must create or extend a detailed record under `docs/reviews/`, including review-only work and passes that publish nothing. Start the entry when taking ownership and update it as work proceeds, before handoff or the final response.
+- Use an existing per-PR report where available; otherwise create `docs/reviews/pr-<number>.md`. For local changes without a PR, use a descriptive dated filename. Add a timestamped entry for each pass, identify the agent and resumable session ID when available, and preserve earlier entries. Link prior reports rather than replacing their history. Keep these records local; do not change their gitignore policy or force-add them.
+- Document all review actions and their purpose, evidence, and outcome. Related read-only inspections may be grouped if their scope and conclusions remain explicit; do not omit failed attempts or recovery actions. Record evidence-based decision justifications, not private reasoning transcripts or secrets.
+
+Each entry must include:
+
+- **Request and starting state:** user request, authorized actions, PR URL (or local scope), pinned base/head commits, prior reports, and links to existing discussions with each finding's current disposition.
+- **Inspection:** files and execution paths examined, what the inspections established, and why the reviewed scope is sufficient. Distinguish issues introduced by the change from pre-existing issues.
+- **Verification:** commands and reproductions, relevant inputs, results, failures, tool limitations, and recovery actions. Distinguish actual discovery, supplied/mocked outputs, and live model evaluation. Include enough reproduction detail or durable supporting artifacts to reproduce the result after temporary files are deleted; a `/tmp` path alone is insufficient.
+- **Assessment:** findings accepted or rejected, supporting evidence, severity, correction direction, and which previous findings are fixed, unchanged, or still uncertain.
+- **Action decisions:** justification for publishing, approving, requesting changes, merging, or taking no external action, including comparison with existing feedback and verification sufficiency.
+- **External mutations:** before each action, record the intended operation, authorization, target commit, and justification. Afterward, record the actual result, URL/identifier, and confirmation, including failures or ambiguous outcomes and how they were resolved. This applies to comments, reviews, thread changes, and merges.
+- **Handoff:** remaining uncertainties, limitations, concrete next steps (or that none remain), and final review/publication state.
+
+Keep the user-facing report concise:
+
 - Report findings by severity, with file/line references, trigger, impact, and a concise correction direction.
 - State which previous findings are resolved, what was verified, and any material limitations. Separate unrelated existing issues from blockers.
 
