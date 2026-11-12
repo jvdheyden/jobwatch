@@ -52,6 +52,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Requires Playwright and extracts visible job-card links only.",
     },
+    "avature_html": {
+        "url_shape": "`https://<host>/[<locale>/]careers/SearchJobs` Avature search listing; existing query parameters such as a keyword are kept.",
+        "filters": "none",
+        "limitations": "Pages through `jobOffset` (capped at 40 pages) and matches terms against card title, department, location, and worker type; reports `partial` when fewer jobs are enumerated than the listing's reported total. Descriptions come from the shared enrichment step.",
+    },
     "bamboohr_api": {
         "url_shape": "`https://<tenant>.bamboohr.com/careers`",
         "filters": "none",

@@ -78,6 +78,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and extracts visible job-card links only.
 
+### `avature_html`
+
+- Provider: `discover.sources.avature` / `discover_avature_html`
+- Emits candidates: yes
+- URL/source shape: `https://<host>/[<locale>/]careers/SearchJobs` Avature search listing; existing query parameters such as a keyword are kept.
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/avature_html/`
+- Requirements: none
+- Known limitations: Pages through `jobOffset` (capped at 40 pages) and matches terms against card title, department, location, and worker type; reports `partial` when fewer jobs are enumerated than the listing's reported total. Descriptions come from the shared enrichment step.
+
 ### `bamboohr_api`
 
 - Provider: `discover.sources.bamboohr` / `discover_bamboohr_jobs`
