@@ -136,3 +136,49 @@ def test_avature_html_reports_page_cap(monkeypatch):
 )
 def test_avature_page_url_replaces_job_offset(source_url: str, offset: int, expected: str):
     assert avature.avature_page_url(source_url, offset) == expected
+
+
+def _serve(monkeypatch, html: str) -> None:
+    monkeypatch.setattr(http, "fetch_text", lambda url, timeout_seconds, headers=None: html)
+
+
+def test_avature_html_reports_partial_when_a_reported_total_parses_to_zero_jobs(monkeypatch):
+    # The maintainer's repro: the listing reports results but no card is recognised.
+    _serve(monkeypatch, _page(2, ["<article><h3>Producer</h3></article>", "<article><h3>Designer</h3></article>"]))
+
+    coverage = discover_avature_html(_source(), ["producer"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.enumerated_jobs == 0
+    assert coverage.limitations == ["Avature listing reported 2 results but 0 were enumerated."]
+
+
+def test_avature_html_reports_partial_without_a_result_count_or_jobs(monkeypatch):
+    _serve(monkeypatch, "<html><body><p>Something went wrong</p></body></html>")
+
+    coverage = discover_avature_html(_source(), ["producer"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.limitations == ["Avature listing showed neither a result count nor JobDetail links."]
+
+
+def test_avature_html_keeps_a_listing_reporting_zero_results_complete(monkeypatch):
+    _serve(monkeypatch, _page(0, []))
+
+    coverage = discover_avature_html(_source(), ["producer"], 5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 0
+
+
+def test_avature_html_reads_single_quoted_job_links(monkeypatch):
+    cards = [_card(101, "Senior Producer").replace('"', "'"), _card(102, "Game Designer").replace('"', "'")]
+    _serve(monkeypatch, _page(2, cards))
+
+    coverage = discover_avature_html(_source(), ["producer"], 5)
+
+    assert coverage.status == "complete"
+    assert coverage.enumerated_jobs == 2
+    assert [candidate.url for candidate in coverage.candidates] == [
+        "https://jobs.example.com/en_US/careers/JobDetail/Senior-Producer/101"
+    ]

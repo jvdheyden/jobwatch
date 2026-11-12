@@ -30,7 +30,7 @@ from discover.registry import SourceAdapter
 
 AVATURE_MAX_PAGES = 40
 AVATURE_JOB_LINK_RE = re.compile(
-    r'<a\b[^>]*\bhref="(?P<href>[^"]*/careers/JobDetail/[^"/?#]+/(?P<id>\d+))"[^>]*>(?P<text>.*?)</a>',
+    r"""<a\b[^>]*\bhref=(?P<quote>["'])(?P<href>[^"']*/careers/JobDetail/[^"'/?#]+/(?P<id>\d+))(?P=quote)[^>]*>(?P<text>.*?)</a>""",
     flags=re.DOTALL | re.IGNORECASE,
 )
 AVATURE_FIELD_RE = re.compile(
@@ -169,11 +169,16 @@ def discover_avature_html(source: SourceConfig, terms: list[str], timeout_second
         status = "partial"
         limitations.append(f"Avature pagination stopped at the {AVATURE_MAX_PAGES}-page cap.")
 
-    if not seen_ids:
-        limitations.append("No Avature JobDetail links were visible on the search listing.")
-    elif total is not None and len(seen_ids) < total:
+    # A shortfall against the reported total, including zero parsed jobs, is a
+    # failed extraction; only a listing that reports 0 results is a valid empty scan.
+    if total is not None and len(seen_ids) < total:
         status = "partial"
         limitations.append(f"Avature listing reported {total} results but {len(seen_ids)} were enumerated.")
+    elif not seen_ids and total is None:
+        status = "partial"
+        limitations.append("Avature listing showed neither a result count nor JobDetail links.")
+    elif not seen_ids:
+        limitations.append("No Avature JobDetail links were visible on the search listing.")
 
     return Coverage(
         source=source.source,

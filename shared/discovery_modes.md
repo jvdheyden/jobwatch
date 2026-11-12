@@ -86,7 +86,7 @@ New source support should usually add or extend one of these provider modules ra
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/avature_html/`
 - Requirements: none
-- Known limitations: Pages through `jobOffset` (capped at 40 pages) and matches terms against card title, department, location, and worker type; reports `partial` when fewer jobs are enumerated than the listing's reported total. Descriptions come from the shared enrichment step.
+- Known limitations: Pages through `jobOffset` (capped at 40 pages) and matches terms against card title, department, location, and worker type; reports `partial` when fewer jobs are enumerated than the listing's reported total (including none) or when the page shows neither a result count nor job links; only a listing reporting 0 results is a `complete` empty scan. Descriptions come from the shared enrichment step.
 
 ### `bamboohr_api`
 
