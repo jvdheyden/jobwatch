@@ -17,11 +17,12 @@ endpoints are undocumented and may change.
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 from urllib.parse import urlparse
 
 from discover import helpers, http
-from discover.core import Candidate, Coverage, SourceConfig
+from discover.core import Candidate, Coverage, DescriptionBudgetExhausted, SourceConfig
 from discover.registry import SourceAdapter
 
 
@@ -76,10 +77,9 @@ def _nested_dict(value: Any, *keys: str) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
-def _collection_views(record_map: dict[str, Any]) -> list[tuple[str, str, str]]:
+def _collection_views(blocks: dict[str, dict[str, Any]]) -> list[tuple[str, str, str]]:
     views: list[tuple[str, str, str]] = []
-    for record in (record_map.get("block") or {}).values():
-        block = _record_value(record)
+    for block in blocks.values():
         if block.get("type") not in {"collection_view", "collection_view_page"}:
             continue
         view_ids = block.get("view_ids") or []
@@ -88,11 +88,20 @@ def _collection_views(record_map: dict[str, Any]) -> list[tuple[str, str, str]]:
     return views
 
 
-def load_notion_page_blocks(api_base: str, page_id: str, timeout_seconds: int) -> dict[str, dict[str, Any]]:
-    """Load every block of one Notion page, following `loadPageChunk` cursors."""
+def load_notion_page_blocks(
+    api_base: str, page_id: str, timeout_seconds: int, *, deadline: float | None = None
+) -> tuple[dict[str, dict[str, Any]], bool]:
+    """Load the blocks of one Notion page, following `loadPageChunk` cursors.
+
+    Returns the blocks and whether a continuation cursor was left unread after
+    `MAX_PAGE_CHUNKS` requests. With a `deadline` (a `time.monotonic()` value),
+    raises `DescriptionBudgetExhausted` instead of starting a request after it.
+    """
     blocks: dict[str, dict[str, Any]] = {}
     cursor: dict[str, Any] = {"stack": []}
     for chunk_number in range(MAX_PAGE_CHUNKS):
+        if deadline is not None and time.monotonic() >= deadline:
+            raise DescriptionBudgetExhausted(f"Notion page {page_id} was not fully loaded before the deadline")
         response = http.post_json(
             f"{api_base}/loadPageChunk",
             {"pageId": page_id, "limit": 100, "cursor": cursor, "chunkNumber": chunk_number, "verticalColumns": False},
@@ -106,9 +115,9 @@ def load_notion_page_blocks(api_base: str, page_id: str, timeout_seconds: int) -
                 blocks[block_id] = block
         next_cursor = response.get("cursor")
         if not isinstance(next_cursor, dict) or not next_cursor.get("stack"):
-            return blocks
+            return blocks, False
         cursor = next_cursor
-    raise ValueError(f"Notion page {page_id} needed more than {MAX_PAGE_CHUNKS} loadPageChunk requests")
+    return blocks, True
 
 
 def notion_page_text(blocks: dict[str, dict[str, Any]], page_id: str) -> str:
@@ -144,16 +153,20 @@ def notion_page_text(blocks: dict[str, dict[str, Any]], page_id: str) -> str:
     return "\n".join(lines)
 
 
-def fetch_notion_description(url: str, timeout_seconds: int) -> str:
+def fetch_notion_description(url: str, timeout_seconds: int, *, deadline: float | None = None) -> str:
     """Return the text of the Notion page behind a `notion_site` candidate URL.
 
     Used by description enrichment in place of an HTML fetch: the public HTML
-    of a notion.site page is only a JavaScript shell.
+    of a notion.site page is only a JavaScript shell. `deadline` is the
+    enrichment deadline, checked before each page chunk.
     """
     parsed = urlparse(url)
     api_base = f"{parsed.scheme or 'https'}://{parsed.netloc}/api/v3"
     page_id = notion_page_id(url)
-    text = notion_page_text(load_notion_page_blocks(api_base, page_id, timeout_seconds), page_id)
+    blocks, has_more = load_notion_page_blocks(api_base, page_id, timeout_seconds, deadline=deadline)
+    if has_more:
+        raise ValueError(f"Notion page {page_id} needed more than {MAX_PAGE_CHUNKS} loadPageChunk requests")
+    text = notion_page_text(blocks, page_id)
     if not text:
         raise ValueError(f"Notion page {page_id} has no text content")
     return text
@@ -163,18 +176,17 @@ def discover_notion_site(source: SourceConfig, terms: list[str], timeout_seconds
     parsed = urlparse(source.url)
     api_base = f"{parsed.scheme or 'https'}://{parsed.netloc}/api/v3"
     page_id = notion_page_id(source.url)
-    page = http.post_json(
-        f"{api_base}/loadPageChunk",
-        {"pageId": page_id, "limit": 100, "cursor": {"stack": []}, "chunkNumber": 0, "verticalColumns": False},
-        timeout_seconds,
-    )
-    if not isinstance(page, dict) or not isinstance(page.get("recordMap"), dict):
-        raise ValueError("Notion loadPageChunk response did not contain a `recordMap`")
-    views = _collection_views(page["recordMap"])
+    # A database can sit past the first chunk of a long careers page.
+    blocks, has_more = load_notion_page_blocks(api_base, page_id, timeout_seconds)
+    views = _collection_views(blocks)
 
     rows: list[tuple[str, dict[str, Any], dict[str, str]]] = []
     seen_row_ids: set[str] = set()
     limitations: list[str] = []
+    if has_more:
+        limitations.append(
+            f"Notion page {page_id} has more than {MAX_PAGE_CHUNKS} loadPageChunk chunks; databases on later chunks may be missing."
+        )
     for collection_id, view_id, space_id in views:
         result = http.post_json(
             f"{api_base}/queryCollection",

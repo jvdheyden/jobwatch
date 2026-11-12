@@ -140,6 +140,10 @@ def failed_coverage(source: SourceConfig, terms: list[str], limitation: str) -> 
     )
 
 
+class DescriptionBudgetExhausted(Exception):
+    """Raised by a description fetcher that ran out of the enrichment deadline."""
+
+
 def enrich_candidate_descriptions(
     coverage: Coverage,
     timeout_seconds: int,
@@ -178,21 +182,26 @@ def enrich_candidate_descriptions(
     if max_fetches is None:
         max_fetches = JD_FETCH_HARD_CEILING
 
+    attempts = 0
+    failures = 0
+    budget_exhausted_at: int | None = None
+    started_at = time.monotonic()
+    deadline = started_at + max_seconds
+
     if coverage.discovery_mode == "notion_site":
         # A notion.site page's HTML is only a JavaScript shell, so read the
         # posting's blocks through the Notion API and never fall back to HTML.
+        # One posting can take several requests, so the fetcher checks the
+        # shared deadline before each one.
         from discover.sources.notion import fetch_notion_description
 
-        fetch_description = fetch_notion_description
+        def fetch_description(url: str, timeout: int) -> str:
+            return fetch_notion_description(url, timeout, deadline=deadline)
     else:
 
         def fetch_description(url: str, timeout: int) -> str:
             return helpers.visible_text_from_html(http.fetch_text(url, timeout))
 
-    attempts = 0
-    failures = 0
-    budget_exhausted_at: int | None = None
-    started_at = time.monotonic()
     for candidate in coverage.candidates:
         if candidate.description:
             continue
@@ -207,6 +216,9 @@ def enrich_candidate_descriptions(
         attempts += 1
         try:
             text = fetch_description(url, timeout_seconds)
+        except DescriptionBudgetExhausted:
+            budget_exhausted_at = attempts
+            break
         except Exception:
             failures += 1
             continue

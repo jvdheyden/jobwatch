@@ -308,3 +308,72 @@ def test_enrichment_request_error_does_not_fall_back_to_html(monkeypatch):
 
     assert candidate.description == ""
     assert coverage.limitations == ["JD fetch failed for 1 candidate(s)"]
+
+
+def _continued(chunk: dict) -> dict:
+    return chunk | {"cursor": {"stack": [[{"table": "block", "id": PAGE_ID, "index": 1}]]}}
+
+
+def test_discovery_follows_careers_page_cursor_to_a_later_database(monkeypatch):
+    page_only = {"recordMap": {"block": {PAGE_ID: PAGE_CHUNK["recordMap"]["block"][PAGE_ID]}}}
+    database_only = {"recordMap": {"block": {"8e35ef25": PAGE_CHUNK["recordMap"]["block"]["8e35ef25"]}}}
+    calls: list[str] = []
+
+    def fake_post_json(url, payload, timeout_seconds, headers=None):
+        if url.endswith("/queryCollection"):
+            calls.append("query")
+            return QUERY_RESULT
+        calls.append(f"chunk{payload['chunkNumber']}")
+        return _continued(page_only) if payload["chunkNumber"] == 0 else database_only
+
+    monkeypatch.setattr(http, "post_json", fake_post_json)
+
+    coverage = notion.discover_notion_site(_source(), ["venture"], 5)
+
+    assert calls == ["chunk0", "chunk1", "query"]
+    assert coverage.status == "complete"
+    assert [candidate.title for candidate in coverage.candidates] == ["Head of Venture Growth and Funding"]
+
+
+def test_discovery_reports_partial_when_page_chunks_run_past_the_cap(monkeypatch):
+    monkeypatch.setattr(notion, "MAX_PAGE_CHUNKS", 2)
+    monkeypatch.setattr(
+        http,
+        "post_json",
+        lambda url, payload, timeout_seconds, headers=None: _continued(PAGE_CHUNK) if url.endswith("/loadPageChunk") else QUERY_RESULT,
+    )
+
+    coverage = notion.discover_notion_site(_source(), ["venture"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.candidates
+    assert coverage.limitations == [
+        f"Notion page {PAGE_ID} has more than 2 loadPageChunk chunks; databases on later chunks may be missing."
+    ]
+
+
+def test_enrichment_stops_paging_a_posting_at_the_shared_deadline(monkeypatch):
+    import time
+
+    _forbid_html_fetch(monkeypatch)
+    clock = [0.0]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    requests: list[int] = []
+
+    def slow_post_json(url, payload, timeout_seconds, headers=None):
+        requests.append(payload["chunkNumber"])
+        clock[0] += 1.0
+        return _continued({"recordMap": {"block": {ROW_ID: _block(ROW_ID, "page", "Role", ["c1"])}}})
+
+    monkeypatch.setattr(http, "post_json", slow_post_json)
+    first, second = _row_candidate(), _row_candidate()
+    second.url = ROW_URL.replace("3979f6bf", "4979f6bf")
+    coverage = _notion_coverage([first, second])
+
+    enrich_candidate_descriptions(coverage, 5, max_seconds=1.5)
+
+    assert requests == [0, 1]
+    assert first.description == second.description == ""
+    assert coverage.limitations == [
+        "JD fetch budget exhausted after 1 fetch attempt(s); 2 candidate(s) left without description"
+    ]
