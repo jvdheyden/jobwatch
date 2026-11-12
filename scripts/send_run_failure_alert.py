@@ -8,6 +8,7 @@ from datetime import date
 import json
 from pathlib import Path
 import os
+import re
 import sys
 
 from digest_email import DigestEmailError, RenderedDigestEmail
@@ -22,6 +23,8 @@ AUTH_FAILURE_MARKERS = (
     '"error":"authentication_failed"',
     '"api_error_status":401',
 )
+DELIVERED_RE = re.compile(r"\] Delivery phase finished successfully: (\S+)$")
+DELIVERY_FAILED_RE = re.compile(r"\] Delivery phase failed: (\S+) status")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,21 +33,44 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--date", default=date.today().isoformat(), help="Run date in YYYY-MM-DD format")
     parser.add_argument("--status", type=int, required=True, help="Exit status of the failed run")
     parser.add_argument("--log-file", required=True, help="Path to the run log")
+    parser.add_argument(
+        "--log-offset",
+        type=int,
+        default=0,
+        help="Byte offset where the failed attempt starts in the run log, which collects every attempt of the day",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print the rendered email instead of sending it")
     return parser
 
 
-def render_failure_alert(track: str, run_date: str, status: int, log_path: Path) -> RenderedDigestEmail:
+def read_attempt_log(log_path: Path, offset: int) -> str:
+    """Return the log written by the failed attempt only, not earlier retries."""
     try:
-        log_text = log_path.read_text(errors="replace")
+        with log_path.open("rb") as handle:
+            data = handle.read()
     except OSError:
-        log_text = ""
+        return ""
+    if 0 < offset <= len(data):
+        data = data[offset:]
+    return data.decode(errors="replace")
+
+
+def render_failure_alert(
+    track: str, run_date: str, status: int, log_path: Path, log_offset: int = 0
+) -> RenderedDigestEmail:
+    log_text = read_attempt_log(log_path, log_offset)
     log_lines = log_text.splitlines()
 
-    lines = [
-        f"The {track} run for {run_date} failed with exit status {status}, so no digest was delivered.",
-        "",
-    ]
+    # Delivery targets run in order, so earlier ones may have succeeded.
+    delivered = [match.group(1) for line in log_lines if (match := DELIVERED_RE.search(line))]
+    failed = [match.group(1) for line in log_lines if (match := DELIVERY_FAILED_RE.search(line))]
+    summary = f"The {track} run for {run_date} failed with exit status {status}"
+    if delivered:
+        summary += f". The digest was delivered by {', '.join(delivered)}"
+        summary += f", but {', '.join(failed)} delivery failed." if failed else "."
+    else:
+        summary += ", so no digest was delivered."
+    lines = [summary, ""]
     if any(marker in log_text for marker in AUTH_FAILURE_MARKERS):
         lines += [
             "Likely cause: the agent CLI could not authenticate (HTTP 401).",
@@ -88,7 +114,7 @@ def main() -> int:
         print(f"send_run_failure_alert.py: {exc}", file=sys.stderr)
         return 1
 
-    rendered = render_failure_alert(args.track, args.date, args.status, Path(args.log_file))
+    rendered = render_failure_alert(args.track, args.date, args.status, Path(args.log_file), args.log_offset)
     if args.dry_run:
         print(f"Subject: {rendered.subject}")
         print()

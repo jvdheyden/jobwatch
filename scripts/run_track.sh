@@ -103,6 +103,8 @@ LOG_FILE="$LOG_DIR/$TRACK-$TODAY.log"
 
 mkdir -p "$DIGEST_DIR" "$DISCOVERY_DIR" "$LOG_DIR"
 exec >>"$LOG_FILE" 2>&1
+# The day's log collects every attempt; a failure alert reads only this one.
+LOG_START_OFFSET="$(wc -c <"$LOG_FILE" | tr -d '[:space:]')"
 
 timestamp() {
   date '+%Y-%m-%d %H:%M:%S'
@@ -414,6 +416,8 @@ AGENT_IDLE_FLAG="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-idle.$$"
 AGENT_ACTIVITY_FILE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-activity.$$"
 AGENT_OUTPUT_PIPE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-output.$$"
 rm -f "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
+ALERT_TIMEOUT_SECS="${JOB_AGENT_ALERT_TIMEOUT_SECS:-60}"
+ALERT_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-alert-timeout.$$"
 ALERT_BY_EMAIL=0
 for delivery_target in "${DELIVERY_TARGETS[@]+"${DELIVERY_TARGETS[@]}"}"; do
   if [[ "$delivery_target" == "email" ]]; then
@@ -423,22 +427,46 @@ done
 
 # Runs that requested email delivery send a failure alert instead of failing
 # silently, so an expired agent login does not go unnoticed for weeks.
+send_failure_alert() {
+  local exit_status="$1"
+  local alert_pid watchdog_pid alert_status=0
+
+  # The whole attempt, credential loading included, runs under a deadline so
+  # a hung SMTP server cannot hold the scheduler's run lock.
+  rm -f "$ALERT_TIMEOUT_FLAG"
+  env \
+    -u JOB_AGENT_SMTP_PASSWORD \
+    -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
+    -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
+    JOB_AGENT_ROOT="$ROOT" \
+    "$PYTHON_BIN" "$ROOT/scripts/send_run_failure_alert.py" \
+      --track "$TRACK" --date "$TODAY" --status "$exit_status" \
+      --log-file "$LOG_FILE" --log-offset "$LOG_START_OFFSET" &
+  alert_pid="$!"
+  start_timeout_watchdog "$alert_pid" "$ALERT_TIMEOUT_SECS" "Failure alert email" "$ALERT_TIMEOUT_FLAG"
+  watchdog_pid="$LAST_BG_PID"
+  wait "$alert_pid" || alert_status=$?
+  stop_helper "$watchdog_pid"
+
+  if [[ -f "$ALERT_TIMEOUT_FLAG" ]]; then
+    log "Failure alert email could not be sent: timed out after ${ALERT_TIMEOUT_SECS}s"
+  elif [[ $alert_status -eq 0 ]]; then
+    log "Sent failure alert email"
+  else
+    log "Failure alert email could not be sent"
+  fi
+  rm -f "$ALERT_TIMEOUT_FLAG"
+}
+
+# Runs that requested email delivery send a failure alert instead of failing
+# silently, so an expired agent login does not go unnoticed for weeks.
 on_exit() {
   local exit_status=$?
   rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
   if [[ $exit_status -ne 0 && $ALERT_BY_EMAIL -eq 1 ]]; then
-    if env \
-      -u JOB_AGENT_SMTP_PASSWORD \
-      -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
-      -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
-      JOB_AGENT_ROOT="$ROOT" \
-      "$PYTHON_BIN" "$ROOT/scripts/send_run_failure_alert.py" \
-        --track "$TRACK" --date "$TODAY" --status "$exit_status" --log-file "$LOG_FILE"; then
-      log "Sent failure alert email"
-    else
-      log "Failure alert email could not be sent"
-    fi
+    send_failure_alert "$exit_status"
   fi
+  exit "$exit_status"
 }
 trap on_exit EXIT
 
