@@ -707,34 +707,106 @@ def test_validate_source_coverage_keeps_trusting_api_enumeration_without_candida
     assert check["status"] == "pass"
 
 
-def test_build_reviewer_context_samples_listing_page_without_scripts_when_no_candidates():
+def _listing_context(source: dict, html: str, *, canary_url: str = "") -> tuple[dict, list[str]]:
     fetched: list[str] = []
 
     def fetch(url: str, _timeout: int) -> str:
         fetched.append(url)
-        return (
-            "<html><head><script>window.app = {big: 'bundle'}</script></head><body>"
-            '<a href="#main">Skip</a><a href="/register-your-interest/new">Join <b>us</b></a>'
-            '<a href="/register-your-interest/new">Again</a></body></html>'
-        )
+        return html if url == source["source_url"] else "<p>Canary posting page</p>"
 
     context = source_quality._build_reviewer_context(
         Path("artifacts/discovery/music_audio_pm/2026-10-10.json"),
-        _navigation_only_html_source(),
+        source,
         canary_title="",
-        canary_url="",
+        canary_url=canary_url,
         timeout_seconds=5,
         raw_text_fetcher=fetch,
     )
+    return context, fetched
+
+
+def test_build_reviewer_context_samples_listing_page_without_scripts_when_no_candidates():
+    html = (
+        "<html><head><script>window.app = {big: 'bundle'}</script></head><body>"
+        '<a href="#main">Skip</a><a href="/register-your-interest/new">Join <b>us</b></a>'
+        '<a href="/register-your-interest/new">Again</a></body></html>'
+    )
+
+    context, fetched = _listing_context(_navigation_only_html_source(), html)
 
     assert fetched == ["https://inmusicbrands.pinpointhq.com/"]
+    assert context["source"]["enumerated_jobs"] == 13
     assert context["raw_samples"] == [
         {
+            "kind": "listing_page",
             "url": "https://inmusicbrands.pinpointhq.com/",
             "raw_text": "Skip Join us Again",
+            "text_truncated": False,
             "links": ["Join us -> /register-your-interest/new"],
+            "links_total": 1,
+            "links_truncated": False,
         }
     ]
+
+
+def test_listing_sample_keeps_links_that_discovery_parses():
+    html = (
+        '<a href = "/jobs/accountant">Accountant</a>'
+        "<a href=/jobs/designer>Designer</a>"
+        "<a href='/jobs/editor?a=1&amp;b=2'>Editor</a>"
+    )
+
+    context, _ = _listing_context(_navigation_only_html_source(), html)
+
+    assert context["raw_samples"][0]["links"] == [
+        "Accountant -> /jobs/accountant",
+        "Designer -> /jobs/designer",
+        "Editor -> /jobs/editor?a=1&b=2",
+    ]
+
+
+def test_listing_sample_reaches_a_posting_after_many_navigation_links():
+    # The maintainer's repro: cookie text, 120 navigation links, then one posting.
+    navigation = "".join(f'<a href="/nav/{index}">Nav {index}</a>' for index in range(120))
+    html = f"<p>{'We use cookies. ' * 600}</p>{navigation}<a href=\"/jobs/accountant\">Accountant</a>"
+
+    context, _ = _listing_context(_navigation_only_html_source() | {"enumerated_jobs": 121}, html)
+
+    [sample] = context["raw_samples"]
+    assert sample["text_truncated"] is True
+    assert sample["links_total"] == 121
+    assert sample["links_truncated"] is False
+    assert sample["links"][-1] == "Accountant -> /jobs/accountant"
+
+
+def test_listing_sample_reports_when_links_are_cut():
+    html = "".join(f'<a href="/nav/{index}">Nav {index}</a>' for index in range(source_quality.LISTING_SAMPLE_MAX_LINKS + 5))
+
+    context, _ = _listing_context(_navigation_only_html_source(), html)
+
+    [sample] = context["raw_samples"]
+    assert len(sample["links"]) == source_quality.LISTING_SAMPLE_MAX_LINKS
+    assert sample["links_total"] == source_quality.LISTING_SAMPLE_MAX_LINKS + 5
+    assert sample["links_truncated"] is True
+
+
+def test_build_reviewer_context_does_not_sample_listing_page_for_api_sources():
+    source = _navigation_only_html_source() | {"discovery_mode": "pinpoint_api"}
+
+    context, fetched = _listing_context(source, "<a href='/x'>x</a>")
+
+    assert fetched == []
+    assert context["raw_samples"] == []
+
+
+def test_build_reviewer_context_samples_listing_page_alongside_canary():
+    context, _ = _listing_context(
+        _navigation_only_html_source(),
+        "<a href='/register'>Register</a>",
+        canary_url="https://inmusicbrands.pinpointhq.com/postings/123",
+    )
+
+    assert [sample["kind"] for sample in context["raw_samples"]] == ["listing_page", "canary"]
 
 
 def test_build_integration_ticket_routes_reviewer_no_postings_to_provider_logic():
@@ -763,3 +835,46 @@ def test_build_integration_ticket_routes_reviewer_no_postings_to_provider_logic(
     assert ticket["failure_mode"] == "no_postings"
     assert ticket["suggested_strategy"] == "dedicated_provider_logic"
     assert "real postings" in ticket["target_outcome"]
+
+
+def test_build_integration_ticket_routes_no_postings_ahead_of_missing_canary():
+    source = _navigation_only_html_source()
+    canary_title = "Product Manager, Instruments"
+    canary_url = "https://inmusicbrands.pinpointhq.com/postings/123"
+    deterministic = source_quality.validate_source_coverage(source, canary_title=canary_title, canary_url=canary_url)
+    assert [check["name"] for check in deterministic["checks"] if check["status"] == "fail"] == ["canary_present"]
+    reviewer = {
+        "status": "completed",
+        "defects": [
+            {
+                "type": "no_postings",
+                "severity": "blocking",
+                "observed": "Listing page shows only navigation; jobs render client-side.",
+            }
+        ],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, reviewer, canary_title=canary_title, canary_url=canary_url
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "no_postings"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert ticket["summary"] == "Listing page shows only navigation; jobs render client-side."
+    assert ticket["failing_checks"] == ["canary_present"]
+    assert "canary is present" in ticket["success_condition"]
+
+
+def test_build_integration_ticket_keeps_missing_canary_routing_without_no_postings():
+    source = _navigation_only_html_source()
+    canary_url = "https://inmusicbrands.pinpointhq.com/postings/123"
+    deterministic = source_quality.validate_source_coverage(source, canary_title="PM", canary_url=canary_url)
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, {"status": "completed", "defects": []}, canary_title="PM", canary_url=canary_url
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "missing_canary"
+    assert ticket["suggested_strategy"] == "config_terms_append"
