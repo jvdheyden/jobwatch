@@ -7,12 +7,12 @@ import pytest
 
 import discover_jobs
 from discover import http as discover_http
+from discover.registry import load_registry
 from discover.sources import alphatheta as alphatheta_provider
 from discover.sources import bamboohr as bamboohr_provider
 from discover.sources import dover as dover_provider
 from discover.sources import eightfold as eightfold_provider
 from discover.sources import getro as getro_provider
-from discover.sources import harman as harman_provider
 from discover.sources import ibm as ibm_provider
 from discover.sources import jobvite as jobvite_provider
 from discover.sources import krisp as krisp_provider
@@ -1515,7 +1515,25 @@ def test_discover_sennheiser_rss_reads_full_feed(monkeypatch):
     assert candidate.notes == "Enumerated through Sennheiser SAP/Jobs2Web RSS feed"
 
 
-def test_discover_harman_jobsearch_keeps_only_jobdetail_links(monkeypatch):
+def _harman_card(job_id: int, title: str, location: str) -> str:
+    url = f"https://jobsearch.harman.com/en_US/careers/JobDetail/{title.replace(' ', '-')}/{job_id}"
+    share = url.replace(":", "%3A").replace("/", "%2F")
+    return f"""
+    <article class="article article--result">
+      <h3 class="article__header__text__title"><a class="link" href="{url}">
+        {title}
+      </a></h3>
+      <div class="article__header__text__subtitle">
+        <span class="list-item-location"><strong> Location:</strong> {location}</span>
+        <span class="list-item-ref"><strong> Ref #</strong> R-{job_id}-2026</span>
+      </div>
+      <a class="button" href="https://jobsearch.harman.com/en_US/careers/ApplicationMethods?jobId={job_id}">Apply</a>
+      <a class="shareButton" href="https://www.facebook.com/sharer/sharer.php?u={share}">Facebook</a>
+    </article>
+    """
+
+
+def test_discover_harman_html_pages_through_avature_listing(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="Harman",
         url="https://jobsearch.harman.com/en_US/careers/SearchJobs",
@@ -1523,25 +1541,32 @@ def test_discover_harman_jobsearch_keeps_only_jobdetail_links(monkeypatch):
         last_checked=None,
         cadence_group="every_3_runs",
     )
-    listing_html = """
-    <html><body>
-      <a href="https://jobsearch.harman.com/en_US/careers/JobDetail/Senior-Security-Engineer/12345">Senior Security Engineer</a>
-      <a href="https://jobsearch.harman.com/en_US/careers/SearchJobs?page=2">Next page</a>
-      <a href="https://www.harman.com/about">About Harman</a>
-    </body></html>
-    """
+    pages = {
+        0: [_harman_card(12345, "Senior Security Engineer", "Munich - Bavaria, Germany"), _harman_card(12346, "Accounting Specialist", "Amsterdam - Amsterdam, Netherlands")],
+        2: [_harman_card(12347, "Automotive Security Architect", "Bangalore - Karnataka, India")],
+    }
+    fetched_offsets: list[int] = []
 
-    monkeypatch.setattr(discover_http, "fetch_text", lambda url, timeout_seconds: listing_html)
+    def fake_fetch_text(url: str, timeout_seconds: int) -> str:
+        offset = int(parse_qs(urlparse(url).query).get("jobOffset", ["0"])[0])
+        fetched_offsets.append(offset)
+        return f'<html><body><div aria-label="3 results">3 results</div>{"".join(pages[offset])}</body></html>'
 
-    coverage = harman_provider.discover_harman_jobsearch_jobs(source, ["security"], timeout_seconds=5)
+    monkeypatch.setattr(discover_http, "fetch_text", fake_fetch_text)
 
+    coverage = load_registry()["harman_html"].discover(source, ["security"], timeout_seconds=5)
+
+    assert fetched_offsets == [0, 2]
     assert coverage.status == "complete"
-    assert coverage.enumerated_jobs == 1
-    assert coverage.matched_jobs == 1
+    assert coverage.listing_pages_scanned == 2
+    assert coverage.enumerated_jobs == 3
+    assert [candidate.title for candidate in coverage.candidates] == [
+        "Senior Security Engineer",
+        "Automotive Security Architect",
+    ]
     candidate = coverage.candidates[0]
-    assert candidate.title == "Senior Security Engineer"
     assert candidate.url == "https://jobsearch.harman.com/en_US/careers/JobDetail/Senior-Security-Engineer/12345"
-    assert candidate.notes == "Enumerated through direct Harman careers (Avature) JobDetail links"
+    assert candidate.location == "Munich - Bavaria, Germany"
 
 
 def test_discover_alphatheta_recognizes_no_openings_marker(monkeypatch):

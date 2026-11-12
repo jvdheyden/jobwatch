@@ -260,13 +260,13 @@ New source support should usually add or extend one of these provider modules ra
 
 ### `harman_html`
 
-- Provider: `discover.sources.harman` / `discover_harman_jobsearch_jobs`
+- Provider: `discover.sources.avature` / `discover_avature_html`
 - Emits candidates: yes
-- URL/source shape: `https://jobsearch.harman.com/<locale>/careers/...` listing page.
+- URL/source shape: `https://jobsearch.harman.com/<locale>/careers/SearchJobs` Avature search listing.
 - Supported filters/options: none
 - Contract fixtures: `tests/fixtures/sources/harman_html/`
 - Requirements: none
-- Known limitations: Only direct Avature JobDetail links visible in the listing HTML are enumerated.
+- Known limitations: Compatibility alias for the `avature_html` provider.
 
 ### `helsing_browser`
 

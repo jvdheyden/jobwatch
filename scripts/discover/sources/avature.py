@@ -2,6 +2,7 @@
 
 Supported discovery modes:
 - `avature_html`
+- `harman_html` (alias kept for existing Harman track configs)
 
 Expected source URL shape:
 - `https://<host>/[<locale>/]careers/SearchJobs`, an Avature-hosted search listing.
@@ -38,6 +39,8 @@ AVATURE_FIELD_RE = re.compile(
     flags=re.DOTALL | re.IGNORECASE,
 )
 AVATURE_TOTAL_RE = re.compile(r'aria-label="(?P<total>[\d,.]+) results"', flags=re.IGNORECASE)
+# Some sites prefix a field value with a label, e.g. `<strong> Location:</strong> Aarhus, Denmark`.
+AVATURE_FIELD_LABEL_RE = re.compile(r"^\s*<strong\b[^>]*>[^<]*:\s*</strong>", flags=re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -92,7 +95,7 @@ def extract_avature_job_cards(html: str, page_url: str) -> list[AvatureJobCard]:
             continue
         end = first_links[index + 1][3] if index + 1 < len(first_links) else len(html)
         fields = {
-            field_match.group("field").lower(): _strip(field_match.group("value"))
+            field_match.group("field").lower(): _strip(AVATURE_FIELD_LABEL_RE.sub("", field_match.group("value")))
             for field_match in AVATURE_FIELD_RE.finditer(html, start, end)
         }
         cards.append(
@@ -199,4 +202,4 @@ def discover_avature_html(source: SourceConfig, terms: list[str], timeout_second
     )
 
 
-SOURCE = SourceAdapter(modes=("avature_html",), discover=discover_avature_html)
+SOURCE = SourceAdapter(modes=("avature_html", "harman_html"), discover=discover_avature_html)
