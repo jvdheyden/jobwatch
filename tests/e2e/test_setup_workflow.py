@@ -177,3 +177,76 @@ def test_guided_setup_uses_two_bounded_workers_and_no_model_scaffolding(
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+def test_zero_candidate_preview_skips_ranker_and_renders_empty_digest(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "root"
+    (root / "shared").mkdir(parents=True)
+    shutil.copytree(Path(__file__).resolve().parents[2] / "shared" / "templates", root / "shared" / "templates")
+    setup_dir = root / "artifacts" / "setup" / "20260720T155600Z-a1b2c3d4"
+    setup_path = setup_dir / "setup.json"
+    setup = setup_contracts.write_setup(setup_path, json.loads((FIXTURES / "setup.json").read_text()))
+    pack = json.loads((FIXTURES / "source-pack.json").read_text())
+    pack["input_hash"] = setup_contracts.artifact_hash(setup)
+    setup_contracts.write_setup(setup_path, setup_contracts.apply_source_selection(setup, pack))
+    scaffold_track.scaffold_track(setup_path, root=root)
+    discovery_path = root / "artifacts" / "discovery" / "applied_crypto" / "2026-07-20.json"
+    discovery_path.parent.mkdir(parents=True)
+    discovery_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "track": "applied_crypto",
+                "today": "2026-07-20",
+                "generated_at": "2026-07-20T10:00:00Z",
+                "mode": "discover",
+                "sources": [
+                    {
+                        "source_id": "example_labs",
+                        "source": "Example Labs",
+                        "source_url": "https://jobs.example.test/careers",
+                        "discovery_mode": "html",
+                        "cadence_group": "every_3_runs",
+                        "last_checked": None,
+                        "due_today": True,
+                        "status": "complete",
+                        "listing_pages_scanned": 1,
+                        "search_terms_tried": ["cryptography"],
+                        "result_pages_scanned": "1 listing page",
+                        "direct_job_pages_opened": 0,
+                        "enumerated_jobs": 12,
+                        "matched_jobs": 0,
+                        "limitations": [],
+                        "candidates": [],
+                    }
+                ],
+            }
+        )
+        + "\n"
+    )
+    fake = tmp_path / "fake-codex"
+    log_path = tmp_path / "worker.log"
+    _write_fake_provider(fake)
+    monkeypatch.setenv("FAKE_SETUP_LOG", str(log_path))
+
+    preview = run_setup_preview.run_first_preview(
+        setup_path,
+        root=root,
+        today="2026-07-20",
+        provider="codex",
+        agent_bin=str(fake),
+        model=None,
+        reasoning=None,
+        worker_timeout_seconds=30,
+        discovery_timeout_seconds=30,
+        discovery_artifact=discovery_path,
+    )
+
+    assert not log_path.exists()
+    assert preview["candidates_ranked"] == 0
+    assert preview["worker"]["status"] == "skipped"
+    result = json.loads(Path(preview["preview_result"]).read_text())
+    assert result["judgments"] == []
+    digest = json.loads(Path(preview["digest_json"]).read_text())
+    assert digest["runs"][0]["top_matches"] == []
+    assert Path(preview["digest_markdown"]).is_file()
