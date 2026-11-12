@@ -84,6 +84,7 @@ fi
   tests/integration/test_sync_to_logseq.py \
   tests/integration/test_discover_apple_jobs.py \
   tests/integration/test_discover_asml_browser.py \
+  tests/integration/test_discover_avature_html.py \
   tests/integration/test_discover_google_browser.py \
   tests/integration/test_discover_greenhouse_api.py \
   tests/integration/test_discover_followup_sources.py \
