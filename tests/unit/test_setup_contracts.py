@@ -416,3 +416,69 @@ def test_scaffold_track_creates_complete_track_and_refuses_overwrite(tmp_path: P
     with pytest.raises(setup_contracts.SetupContractError, match="refusing to overwrite"):
         scaffold_track.scaffold_track(setup_path, root=tmp_path)
     assert (track_dir / "sources.json").read_bytes() == before
+
+
+def test_preview_digest_orders_matches_by_fit_score(tmp_path: Path) -> None:
+    setup_path = tmp_path / "setup.json"
+    setup = setup_contracts.write_setup(setup_path, selected_setup())
+    discovery_path = tmp_path / "discovery.json"
+    _write_discovery(discovery_path, track="applied_crypto", candidates=[_candidate(index) for index in range(6)])
+    seen_path = tmp_path / "seen_jobs.json"
+    seen_path.write_text(json.dumps({"schema_version": 1, "track": "applied_crypto", "jobs": []}) + "\n")
+    context = setup_contracts.build_preview_context(
+        setup, discovery_path, seen_path, setup_path=setup_path, root=tmp_path
+    )
+    ids = [candidate["candidate_id"] for candidate in context["candidates"]]
+    scores = [6.5, 5.5, 7.5, 4, 6, 4.5]
+    judgments = [
+        {
+            "candidate_id": candidate_id,
+            "disposition": "top_match",
+            "score": score,
+            "recommendation": "watch",
+            "match_reasons": ["Relevant."],
+            "concerns": [],
+        }
+        for candidate_id, score in zip(ids[:3], scores[:3])
+    ] + [
+        {
+            "candidate_id": candidate_id,
+            "disposition": "other_role",
+            "score": score,
+            "recommendation": "skip",
+            "short_note": "Adjacent.",
+        }
+        for candidate_id, score in zip(ids[3:], scores[3:])
+    ]
+    result = {
+        "schema_version": 1,
+        "kind": setup_contracts.PREVIEW_RESULT_KIND,
+        "setup_id": setup["setup_id"],
+        "input_hash": setup_contracts.artifact_hash(context),
+        "executive_summary": "Mixed preview.",
+        "recommended_actions": [],
+        "judgments": judgments,
+    }
+
+    run = setup_contracts.assemble_preview_digest(context, result, generated_at="2026-07-20T12:00:00Z")["runs"][0]
+
+    assert [item["fit_score"] for item in run["top_matches"]] == [7.5, 6.5, 5.5]
+    assert [item["fit_score"] for item in run["other_new_roles"]] == [6, 4.5, 4]
+
+
+def test_empty_preview_result_is_valid_for_contexts_without_candidates(tmp_path: Path) -> None:
+    setup_path = tmp_path / "setup.json"
+    setup = setup_contracts.write_setup(setup_path, selected_setup())
+    discovery_path = tmp_path / "discovery.json"
+    _write_discovery(discovery_path, track="applied_crypto", candidates=[])
+    seen_path = tmp_path / "seen_jobs.json"
+    seen_path.write_text(json.dumps({"schema_version": 1, "track": "applied_crypto", "jobs": []}) + "\n")
+    context = setup_contracts.build_preview_context(
+        setup, discovery_path, seen_path, setup_path=setup_path, root=tmp_path
+    )
+
+    result = setup_contracts.empty_preview_result(context)
+
+    assert result["judgments"] == []
+    digest = setup_contracts.assemble_preview_digest(context, result, generated_at="2026-07-20T12:00:00Z")
+    assert digest["runs"][0]["top_matches"] == []

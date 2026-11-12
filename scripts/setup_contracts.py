@@ -1060,6 +1060,25 @@ def normalize_preview_result(payload: dict[str, Any], context: dict[str, Any]) -
     return normalized_result
 
 
+def empty_preview_result(context: dict[str, Any]) -> dict[str, Any]:
+    """Build the preview result for a context with no candidates, without a ranker."""
+    context = normalize_preview_context(context)
+    if context["candidates"]:
+        raise SetupContractError("empty preview result requires a context without candidates")
+    return normalize_preview_result(
+        {
+            "schema_version": SCHEMA_VERSION,
+            "kind": PREVIEW_RESULT_KIND,
+            "setup_id": context["setup_id"],
+            "input_hash": artifact_hash(context),
+            "executive_summary": "Discovery kept no new candidates for this preview, so there was nothing to rank.",
+            "recommended_actions": [],
+            "judgments": [],
+        },
+        context,
+    )
+
+
 def load_preview_result(path: Path, context: dict[str, Any]) -> dict[str, Any]:
     return normalize_preview_result(read_json_limited(path, PREVIEW_RESULT_MAX_BYTES, "preview result"), context)
 
@@ -1129,6 +1148,10 @@ def assemble_preview_digest(
                     "reason_filtered_out": judgment["reason"],
                 }
             )
+    # Candidates arrive in discovery order; the digest lists strongest first,
+    # matching the rank-jobs contract for regular runs. sort() is stable.
+    top_matches.sort(key=lambda item: item["fit_score"], reverse=True)
+    other_roles.sort(key=lambda item: item["fit_score"], reverse=True)
     created_at = generated_at or datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     payload = {
         "schema_version": 1,
