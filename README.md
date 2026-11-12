@@ -215,7 +215,7 @@ bash scripts/install_scheduler.sh
 
 Daily digest emails are rendered from the structured digest JSON and ranked overview JSON, not from the Logseq/Markdown output.
 
-When a run with `--delivery email` fails before the digest is delivered (for example because the agent CLI login expired), `run_track.sh` sends a short failure alert to the same recipients instead, with the likely cause and the last log lines.
+When a run with `--delivery email` fails (for example because the agent CLI login expired, or a later delivery target failed after the email went out), `run_track.sh` sends a short failure alert to the same recipients, with the likely cause, which targets were delivered, and the last log lines of that attempt. The alert gives up after 60 seconds (`JOB_AGENT_ALERT_TIMEOUT_SECS`) so an unresponsive SMTP server cannot stall the scheduler.
 
 Preview an email without sending it:
 
