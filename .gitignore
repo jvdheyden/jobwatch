@@ -30,6 +30,7 @@ settings.local.json
 # Local scripts and helpers
 scripts/local/
 docs/reviews/
+docs/designs/
 
 # Generated logs
 logs/
