@@ -38,6 +38,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "asml_browser": "https://www.asml.com/en/careers/find-your-job",
         "automattic_browser": "https://automattic.com/work-with-us/",
         "auswaertiges_amt_json": "https://www.auswaertiges-amt.de/de/karriere/stellenanzeigen",
+        "avature_html": "https://jobs.example.com/careers/SearchJobs",
         "bamboohr_api": "https://example.bamboohr.com/careers",
         "bnd_career_search": "https://www.bnd.bund.de/SiteGlobals/Forms/Suche/erweiterte_Karrieresuche_Formular.html?nn=415896#sprg415980",
         "bosch_autocomplete": "https://www.bosch.de/karriere/jobs",
