@@ -292,6 +292,14 @@ stop_helper() {
   pkill -KILL -P "$pid" 2>/dev/null || true
 }
 
+# Stops whatever is left in a process group started under `set -m`.
+stop_process_group() {
+  local pgid="$1"
+  kill -TERM -- "-$pgid" 2>/dev/null || return 0
+  sleep 1
+  kill -KILL -- "-$pgid" 2>/dev/null || true
+}
+
 terminate_process() {
   local target_pid="$1"
   local label="$2"
@@ -432,8 +440,11 @@ send_failure_alert() {
   local alert_pid watchdog_pid alert_status=0
 
   # The whole attempt, credential loading included, runs under a deadline so
-  # a hung SMTP server cannot hold the scheduler's run lock.
+  # a hung SMTP server cannot hold the scheduler's run lock. Job control gives
+  # the sender its own process group, so its helpers (the runtime-env shell,
+  # JOB_AGENT_SMTP_PASSWORD_CMD) can be stopped with it.
   rm -f "$ALERT_TIMEOUT_FLAG"
+  set -m
   env \
     -u JOB_AGENT_SMTP_PASSWORD \
     -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
@@ -443,10 +454,12 @@ send_failure_alert() {
       --track "$TRACK" --date "$TODAY" --status "$exit_status" \
       --log-file "$LOG_FILE" --log-offset "$LOG_START_OFFSET" &
   alert_pid="$!"
+  set +m
   start_timeout_watchdog "$alert_pid" "$ALERT_TIMEOUT_SECS" "Failure alert email" "$ALERT_TIMEOUT_FLAG"
   watchdog_pid="$LAST_BG_PID"
   wait "$alert_pid" || alert_status=$?
   stop_helper "$watchdog_pid"
+  stop_process_group "$alert_pid"
 
   if [[ -f "$ALERT_TIMEOUT_FLAG" ]]; then
     log "Failure alert email could not be sent: timed out after ${ALERT_TIMEOUT_SECS}s"

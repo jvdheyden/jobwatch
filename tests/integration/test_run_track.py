@@ -988,6 +988,54 @@ def test_run_track_gives_up_on_a_hung_failure_alert_and_keeps_the_run_status(
     assert "Sent failure alert email" not in log_text
 
 
+def test_run_track_stops_the_alert_credential_helper_on_timeout(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(tmp_job_agent_root / "failing_agent.sh", "#!/bin/bash\ncat >/dev/null\nexit 7\n")
+    helper_pid_file = tmp_job_agent_root / "helper.pid"
+    # Stands in for a JOB_AGENT_SMTP_PASSWORD_CMD that hangs: the sender waits on it.
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "send_run_failure_alert.py",
+        "#!/usr/bin/env python3\n"
+        "import subprocess\n"
+        "helper = subprocess.Popen(['sleep', '60'])\n"
+        f"open({str(helper_pid_file)!r}, 'w').write(str(helper.pid))\n"
+        "helper.wait()\n",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "failing_agent.sh"),
+        "JOB_AGENT_ALERT_TIMEOUT_SECS": "1",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 7, result.stderr
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Failure alert email could not be sent: timed out after 1s" in log_text
+    helper_pid = int(helper_pid_file.read_text())
+    with pytest.raises(ProcessLookupError):
+        os.kill(helper_pid, 0)
+
+
 def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)
