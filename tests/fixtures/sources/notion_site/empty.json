@@ -1,0 +1,64 @@
+{
+  "recordMap": {
+    "block": {
+      "01234567-89ab-cdef-0123-456789abcdef": {
+        "value": {
+          "id": "01234567-89ab-cdef-0123-456789abcdef",
+          "type": "page",
+          "properties": {
+            "title": [
+              [
+                "Careers"
+              ]
+            ]
+          }
+        }
+      },
+      "view-block": {
+        "value": {
+          "value": {
+            "id": "view-block",
+            "type": "collection_view",
+            "space_id": "space-1",
+            "collection_id": "coll-1",
+            "view_ids": [
+              "view-1"
+            ]
+          },
+          "role": "reader"
+        }
+      }
+    },
+    "collection": {
+      "coll-1": {
+        "value": {
+          "value": {
+            "id": "coll-1",
+            "schema": {
+              "title": {
+                "name": "Name",
+                "type": "title"
+              },
+              "LOC": {
+                "name": "Location",
+                "type": "multi_select"
+              },
+              "DL": {
+                "name": "Deadline",
+                "type": "date"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "reducerResults": {
+      "collection_group_results": {
+        "type": "results",
+        "blockIds": []
+      }
+    }
+  }
+}

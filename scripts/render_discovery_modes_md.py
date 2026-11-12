@@ -212,6 +212,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Static page provider for visible job links.",
     },
+    "notion_site": {
+        "url_shape": "Public Notion page `https://<workspace>.notion.site/<Page-Title>-<32-hex-page-id>` that embeds a jobs database.",
+        "filters": "none",
+        "limitations": "Reads the page and each embedded database through Notion's undocumented public `/api/v3` endpoints (`loadPageChunk`, `queryCollection`, 200 rows per database) and matches terms against the row title and text properties; property values such as deadlines go into notes. Description enrichment reads each matched row's page blocks through `loadPageChunk` (never the JavaScript-only HTML). Both follow the page's `loadPageChunk` cursor for up to 10 chunks; a careers page with more reports `partial`, and posting pages stop at the enrichment deadline. A page response without a `recordMap` fails the source; a database query without a `blockIds` list, or row ids that do not resolve to a readable record, report `partial`.",
+    },
     "partisia_site": {
         "url_shape": "Partisia careers/company site URLs.",
         "filters": "none",
