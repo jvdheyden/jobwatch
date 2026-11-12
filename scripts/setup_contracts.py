@@ -43,7 +43,9 @@ MAX_DESCRIPTION_BYTES = 12 * 1024
 
 SETUP_ID_RE = re.compile(r"^\d{8}T\d{6}Z-[a-z0-9]{8}$")
 TRACK_SLUG_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
-IDENTIFIER_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
+IDENTIFIER_PATTERN = r"^[a-z0-9]+(?:_[a-z0-9]+)*$"
+IDENTIFIER_RE = re.compile(IDENTIFIER_PATTERN)
+MAX_TRACK_TERM_WORDS = 3
 MODEL_OUTPUT_ID_RE = re.compile(r"^candidate_[a-f0-9]{16}$")
 SECRET_KEY_RE = re.compile(r"(^|_)(api_?key|credential|password|passwd|secret|token)(_|$)")
 FORBIDDEN_KEYS = {
@@ -155,7 +157,9 @@ def normalize_track_slug(value: Any, field: str = "track.slug") -> str:
 
 
 def _identifier(value: Any, field: str) -> str:
-    candidate = _text(value, field, max_chars=80)
+    # Workers often return kebab-case or mixed-case ids (`Sony-Interactive`);
+    # fold hyphens, spaces, and case so they do not reject the whole run.
+    candidate = re.sub(r"[\s_-]+", "_", _text(value, field, max_chars=80).lower()).strip("_")
     if not IDENTIFIER_RE.fullmatch(candidate):
         raise SetupContractError(f"{field} must be a lowercase underscore identifier")
     return candidate
@@ -582,6 +586,15 @@ def write_source_pack(path: Path, payload: dict[str, Any], setup: dict[str, Any]
     return normalized
 
 
+def track_term_warnings(track_terms: list[str]) -> list[str]:
+    """Flag track terms too long to plausibly appear verbatim in a job title."""
+    return [
+        f"track term {term!r} has more than {MAX_TRACK_TERM_WORDS} words and may match no job titles"
+        for term in track_terms
+        if len(term.split()) > MAX_TRACK_TERM_WORDS
+    ]
+
+
 def render_source_pack_summary(source_pack: dict[str, Any], setup: dict[str, Any]) -> str:
     pack = normalize_source_pack(source_pack, setup)
     lines = ["Recommended sources:"]
@@ -604,6 +617,9 @@ def render_source_pack_summary(source_pack: dict[str, Any], setup: dict[str, Any
         lines.append("URL corrections:")
         for correction in pack["url_corrections"]:
             lines.append(f"- {correction['original_url']} -> {correction['corrected_url']}: {correction['reason']}")
+    if warnings := track_term_warnings(pack["track_terms"]):
+        lines.append("Warnings:")
+        lines.extend(f"- {warning}" for warning in warnings)
     if pack["decisions_needed"]:
         lines.append("Decisions needed:")
         lines.extend(f"- {decision}" for decision in pack["decisions_needed"])
@@ -1185,6 +1201,7 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
         "input_hash": {"type": "string", "const": artifact_hash(input_payload)},
     }
     if role == "source_discovery":
+        identifier = {"type": "string", "pattern": IDENTIFIER_PATTERN}
         search_terms = {
             "type": "object",
             "additionalProperties": False,
@@ -1214,7 +1231,7 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
                 "confidence",
             ],
             "properties": {
-                "id": {"type": "string"},
+                "id": identifier,
                 "name": {"type": "string"},
                 "url": {"type": "string"},
                 "discovery_mode": {"type": "string"},
@@ -1250,8 +1267,8 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
             "additionalProperties": False,
             "required": ["id", "source_ids", "source_names", "keep_if_any_text_term", "limitation"],
             "properties": {
-                "id": {"type": "string"},
-                "source_ids": {"type": "array", "items": {"type": "string"}},
+                "id": identifier,
+                "source_ids": {"type": "array", "items": identifier},
                 "source_names": {"type": "array", "items": {"type": "string"}},
                 "keep_if_any_text_term": {"type": "array", "items": {"type": "string"}},
                 "limitation": {"anyOf": [{"type": "string"}, {"type": "null"}]},
@@ -1274,7 +1291,7 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
                 "dropped_sources": {"type": "array", "items": dropped_source},
                 "url_corrections": {"type": "array", "maxItems": MAX_URL_CORRECTIONS, "items": url_correction},
                 "match_rule_suggestions": {"type": "array", "items": match_rule},
-                "recommended_source_ids": {"type": "array", "items": {"type": "string"}},
+                "recommended_source_ids": {"type": "array", "items": identifier},
                 "decisions_needed": {"type": "array", "items": {"type": "string"}},
             },
         }
@@ -1363,7 +1380,10 @@ def build_worker_prompt(role: str, input_payload: dict[str, Any]) -> str:
             "Exclude current or recent employers. Recommend at most 8 primary and 4 follow-up sources, validate at most "
             "3 URLs, use only the supported discovery modes below, and prefer every_3_runs unless a source clearly warrants "
             "another cadence. Suggest match rules only for broad/noisy sources. Every source must already use the canonical "
-            "sources.json fields plus fit_reason and confidence. Include concise track_terms and only genuinely unresolved "
+            "sources.json fields plus fit_reason and confidence. Discovery keeps a posting only when a track term appears "
+            "verbatim in it, usually in the job title, so make each track term a short title-level phrase of one to three "
+            "words that real postings contain (for example \"product manager\", \"head of product\", \"game designer\"); "
+            "never append the industry or employer (not \"product manager games\"). Include only genuinely unresolved "
             "decisions_needed.\n"
             f"Supported discovery modes: {modes}\n"
             f"Required kind: {SOURCE_PACK_KIND}\n"

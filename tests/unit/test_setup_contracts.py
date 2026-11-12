@@ -187,6 +187,61 @@ def test_worker_json_schemas_type_const_and_enum_fields() -> None:
     assert "1-10 scale" in setup_contracts.build_worker_prompt("preview_ranker", preview_context)
 
 
+def test_source_pack_folds_kebab_and_mixed_case_ids_consistently() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    pack = source_pack_payload(setup)
+    pack["recommended_sources"][0]["id"] = "Example-Labs"
+    pack["recommended_source_ids"] = ["example-labs"]
+    pack["match_rule_suggestions"] = [
+        {
+            "id": "example-labs-crypto",
+            "source_ids": ["EXAMPLE-LABS"],
+            "source_names": [],
+            "keep_if_any_text_term": ["cryptography"],
+        }
+    ]
+
+    normalized = setup_contracts.normalize_source_pack(pack, setup)
+
+    assert normalized["recommended_sources"][0]["id"] == "example_labs"
+    assert normalized["recommended_source_ids"] == ["example_labs"]
+    assert normalized["match_rule_suggestions"][0]["id"] == "example_labs_crypto"
+    assert normalized["match_rule_suggestions"][0]["source_ids"] == ["example_labs"]
+    selected = setup_contracts.apply_source_selection(setup, normalized, match_rule_ids=["example_labs_crypto"])
+    assert [source["id"] for source in selected["selected_sources"]["sources"]] == ["example_labs"]
+
+    unsafe = copy.deepcopy(pack)
+    unsafe["recommended_sources"][0]["id"] = "example/labs"
+    with pytest.raises(setup_contracts.SetupContractError, match="lowercase underscore identifier"):
+        setup_contracts.normalize_source_pack(unsafe, setup)
+
+
+def test_source_worker_schema_constrains_ids_to_identifier_pattern() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    schema = setup_contracts.worker_json_schema("source_discovery", setup)["properties"]
+    rule = schema["match_rule_suggestions"]["items"]["properties"]
+    for id_schema in (
+        schema["recommended_sources"]["items"]["properties"]["id"],
+        schema["follow_up_sources"]["items"]["properties"]["id"],
+        schema["recommended_source_ids"]["items"],
+        rule["id"],
+        rule["source_ids"]["items"],
+    ):
+        assert id_schema == {"type": "string", "pattern": setup_contracts.IDENTIFIER_PATTERN}
+
+
+def test_source_pack_summary_warns_about_track_terms_too_long_for_titles() -> None:
+    setup = setup_contracts.normalize_setup(setup_payload())
+    pack = source_pack_payload(setup)
+    pack["track_terms"] = ["product manager", "head of product games now"]
+
+    summary = setup_contracts.render_source_pack_summary(pack, setup)
+
+    assert "head of product games now" in summary
+    assert "'product manager'" not in summary
+    assert setup_contracts.track_term_warnings(["product manager", "head of product"]) == []
+
+
 def _write_discovery(path: Path, *, track: str, candidates: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
