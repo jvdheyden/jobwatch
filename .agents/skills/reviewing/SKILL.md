@@ -36,26 +36,6 @@ Determine the authorized actions from the user's request and prior session instr
 - Distinguish actual discovery, mocked reviewer output, and live model evaluation. Do not describe one as another.
 - Stop expanding checks once the affected behavior is covered and no material concern remains unresolved.
 
-## Publishing reviews
-
-- Before deciding to publish, read existing GitHub comments, reviews, and threads alongside local reports. Compare proposed feedback by its underlying issue and conclusion, not wording or author; top-level and inline comments both count as existing findings.
-- Do not republish an unchanged finding or verdict, including through a formal review. Publish only for a new finding, materially new evidence, a new or changed conclusion, or an explicit request to change review status. The absence of a formal review does not make an already documented finding or verdict new. Broad permission to comment, approve, or request changes is not an explicit status-change request. A new commit or another reproduction with the same result does not by itself justify repeating a finding.
-- For a meaningful update to an existing finding, continue its thread where possible and explain only what changed. If an explicit status-change request requires a formal review, link existing findings without repeating their explanations. Do not create a second finding thread merely because the original was a top-level comment.
-- Read the [comment guidelines and examples](../../../.agents/skills/reviewing/references/pr-comments.md) when drafting a GitHub review. Batch new findings into one review per pass. When no publication is warranted, record why locally and report that outcome in chat; the review is complete without a GitHub submission.
-- When publication is warranted and authorized, approve (`APPROVE`) only after the reviewed scope is complete, relevant verification is sufficient, and no blockers or material validation gaps remain. Pending or failing required checks prevent approval. Request changes (`REQUEST_CHANGES`) for substantiated blockers within scope; comment (`COMMENT`) for nonblocking feedback, questions, or verification gaps.
-- Refresh the PR's head and relevant base before submission; review any intervening changes. Anchor the review to the reviewed `commit_id`; this identifies the reviewed revision but does not lock the branch.
-- Confirm the published outcome and URL. After an ambiguous timeout, inspect existing reviews before retrying. Report the outcome and link in chat; if publication fails, report the failure and preserve the prepared review.
-
-## Merging
-
-- When merging is authorized, finish the review and relevant verification first. Merge only with no unresolved blockers or material validation gaps; a passing test suite alone is not a completed review.
-- Immediately before merging, refresh the head, base, PR state, required checks, and review status. The PR must be open, ready for review, conflict-free, and satisfy repository merge requirements. If the reviewed head or relevant base changed, review the delta and refresh affected checks first.
-- If confirmed merge conflicts prevent merging, submit a Request changes review asking the author to rebase onto the current target branch, resolve the conflicts, and rerun relevant checks. Identify conflicting files when available, and avoid repeating an existing request for the same unresolved conflicts. Unknown mergeability or pending checks alone are not evidence of conflicts. Do not resolve conflicts or rewrite the author's branch unless asked.
-- Use a merge operation guarded by the reviewed head SHA: `expected_head_sha` in the GitHub plugin or `--match-head-commit` with `gh pr merge`. If the guard rejects the merge, review the new revision before retrying; never simply substitute the latest SHA.
-- Use **rebase** by default: `merge_method: "rebase"` in the GitHub plugin or `--rebase` with `gh pr merge`. Honor an explicit user override; if repository rules disallow rebase, report the constraint rather than silently selecting another method.
-- Use a required merge queue rather than bypassing it. Do not use administrative overrides or change protection rules to force a merge; do not enable auto-merge for unmet requirements unless the user requested it.
-- Confirm the actual result. After an ambiguous timeout, check PR state before retrying. Report merged, queued, or blocked accurately, with the PR URL and merge commit when available. Explicit branch deletion requires separate authorization.
-
 ## Mandatory review record and handoff
 
 - Every review takeover or follow-up must create or extend a detailed record under `docs/reviews/`, including review-only work and passes that publish nothing. Start the entry when taking ownership and update it as work proceeds, before handoff or the final response.
@@ -76,6 +56,27 @@ Keep the user-facing report concise:
 
 - Report findings by severity, with file/line references, trigger, impact, and a concise correction direction.
 - State which previous findings are resolved, what was verified, and any material limitations. Separate unrelated existing issues from blockers.
+
+## Publishing reviews
+
+- Before deciding to publish, read existing GitHub comments, reviews, and threads alongside local reports. Compare proposed feedback by its underlying issue and conclusion, not wording or author; top-level and inline comments both count as existing findings.
+- Do not republish an unchanged finding or verdict, including through a formal review. Publish only for a new finding, materially new evidence, a new or changed conclusion, or an explicit request to change review status. The absence of a formal review does not make an already documented finding or verdict new. Broad permission to comment, approve, or request changes is not an explicit status-change request. A new commit or another reproduction with the same result does not by itself justify repeating a finding.
+- For a meaningful update to an existing finding, continue its thread where possible and explain only what changed. If an explicit status-change request requires a formal review, link existing findings without repeating their explanations. Do not create a second finding thread merely because the original was a top-level comment.
+- Read the [comment guidelines and examples](../../../.agents/skills/reviewing/references/pr-comments.md) when drafting a GitHub review. Batch new findings into one review per pass. When no publication is warranted, record why locally and report that outcome in chat; the review is complete without a GitHub submission.
+- When publication is warranted and authorized, approve (`APPROVE`) only after the reviewed scope is complete, relevant verification is sufficient, and no blockers or material validation gaps remain. Pending or failing required checks prevent approval. On approval, no further comment on GitHub is necessary. Request changes (`REQUEST_CHANGES`) for substantiated blockers within scope; comment (`COMMENT`) for nonblocking feedback, questions, or verification gaps.
+- Refresh the PR's head and relevant base before submission; review any intervening changes. Anchor the review to the reviewed `commit_id`; this identifies the reviewed revision but does not lock the branch.
+- Confirm the published outcome and URL. After an ambiguous timeout, inspect existing reviews before retrying. Report the outcome and link in chat; if publication fails, report the failure and preserve the prepared review.
+
+## Merging
+
+- When merging is authorized, finish the review and relevant verification first. Merge only with no unresolved blockers or material validation gaps; a passing test suite alone is not a completed review.
+- Immediately before merging, refresh the head, base, PR state, required checks, and review status. The PR must be open, ready for review, conflict-free, and satisfy repository merge requirements. If the reviewed head or relevant base changed, review the delta and refresh affected checks first.
+- If confirmed merge conflicts prevent merging, submit a Request changes review asking the author to rebase onto the current target branch, resolve the conflicts, and rerun relevant checks. Identify conflicting files when available, and avoid repeating an existing request for the same unresolved conflicts. Unknown mergeability or pending checks alone are not evidence of conflicts. Do not resolve conflicts or rewrite the author's branch unless asked.
+- Use a merge operation guarded by the reviewed head SHA: `expected_head_sha` in the GitHub plugin or `--match-head-commit` with `gh pr merge`. If the guard rejects the merge, review the new revision before retrying; never simply substitute the latest SHA.
+- Use **rebase** by default: `merge_method: "rebase"` in the GitHub plugin or `--rebase` with `gh pr merge`. Honor an explicit user override; if repository rules disallow rebase, report the constraint rather than silently selecting another method.
+- Use a required merge queue rather than bypassing it. Do not use administrative overrides or change protection rules to force a merge; do not enable auto-merge for unmet requirements unless the user requested it.
+- Confirm the actual result. After an ambiguous timeout, check PR state before retrying. Report merged, queued, or blocked accurately, with the PR URL and merge commit when available. Explicit branch deletion requires separate authorization.
+
 
 ## Code quality and scope
 
