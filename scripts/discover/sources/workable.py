@@ -16,6 +16,9 @@ from discover.core import Candidate, Coverage, SourceConfig
 from discover.registry import SourceAdapter
 
 
+MAX_PAGES = 30
+
+
 def build_workable_job_url(source_url: str, board_slug: str, shortcode: str) -> str:
     if not shortcode:
         return source_url
@@ -31,16 +34,44 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
     board_slug = path_bits[0]
     parsed = urlparse(source.url)
     endpoint = f"{parsed.scheme or 'https'}://{parsed.netloc}/api/v3/accounts/{board_slug}/jobs"
-    response = http.post_json(
-        endpoint,
-        {"query": ""},
-        timeout_seconds,
-        headers={"Referer": source.url, "X-Requested-With": "XMLHttpRequest"},
-    )
-    jobs = response.get("results") if isinstance(response, dict) else []
-    jobs = jobs or []
-    reported_total = int(response.get("total", len(jobs)) or 0) if isinstance(response, dict) else len(jobs)
+    headers = {"Referer": source.url, "X-Requested-With": "XMLHttpRequest"}
+    jobs: list[dict] = []
+    seen_shortcodes: set[str] = set()
+    reported_total = 0
+    pages_scanned = 0
+    payload: dict[str, str] = {"query": ""}
+    # The board returns 10 jobs per page plus a `nextPage` token. The token is
+    # still present after the last page, so stop on the reported total, on a
+    # page that adds nothing new, or at the page cap.
+    while pages_scanned < MAX_PAGES:
+        response = http.post_json(endpoint, payload, timeout_seconds, headers=headers)
+        pages_scanned += 1
+        # An empty board still returns `results: []` and `total: 0`; a page
+        # without both is an unexpected response, not an empty board.
+        if (
+            not isinstance(response, dict)
+            or not isinstance(response.get("results"), list)
+            or not isinstance(response.get("total"), int)
+        ):
+            raise ValueError(f"Workable jobs page {pages_scanned} did not contain a `results` list and integer `total`")
+        page_jobs = [job for job in response["results"] if isinstance(job, dict)]
+        reported_total = response["total"]
+        new_jobs = []
+        for job in page_jobs:
+            shortcode = helpers.normalize_whitespace(helpers.join_text(job.get("shortcode")))
+            if shortcode and shortcode in seen_shortcodes:
+                continue
+            if shortcode:
+                seen_shortcodes.add(shortcode)
+            new_jobs.append(job)
+        jobs.extend(new_jobs)
+        next_page = response.get("nextPage")
+        if not new_jobs or not next_page or len(jobs) >= reported_total:
+            break
+        payload = {"query": "", "token": str(next_page)}
+    reported_total = reported_total or len(jobs)
     candidates_by_url: dict[str, Candidate] = {}
+    missing_shortcode = 0
 
     for job in jobs:
         title = helpers.normalize_whitespace(helpers.join_text(job.get("title"))) or "unknown"
@@ -76,6 +107,9 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
         matched_terms = sorted(set(helpers.match_terms(searchable_text, terms)))
         if not matched_terms:
             continue
+        if not shortcode:
+            missing_shortcode += 1
+            continue
 
         note_parts = ["Enumerated through Workable jobs API"]
         if department:
@@ -101,10 +135,13 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
 
     limitations: list[str] = []
     status = "complete"
+    if missing_shortcode:
+        status = "partial"
+        limitations.append(f"{missing_shortcode} matching Workable job(s) had no shortcode and were skipped.")
     if reported_total > len(jobs):
         status = "partial"
         limitations.append(
-            f"Workable reported {reported_total} openings but returned {len(jobs)} records in the board payload."
+            f"Workable reported {reported_total} openings but {len(jobs)} were enumerated within {pages_scanned} page(s)."
         )
 
     return Coverage(
@@ -115,11 +152,11 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
         last_checked=source.last_checked,
         due_today=False,
         status=status,
-        listing_pages_scanned=1,
+        listing_pages_scanned=pages_scanned,
         search_terms_tried=terms,
-        result_pages_scanned="local_filter=1",
+        result_pages_scanned=f"api_pages={pages_scanned}",
         direct_job_pages_opened=0,
-        enumerated_jobs=reported_total or len(jobs),
+        enumerated_jobs=len(jobs),
         matched_jobs=len(candidates_by_url),
         limitations=limitations,
         candidates=list(candidates_by_url.values()),

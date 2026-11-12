@@ -112,3 +112,80 @@ def test_discover_html_admits_configured_sales_title_and_excludes_no_match(monke
     assert coverage.matched_jobs == 1
     assert coverage.candidates[0].title == "Sales Engineer"
     assert coverage.candidates[0].matched_terms == ["sales engineer"]
+
+
+def test_discover_amodo_preserves_qualifications_beyond_description_limit(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Amodo Design",
+        url="https://amododesign.com/careers/",
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    job_url = "https://amododesign.com/career/ai-specialist"
+    title = "Field Specialist – AI hardware security and verification"
+    qualifications = (
+        "Experience developing secure hardware architectures and leading engineering projects. "
+        "Communicate technical requirements to AI researchers and policymakers."
+    )
+    listing = '<a href="/career/ai-specialist/">More info</a>' * 2
+    detail = f"""
+    <html><head><script>{'tracking_code ' * 500}</script>
+      <style>.career-body {{ color: red; }}</style></head><body>
+      <nav>Navigation content</nav><h1>{title}</h1>
+      <div class="career-body prose" data-astro-cid-example>
+        <p>Amodo builds hardware for AI verification.</p>
+        <h2>What you’ll do</h2>
+        <div><p>{'Develop hardware architectures for verifiable AI systems. ' * 100}</p></div>
+        <h2>About you</h2><ul><li>{qualifications}</li></ul>
+        <script>body_tracking_code</script>
+      </div><footer>Footer content</footer>
+    </body></html>
+    """
+    fetched = []
+
+    def fetch_text(url: str, timeout_seconds: int) -> str:
+        fetched.append(url)
+        return {source.url: listing, job_url: detail}[url]
+
+    monkeypatch.setattr(discover_http, "fetch_text", fetch_text)
+
+    coverage = discover_jobs.discover_html(source, ["Specialist", "hardware", "security"], 5)
+
+    assert fetched == [source.url, job_url]
+    assert coverage.matched_jobs == 1
+    assert coverage.direct_job_pages_opened == 1
+    assert coverage.limitations == []
+    candidate = coverage.candidates[0]
+    assert candidate.url == job_url
+    assert candidate.title == title
+    assert candidate.matched_terms == ["Specialist", "hardware", "security"]
+    assert candidate.description.startswith("Amodo builds hardware for AI verification.")
+    assert candidate.description_truncated is True
+    assert qualifications in candidate.notes
+    for noise in ("tracking_code", "color: red", "Navigation content", "Footer content"):
+        assert noise not in candidate.description + candidate.notes
+
+
+def test_discover_amodo_keeps_candidate_when_detail_fetch_fails(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Amodo Design",
+        url="https://amododesign.com/careers/",
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+
+    def fetch_text(url: str, timeout_seconds: int) -> str:
+        if url == source.url:
+            return '<a href="/career/ai-specialist/">More info</a>'
+        raise TimeoutError("detail unavailable")
+
+    monkeypatch.setattr(discover_http, "fetch_text", fetch_text)
+
+    coverage = discover_jobs.discover_html(source, ["Specialist"], 5)
+
+    assert coverage.matched_jobs == 1
+    assert coverage.candidates[0].url == "https://amododesign.com/career/ai-specialist"
+    assert coverage.direct_job_pages_opened == 0
+    assert any("detail unavailable" in limitation for limitation in coverage.limitations)

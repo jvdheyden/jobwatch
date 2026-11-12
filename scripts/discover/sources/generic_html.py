@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable, Iterator
+from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import unquote, urljoin, urlparse
 
@@ -202,6 +203,54 @@ def discover_bwi_jobboard(source: SourceConfig, terms: list[str], timeout_second
     )
 
 
+class AmodoDetailParser(HTMLParser):
+    """Collect the vacancy body without site chrome or embedded scripts."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.title_parts: list[str] = []
+        self.body_parts: list[str] = []
+        self._stack: list[tuple[str, bool]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}:
+            return
+        classes = (dict(attrs).get("class") or "").split()
+        self._stack.append((tag, "career-body" in classes))
+
+    def handle_endtag(self, tag: str) -> None:
+        for index in range(len(self._stack) - 1, -1, -1):
+            if self._stack[index][0] == tag:
+                del self._stack[index:]
+                break
+
+    def handle_data(self, data: str) -> None:
+        if any(tag in {"script", "style", "noscript", "template"} for tag, _ in self._stack):
+            return
+        if any(tag == "h1" for tag, _ in self._stack):
+            self.title_parts.append(data)
+        if any(is_body for _, is_body in self._stack):
+            self.body_parts.append(data)
+
+
+def enrich_amodo_candidate(candidate: Candidate, html: str, terms: list[str]) -> bool:
+    parser = AmodoDetailParser()
+    parser.feed(html)
+    detail = helpers.normalize_whitespace(" ".join(parser.body_parts))
+    if not detail:
+        return False
+    title = helpers.normalize_whitespace(" ".join(parser.title_parts))
+    if title:
+        candidate.title = title
+    helpers.set_candidate_description(candidate, detail)
+    # Keep late qualifications even when the bounded description ends earlier.
+    candidate.notes = f"Amodo vacancy detail: {detail}"
+    candidate.matched_terms = sorted(
+        set(candidate.matched_terms + helpers.match_terms(f"{candidate.title} {detail}", terms))
+    )
+    return True
+
+
 def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
     if urlparse(source.url).netloc.lower() in {"bwi.de", "www.bwi.de"}:
         return discover_bwi_jobboard(source, terms, timeout_seconds)
@@ -245,7 +294,7 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
                 notes="Static HTML enumeration",
             )
         )
-    return Coverage(
+    coverage = Coverage(
         source=source.source,
         source_url=source.url,
         discovery_mode=source.discovery_mode,
@@ -262,6 +311,23 @@ def discover_html(source: SourceConfig, terms: list[str], timeout_seconds: int) 
         limitations=[],
         candidates=candidates,
     )
+    source_url = urlparse(source.url)
+    amodo_hosts = {"amododesign.com", "www.amododesign.com"}
+    if source_url.netloc.lower() in amodo_hosts and source_url.path.rstrip("/") == "/careers":
+        for candidate in candidates:
+            job_url = urlparse(candidate.url)
+            if job_url.netloc.lower() not in amodo_hosts or not job_url.path.startswith("/career/"):
+                continue
+            try:
+                detail_html = http.fetch_text(candidate.url, timeout_seconds)
+            except Exception as exc:
+                coverage.limitations.append(f"Amodo job detail fetch failed for {candidate.url}: {exc}")
+                continue
+            coverage.direct_job_pages_opened += 1
+            if not enrich_amodo_candidate(candidate, detail_html, terms):
+                coverage.limitations.append(f"Amodo vacancy body was missing for {candidate.url}")
+        coverage.result_pages_scanned += f"; amodo_job_details={coverage.direct_job_pages_opened}"
+    return coverage
 
 
 def discover_filtered_html_links(
