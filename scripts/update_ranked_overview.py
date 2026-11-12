@@ -317,7 +317,6 @@ def rebuild_track_state(track: str, *, root: Path | None = None) -> tuple[Path, 
         listing = listed.get(normalize_url(str(record["url"])))
         if listing is not None:
             source, last_listed = listing
-            record["last_seen"] = max(str(record["last_seen"]), last_listed)
             last_scan = last_complete_scan.get(source, "")
             if last_scan > last_listed:
                 closed_on = last_scan
