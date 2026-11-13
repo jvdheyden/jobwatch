@@ -28,6 +28,7 @@ Determine the authorized actions from the user's request and prior session instr
 - Distinguish introduced regressions, incomplete fixes within the PR's stated scope, and unrelated existing issues. Only the first two normally justify blocking the PR.
 - Support findings with a concrete trigger, consequence, and reproduction or clear execution path. Label uncertainty; omit speculative objections and stylistic preferences. Finding no issues is a valid outcome.
 - Use documented contracts and relevant tests to establish intended behavior. Surface unresolved product-policy questions explicitly.
+- Start your report with a short executive summary on what the PR intends to do, your findings, if there are any, and your recommendation whether you'd accept this code into the repository, from a correctness, as well as from a product perspective.
 
 ## Verification
 
