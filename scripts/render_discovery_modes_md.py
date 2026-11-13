@@ -192,6 +192,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Enumerates direct /jobs/<slug> links and enriches from each job-detail page.",
     },
+    "kula_rss": {
+        "url_shape": "Kula-hosted careers page `https://careers.kula.ai/<company>`; the provider reads its public feed at `/<company>/feed`.",
+        "filters": "none",
+        "limitations": "Reads the whole board from one RSS request and merges the feed's per-office items by job id. Matches terms against title, department, locations, workplace, and employment type; descriptions come from the feed. A response that is not an RSS feed fails the source; an empty channel is a `complete` empty board; items without a job id are skipped and report `partial`.",
+    },
     "leastauthority_careers": {
         "url_shape": "Least Authority careers page.",
         "filters": "none",

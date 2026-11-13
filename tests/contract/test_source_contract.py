@@ -67,6 +67,7 @@ def _source_for_mode(mode: str) -> core.SourceConfig:
         "jobvite_html": "https://jobs.jobvite.com/example/jobs",
         "knds_jobboard": "https://jobs.knds.de/content/search/?locale=de_DE",
         "krisp_html": "https://krisp.ai/careers/",
+        "kula_rss": "https://careers.kula.ai/example",
         "leastauthority_careers": "https://leastauthority.com/careers/",
         "lever_json": "https://jobs.lever.co/example",
         "lifeatspotify_api": "https://www.lifeatspotify.com/jobs",

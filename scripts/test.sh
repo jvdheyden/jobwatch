@@ -58,6 +58,7 @@ fi
   tests/unit/test_pinpoint_provider.py \
   tests/unit/test_smartrecruiters_provider.py \
   tests/unit/test_notion_provider.py \
+  tests/unit/test_kula_provider.py \
   tests/unit/test_discover_jobs_track_filters.py \
   tests/unit/test_discover_jobs_progress.py \
   tests/unit/test_digest_email.py \

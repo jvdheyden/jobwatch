@@ -368,6 +368,16 @@ New source support should usually add or extend one of these provider modules ra
 - Requirements: none
 - Known limitations: Enumerates direct /jobs/<slug> links and enriches from each job-detail page.
 
+### `kula_rss`
+
+- Provider: `discover.sources.kula` / `discover_kula_rss`
+- Emits candidates: yes
+- URL/source shape: Kula-hosted careers page `https://careers.kula.ai/<company>`; the provider reads its public feed at `/<company>/feed`.
+- Supported filters/options: none
+- Contract fixtures: `tests/fixtures/sources/kula_rss/`
+- Requirements: none
+- Known limitations: Reads the whole board from one RSS request and merges the feed's per-office items by job id. Matches terms against title, department, locations, workplace, and employment type; descriptions come from the feed. A response that is not an RSS feed fails the source; an empty channel is a `complete` empty board; items without a job id are skipped and report `partial`.
+
 ### `leastauthority_careers`
 
 - Provider: `discover.sources.static_pages` / `discover_leastauthority_careers`
