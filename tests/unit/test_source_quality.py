@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import source_quality
 
 
@@ -142,6 +144,69 @@ def test_validate_source_coverage_fails_when_raw_pages_show_dropped_detail():
     check_by_name = {check["name"]: check for check in result["checks"]}
     assert check_by_name["detail_depth"]["status"] == "fail"
     assert result["confidence"] == "failed"
+
+
+def _feed_source(description: str) -> dict:
+    # Mirrors a feed provider (e.g. kula_rss) that stores the posting body in
+    # `description` and keeps provenance-only notes.
+    return {
+        "source": "Nothing",
+        "source_url": "https://careers.kula.ai/nothing",
+        "discovery_mode": "kula_rss",
+        "enumerated_jobs": 19,
+        "candidates": [
+            {
+                "employer": "Nothing",
+                "title": "Product Manager, Subscription Products",
+                "url": "https://careers.kula.ai/nothing/59045",
+                "source_url": "https://careers.kula.ai/nothing",
+                "location": "London, England, United Kingdom",
+                "notes": "Enumerated through Kula job feed; Department: Labs",
+                "description": description,
+            }
+        ],
+    }
+
+
+DETAIL_PAGE = "<h3>What you'll do</h3><p>Own subscription pricing.</p><h3>Requirements</h3><p>5+ years in product.</p>"
+
+
+def test_validate_source_coverage_counts_a_description_with_detail_sections():
+    result = source_quality.validate_source_coverage(
+        _feed_source("About Nothing. What you'll do: own subscription pricing. Requirements: 5+ years in product."),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "pass"
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Careers Product Design Diversity, Equity & Inclusion Compensation calculator Contact",
+        "About us. We offer a competitive salary and equity, plus flexible hours.",
+    ],
+    ids=["dei-navigation", "benefits-boilerplate"],
+)
+def test_validate_source_coverage_does_not_count_compensation_only_descriptions(description):
+    result = source_quality.validate_source_coverage(
+        _feed_source(description),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "fail"
+
+
+def test_validate_source_coverage_still_fails_a_description_without_detail_sections():
+    result = source_quality.validate_source_coverage(
+        _feed_source("About Nothing. We build technology that feels exciting again."),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "fail"
 
 
 def test_build_integration_ticket_prefers_blocking_deterministic_failure():
