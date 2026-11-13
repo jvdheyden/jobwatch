@@ -160,8 +160,13 @@ def truncate_text(value: str, limit: int = 400) -> str:
     return text[:boundary].rstrip() + "..."
 
 
+# Typographic apostrophes would be dropped by the ASCII step below, turning
+# "What you’ll do" into "what youll do", which no marker matches.
+APOSTROPHE_TRANSLATION = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'"})
+
+
 def normalize_for_matching(value: str) -> str:
-    normalized = unicodedata.normalize("NFKD", value or "")
+    normalized = unicodedata.normalize("NFKD", (value or "").translate(APOSTROPHE_TRANSLATION))
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
     return ascii_text.lower()
 
