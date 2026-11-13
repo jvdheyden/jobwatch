@@ -128,6 +128,15 @@ RAW_DETAIL_MARKERS = {
     ),
 }
 DESCRIPTION_DETAIL_CATEGORIES = {"tasks", "qualifications"}
+# Generic words such as "requirements" also occur in policy pages. Require
+# a role-specific phrase or a standalone heading before trusting description
+# keywords enough to skip review. Enrichment flattens HTML, so ambiguous text
+# still counts as stored detail; the reviewer decides whether it is a posting.
+DESCRIPTION_ROLE_CONTEXT_RE = re.compile(
+    r"\b(?:what you'll (?:do|need)|what you (?:will do|need)|your (?:tasks|profile)|"
+    r"ihre aufgaben|ihr profil|job description|(?:required|minimum|preferred) qualifications)\b"
+    r"|(?:^|[.!?;]\s+)(?:responsibilit(?:y|ies)|requirements|qualifications|aufgaben|anforderungen)\s*:\s*\S"
+)
 
 
 @dataclass(frozen=True)
@@ -281,10 +290,23 @@ def _candidate_has_detail(candidate: dict[str, Any]) -> bool:
     # Providers and description enrichment store the posting body in
     # `description`; it counts when it carries role sections. Compensation
     # markers alone do not count: enrichment also stores navigation and benefits
-    # text, where "salary" or "Diversity, Equity & Inclusion" are common.
+    # text, where "salary" or "Diversity, Equity & Inclusion" are common. The
+    # listing-kind check keeps ambiguous description keywords eligible for review.
     if _raw_detail_categories(str(candidate.get("description") or "")) & DESCRIPTION_DETAIL_CATEGORIES:
         return True
     return _has_substantive_notes(candidate)
+
+
+def _description_needs_review(candidate: dict[str, Any]) -> bool:
+    if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
+        return False
+    if _has_substantive_notes(candidate):
+        return False
+    description = str(candidate.get("description") or "")
+    if not (_raw_detail_categories(description) & DESCRIPTION_DETAIL_CATEGORIES):
+        return False
+    normalized = normalize_for_matching(strip_html_fragment(description))
+    return DESCRIPTION_ROLE_CONTEXT_RE.search(normalized) is None
 
 
 def _candidate_has_direct_job_url(source_url: str, candidate: dict[str, Any]) -> bool:
@@ -478,6 +500,9 @@ def validate_source_coverage(
         reasons = _suspicious_candidate(candidate)
         if reasons:
             suspicious.append(f"{candidate.get('title', 'unknown')}: {', '.join(reasons)}")
+    ambiguous_descriptions = [
+        candidate.get("url", "") for candidate in candidates if _description_needs_review(candidate)
+    ]
     if suspicious and len(suspicious) == len(candidates):
         results.append(
             ValidatorResult(
@@ -495,6 +520,17 @@ def validate_source_coverage(
                 "warn",
                 "major",
                 "Some candidates look suspicious: " + "; ".join(suspicious[:4]),
+            )
+        )
+    elif ambiguous_descriptions:
+        warnings.append("Some descriptions have detail keywords without clear job context and need review.")
+        results.append(
+            ValidatorResult(
+                "listing_kind",
+                "warn",
+                "major",
+                "Description keywords alone do not establish that these candidates are job postings: "
+                + ", ".join(ambiguous_descriptions[:4]),
             )
         )
     else:

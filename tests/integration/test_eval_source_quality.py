@@ -2,9 +2,59 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+from dataclasses import asdict
 from pathlib import Path
+from unittest.mock import Mock
 
 import eval_source_quality
+from discover import http
+from discover.core import SourceConfig, enrich_candidate_descriptions
+from discover.sources.generic_html import discover_html
+
+
+def test_generic_policy_description_does_not_skip_auto_review(tmp_path, monkeypatch):
+    source = SourceConfig("Example", "https://example.com/careers", "html", None, "every_run")
+    pages = {
+        source.url: '<a href="/security">Security Policy</a>',
+        "https://example.com/security": (
+            "<h1>Security Policy</h1><p>We comply with applicable security requirements "
+            "to protect customer data.</p>"
+        ),
+    }
+    monkeypatch.setattr(http, "fetch_text", lambda url, *_: pages[url])
+    coverage = discover_html(source, ["security"], 10)
+    enrich_candidate_descriptions(coverage, 10)
+    assert len(coverage.candidates) == 1
+    assert "security requirements" in coverage.candidates[0].description
+
+    artifact = tmp_path / "discovery.json"
+    artifact.write_text(json.dumps({"sources": [asdict(coverage)]}))
+    output = tmp_path / "eval.json"
+    reviewer = Mock(return_value={
+        "status": "completed",
+        "defects": [{
+            "type": "navigation_noise",
+            "severity": "major",
+            "observed": "Security Policy is not a job posting.",
+        }],
+    })
+    monkeypatch.setattr(eval_source_quality, "review_source_with_llm", reviewer)
+    monkeypatch.setattr(eval_source_quality, "apply_runtime_env", lambda **_: None)
+    monkeypatch.setattr(eval_source_quality, "resolve_reviewer_bin", lambda _: None)
+    monkeypatch.setattr(sys, "argv", [
+        "eval_source_quality.py", "--track", "test", "--source", "Example",
+        "--today", "2026-11-13", "--artifact-path", str(artifact),
+        "--output", str(output), "--reviewer", "auto",
+    ])
+
+    assert eval_source_quality.main() == 1
+    reviewer.assert_called_once()
+    payload = json.loads(output.read_text())
+    assert payload["deterministic"]["confidence"] == "low"
+    assert payload["reviewer"]["status"] == "completed"
+    assert payload["integration_ticket"]["failure_mode"] == "candidate_noise"
+    assert payload["integration_ticket"]["suggested_strategy"] == "config_terms_override"
 
 
 def test_eval_source_quality_runs_reviewer_and_writes_integration_ticket(tmp_job_agent_root: Path, run_cmd):

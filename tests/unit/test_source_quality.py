@@ -216,6 +216,80 @@ def test_validate_source_coverage_counts_a_description_with_curly_apostrophe_sec
     assert check_by_name["detail_depth"]["status"] == "pass"
 
 
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Requirements: five years in product.",
+        "About Nothing. Responsibilities: own subscription pricing.",
+        "Qualifications: experience with product launches.",
+        "About Nothing. What you’ll do: own subscription pricing.",
+        "About Nothing. What you'll need: five years in product.",
+        "About Nothing. Minimum qualifications include product experience.",
+        "Ihre Aufgaben: Produktentwicklung begleiten.",
+        "Anforderungen: Erfahrung in der Produktentwicklung.",
+    ],
+)
+def test_validate_source_coverage_accepts_description_role_context(description):
+    result = source_quality.validate_source_coverage(
+        _feed_source(description),
+        raw_text_fetcher=lambda *_: pytest.fail("Stored detail should not need a refetch"),
+    )
+
+    assert result["confidence"] == "high"
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Security Policy. We comply with applicable security requirements to protect customer data.",
+        "Security requirements: protect customer data.",
+        "We take responsibility for protecting customer data.",
+        "Our security responsibilities include protecting customer data.",
+        "Professional qualifications of our security auditors are verified annually.",
+        "About Nothing Requirements five years in product.",
+    ],
+)
+def test_validate_source_coverage_reviews_ambiguous_description_keywords(description):
+    source = _feed_source(description)
+    result = source_quality.validate_source_coverage(
+        source,
+        raw_text_fetcher=lambda *_: pytest.fail("Ambiguous stored detail should not need a refetch"),
+    )
+
+    assert result["confidence"] == "low"
+    assert not any(check["status"] == "fail" for check in result["checks"])
+    # The reviewer should decide whether this is a job, not receive a false
+    # missing-detail ticket when the body is already stored.
+    assert source_quality.build_integration_ticket(
+        "test", source, result, {"status": "completed", "defects": []}, canary_title="", canary_url=""
+    ) is None
+
+
+@pytest.mark.parametrize("discovery_mode", ["html", "browser"])
+@pytest.mark.parametrize("include_real_job", [False, True])
+def test_ambiguous_description_requires_review_even_with_other_job_detail(discovery_mode, include_real_job):
+    source = _feed_source("We comply with security requirements to protect customer data.")
+    source["discovery_mode"] = discovery_mode
+    source["status"] = "complete"
+    if include_real_job:
+        real_job = _feed_source("What you’ll do: build secure software.")["candidates"][0]
+        real_job.update(title="Security Engineer", url="https://careers.kula.ai/nothing/123")
+        source["candidates"].append(real_job)
+
+    result = source_quality.validate_source_coverage(source)
+
+    assert result["confidence"] == "low"
+    assert not any(check["status"] == "fail" for check in result["checks"])
+
+
+@pytest.mark.parametrize("detail_field", ["tasks", "notes"])
+def test_description_ambiguity_preserves_other_candidate_detail(detail_field):
+    source = _feed_source("We comply with security requirements to protect customer data.")
+    source["candidates"][0][detail_field] = "Responsibilities: build secure software."
+
+    assert source_quality.validate_source_coverage(source)["confidence"] == "high"
+
+
 def test_validate_source_coverage_still_fails_a_description_without_detail_sections():
     result = source_quality.validate_source_coverage(
         _feed_source("About Nothing. We build technology that feels exciting again."),
