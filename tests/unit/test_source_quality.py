@@ -199,6 +199,23 @@ def test_validate_source_coverage_does_not_count_compensation_only_descriptions(
     assert check_by_name["detail_depth"]["status"] == "fail"
 
 
+@pytest.mark.parametrize("apostrophe", ["'", "\u2019", "\u2018", "\u02bc"])
+def test_detail_markers_match_typographic_apostrophes(apostrophe):
+    text = f"What you{apostrophe}ll do: own subscription pricing. What you{apostrophe}ll need: 5+ years in product."
+
+    assert source_quality._raw_detail_categories(text) == {"tasks", "qualifications"}
+
+
+def test_validate_source_coverage_counts_a_description_with_curly_apostrophe_sections():
+    result = source_quality.validate_source_coverage(
+        _feed_source("About Nothing. What you\u2019ll do: own subscription pricing."),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "pass"
+
+
 def test_validate_source_coverage_still_fails_a_description_without_detail_sections():
     result = source_quality.validate_source_coverage(
         _feed_source("About Nothing. We build technology that feels exciting again."),
