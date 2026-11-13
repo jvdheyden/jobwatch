@@ -21,6 +21,16 @@ Determine the authorized actions from the user's request and prior session instr
 - Approval and merging are separate actions. Approval alone does not authorize merging. A merge request includes permission to request changes for confirmed merge conflicts; other review publication follows the requested scope. Explicit limits such as "do not post" take precedence, and prior session authorization still applies.
 - Complete the authorized work without asking for confirmation again. Publication still follows the duplicate-feedback rules below: permission to publish does not require a submission on every PR. If requirements prevent an action, complete other authorized work and report the blocker.
 
+## Review criteria
+
+Assess every change against all three criteria below. Base conclusions on evidence; "no issues found" is a valid outcome. State any limits on what you could assess.
+
+- **Correctness:** Verify that the change solves the stated problem without regressions. Follow the affected paths from input to consumer, including edge cases and failure handling. Check that tests cover observable behavior.
+
+- **Code style:** Prefer clear code, established repo patterns, and the smallest complete solution. Flag unnecessary complexity, duplication, or unrelated changes when they have a concrete cost. Preserve the repo's boundaries: providers enumerate and extract, track rules filter, and agents evaluate fit. Personal style preferences are not blockers.
+
+- **Product fit:** Assess whether the resulting behavior serves the intended user need and fits the repo's purpose and workflows. Check defaults and tradeoffs against the stated requirements, and surface unresolved product decisions.
+
 ## Scope and evidence
 
 - Pin the base and head commits. Check whether the head changed before reporting.
@@ -28,7 +38,6 @@ Determine the authorized actions from the user's request and prior session instr
 - Distinguish introduced regressions, incomplete fixes within the PR's stated scope, and unrelated existing issues. Only the first two normally justify blocking the PR.
 - Support findings with a concrete trigger, consequence, and reproduction or clear execution path. Label uncertainty; omit speculative objections and stylistic preferences. Finding no issues is a valid outcome.
 - Use documented contracts and relevant tests to establish intended behavior. Surface unresolved product-policy questions explicitly.
-- Start your report with a short executive summary on what the PR intends to do, your findings, if there are any, and your recommendation whether you'd accept this code into the repository, from a correctness, as well as from a product perspective.
 
 ## Verification
 
@@ -49,15 +58,18 @@ Each entry must include:
 - **Executive Summary:** Give concise summary of what the PR wants to achieve and then your verdict/recommended action incl. short justification.
 - **Inspection:** files and execution paths examined, what the inspections established, and why the reviewed scope is sufficient. Distinguish issues introduced by the change from pre-existing issues.
 - **Verification:** commands and reproductions, relevant inputs, results, failures, tool limitations, and recovery actions. Distinguish actual discovery, supplied/mocked outputs, and live model evaluation. Include enough reproduction detail or durable supporting artifacts to reproduce the result after temporary files are deleted; a `/tmp` path alone is insufficient.
-- **Assessment:** findings accepted or rejected, supporting evidence, severity, correction direction, and which previous findings are fixed, unchanged, or still uncertain.
+- **Assessment:** a brief conclusion and supporting evidence for each [review criterion](#review-criteria), findings accepted or rejected, severity, correction direction, and which previous findings are fixed, unchanged, or still uncertain.
 - **Action decisions:** justification for publishing, approving, requesting changes, merging, or taking no external action, including comparison with existing feedback and verification sufficiency.
 - **External mutations:** before each action, record the intended operation, authorization, target commit, and justification. Afterward, record the actual result, URL/identifier, and confirmation, including failures or ambiguous outcomes and how they were resolved. This applies to comments, reviews, thread changes, and merges.
 - **Handoff:** remaining uncertainties, limitations, concrete next steps (or that none remain), and final review/publication state.
 
-Keep the user-facing report concise:
+## Required final response
 
-- Report findings by severity, with file/line references, trigger, impact, and a concise correction direction.
-- State which previous findings are resolved, what was verified, and any material limitations. Separate unrelated existing issues from blockers.
+- Begin with a brief executive summary of the intended change, overall findings, and acceptance recommendation.
+- Then give a brief verdict for each [review criterion](#review-criteria): **Correctness**, **Code style**, and **Product fit**. Keep each verdict to one sentence where possible.
+- Follow with actionable findings by severity, including file/line references, trigger, impact, and correction direction. Identify resolved previous findings and separate unrelated existing issues from blockers.
+- Finish with relevant verification, material limitations, and any publication or merge outcome.
+- Before sending, check that the executive summary and all three verdicts appear in the final chat response itself.
 
 ## Publishing reviews
 
@@ -78,23 +90,3 @@ Keep the user-facing report concise:
 - Use **rebase** by default: `merge_method: "rebase"` in the GitHub plugin or `--rebase` with `gh pr merge`. Honor an explicit user override; if repository rules disallow rebase, report the constraint rather than silently selecting another method.
 - Use a required merge queue rather than bypassing it. Do not use administrative overrides or change protection rules to force a merge; do not enable auto-merge for unmet requirements unless the user requested it.
 - Confirm the actual result. After an ambiguous timeout, check PR state before retrying. Report merged, queued, or blocked accurately, with the PR URL and merge commit when available. Explicit branch deletion requires separate authorization.
-
-
-## Code quality and scope
-
-- Prefer the smallest complete solution that preserves existing behavior. Check the path from input to consumer, including failure handling and competing conditions; a locally correct function may still produce the wrong overall result.
-
-- Preserve architectural boundaries. In this repo, providers enumerate and extract, track rules filter, and agents evaluate fit. Keep source-family parsing in reusable provider modules rather than adding employer-specific
-  branches to generic discovery.
-
-- Reuse existing helpers and contracts when they fit. Flag duplicated parsing, validation, or routing policy that could diverge. Do not demand an abstraction merely because two pieces of code look similar.
-
-- Require new abstractions, configuration options, dependencies, and fallback paths to serve a concrete current requirement. Prefer removing unnecessary complexity over documenting or wrapping it.
-
-- Keep one authoritative definition of each policy. When prompts, deterministic checks, and downstream routing share responsibility, verify that they agree and that precedence is explicit.
-
-- Keep changes focused. Distinguish cleanup needed for the requested behavior from unrelated refactoring; do not make unrelated cleanup a condition of approval.
-
-- Favor tests of observable behavior and meaningful boundary cases. Check whether tests would catch the actual failure, rather than merely restating the implementation or locking down prose.
-
-- Explain the concrete cost of maintainability findings: inconsistent behavior, hidden coupling, difficult extension, or unnecessary operational burden. Personal style preferences are not blockers.
