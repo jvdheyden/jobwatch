@@ -23,7 +23,8 @@ tests/tmp/
 /cv.md
 *.pdf
 .codex
-.claude/
+/.claude/*
+!/.claude/skills/
 .gemini/
 settings.local.json
 

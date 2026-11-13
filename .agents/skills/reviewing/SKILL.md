@@ -45,6 +45,7 @@ Determine the authorized actions from the user's request and prior session instr
 Each entry must include:
 
 - **Request and starting state:** user request, authorized actions, PR URL (or local scope), pinned base/head commits, prior reports, and links to existing discussions with each finding's current disposition.
+- **Executive Summary:** Give concise summary of what the PR wants to achieve and then your verdict/recommended action incl. short justification.
 - **Inspection:** files and execution paths examined, what the inspections established, and why the reviewed scope is sufficient. Distinguish issues introduced by the change from pre-existing issues.
 - **Verification:** commands and reproductions, relevant inputs, results, failures, tool limitations, and recovery actions. Distinguish actual discovery, supplied/mocked outputs, and live model evaluation. Include enough reproduction detail or durable supporting artifacts to reproduce the result after temporary files are deleted; a `/tmp` path alone is insufficient.
 - **Assessment:** findings accepted or rejected, supporting evidence, severity, correction direction, and which previous findings are fixed, unchanged, or still uncertain.
