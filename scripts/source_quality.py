@@ -127,6 +127,7 @@ RAW_DETAIL_MARKERS = {
         "besoldung",
     ),
 }
+DESCRIPTION_DETAIL_CATEGORIES = {"tasks", "qualifications"}
 
 
 @dataclass(frozen=True)
@@ -271,6 +272,12 @@ def _has_substantive_notes(candidate: dict[str, Any]) -> bool:
 
 def _candidate_has_detail(candidate: dict[str, Any]) -> bool:
     if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
+        return True
+    # Providers and description enrichment store the posting body in
+    # `description`; it counts when it carries role sections. Compensation
+    # markers alone do not count: enrichment also stores navigation and benefits
+    # text, where "salary" or "Diversity, Equity & Inclusion" are common.
+    if _raw_detail_categories(str(candidate.get("description") or "")) & DESCRIPTION_DETAIL_CATEGORIES:
         return True
     return _has_substantive_notes(candidate)
 
