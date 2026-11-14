@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/find-jobs/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: find-jobs
 description: Extract and filter plausible candidate roles from discovery artifacts, deduplicate against seen_jobs.json, and return a short high-signal candidate list with coverage notes. Use this skill for extraction and filtering, not for final ranking.
@@ -195,3 +192,6 @@ If a source's artifact coverage shows it could not be accessed or parsed:
 - mark the source as `failed`
 
 If the required coverage fields are missing for a source, treat that source as partial rather than complete.
+
+<!-- GENERATED FILE: source of truth is .agents/skills/find-jobs/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->

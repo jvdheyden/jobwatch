@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/set-up/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: set-up
 description: Set up a new search track, or update an existing track's preferences and reconcile its retrieval configuration.
@@ -264,3 +261,6 @@ Report:
 - validation commands that passed or failed
 - provider-specific machine setup status when relevant
 - that generated profile, setup, and track artifacts are local and ignored unless shared repository files were also changed
+
+<!-- GENERATED FILE: source of truth is .agents/skills/set-up/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->

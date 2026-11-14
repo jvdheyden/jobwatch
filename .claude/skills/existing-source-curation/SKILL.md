@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/existing-source-curation/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: existing-source-curation
 description: Add, evaluate, confirm, or enable a named employer or official source for an existing track. Resolve the official careers URL, choose a conservative discovery_mode, update sources.json, and escalate through integrate_next_source.py when needed.
@@ -75,3 +72,6 @@ JOB_AGENT_ROOT="$PWD" ./.venv/bin/python scripts/render_sources_md.py --track {t
 - Do not manually edit `source_state.json`; let `scripts/integrate_next_source.py` own those mutations during single-source enablement.
 - Do not edit `match_rules.json` unless the request explicitly includes that work.
 - Do not treat normal single-source enablement as a repo-development pivot. Only pivot to repo development when the user explicitly asks to change the shared integration workflow itself or to make manual shared-code edits outside the standard `scripts/integrate_next_source.py` path.
+
+<!-- GENERATED FILE: source of truth is .agents/skills/existing-source-curation/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->

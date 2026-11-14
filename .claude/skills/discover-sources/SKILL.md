@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/discover-sources/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: discover-sources
 description: Find employers and official job-board sources for a new job-search track from a bounded setup artifact and return a validated source pack.
@@ -87,3 +84,6 @@ The runner rejects unknown fields, unsafe URLs, unsupported modes, invalid ids/e
 The runner renders the human-facing summary deterministically after validation. The coordinator should not reproduce the worker transcript or dump raw records. It presents the recommended package, records confirmed ids and accepted broad-source rules in `setup.json` with `scripts/setup_contracts.py select-sources`, and continues to deterministic scaffolding.
 
 If no strong official sources exist, return an empty primary list and only credible follow-up options; say why through the bounded dropped/follow-up fields rather than padding the recommendation.
+
+<!-- GENERATED FILE: source of truth is .agents/skills/discover-sources/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->

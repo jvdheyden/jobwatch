@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/rank-jobs/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: rank-jobs
 description: Evaluate and rank previously found candidate roles against the current track preferences and the candidate profile. Use this skill after discovery to score, compare, and prioritize jobs, not to search for new ones.
@@ -123,3 +120,6 @@ Optional fields: `job_key`, `alternate_url`, `location`, `remote`, `team_or_doma
 
 Required fields: `company`, `title`, `listing_url`, `fit_score`, `recommendation`, `short_note`.
 Optional fields: `job_key`, `alternate_url`, `location`, `source`.
+
+<!-- GENERATED FILE: source of truth is .agents/skills/rank-jobs/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
