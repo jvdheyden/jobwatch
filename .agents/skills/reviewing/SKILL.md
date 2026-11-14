@@ -13,7 +13,7 @@ Follow the user's requested scope. Reviewing permits a chat report; posting, app
 
 1. Read the request, relevant repository contracts, prior `docs/reviews/` reports, and existing PR discussions. Pin the base and head commits. On follow-ups, verify earlier findings and review changes since the last reviewed head; expand scope if affected code or the base changed.
 2. Assess:
-   - **Correctness:** Does the change solve the problem without regressions, including relevant failure cases? Do tests cover observable behavior?
+   - **Correctness:** Does the change solve the problem without regressions, including relevant failure cases? For changed behavior or tests, apply `.agents/skills/testing/SKILL.md` to assess test adequacy and required provider contracts.
    - **Code style:** Is this the simplest clear solution consistent with repository conventions? Keep providers responsible for extraction, track rules for filtering, and agents for fit evaluation.
    - **Product fit:** Does the behavior meet the user need and intended workflow? Flag unresolved product decisions.
    - **Architectural fit:** Check changes against `docs/architecture.md`. Flag violations of component responsibilities or boundaries as blockers unless explicitly authorized. Updating the documentation is not authorization.
