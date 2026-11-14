@@ -1,173 +1,39 @@
 # Architecture Overview
 
-This repo runs an agent-assisted job-search workflow. Each track combines deterministic Python helpers under `scripts/` with agent-driven skills under `.agents/skills/`. This page is the high-level map; per-source detail lives in the auto-generated [`shared/discovery_modes.md`](../shared/discovery_modes.md).
+This repo runs an agent-assisted job-search workflow. Each track combines deterministic Python helpers under `scripts/` with agent-driven skills under `.agents/skills/`. This page explains the main data flow and component responsibilities; agent work modes are defined in [`AGENTS.md`](../AGENTS.md), and per-source detail lives in the auto-generated [`shared/discovery_modes.md`](../shared/discovery_modes.md).
 
-## Work modes
+## System at a glance
 
-[`AGENTS.md`](../AGENTS.md) routes every prompt to one of four modes:
-
-| Mode | Trigger | Lives in |
-| --- | --- | --- |
-| Track run | Scheduled or user prompt to run a track and produce a digest | `tracks/<track>/AGENTS.md`, agent skills, `scripts/` |
-| Track setup and maintenance | Prompt to create/scaffold a track, update its preferences, or reconcile retrieval | `set-up` skill (separate new-track and existing-track workflows) |
-| Existing-track source curation | Prompt to add/evaluate a single named employer or source for an existing track | `existing-source-curation` skill, `tracks/<track>/sources.json`, `scripts/render_sources_md.py` |
-| Repo development | Prompt to change code, tests, skills, or docs | `coding` skill, `scripts/`, `tests/` |
-
-## Guided setup boundary
-
-Guided setup keeps one interactive coordinator but moves costly source discovery and first-preview ranking into two fresh bounded workers. The coordinator persists reviewed decisions under `artifacts/setup/<setup-id>/setup.json`; it does not pass its transcript to either worker.
+Each **track** defines where to search and what the user considers relevant. Deterministic discovery collects candidates; agents determine relevance and priority; scripts maintain state and produce the digest.
 
 ```mermaid
 flowchart LR
-  Coordinator[setup_coordinator] --> Setup[setup.json]
-  Setup --> SourceWorker[source_discovery]
-  SourceWorker --> Pack[source-pack.json]
-  Pack --> Confirm[confirm source ids]
-  Confirm --> Setup
-  Setup --> Scaffold[scaffold_track.py]
-  Scaffold --> Track[tracks/slug]
-  Track --> Discovery[discover_jobs.py]
-  Discovery --> Full[full discovery artifact]
-  Full --> Compact[preview-context builder]
-  Setup --> Compact
-  Compact --> Context[preview-context.json]
-  Context --> Ranker[preview_ranker]
-  Ranker --> Result[preview-result.json]
-  Result --> Assemble[deterministic digest assembly]
-  Context --> Assemble
-  Assemble --> Digest[standard digest JSON + Markdown]
+  Config[Track sources and retrieval rules] --> Discovery[Deterministic discovery]
+  Discovery --> Artifact[Discovery artifact]
+  Artifact --> Find[AI: find-jobs]
+  Preferences[Track and global preferences, CV] --> Find
+  Find --> Rank[AI: rank-jobs]
+  Preferences --> Rank
+  Rank --> Digest[Structured digest]
+  Digest --> Post[Deterministic post-processing]
 ```
 
-All setup artifacts use schema version 1 plus `kind` and `setup_id`, are size-capped, validated before consumption, and atomically written. `setup.json` is capped at 32 KiB and contains only a reviewed profile projection, track brief, source seeds, and confirmed canonical source configuration. `source-pack.json` is capped at 128 KiB and binds to the setup hash. `preview-context.json` is capped at 256 KiB, carries at most 40 unseen URL-deduplicated candidates, and limits each job description to 12 KiB. It deliberately excludes discovery `notes` as description evidence. `preview-result.json` is capped at 128 KiB, binds to the context hash, refers only to stable candidate ids, and must give every candidate exactly one disposition.
+### Component responsibilities
 
-A minimal setup artifact has this synthetic shape:
+| Component | Responsibility |
+| --- | --- |
+| Discovery providers | Enumerate and extract postings using configured terms and native filters; report coverage. |
+| Optional `match_rules.json` | Apply source-scoped deterministic candidate filtering. |
+| `find-jobs` | Assess semantic role/domain fit and hard constraints; deduplicate candidates. |
+| `rank-jobs` | Score and recommend among admitted candidates. |
+| `run_track.sh` and post-processing scripts | Orchestrate runs, render digests, and maintain source, seen-job, and ranked state. |
+| Setup and source-integration workflows | Create and maintain tracks and provider integrations outside scheduled runs. |
 
-```json
-{
-  "schema_version": 1,
-  "kind": "jobwatch_setup",
-  "setup_id": "20260720T155600Z-a1b2c3d4",
-  "profile": {
-    "user_name": "Example User",
-    "seniority": ["senior"],
-    "skills": ["Rust"],
-    "experience_signals": ["production cryptography"],
-    "positive_signals": ["hands-on ownership"],
-    "borderline_signals": ["management-heavy roles"],
-    "current_or_recent_employers": ["Previous Employer"]
-  },
-  "track": {
-    "slug": "applied_crypto",
-    "display_name": "Applied Cryptography",
-    "search_area": "Applied cryptography and privacy engineering",
-    "goals_or_role_types": ["Applied cryptography engineer"],
-    "keep_only_keywords": ["cryptography"],
-    "constraints_or_red_flags": ["No mandatory relocation"],
-    "geography_or_remote_preferences": ["Europe", "remote"],
-    "fit_language": "Hands-on cryptography roles compatible with reviewed location constraints."
-  },
-  "source_seeds": {
-    "employers": [],
-    "sectors_or_organizations": [],
-    "career_pages_or_boards": []
-  },
-  "selected_sources": {
-    "track_terms": [],
-    "sources": [],
-    "match_rules": []
-  }
-}
-```
-
-An empty selected source list is valid before confirmation but blocks `scaffold_track.py`. Source entries and match rules use the same canonical schemas as track `sources.json` and `match_rules.json`.
-
-The deterministic assembler joins candidate judgments back to URLs and source coverage, then emits the existing digest schema. The two workers cannot write the workspace and never resume the coordinator conversation. Source discovery is web-capable; preview ranking is instructed and configured without routine web access. `scaffold_track.py` has no model role because it makes no model call.
-
-Setup model defaults and provider command construction live in `scripts/agent_provider.py`. Explicit CLI arguments override provider/role environment values, which override tested defaults. These setup-only policies do not change `run_track.sh`, `source_reviewer`, or `source_coder` behavior.
-
-## Candidate filtering boundary
-
-Configured `sources.json` `track_terms` and source-specific `search_terms` are
-retrieval vocabulary. Providers extract postings and compute generic term
-evidence; ordinary candidate admission requires non-empty `matched_terms`, not
-shared technical/non-technical role policy. Provider-native filters and narrow
-source-protocol predicates remain part of enumeration.
-
-```mermaid
-flowchart LR
-  Provider[Provider enumeration] --> Terms[Configured term evidence]
-  Terms --> Rules[Optional source-scoped track match rules]
-  Rules --> Enrich[Description enrichment]
-  Enrich --> Artifact[Discovery artifact]
-  Artifact --> Find[find-jobs: role + domain + hard-constraint admission]
-  Find --> Rank[rank-jobs: holistic score + recommendation]
-```
-
-The existing optional `tracks/<track>/match_rules.json` hook runs before
-fallback description enrichment and reports deterministic removals through
-coverage limitations. Its source-scoped rules do not replace semantic track
-preferences. `find-jobs` reads those preferences and decides candidate
-admission by evaluating role-family fit, domain fit, and hard constraints as
-separate questions. `rank-jobs` then re-evaluates the surviving candidates and
-assigns `apply_now`, `watch`, or `skip`; it does not search for candidates that
-were absent from the artifact.
-
-First-preview selection remains capped at 40 unseen, URL-deduplicated
-candidates. Candidates with more configured terms matched in their titles are
-ordered first, followed by total matched-term count and stable discovery order.
-This priority affects bounded selection only, not eligibility or semantic fit.
-
-## Retrieval maintenance and coverage
-
-`sources.json` owns deterministic retrieval vocabulary and native filters;
-`prefs.md`, global preferences and the profile own semantic fit. Per-source
-`search_terms` either append to `track_terms` or override them entirely.
-Discovery trims and deduplicates terms case-insensitively. These terms are not
-automatically compiled from preferences: semantic constraints, exclusions and
-ranking signals need not be literal retrieval queries.
-
-`find-jobs` distinguishes two questions:
-
-- **Execution coverage:** did the fresh artifact demonstrate the configured
-  work for the due source, accounting for provider strategy and limitations?
-  Feed enumeration with local matching counts as term application. Zero matches
-  for any or all applied terms can still be complete. Missing execution evidence
-  or incomplete enumeration remains a coverage limitation. Unfinished candidate
-  review and missing fit evidence must also be reported explicitly.
-- **Search quality:** could the configuration miss a requested role family or
-  domain? Report a concrete concern in the affected source's existing digest
-  `runs[].source_notes[].limitations`, prefixed `Search-quality observation:`.
-  Name the requirement, restrictive configuration and possible omission. Missing
-  preference words or zero results alone do not establish a gap. Keep otherwise
-  successful execution complete; do not claim an actual missed job without evidence.
-
-For example, a source can complete retrieval for `cryptography` while its
-limitations note that newly requested privacy engineering roles without that
-term may be missed. Observations do not launch maintenance workers, change
-configuration or rerun discovery. `rank-jobs` continues scoring the candidates
-it receives against semantic preferences.
-
-Users request maintenance with prompts such as "Update my crypto track to
-include privacy engineering" or "I edited this track's preferences; reconcile
-retrieval." The existing `set-up` skill updates semantic preferences when
-requested and reviews global terms, all source overrides, native filters and
-existing match rules together. Ranking-only changes may require no retrieval
-edits. Maintenance reuses source rendering, discovery planning and targeted
-checks/canaries where practical, without scaffolding again or overwriting
-scheduled artifacts or source state. Configuration changes apply to subsequent
-discovery; historical artifacts remain unchanged.
-
-New-track setup reviews alignment before source-pack confirmation, and named
-source curation checks the new source's effective terms without silently tuning
-unrelated sources. Direct edits to preference files remain unsynchronized until
-maintenance is requested; advisory observations cannot guarantee detection or
-recall. Existing tracks can selectively adopt the corrected coverage instructions
-from the shared template without replacing their custom instructions. No artifact
-schema migration is required.
+Retrieval configuration and semantic preferences are intentionally separate. Source configuration may be reconciled with preferences during explicit maintenance, not as a side effect of scheduled runs. These responsibilities describe the system design; the [reviewing skill](../.agents/skills/reviewing/SKILL.md) defines how to assess changes against it.
 
 ## Component map
 
-The flowchart shows how the agent skills, deterministic scripts, and on-disk artifacts interact across all four modes. Solid arrows are direct calls or invocations; dashed arrows are read/write of artifacts.
+The flowchart expands the overview into the main implementation workflows. Code review and harness-launched sessions are not separate runtime pipelines. Solid arrows are direct calls or invocations; dashed arrows indicate artifact reads and writes.
 
 ```mermaid
 flowchart LR
@@ -224,8 +90,8 @@ flowchart LR
     SrcConfig[(tracks/&lt;track&gt;/sources.json)]:::artifact
     SrcDoc[(tracks/&lt;track&gt;/sources.md)]:::artifact
     SrcState[(tracks/&lt;track&gt;/source_state.json)]:::artifact
-    SeenJobs[(shared/seen_jobs.md)]:::artifact
-    RankedOv[(shared/ranked_jobs/, ranked_overview.md)]:::artifact
+    SeenJobs[(tracks/&lt;track&gt;/seen_jobs.json)]:::artifact
+    RankedOv[(shared/ranked_jobs/&lt;track&gt;.json<br/>tracks/&lt;track&gt;/ranked_overview.md)]:::artifact
     LogseqGraph[(LOGSEQ_GRAPH_DIR)]:::artifact
     EvalArt[(artifacts/evals/&lt;track&gt;/&lt;source&gt;/&lt;date&gt;.json<br/>eval + embedded integration_ticket)]:::artifact
   end
@@ -317,6 +183,219 @@ sequenceDiagram
   end
   Track-->>Sched: exit status
 ```
+
+## Track configuration and information flow
+
+Each track `T` has two independent kinds of input: **retrieval configuration** (`sources.json` and optional `match_rules.json`) and **semantic preferences** (`prefs.md` plus the shared profile). Deterministic discovery does not read the CV or preference files; agents use them *after* retrieval.
+
+```mermaid
+flowchart LR
+  subgraph Shared["Shared profile"]
+    CV["profile/cv.md"]
+    GP["profile/prefs_global.md"]
+  end
+  subgraph Track["tracks/T/"]
+    SRC["sources.json<br/>sources, terms, native filters, cadence"]
+    RULES["match_rules.json<br/>optional source-scoped rules"]
+    STATE["source_state.json<br/>last checked and integration state"]
+    PREF["prefs.md<br/>goals, constraints, fit preferences"]
+    INSTR["AGENTS.md<br/>run instructions"]
+    SEEN["seen_jobs.json<br/>previously reported jobs"]
+  end
+  DISC["discover_jobs.py<br/>deterministic discovery"]
+  ART["discovery artifact<br/>candidates, descriptions, coverage"]
+  FIND["find-jobs<br/>semantic admission + deduplication"]
+  RANK["rank-jobs<br/>scoring + recommendations"]
+  DIGEST["structured digest JSON"]
+  POST["runner post-processing<br/>state, seen, markdown, overview"]
+
+  SRC --> DISC
+  RULES --> DISC
+  STATE --> DISC
+  DISC --> ART --> FIND --> RANK --> DIGEST --> POST
+  ART --> POST
+  SRC -.->|coverage audit| FIND
+  SEEN --> FIND
+  PREF --> FIND
+  PREF --> RANK
+  GP --> FIND
+  GP --> RANK
+  CV --> FIND
+  CV --> RANK
+  INSTR --> FIND
+  INSTR --> RANK
+  POST -.->|complete sources| STATE
+  POST -.->|reported jobs| SEEN
+```
+
+| Canonical location | Contents | Consumer |
+| --- | --- | --- |
+| `profile/cv.md` | Experience and skills | `find-jobs`, `rank-jobs` |
+| `profile/prefs_global.md` | Cross-track preferences and constraints | `find-jobs`, `rank-jobs` |
+| `tracks/T/prefs.md` | Track goals, role families, domain requirements, exclusions, priorities | `find-jobs`, `rank-jobs`; overrides conflicting global preferences |
+| `tracks/T/AGENTS.md` | Track workflow and setup-derived fit summary | Track agent; `prefs.md` remains authoritative for fit |
+| `tracks/T/sources.json` | Sources, cadence, `track_terms`, source `search_terms` (`append`/`override`), native filters | Discovery; `find-jobs` coverage audit |
+| `tracks/T/match_rules.json` (optional) | Source-specific deterministic rules | Discovery, before fallback description enrichment |
+| `tracks/T/source_state.json` | Last successful source checks and integration queue state | Discovery cadence; updated by scripts for complete sources |
+| `tracks/T/seen_jobs.json` | Previously reported jobs | `find-jobs` deduplication; updated from the digest by scripts |
+
+`tracks/T/sources.md` is generated from `sources.json`; it is not another source of truth. Discovery writes `artifacts/discovery/T/YYYY-MM-DD.json`; the agent produces `artifacts/digests/T/YYYY-MM-DD.json`. The runner renders `tracks/T/digests/YYYY-MM-DD.md` and updates `tracks/T/ranked_overview.md` and `shared/ranked_jobs/T.json`.
+
+**Recall boundary:** A restrictive retrieval term, native filter, or match rule can exclude a job *before* `find-jobs` sees it. A successful scrape therefore proves execution of the configured search, not that the configuration covers every desired role. See [Retrieval maintenance and coverage](#retrieval-maintenance-and-coverage) for the separate audit and reconciliation workflow.
+
+The first setup preview uses a different, bounded `preview-context.json` projection for `preview_ranker`; this diagram covers normal track runs.
+
+## Candidate filtering boundary
+
+Configured `sources.json` `track_terms` and source-specific `search_terms` are
+retrieval vocabulary. Providers extract postings and compute generic term
+evidence; ordinary candidate admission requires non-empty `matched_terms`, not
+shared technical/non-technical role policy. Provider-native filters and narrow
+source-protocol predicates remain part of enumeration.
+
+```mermaid
+flowchart LR
+  Provider[Provider enumeration] --> Terms[Configured term evidence]
+  Terms --> Rules[Optional source-scoped track match rules]
+  Rules --> Enrich[Description enrichment]
+  Enrich --> Artifact[Discovery artifact]
+  Artifact --> Find[find-jobs: role + domain + hard-constraint admission]
+  Find --> Rank[rank-jobs: holistic score + recommendation]
+```
+
+The existing optional `tracks/<track>/match_rules.json` hook runs before
+fallback description enrichment and reports deterministic removals through
+coverage limitations. Its source-scoped rules do not replace semantic track
+preferences. `find-jobs` reads those preferences and decides candidate
+admission by evaluating role-family fit, domain fit, and hard constraints as
+separate questions. `rank-jobs` then re-evaluates the surviving candidates and
+assigns `apply_now`, `watch`, or `skip`; it does not search for candidates that
+were absent from the artifact.
+
+First-preview selection remains capped at 40 unseen, URL-deduplicated
+candidates. Candidates with more configured terms matched in their titles are
+ordered first, followed by total matched-term count and stable discovery order.
+This priority affects bounded selection only, not eligibility or semantic fit.
+
+## Retrieval maintenance and coverage
+
+`sources.json` owns deterministic retrieval vocabulary and native filters;
+`prefs.md`, global preferences and the profile own semantic fit. Per-source
+`search_terms` either append to `track_terms` or override them entirely.
+Discovery trims and deduplicates terms case-insensitively. These terms are not
+automatically compiled from preferences: semantic constraints, exclusions and
+ranking signals need not be literal retrieval queries.
+
+`find-jobs` distinguishes two questions:
+
+- **Execution coverage:** did the fresh artifact demonstrate the configured
+  work for the due source, accounting for provider strategy and limitations?
+  Feed enumeration with local matching counts as term application. Zero matches
+  for any or all applied terms can still be complete. Missing execution evidence
+  or incomplete enumeration remains a coverage limitation. Unfinished candidate
+  review and missing fit evidence must also be reported explicitly.
+- **Search quality:** could the configuration miss a requested role family or
+  domain? Report a concrete concern in the affected source's existing digest
+  `runs[].source_notes[].limitations`, prefixed `Search-quality observation:`.
+  Name the requirement, restrictive configuration and possible omission. Missing
+  preference words or zero results alone do not establish a gap. Keep otherwise
+  successful execution complete; do not claim an actual missed job without evidence.
+
+For example, a source can complete retrieval for `cryptography` while its
+limitations note that newly requested privacy engineering roles without that
+term may be missed. Observations do not launch maintenance workers, change
+configuration or rerun discovery. `rank-jobs` continues scoring the candidates
+it receives against semantic preferences.
+
+Users request maintenance with prompts such as "Update my crypto track to
+include privacy engineering" or "I edited this track's preferences; reconcile
+retrieval." The existing `set-up` skill updates semantic preferences when
+requested and reviews global terms, all source overrides, native filters and
+existing match rules together. Ranking-only changes may require no retrieval
+edits. Maintenance reuses source rendering, discovery planning and targeted
+checks/canaries where practical, without scaffolding again or overwriting
+scheduled artifacts or source state. Configuration changes apply to subsequent
+discovery; historical artifacts remain unchanged.
+
+New-track setup reviews alignment before source-pack confirmation, and named
+source curation checks the new source's effective terms without silently tuning
+unrelated sources. Direct edits to preference files remain unsynchronized until
+maintenance is requested; advisory observations cannot guarantee detection or
+recall. Existing tracks can selectively adopt the corrected coverage instructions
+from the shared template without replacing their custom instructions. No artifact
+schema migration is required.
+
+## Guided setup boundary
+
+Guided setup keeps one interactive coordinator but moves costly source discovery and first-preview ranking into two fresh bounded workers. The coordinator persists reviewed decisions under `artifacts/setup/<setup-id>/setup.json`; it does not pass its transcript to either worker.
+
+```mermaid
+flowchart LR
+  Coordinator[setup_coordinator] --> Setup[setup.json]
+  Setup --> SourceWorker[source_discovery]
+  SourceWorker --> Pack[source-pack.json]
+  Pack --> Confirm[confirm source ids]
+  Confirm --> Setup
+  Setup --> Scaffold[scaffold_track.py]
+  Scaffold --> Track[tracks/slug]
+  Track --> Discovery[discover_jobs.py]
+  Discovery --> Full[full discovery artifact]
+  Full --> Compact[preview-context builder]
+  Setup --> Compact
+  Compact --> Context[preview-context.json]
+  Context --> Ranker[preview_ranker]
+  Ranker --> Result[preview-result.json]
+  Result --> Assemble[deterministic digest assembly]
+  Context --> Assemble
+  Assemble --> Digest[standard digest JSON + Markdown]
+```
+
+Setup workers communicate through validated, size-bounded JSON artifacts. The coordinator shares only a reviewed projection of the user's profile and track configuration, never the full conversation or credentials. The first-preview context limits the number and size of candidate descriptions to control model cost and context usage; omissions and truncation are recorded explicitly. Worker results are bound to their inputs using hashes and stable identifiers. The precise limits are defined in `scripts/setup_contracts.py`.
+
+A minimal setup artifact has this synthetic shape:
+
+```json
+{
+  "schema_version": 1,
+  "kind": "jobwatch_setup",
+  "setup_id": "20260720T155600Z-a1b2c3d4",
+  "profile": {
+    "user_name": "Example User",
+    "seniority": ["senior"],
+    "skills": ["Rust"],
+    "experience_signals": ["production cryptography"],
+    "positive_signals": ["hands-on ownership"],
+    "borderline_signals": ["management-heavy roles"],
+    "current_or_recent_employers": ["Previous Employer"]
+  },
+  "track": {
+    "slug": "applied_crypto",
+    "display_name": "Applied Cryptography",
+    "search_area": "Applied cryptography and privacy engineering",
+    "goals_or_role_types": ["Applied cryptography engineer"],
+    "keep_only_keywords": ["cryptography"],
+    "constraints_or_red_flags": ["No mandatory relocation"],
+    "geography_or_remote_preferences": ["Europe", "remote"],
+    "fit_language": "Hands-on cryptography roles compatible with reviewed location constraints."
+  },
+  "source_seeds": {
+    "employers": [],
+    "sectors_or_organizations": [],
+    "career_pages_or_boards": []
+  },
+  "selected_sources": {
+    "track_terms": [],
+    "sources": [],
+    "match_rules": []
+  }
+}
+```
+
+An empty selected source list is valid before confirmation but blocks `scaffold_track.py`. Source entries and match rules use the same canonical schemas as track `sources.json` and `match_rules.json`.
+
+The deterministic assembler joins candidate judgments back to URLs and source coverage, then emits the existing digest schema. The two workers cannot write the workspace and never resume the coordinator conversation. Source discovery is web-capable; preview ranking is instructed and configured without routine web access. `scaffold_track.py` has no model role because it makes no model call.
+
+Setup model defaults and provider command construction live in `scripts/agent_provider.py`. Explicit CLI arguments override provider/role environment values, which override tested defaults. These setup-only policies do not change `run_track.sh`, `source_reviewer`, or `source_coder` behavior.
 
 ## Source integration loop
 

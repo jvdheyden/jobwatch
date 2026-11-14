@@ -16,6 +16,7 @@ Follow the user's requested scope. Reviewing permits a chat report; posting, app
    - **Correctness:** Does the change solve the problem without regressions, including relevant failure cases? Do tests cover observable behavior?
    - **Code style:** Is this the simplest clear solution consistent with repository conventions? Keep providers responsible for extraction, track rules for filtering, and agents for fit evaluation.
    - **Product fit:** Does the behavior meet the user need and intended workflow? Flag unresolved product decisions.
+   - **Architectural fit:** Check changes against `docs/architecture.md`. Flag violations of component responsibilities or boundaries as blockers unless explicitly authorized. Updating the documentation is not authorization.
 3. Trace affected execution paths and callers. Distinguish introduced or in-scope issues from unrelated existing ones. For each finding, give its trigger, impact, supporting evidence, and desired correction. Avoid cosmetic and speculative findings.
 4. Run focused checks first using `.venv` for Python. Run `scripts/test.sh` for broad changes, material integration uncertainty, or merge validation; equivalent passing CI must cover the reviewed commit. State material verification gaps.
 
