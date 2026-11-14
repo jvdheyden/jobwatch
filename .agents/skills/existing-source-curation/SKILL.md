@@ -39,6 +39,7 @@ If the track files are missing or the request is really for a new track, stop an
 ### 3. Normalize conservatively
 
 - Prepare a normalized source entry suitable for `sources.json`.
+- Review this source's effective retrieval vocabulary against the current preferences: it inherits `track_terms` unless source terms append to or override them. Check native filters for accidental exclusions and use source-specific terms when needed. Do not copy every preference keyword or negative preference into retrieval. Report unrelated track-wide gaps for user-triggered `set-up` maintenance without retuning other sources or global terms.
 - Infer a conservative `discovery_mode` from the URL or board family. Default to `html` when unclear.
 - Keep clearly official sources even when they must use a supported fallback.
 - If support looks uncertain or weak, do not bounce the user to `set-up`. Keep the source with the best current supported config, note the caveat, and decide whether to stop at curation or continue into single-source enablement based on the request shape.

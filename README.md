@@ -121,6 +121,12 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    On Linux, scheduler install updates your user crontab with a checkout-specific per-minute dispatcher. On macOS, it installs a checkout-specific LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
 
 
+## Update a track's preferences
+
+Ask your agent, for example: "Update my crypto track to also include privacy engineering." The existing `set-up` skill updates the preferences and reviews retrieval terms, source overrides and filters together. Changes that only affect ranking may need no retrieval edits.
+
+If you edit `tracks/<track-slug>/prefs.md` directly, ask: "Reconcile this track's retrieval configuration with its updated preferences." File edits do not automatically synchronize retrieval. Normal runs may report possible gaps as search-quality observations in coverage notes; they do not change configuration. Updated retrieval applies to the next discovery run.
+
 ## Manual Run
 
 To run a track immediately:

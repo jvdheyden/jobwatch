@@ -9,7 +9,7 @@ This repo runs an agent-assisted job-search workflow. Each track combines determ
 | Mode | Trigger | Lives in |
 | --- | --- | --- |
 | Track run | Scheduled or user prompt to run a track and produce a digest | `tracks/<track>/AGENTS.md`, agent skills, `scripts/` |
-| Track setup | Prompt to create/scaffold a new search track | `set-up` skill |
+| Track setup and maintenance | Prompt to create/scaffold a track, update its preferences, or reconcile retrieval | `set-up` skill (separate new-track and existing-track workflows) |
 | Existing-track source curation | Prompt to add/evaluate a single named employer or source for an existing track | `existing-source-curation` skill, `tracks/<track>/sources.json`, `scripts/render_sources_md.py` |
 | Repo development | Prompt to change code, tests, skills, or docs | `coding` skill, `scripts/`, `tests/` |
 
@@ -116,6 +116,54 @@ First-preview selection remains capped at 40 unseen, URL-deduplicated
 candidates. Candidates with more configured terms matched in their titles are
 ordered first, followed by total matched-term count and stable discovery order.
 This priority affects bounded selection only, not eligibility or semantic fit.
+
+## Retrieval maintenance and coverage
+
+`sources.json` owns deterministic retrieval vocabulary and native filters;
+`prefs.md`, global preferences and the profile own semantic fit. Per-source
+`search_terms` either append to `track_terms` or override them entirely.
+Discovery trims and deduplicates terms case-insensitively. These terms are not
+automatically compiled from preferences: semantic constraints, exclusions and
+ranking signals need not be literal retrieval queries.
+
+`find-jobs` distinguishes two questions:
+
+- **Execution coverage:** did the fresh artifact demonstrate the configured
+  work for the due source, accounting for provider strategy and limitations?
+  Feed enumeration with local matching counts as term application. Zero matches
+  for any or all applied terms can still be complete. Missing execution evidence
+  or incomplete enumeration remains a coverage limitation. Unfinished candidate
+  review and missing fit evidence must also be reported explicitly.
+- **Search quality:** could the configuration miss a requested role family or
+  domain? Report a concrete concern in the affected source's existing digest
+  `runs[].source_notes[].limitations`, prefixed `Search-quality observation:`.
+  Name the requirement, restrictive configuration and possible omission. Missing
+  preference words or zero results alone do not establish a gap. Keep otherwise
+  successful execution complete; do not claim an actual missed job without evidence.
+
+For example, a source can complete retrieval for `cryptography` while its
+limitations note that newly requested privacy engineering roles without that
+term may be missed. Observations do not launch maintenance workers, change
+configuration or rerun discovery. `rank-jobs` continues scoring the candidates
+it receives against semantic preferences.
+
+Users request maintenance with prompts such as "Update my crypto track to
+include privacy engineering" or "I edited this track's preferences; reconcile
+retrieval." The existing `set-up` skill updates semantic preferences when
+requested and reviews global terms, all source overrides, native filters and
+existing match rules together. Ranking-only changes may require no retrieval
+edits. Maintenance reuses source rendering, discovery planning and targeted
+checks/canaries where practical, without scaffolding again or overwriting
+scheduled artifacts or source state. Configuration changes apply to subsequent
+discovery; historical artifacts remain unchanged.
+
+New-track setup reviews alignment before source-pack confirmation, and named
+source curation checks the new source's effective terms without silently tuning
+unrelated sources. Direct edits to preference files remain unsynchronized until
+maintenance is requested; advisory observations cannot guarantee detection or
+recall. Existing tracks can selectively adopt the corrected coverage instructions
+from the shared template without replacing their custom instructions. No artifact
+schema migration is required.
 
 ## Component map
 

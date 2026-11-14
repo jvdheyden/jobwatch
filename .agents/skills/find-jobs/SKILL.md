@@ -54,21 +54,30 @@ A source is only fully checked if the artifact shows the coverage work that was 
 
 Do not broaden to external search engines unless the active track explicitly allows it.
 
-## Search terms
+## Execution coverage
 
-Derive the expected term set from the active track inputs when evaluating artifact coverage.
+Use `tracks/<track>/sources.json` as the source of truth for configured retrieval, not generated `sources.md` prose or terms inferred from preferences, track instructions, or the CV. Resolve each source's effective terms as discovery does:
 
-Build the term set from:
-- the track source file's role / keyword section, if present
-- the track preferences
-- the user's strong-fit profile and CV terms
+- Without source `search_terms`, use `track_terms`.
+- With `search_terms.mode: append`, combine `track_terms` and the source's terms.
+- With `search_terms.mode: override`, use only the source's terms.
+- Trim whitespace and deduplicate case-insensitively, preserving the first spelling and order.
 
-Normalize and deduplicate terms:
-- keep both common phrases and abbreviations when both matter
-- prefer compact, high-signal terms over long natural-language queries
-- avoid terms that are obviously too broad for the track
+Compare the fresh artifact's reported work with that source's configuration and provider strategy, including native filters and limitations. A provider may enumerate a feed and filter locally; `search_terms_tried` does not necessarily mean separate remote queries. An intentionally empty term list for a provider that does not apply terms is not a missing field. If the strategy is unclear, report uncertainty rather than inventing evidence of execution.
 
-Use the term set to judge whether the artifact's coverage for a source is complete or partial.
+Preserve genuine partial or failed execution and identify any missing configured work. Zero matches for one or all applied terms can still be complete. A source override does not have to apply the global terms it replaces. A source not due this run is not an execution gap.
+
+Keep candidate-review limitations explicit too: name unreviewed candidates or missing descriptions that prevent admission, even when deterministic retrieval completed. Do not describe the whole review as finished just because the scraper finished.
+
+## Search-quality observations
+
+Separately compare the effective retrieval configuration with requested role families and domains in the current preferences and track instructions. Report only concrete, plausible gaps: name the requirement, the restrictive terms or filters, and the kind of role that may be excluded. Keyword absence alone is insufficient; consider broader terms, source-specific vocabulary, and whether the preference is a ranking signal or an exclusion rather than a retrieval target. If instructions conflict with preferences, report that conflict instead of assuming a new retrieval requirement.
+
+Put an observation in the affected source's existing coverage limitations, prefixed `Search-quality observation:`. In the structured digest, use `runs[].source_notes[].limitations`; preserve the artifact's execution limitations as well. Do not downgrade otherwise complete execution solely for a search-quality concern. Say a role *may* be missed unless an actual omission is evidenced; zero results alone do not prove a gap.
+
+Example: `Search-quality observation: Preferences include privacy engineering, but this source retrieves only "cryptography". Privacy roles without that term may be missed. Request retrieval reconciliation for this track.`
+
+Do not edit preferences or retrieval configuration, invoke maintenance or a maintenance subagent, or rerun discovery to investigate these observations during a normal run. Maintenance is user-triggered through `set-up`; observations are advisory and cannot guarantee recall.
 
 ## Extraction
 

@@ -1,9 +1,34 @@
-# Repo rules
+# About jobwatch
+
+jobwatch is an open-source, agent-assisted job search tool that helps users discover and prioritize relevant job opportunities while minimizing time spent searching.
+
+Users organize their searches into **tracks**, each with its own goals, preferences, and sources.
+
+The workflow consists of:
+1. **Setup:** Understand the user's goals, find relevant sources, and configure a track.
+2. **Discovery:** Collect job postings using deterministic scrapers and APIs where possible.
+3. **Filtering:** Identify potentially relevant jobs based on track preferences and constraints.
+4. **Ranking:** Evaluate jobs against the user's background and preferences.
+5. **Reporting:** Deliver a concise digest of the best new opportunities.
+
+Agents also help develop and maintain source integrations when needed.
+
+## Guiding principles
+
+- Optimize for relevant opportunities, not the number of jobs found.
+- Minimize the user's time and attention spent searching.
+- Base decisions on evidence; make uncertainty explicit.
+- Prioritize recall during discovery and precision during ranking.
+- Prefer deterministic, reusable solutions over agent-driven ones.
+- Keep implementations simple, maintainable, and efficient.
+- Protect user data and preserve user control.
+
+## Repo rules
 
 This repository supports six kinds of work:
 
 1. Track runs
-2. Track setup
+2. Track setup and maintenance
 3. Existing-track source curation
 4. Repo development
 5. Code review
@@ -16,6 +41,7 @@ Mode selection:
 - In track-run mode, follow the scheduled or user prompt first, then the relevant `tracks/<track>/AGENTS.md`.
 - If the prompt asks to create, scaffold, initialize, or set up a new search track, or names the project skill `set-up`, treat the task as track setup.
 - In track-setup mode, use the project skill `set-up`.
+- If the prompt asks to update an existing track's preferences or reconcile its retrieval configuration (including after manual preference edits), use the existing-track maintenance branch of `set-up`. This is maintenance, not a normal track run; do not scaffold the track again.
 - If the prompt clearly asks to add, evaluate, confirm, or look up a named employer or official source for an existing track, treat it as existing-track source curation. Examples include prompts like `add <company> as a source to <track>` or `evaluate <company> for <track>`.
 - Existing-track source curation is narrow: use it for adding or evaluating a named source for an existing track, not for broad source discovery, removals, cadence changes, or search-term edits.
 - In existing-track source-curation mode, use the project skill `existing-source-curation`.

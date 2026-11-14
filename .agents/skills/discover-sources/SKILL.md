@@ -34,6 +34,7 @@ The fresh `source_discovery` worker receives `setup.json` as its only user-speci
 - Use only discovery modes listed in the runner's fixed prompt. Prefer `html` when a source is official but its board family is uncertain.
 - Default to `every_3_runs`; use `every_run` only for unusually valuable or fast-moving sources and `every_month` for slower/broad follow-up sources.
 - Put source-specific search terms and native filters in the source record.
+- Derive compact retrieval vocabulary from the brief's requested role families and domains, including useful alternate wording. Review effective source terms (`append` extends track terms; `override` replaces them), native filters and proposed match rules for accidental exclusions. Do not copy semantic keep-only constraints, negative preferences or all profile skills mechanically into retrieval. Prioritize recall; semantic admission and ranking handle fit later.
 - Suggest match rules only for broad/noisy ecosystem, public-service, community, or multi-employer boards—not normal employer boards.
 - Do not run `discover_jobs.py`, source-quality evaluation, canary probing, or source integration.
 
