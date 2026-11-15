@@ -1,0 +1,40 @@
+{
+  "source": {
+    "source": "Softgarden Html",
+    "url": "https://example.softgarden.io/de/vacancies"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Information Security Expert (m/w/d)",
+      "url": "https://example.softgarden.io/job/101/Information-Security-Expert-m-w-d-?jobDbPVId=1&l=de"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_public_service_sources.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "duplicates_expected": [
+    {
+      "title": "Security Engineer (m/w/d)",
+      "url": "https://example.softgarden.io/job/101/Security-Engineer-m-w-d-?jobDbPVId=1&l=de"
+    }
+  ]
+}

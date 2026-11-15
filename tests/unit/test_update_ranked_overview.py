@@ -4,7 +4,6 @@ import json
 import sys
 from datetime import date
 
-import digest_json
 import update_ranked_overview
 
 
@@ -58,17 +57,12 @@ def test_core_crypto_ranked_state_matches_digest(tmp_job_agent_root, load_json_f
 
     assert update_ranked_overview.main() == 0
 
-    expected_roles = digest_json.extract_ranked_roles(payload)
-    expected = sorted(
-        (
-            role["company"],
-            role["title"],
-            role["url"],
-            float(role["fit_score"]),
-            "Core Crypto Job Digest 2026-03-29",
-        )
-        for role in expected_roles
-    )
+    expected = [
+        ("Example Privacy Lab", "Privacy Engineer", "https://example.com/privacy-engineer", 6.5,
+         "Core Crypto Job Digest 2026-03-29"),
+        ("LayerZero Labs", "Cryptographer", "https://www.iacr.org/jobs/item/4189", 9.0,
+         "Core Crypto Job Digest 2026-03-29"),
+    ]
 
     state_payload = json.loads((tmp_job_agent_root / "shared" / "ranked_jobs" / "core_crypto.json").read_text())
     actual = sorted(

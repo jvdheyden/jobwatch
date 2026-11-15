@@ -20,6 +20,8 @@ Follow the user's requested scope. Reviewing permits a chat report; posting, app
 3. Trace affected execution paths and callers. Distinguish introduced or in-scope issues from unrelated existing ones. For each finding, give its trigger, impact, supporting evidence, and desired correction. Avoid cosmetic and speculative findings.
 4. Run focused checks first using `.venv` for Python. Run `scripts/test.sh` for broad changes, material integration uncertainty, or merge validation; equivalent passing CI must cover the reviewed commit. State material verification gaps.
 
+For test adequacy, name a meaningful regression the tests detect. For providers, inspect independent expected jobs and capability evidence in the fixture pack: would missing a job or page fail? For persistence and orchestration, inspect failure/rerun transitions and whether doubles leave production responsibilities to the real components. Reject required-contract skips and expectations computed by the behavior under test. Use `docs/testing.md` for commands and distinguish offline coverage from live-source and model evaluations.
+
 ## Record and response
 
 Start or extend a **local** record at `docs/reviews/pr-<number>.md` (or a dated file for local changes) for every review pass. Preserve previous entries. Each timestamped entry should contain the request and authorized actions, agent/session ID when available, base/head SHAs, summary and verdict for all three criteria, findings and prior-finding dispositions, tests and evidence, external actions and outcomes, limitations, and next steps. Include links to existing discussions. Update before handoff.

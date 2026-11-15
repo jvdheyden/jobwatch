@@ -1,0 +1,34 @@
+{
+  "source": {
+    "source": "Service Bund Links",
+    "url": "https://www.bsi.bund.de/DE/Karriere/Stellenangebote/stellenangebot_node.html"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer Attack Surface Management BSI-2026-027",
+      "url": "https://www.service.bund.de/IMPORTE/Stellenangebote/editor/BVA-BSI/2026/03/6450395.html"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_service_bund.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

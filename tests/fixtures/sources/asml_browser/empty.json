@@ -1,0 +1,11 @@
+[
+  {
+    "a.search-results__item": [],
+    ".pagination-results strong": [
+      {
+        "text": "0"
+      }
+    ],
+    "nav[aria-label=\"Pagination\"] li.pagination-next button[role=\"link\"]": []
+  }
+]

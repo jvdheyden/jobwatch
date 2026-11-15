@@ -1,0 +1,88 @@
+[
+  {
+    "a.search-results__item": [
+      {
+        "text": "Security Engineer\nVeldhoven\nSecurity",
+        "href": "https://www.asml.com/en/careers/find-your-job/1",
+        "children": {
+          ".search-results-title-text, h2, h3": [
+            {
+              "text": "Security Engineer"
+            }
+          ],
+          "ul.search-results__fields li": [
+            {
+              "text": "Veldhoven"
+            },
+            {
+              "text": "Security"
+            }
+          ]
+        }
+      },
+      {
+        "text": "Security Sales Manager\nVeldhoven\nSecurity",
+        "href": "https://www.asml.com/en/careers/find-your-job/2",
+        "children": {
+          ".search-results-title-text, h2, h3": [
+            {
+              "text": "Security Sales Manager"
+            }
+          ],
+          "ul.search-results__fields li": [
+            {
+              "text": "Veldhoven"
+            },
+            {
+              "text": "Security"
+            }
+          ]
+        }
+      },
+      {
+        "text": "Security Engineer\nVeldhoven\nSecurity",
+        "href": "https://www.asml.com/en/careers/find-your-job/1",
+        "children": {
+          ".search-results-title-text, h2, h3": [
+            {
+              "text": "Security Engineer"
+            }
+          ],
+          "ul.search-results__fields li": [
+            {
+              "text": "Veldhoven"
+            },
+            {
+              "text": "Security"
+            }
+          ]
+        }
+      },
+      {
+        "text": "Security Sales Manager\nVeldhoven\nSecurity",
+        "href": "https://www.asml.com/en/careers/find-your-job/2",
+        "children": {
+          ".search-results-title-text, h2, h3": [
+            {
+              "text": "Security Sales Manager"
+            }
+          ],
+          "ul.search-results__fields li": [
+            {
+              "text": "Veldhoven"
+            },
+            {
+              "text": "Security"
+            }
+          ]
+        }
+      }
+    ],
+    ".pagination-results strong": [
+      {
+        "text": "2"
+      }
+    ],
+    "nav[aria-label=\"Pagination\"] li.pagination-next button[role=\"link\"]": []
+  }
+]

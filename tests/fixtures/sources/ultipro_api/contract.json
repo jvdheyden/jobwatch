@@ -1,0 +1,34 @@
+{
+  "source": {
+    "source": "Ultipro Api",
+    "url": "https://recruiting2.ultipro.com/EXA1000EX/JobBoard/123e4567-e89b-12d3-a456-426614174000/"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Senior Security Engineer",
+      "url": "https://recruiting2.ultipro.com/EXA1000EX/JobBoard/123e4567-e89b-12d3-a456-426614174000/OpportunityDetail?opportunityId=op-1"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_followup_sources.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

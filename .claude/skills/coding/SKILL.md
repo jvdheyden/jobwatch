@@ -43,6 +43,8 @@ If you are unsure which side a file is on, run `git check-ignore -v <path>`. If 
 
 For new or changed behavior, bug fixes, discovery providers, or tests, read and apply `.agents/skills/testing/SKILL.md` before designing tests. This applies to **interactive and non-interactive** coding agents. Add or update focused behavioral tests for meaningful changes; follow the testing skill for shared provider contracts, failure cases, fixtures, and verification.
 
+Use `docs/testing.md` for executable checks and fixture layout. `bash scripts/test.sh --fast` runs unit and registry-driven contracts; the full runner also exercises integration and workflows. A provider registration needs independent expected jobs in its fixture pack and evidence for its capabilities. For a fix, identify the original failure that the regression test detects; do not derive expectations from the code being tested. Report any unverified live-source or model-quality behavior separately from offline results.
+
 ## Non-interactive pivot
 
 **If you are a non-interactive agent — a subprocess-invoked run, a scheduled job, a Codex `exec` session, a Claude `-p --no-session-persistence` session, or any other single-shot automation — your prompt is the contract. Stop reading here. Only the sections above (public vs private files, style, behavioral defaults, scope control, testing guidance) apply to you. Everything below this pivot applies only to interactive repo-development work where a human is in the loop.**

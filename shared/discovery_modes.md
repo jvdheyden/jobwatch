@@ -54,7 +54,7 @@ New source support should usually add or extend one of these provider modules ra
 - Emits candidates: yes
 - URL/source shape: `https://www.asml.com/en/careers/find-your-job`
 - Supported filters/options: none
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/asml_browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and installed Chromium browser binaries.
 
@@ -74,7 +74,7 @@ New source support should usually add or extend one of these provider modules ra
 - Emits candidates: yes
 - URL/source shape: `https://automattic.com/work-with-us/`
 - Supported filters/options: none
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/automattic_browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and extracts visible job-card links only.
 
@@ -124,7 +124,7 @@ New source support should usually add or extend one of these provider modules ra
 - Emits candidates: yes
 - URL/source shape: Generic browser strategy keyed by source name; currently Google, Meta, and Bosch strategies are implemented.
 - Supported filters/options: `location` and `degree` for Google sources
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and installed Chromium browser binaries.
 
@@ -141,10 +141,10 @@ New source support should usually add or extend one of these provider modules ra
 ### `coinbase_browser`
 
 - Provider: `discover.sources.browser` / `discover_coinbase_browser`
-- Emits candidates: yes
+- Emits candidates: no
 - URL/source shape: `https://www.coinbase.com/careers`
 - Supported filters/options: none
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/coinbase_browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Currently reports partial coverage when Cloudflare or unsupported listing extraction blocks deterministic enumeration.
 
@@ -274,7 +274,7 @@ New source support should usually add or extend one of these provider modules ra
 - Emits candidates: yes
 - URL/source shape: `https://helsing.ai/jobs`
 - Supported filters/options: none
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/helsing_browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and extracts visible job cards from the jobs page.
 
@@ -604,7 +604,7 @@ New source support should usually add or extend one of these provider modules ra
 - Emits candidates: yes
 - URL/source shape: `https://careers.thalesgroup.com/global/en/search-results`
 - Supported filters/options: none
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/thales_browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright; HTML provider is preferred when embedded payloads are available.
 
@@ -624,7 +624,7 @@ New source support should usually add or extend one of these provider modules ra
 - Emits candidates: yes
 - URL/source shape: `https://trailofbits.com/careers/`
 - Supported filters/options: none
-- Contract fixtures: none
+- Contract fixtures: `tests/fixtures/sources/trailofbits_browser/`
 - Requirements: `playwright.sync_api`
 - Known limitations: Requires Playwright and extracts visible Workable application links.
 

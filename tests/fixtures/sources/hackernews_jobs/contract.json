@@ -1,0 +1,34 @@
+{
+  "source": {
+    "source": "Hackernews Jobs",
+    "url": "https://news.ycombinator.com/jobs"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Cipher (YC S24) is hiring a Security Engineer",
+      "url": "https://example.com/jobs/security-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_yc_and_hn_jobs.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

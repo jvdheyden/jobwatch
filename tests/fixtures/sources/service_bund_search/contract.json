@@ -1,0 +1,42 @@
+{
+  "source": {
+    "source": "Service Bund Search",
+    "url": "https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html?view=processForm&nn=4641514"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer Kryptographie (w/m/d)",
+      "url": "https://www.service.bund.de/IMPORTE/Stellenangebote/editor/Test/2026/04/1.html"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_service_bund.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_service_bund.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "duplicates_expected": [
+    {
+      "title": "Security Engineer Kryptographie (w/m/d)",
+      "url": "https://www.service.bund.de/IMPORTE/Stellenangebote/editor/Test/2026/04/dup.html"
+    }
+  ]
+}

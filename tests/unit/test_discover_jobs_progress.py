@@ -4,6 +4,7 @@ import json
 import sys
 
 import discover_jobs
+from discover import http
 
 
 def test_main_progress_logs_to_stderr_without_changing_output(tmp_path, monkeypatch, capsys):
@@ -42,6 +43,7 @@ def test_main_progress_logs_to_stderr_without_changing_output(tmp_path, monkeypa
 
     monkeypatch.setattr(discover_jobs, "load_track_config", lambda _track: ([source], ["cryptography"], {}))
     monkeypatch.setattr(discover_jobs, "discover_source", lambda *_args: coverage)
+    monkeypatch.setattr(http, "fetch_text", lambda *_args: "<p>Build cryptography systems.</p>")
 
     output_path = tmp_path / "discovery.json"
     latest_output_path = tmp_path / "latest.json"

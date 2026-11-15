@@ -1340,6 +1340,8 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                 while page_num <= strategy.max_pages:
                     result = strategy.extract_page(page, source, term, terms, page_num)
                     if not result.page_signature or result.page_signature in term_page_signatures:
+                        status = "partial"
+                        limitations.append(f"{source.source} browser search repeated a page before enumeration finished")
                         break
                     term_pages_scanned += 1
                     pages_scanned += 1
@@ -1350,6 +1352,8 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                     if term_declared_total is None and result.declared_total is not None:
                         term_declared_total = result.declared_total
                     limitations.extend(result.limitations)
+                    if result.limitations:
+                        status = "partial"
                     for raw_id in result.raw_ids:
                         raw_seen_ids.add(raw_id)
                     for candidate in result.candidates:
@@ -1441,7 +1445,7 @@ SOURCES = [
     SourceAdapter(modes=("asml_browser",), discover=discover_asml_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("automattic_browser",), discover=discover_automattic_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("browser",), discover=discover_browser, requires=("playwright.sync_api",)),
-    SourceAdapter(modes=("coinbase_browser",), discover=discover_coinbase_browser, requires=("playwright.sync_api",)),
+    SourceAdapter(modes=("coinbase_browser",), discover=discover_coinbase_browser, requires=("playwright.sync_api",), emits_candidates=False),
     SourceAdapter(modes=("helsing_browser",), discover=discover_helsing_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("thales_browser",), discover=discover_thales_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("trailofbits_browser",), discover=discover_trailofbits_browser, requires=("playwright.sync_api",)),

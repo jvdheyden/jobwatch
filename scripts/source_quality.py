@@ -370,12 +370,36 @@ def validate_source_coverage(
     canary_title: str = "",
     canary_url: str = "",
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    minimum_candidates: int | None = None,
+    minimum_enumerated: int | None = None,
+    minimum_detail_fraction: float | None = None,
     raw_text_fetcher: Callable[[str, int], str] = fetch_text,
 ) -> dict[str, Any]:
     candidates = source.get("candidates", [])
     source_url = source.get("source_url", "")
     results: list[ValidatorResult] = []
     warnings: list[str] = []
+
+    if minimum_detail_fraction is not None:
+        if not 0 <= minimum_detail_fraction <= 1:
+            raise ValueError("Reviewed minimum detail fraction must be between 0 and 1")
+        detailed = sum(_candidate_has_detail(candidate) for candidate in candidates)
+        fraction = detailed / len(candidates) if candidates else 0
+        results.append(ValidatorResult("detail_coverage", "pass" if fraction >= minimum_detail_fraction else "fail", "blocking",
+            f"{detailed}/{len(candidates)} candidates have substantive role detail; reviewed minimum fraction is {minimum_detail_fraction}."))
+
+    if source.get("status") in {"partial", "failed"}:
+        results.append(ValidatorResult("execution_complete", "fail", "blocking",
+            f"Source execution was {source['status']}: {source.get('limitations', [])}"))
+    for name, minimum, observed in (
+        ("candidate_recall", minimum_candidates, len(candidates)),
+        ("enumeration_recall", minimum_enumerated, source.get("enumerated_jobs", 0)),
+    ):
+        if minimum is not None:
+            if minimum < 0:
+                raise ValueError("Reviewed minimum counts must be nonnegative")
+            results.append(ValidatorResult(name, "pass" if observed >= minimum else "fail", "blocking",
+                f"Observed {observed}; independently reviewed minimum is {minimum}. Check source changes, pagination, and retrieval constraints."))
 
     if not candidates and source.get("discovery_mode") == "html" and source.get("enumerated_jobs", 0):
         # Generic html counts every link on the page, so a nonzero count with no

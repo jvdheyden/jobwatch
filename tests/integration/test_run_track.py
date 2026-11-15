@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import time
+import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -76,39 +78,14 @@ root = Path(os.environ["JOB_AGENT_ROOT"])
 raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_TELEGRAM_STATUS", "0")))
 """,
     )
-    _write_executable(
-        root / "scripts" / "update_source_state.py",
-        """#!/usr/bin/env python3
-from __future__ import annotations
-
-import argparse
-import json
-import os
-import time
-from pathlib import Path
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--track", required=True)
-parser.add_argument("--date", required=True)
-parser.add_argument("--artifact", required=True)
-args = parser.parse_args()
-
-root = Path(os.environ["JOB_AGENT_ROOT"])
-artifact = json.loads(Path(args.artifact).read_text())
-state_path = root / "tracks" / args.track / "source_state.json"
-state_path.parent.mkdir(parents=True, exist_ok=True)
-if state_path.exists():
-    state = json.loads(state_path.read_text())
-else:
-    state = {"schema_version": 1, "track": args.track, "sources": {}}
-for source in artifact.get("sources", []):
-    if source.get("status") == "complete":
-        state["sources"].setdefault(source["source_id"], {})["last_checked"] = args.date
-state_path.write_text(json.dumps(state, indent=2) + "\\n")
-(root / "source-state-updated.txt").write_text(args.date + "\\n")
-""",
-    )
+    # Real persistence; process-control tests must not duplicate state logic.
+    scripts = Path(__file__).resolve().parents[2] / "scripts"
+    for name in ("source_config.py", "update_source_state.py"):
+        shutil.copyfile(scripts / name, root / "scripts" / name)
+    (root / "tracks/demo/sources.json").write_text(json.dumps({
+        "schema_version": 1, "track": "demo", "track_terms": ["cryptography"],
+        "sources": [{"id": "example_source", "name": "Example Source", "url": "https://example.com/jobs",
+                     "discovery_mode": "html", "cadence_group": "every_run"}]}))
     _write_executable(
         root / "scripts" / "render_digest.py",
         """#!/usr/bin/env python3
@@ -183,7 +160,6 @@ printf '%s\\n' "$@" > "$ROOT/codex-args.txt"
 cat > "$ROOT/codex-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
-printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 """,
     )
@@ -199,7 +175,6 @@ pwd > "$ROOT/claude-cwd.txt"
 cat > "$ROOT/claude-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
-printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 printf '{"type":"result","subtype":"success","result":"done"}\\n'
 """,
@@ -217,7 +192,6 @@ pwd > "$ROOT/gemini-cwd.txt"
 cat > "$ROOT/gemini-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
-printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 printf '{"type":"result","result":"done"}\\n'
 """,
@@ -372,23 +346,20 @@ time.sleep(5)
 
 
 def _slow_codex_exit_zero_on_term_script() -> str:
-    return """#!/bin/bash
-set -euo pipefail
-trap 'exit 0' TERM
-cat >/dev/null
-echo "codex starting long run"
-sleep 30
+    # A single process handles TERM immediately; a shell waiting on `sleep`
+    # defers its trap and leaves the child's output pipe open for 30 seconds.
+    return """#!/usr/bin/env python3
+import signal
+import sys
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+sys.stdin.read()
+print("codex emitted one line", flush=True)
+signal.pause()
 """
 
 
 def _idle_codex_script() -> str:
-    return """#!/bin/bash
-set -euo pipefail
-trap 'exit 0' TERM
-cat >/dev/null
-echo "codex emitted one line"
-sleep 30
-"""
+    return _slow_codex_exit_zero_on_term_script()
 
 
 def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -441,7 +412,7 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Finished demo daily run" in log_text
     assert not (tmp_job_agent_root / "sync.log").exists()
     assert not (tmp_job_agent_root / "email.log").exists()
-    assert (tmp_job_agent_root / "source-state-updated.txt").read_text() == "2030-01-15\n"
+    assert json.loads((tmp_job_agent_root / "tracks/demo/source_state.json").read_text())["sources"]["example_source"]["last_checked"] == "2030-01-15"
 
     caffeinate_args = (tmp_job_agent_root / "caffeinate-args.txt").read_text()
     assert "-dimsu" in caffeinate_args

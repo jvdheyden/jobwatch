@@ -1,0 +1,34 @@
+{
+  "source": {
+    "source": "Rheinmetall Html",
+    "url": "https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer (m/w/d)",
+      "url": "https://www.rheinmetall.com/de/job/security_engineer__m_w_d_/123456"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_public_service_sources.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

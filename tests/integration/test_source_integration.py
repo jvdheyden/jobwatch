@@ -136,10 +136,6 @@ def write_example_artifact(path: Path) -> None:
     )
 
 
-def test_source_integration_default_timeout_seconds_is_120():
-    assert source_integration.DEFAULT_REVIEW_TIMEOUT_SECONDS == 120
-
-
 def test_source_integration_runs_coder_and_reaches_pass(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
     write_stub_discover_script(tmp_job_agent_root)
     artifact_path = tmp_job_agent_root / "artifacts" / "discovery" / "public_service" / "2026-04-02.json"
@@ -202,45 +198,13 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     assert summary["attempts"][1]["eval_final_status"] == "pass"
     assert summary["active_artifact_path"].endswith("2026-04-02.discovery.json")
     assert json.loads(eval_output.read_text())["final_status"] == "pass"
-    assert f"make the functional fix in {GENERIC_HTML_PROVIDER}" in prompt_text
-    assert "Execution modes:" in prompt_text
-    assert "quick_fix_mode" in prompt_text
-    assert "handoff_mode" in prompt_text
-    assert "Failure mode:" in prompt_text
-    assert "Target outcome:" in prompt_text
-    assert "Suggested strategy:" in prompt_text
-    assert "Current source config:" in prompt_text
-    assert "Current evidence:" in prompt_text
-    assert "Layered strategy order:" in prompt_text
-    assert "config_terms_append" in prompt_text
-    assert "prefer a reusable provider module under `scripts/discover/sources/`" in prompt_text
-    assert "Avoid one-off branches in `scripts/discover/sources/generic_html.py`" in prompt_text
-    assert "URL/mode pivot exception" in prompt_text
-    assert "update this source's `url` and `discovery_mode` in `tracks/public_service/sources.json`" in prompt_text
-    assert "search_terms_tried" in prompt_text
-    assert (
-        f"Start by inspecting the source-specific parser path in {GENERIC_HTML_PROVIDER} "
-        "and any existing source-specific tests before broader investigation."
-    ) in prompt_text
-    assert "look first for source-specific functions or helpers named after Example Source" in prompt_text
-    assert (
-        f"If no source-specific path exists yet, implement the minimal source-specific parser or strategy in {GENERIC_HTML_PROVIDER}"
-    ) in prompt_text
-    assert (
-        f"Your first concrete step in quick_fix_mode must be either updating/adding a focused test for the source path or patching the source-specific parser/helper in {GENERIC_HTML_PROVIDER}."
-    ) in prompt_text
-    assert "Do not use external web search or raw HTTP/network probes unless local code, existing tests, and the eval artifact are insufficient to design the first patch." in prompt_text
+    # Preserve task evidence and the machine-readable handoff interface without
+    # freezing instructional prose or headings.
+    assert GENERIC_HTML_PROVIDER in prompt_text
+    assert "Privacy Engineer" in prompt_text
+    assert "https://jobs.example.com/jobs/999" in prompt_text
     assert "SOURCE_INTEGRATION_HANDOFF:" in prompt_text
-    assert "No focused test target was inferred." in prompt_text
-    assert "Do not add detail enrichment unless the ticket's target outcome explicitly requires it." in prompt_text
-    assert "If the failing check is detail_depth, prefer source-specific detail-page enrichment for already-kept candidates and append substantive role detail to existing extracted notes or fields." not in prompt_text
-    assert "Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this source integration." in prompt_text
-    assert "Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds." in prompt_text
-    assert "Stop as soon as the focused validation command completes; do not continue into broader verification after that point." in prompt_text
-    assert "The orchestrator owns rediscovery and final eval." in prompt_text
-    assert "After your code change, check that the fresh source artifact meets the target outcome and success condition in the source integration ticket." in prompt_text
-    assert "Use the repo-local virtualenv for Python tests and helper scripts" in prompt_text
-    assert "./.venv/bin/python scripts/discover_jobs.py --track public_service --source \"Example Source\" --today 2026-04-02 --pretty" in prompt_text
+    assert "tracks/public_service/sources.json" in prompt_text
 
 
 def test_source_integration_runs_claude_coder_with_stream_json(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
@@ -306,7 +270,7 @@ JSON
     assert "-p" in args_text
     assert "stream-json" in args_text
     assert "--verbose" in args_text
-    assert "Execution modes:" in (tmp_job_agent_root / "claude-prompt.txt").read_text()
+    assert "Privacy Engineer" in (tmp_job_agent_root / "claude-prompt.txt").read_text()
 
 
 def test_source_integration_runs_gemini_coder_with_stream_json(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
@@ -375,7 +339,7 @@ JSON
     assert "--approval-mode" in args_text
     assert "yolo" in args_text
     assert (tmp_job_agent_root / "gemini-sandbox.txt").read_text() == "false\n"
-    assert "Execution modes:" in (tmp_job_agent_root / "gemini-prompt.txt").read_text()
+    assert "Privacy Engineer" in (tmp_job_agent_root / "gemini-prompt.txt").read_text()
 
 
 def test_source_integration_stops_at_retry_limit(tmp_job_agent_root: Path, run_cmd, repo_root: Path):

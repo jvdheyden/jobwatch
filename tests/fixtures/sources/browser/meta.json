@@ -1,0 +1,36 @@
+{
+  "source": {
+    "source": "Meta",
+    "url": "https://www.metacareers.com/jobs/"
+  },
+  "pages": [
+    {
+      "a[href^=\"/profile/job_details/\"]": [
+        {
+          "href": "https://www.metacareers.com/profile/job_details/1",
+          "text": "Security Engineer\nBerlin, Germany"
+        },
+        {
+          "href": "https://www.metacareers.com/profile/job_details/2",
+          "text": "Security Sales Manager\nBerlin, Germany"
+        }
+      ],
+      "body": [
+        {
+          "text": "Responsibilities\nBuild security libraries.\nMinimum Qualifications\nProduction cryptography experience.\nAbout Meta\nGeneric marketing."
+        }
+      ],
+      "button:Show more": []
+    }
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://www.metacareers.com/profile/job_details/1"
+    },
+    {
+      "title": "Security Sales Manager",
+      "url": "https://www.metacareers.com/profile/job_details/2"
+    }
+  ]
+}

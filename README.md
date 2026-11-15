@@ -299,11 +299,15 @@ Then run `scripts/run_track.sh` with `--delivery logseq`.
 -->
 ## Development Checks
 
-To run the repo test suite:
+To run the full offline regression suite (also run by PR CI):
 
 ```bash
 bash scripts/test.sh
 ```
+
+Use `bash scripts/test.sh --fast` for unit tests and provider contracts during
+development. See [Testing Jobwatch](docs/testing.md) for fixture requirements,
+isolation, and separate live-source and model evaluations.
 
 ## Contributing
 

@@ -61,8 +61,13 @@ Add mocked provider fixtures under:
 tests/fixtures/sources/<discovery_mode>/
 ```
 
-At minimum, add representative response and empty-result fixtures. Add duplicate
-fixtures when the provider can surface the same job more than once.
+Follow the [testing skill](../../.agents/skills/testing/SKILL.md) and
+[provider fixture guide](../testing.md#provider-contracts). Every registration
+automatically inherits the shared contracts. Add `contract.json` with independently
+specified expected jobs and capability evidence, plus nonempty, empty and duplicate
+responses. Browser providers supply raw DOM observations at the Playwright boundary.
+Missing fixtures fail; declaring a mode non-emitting must describe its actual probe
+or coverage-only purpose. Never generate expectations from the extractor output.
 
 Run:
 
@@ -70,8 +75,10 @@ Run:
 ./.venv/bin/python -m pytest tests/contract -k <discovery_mode>
 ```
 
-Add or update provider-specific integration tests when parsing behavior, URL
-construction, pagination, or source-specific filters need to be pinned.
+Add or update provider-specific checks for parsing, URL construction, pagination,
+detail failures or native filters. Record their paths and scope in the manifest.
+Use the [live assurance procedure](../testing.md#live-source-assurance) for reviewed
+count floors, expiring canaries and capturing upstream failures as offline fixtures.
 
 When testing migrated providers, patch `discover.http.fetch_text`,
 `discover.http.fetch_json`, or `discover.http.post_json`. Unmigrated legacy

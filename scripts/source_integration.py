@@ -802,6 +802,8 @@ def build_coder_prompt(
             "- Do not modify unrelated sources. Modify this source's track configuration only when the suggested strategy is config tuning or when the URL/mode pivot exception above applies for this same source.",
             "- Do not broaden search terms unless the ticket explicitly requires it.",
             "- Do not edit discovery or eval artifacts directly.",
+            "- Apply .agents/skills/testing/SKILL.md and docs/testing.md: capture a sanitized regression fixture with independent expected jobs; a missed vacancy must fail the test.",
+            "- New provider registrations need tests/fixtures/sources/<mode>/contract.json and required response/empty/duplicate fixtures. Run the affected registry contracts plus relevant pagination/detail/browser checks; do not skip required evidence.",
             "- Do not run bash scripts/test.sh or scripts/test_track_workflow.sh as part of this source integration.",
             "- Do not debug unrelated e2e, workflow, or repo-wide test failures after the focused source validation succeeds.",
             f"- After your code change, validate with: ./.venv/bin/python scripts/discover_jobs.py --track {track} --source {json.dumps(source)} --today {today} --pretty",

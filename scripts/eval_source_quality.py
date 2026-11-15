@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import json
 import os
 import sys
@@ -64,7 +65,24 @@ def main() -> int:
         default=DEFAULT_REVIEW_TIMEOUT_SECONDS,
         help="Timeout for reviewer/raw page fetches",
     )
+    parser.add_argument("--canary-expires-on", help="Reviewed canary expiry date; expired canaries are advisory only")
+    parser.add_argument("--min-candidates", type=int, help="Independently reviewed candidate floor for this configured search")
+    parser.add_argument("--min-enumerated", type=int, help="Independently reviewed board enumeration floor")
+    parser.add_argument("--min-detail-fraction", type=float, help="Reviewed minimum fraction of candidates with substantive role detail (0 to 1)")
     args = parser.parse_args()
+    canary_review = None
+    try:
+        if args.canary_expires_on and date.fromisoformat(args.canary_expires_on) < date.fromisoformat(args.today):
+            canary_review = {"status": "expired", "expires_on": args.canary_expires_on,
+                             "title": args.canary_title, "url": args.canary_url,
+                             "action": "Review the official vacancy before renewing this canary."}
+            args.canary_title = args.canary_url = ""
+        if any(value is not None and value < 0 for value in (args.min_candidates, args.min_enumerated)):
+            raise ValueError("minimum counts must be nonnegative")
+        if args.min_detail_fraction is not None and not 0 <= args.min_detail_fraction <= 1:
+            raise ValueError("minimum detail fraction must be between 0 and 1")
+    except ValueError as exc:
+        parser.error(str(exc))
 
     try:
         apply_runtime_env(load_secrets=False)
@@ -91,6 +109,9 @@ def main() -> int:
             canary_title=args.canary_title,
             canary_url=args.canary_url,
             timeout_seconds=args.timeout_seconds,
+            minimum_candidates=args.min_candidates,
+            minimum_enumerated=args.min_enumerated,
+            minimum_detail_fraction=args.min_detail_fraction,
         )
         reviewer_needed = args.reviewer == "force" or (
             args.reviewer == "auto" and deterministic["confidence"] != "high"
@@ -194,6 +215,7 @@ def main() -> int:
         "date": args.today,
         "artifact_path": str(artifact_path),
         "canary": {"title": args.canary_title, "url": args.canary_url},
+        "canary_review": canary_review,
         "deterministic": deterministic,
         "reviewer": reviewer,
         "final_status": final_status,

@@ -1,0 +1,41 @@
+{
+  "source": {
+    "source": "Pinpoint Api",
+    "url": "https://example.pinpointhq.com/"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://example.pinpointhq.com/en/postings/a1"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "unit/test_pinpoint_provider.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "response_expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://example.pinpointhq.com/en/postings/a1",
+      "location": "Berlin, Germany"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "source": {
+    "source": "Phenom Html",
+    "url": "https://careers.bcg.com/global/en/search-results"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Global IT Director - Principal Security Engineer",
+      "url": "https://careers.bcg.com/global/en/job/57948/global-it-director-principal-security-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_phenom_html.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_phenom_html.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

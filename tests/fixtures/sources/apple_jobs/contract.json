@@ -1,0 +1,38 @@
+{
+  "source": {
+    "source": "Apple Jobs",
+    "url": "https://jobs.apple.com/en-us/search?search=cryptography"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Software Engineer - Secure Enclave, Core OS",
+      "url": "https://jobs.apple.com/en-us/details/200662871-0836/software-engineer-secure-enclave-core-os?team=SFTWR"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "duplicates_expected": [
+    {
+      "title": "Software Engineer, Trusted Execution (Security Systems), SEAR",
+      "url": "https://jobs.apple.com/en-us/details/200657451-0836/software-engineer-trusted-execution-security-systems-sear?team=SFTWR"
+    }
+  ]
+}

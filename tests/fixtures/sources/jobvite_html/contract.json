@@ -1,0 +1,35 @@
+{
+  "source": {
+    "source": "Jobvite Html",
+    "url": "https://jobs.jobvite.com/example/jobs"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Senior Security Engineer",
+      "url": "https://jobs.jobvite.com/example/job/1"
+    }
+  ],
+  "empty_status": "partial",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_followup_sources.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "empty_reason": "No recognized job rows; current parser conservatively reports partial."
+}

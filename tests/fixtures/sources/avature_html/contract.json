@@ -1,0 +1,47 @@
+{
+  "source": {
+    "source": "Avature Html",
+    "url": "https://jobs.example.com/careers/SearchJobs"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Senior Security Engineer",
+      "url": "https://jobs.example.com/en_US/careers/JobDetail/Senior-Security-Engineer/1001"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_avature_html.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "duplicates_expected": [
+    {
+      "title": "Cryptography Engineer",
+      "url": "https://jobs.example.com/en_US/careers/JobDetail/Cryptography-Engineer/2001"
+    }
+  ],
+  "response_expected": [
+    {
+      "title": "Senior Security Engineer",
+      "url": "https://jobs.example.com/en_US/careers/JobDetail/Senior-Security-Engineer/1001",
+      "location": "London, United Kingdom"
+    }
+  ]
+}

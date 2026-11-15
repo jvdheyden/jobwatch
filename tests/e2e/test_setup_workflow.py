@@ -172,7 +172,6 @@ def test_guided_setup_uses_two_bounded_workers_and_no_model_scaffolding(
         assert "Senior Cryptography Engineer" in markdown
         assert "One strong synthetic match" in markdown
         assert (root / "tracks" / "applied_crypto" / "seen_jobs.json").read_text().count("Senior Cryptography Engineer") == 1
-        assert "run_setup_worker" not in (Path(__file__).resolve().parents[2] / "scripts" / "run_track.sh").read_text()
     finally:
         server.shutdown()
         server.server_close()

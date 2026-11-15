@@ -1,0 +1,9 @@
+[
+  {
+    "script": [
+      {
+        "text": "AF_initDataCallback({key: 'ds:1', data:[[]], sideChannel: {}});"
+      }
+    ]
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "source": {
+    "source": "Bosch",
+    "url": "https://www.bosch.de/karriere/jobs"
+  },
+  "pages": [
+    {
+      "a[href*=\"/job/\"][href*=\"searchTerm=\"]": [
+        {
+          "href": "https://www.bosch.de/job/1?searchTerm=security",
+          "text": "Security Engineer Location: Berlin"
+        },
+        {
+          "href": "https://www.bosch.de/job/2?searchTerm=security",
+          "text": "Security Sales Manager Location: Berlin"
+        }
+      ],
+      "body": [
+        {
+          "text": "2 passende Jobs gefunden"
+        }
+      ],
+      "dock-privacy-settings": []
+    }
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://www.bosch.de/job/1?searchTerm=security"
+    },
+    {
+      "title": "Security Sales Manager",
+      "url": "https://www.bosch.de/job/2?searchTerm=security"
+    }
+  ]
+}

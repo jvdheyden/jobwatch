@@ -1,0 +1,14 @@
+[
+  {
+    "a[href*=\"/work-with-us/job/\"]": [
+      {
+        "text": "Security Engineer\nSecurity\nFull-time\nRemote",
+        "href": "https://automattic.com/work-with-us/job/1"
+      },
+      {
+        "text": "Security Sales Manager\nSecurity\nFull-time\nRemote",
+        "href": "https://automattic.com/work-with-us/job/2"
+      }
+    ]
+  }
+]
