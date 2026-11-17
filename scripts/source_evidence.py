@@ -322,21 +322,32 @@ def check_posting_availability(canary: dict, *, today: str, timeout: int = 15) -
     return result
 
 
-def effective_canaries(canaries: list[dict], candidates: list[dict], *, today: str, timeout: int = 15) -> list[dict]:
+def effective_canaries(canaries: list[dict], candidates: list[dict], *, today: str, timeout: int = 15,
+                       checks: dict | None = None) -> list[dict]:
     """Resolve uncertain/stale evidence outside scheduled discovery; preserve stored records."""
     resolved = []
     for record in canaries:
         current = dict(record)
-        if record.get('availability') == 'expired' or record.get('scope') == 'out_of_scope':
+        latest = (checks or {}).get(record.get('id'), {})
+        reviewed_today = False
+        if latest.get('checked_on') and latest['checked_on'] >= record.get('checked_on', ''):
+            # Unknown reviews retain the prior record in storage, but supersede
+            # its availability/scope for evaluation. Identity and provenance stay.
+            current.update({key: latest[key] for key in ('availability', 'scope', 'checked_on', 'expires_on',
+                                                        'evidence_url', 'evidence_note') if key in latest})
+            if current != record:
+                current['prior_evidence'] = dict(record)
+            reviewed_today = latest['checked_on'] == today
+        if current.get('availability') == 'expired' or current.get('scope') == 'out_of_scope':
             resolved.append(current)
             continue
-        # A same-day explicit observation is already independent evidence. Older
-        # missing postings are rechecked; expiration of a review is not job closure.
-        present = any(matches_posting(c, record) for c in candidates)
-        stale = not record.get('expires_on') or record['expires_on'] < today or record.get('checked_on', '') > today
-        needs_check = record.get('availability') != 'live' or stale or (not present and record.get('checked_on') != today)
-        if needs_check:
-            observation = check_posting_availability(record, today=today, timeout=timeout)
+        # Honor today's review, including uncertainty. Older missing/unknown
+        # postings are rechecked; expiration of a review is not job closure.
+        present = any(matches_posting(c, current) for c in candidates)
+        stale = not current.get('expires_on') or current['expires_on'] < today or current.get('checked_on', '') > today
+        needs_check = current.get('availability') != 'live' or stale or (not present and current.get('checked_on') != today)
+        if needs_check and not reviewed_today:
+            observation = check_posting_availability(current, today=today, timeout=timeout)
             current.update(observation)
             current['prior_evidence'] = dict(record)
         resolved.append(current)

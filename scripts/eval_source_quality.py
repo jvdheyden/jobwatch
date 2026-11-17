@@ -117,7 +117,8 @@ def main() -> int:
             configured_source = next((s for s in config["sources"] if s["name"].casefold() == args.source.casefold()), None)
             if configured_source:
                 source_id = configured_source["id"]
-        canaries = stored_canaries(state.get(source_id, {}).get("integration", {}), source_id or "explicit_source")
+        integration = state.get(source_id, {}).get("integration", {})
+        canaries = stored_canaries(integration, source_id or "explicit_source")
         if args.canary_title or args.canary_url:
             explicit = {"id": "explicit_canary", "source_id": source_id, "title": args.canary_title, "url": args.canary_url,
                         "provenance": args.canary_provenance, "availability": "live", "scope": "in_scope",
@@ -126,7 +127,8 @@ def main() -> int:
             # forward one canary, but must not downgrade provenance or renew it.
             if not any(matches_posting(explicit, c) for c in canaries):
                 canaries.append(explicit)
-        resolved = effective_canaries(canaries, source.get("candidates", []), today=args.today, timeout=args.timeout_seconds)
+        resolved = effective_canaries(canaries, source.get("candidates", []), today=args.today, timeout=args.timeout_seconds,
+                                      checks=integration.get("canary_checks", {}))
         active = [c for c in resolved if c.get("availability") == "live" and c.get("scope") == "in_scope"]
         active.sort(key=lambda c: any(matches_posting(candidate, c) for candidate in source.get("candidates", [])))
         args.canary_title = active[0].get("title", "") if active else ""

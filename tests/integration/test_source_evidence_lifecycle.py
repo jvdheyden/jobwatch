@@ -65,13 +65,13 @@ def configure(tmp_path, entry='existing'):
     return directory
 
 
-def evaluate(tmp_path, monkeypatch, coverage):
+def evaluate(tmp_path, monkeypatch, coverage, *, today=TODAY):
     artifact = tmp_path / 'discovery.json'
     artifact.write_text(json.dumps({'sources': [coverage]}))
     output = tmp_path / 'quality.json'
     monkeypatch.setenv('JOB_AGENT_ROOT', str(tmp_path))
     monkeypatch.setattr(sys, 'argv', ['eval_source_quality.py', '--track', 'applied_crypto', '--source', 'Example Labs',
-        '--today', TODAY, '--artifact-path', str(artifact), '--output', str(output), '--reviewer', 'off'])
+        '--today', today, '--artifact-path', str(artifact), '--output', str(output), '--reviewer', 'off'])
     status = eval_source_quality.main()
     return status, json.loads(output.read_text())
 
@@ -144,6 +144,76 @@ def test_inconclusive_evaluation_does_not_authorize_provider_changes(tmp_path, m
     assert result['final_status'] == 'inconclusive'
     assert result['integration_ticket'] is None
     assert result['canaries'][0]['prior_evidence']['url'] == URL
+    assert (directory / 'source_state.json').read_bytes() == before
+
+
+@pytest.mark.parametrize('present', [False, True], ids=['missing', 'present'])
+@pytest.mark.parametrize('review_path', ['manual', 'refresh'])
+def test_latest_unknown_review_defers_evaluation_until_conclusive_review(tmp_path, monkeypatch, present, review_path):
+    directory = configure(tmp_path)
+    state_path = directory / 'source_state.json'
+    prior = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']['canaries'][0]
+    monkeypatch.setattr(probe_career_source, 'fetch_http', lambda url, timeout: ('', url, 403, ['Access blocked']))
+    if review_path == 'manual':
+        update_source_canary.review_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role',
+            observation={'availability': 'unknown', 'scope': 'unknown', 'evidence_url': URL, 'evidence_note': 'Official page unavailable.'}, today=TODAY)
+    else:
+        def discover(root, track, name, today, output):
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps({'sources': [source()]}))
+            return subprocess.CompletedProcess([], 0, '', '')
+        monkeypatch.setattr(update_source_canary, 'run_discovery', discover)
+        ok, review = update_source_canary.refresh_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', today=TODAY)
+        assert not ok and review['status'] == 'inconclusive'
+
+    before = state_path.read_bytes()
+    integration = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+    assert integration['canaries'] == [prior]
+    latest = integration['canary_checks']['desired_role']
+    coverage = source()
+    if present:
+        coverage['candidates'][0]['url'] = URL
+    status, result = evaluate(tmp_path, monkeypatch, coverage)
+    assert status == 1
+    assert result['final_status'] == 'inconclusive'
+    assert result['verification'] == 'inconclusive'
+    assert result['quality_level'] == 'basic_support'
+    assert result['integration_ticket'] is None
+    assert result['canaries'][0]['availability'] == 'unknown'
+    assert result['canaries'][0]['scope'] == ('unknown' if review_path == 'manual' else 'in_scope')
+    assert result['canaries'][0]['evidence_note'] == latest['evidence_note']
+    assert result['canaries'][0]['prior_evidence'] == prior
+    assert state_path.read_bytes() == before
+
+    update_source_canary.review_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role',
+        observation={'availability': 'live', 'scope': 'in_scope', 'evidence_url': URL, 'evidence_note': 'Official page confirmed open again.'}, today=TODAY)
+    status, result = evaluate(tmp_path, monkeypatch, coverage)
+    assert status == (0 if present else 1)
+    assert result['verification'] == ('independently_verified' if present else 'failed')
+    assert result['final_status'] == ('pass' if present else 'integration_needed')
+    assert result['canaries'][0]['provenance'] == 'user_supplied'
+
+
+@pytest.mark.parametrize('observation', ['live', 'unknown'])
+def test_older_unknown_review_requires_fresh_independent_evidence(tmp_path, monkeypatch, observation):
+    directory = configure(tmp_path)
+    update_source_canary.review_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role',
+        observation={'availability': 'unknown', 'evidence_url': URL, 'evidence_note': 'Official page unavailable.'}, today=TODAY)
+    before = (directory / 'source_state.json').read_bytes()
+    body = '<script type="application/ld+json">' + json.dumps({'@type': 'JobPosting', 'url': URL,
+        'title': 'Privacy Engineer', 'description': 'Build privacy protocols.'}) + '</script>'
+    monkeypatch.setattr(probe_career_source, 'fetch_http', lambda url, timeout:
+        (body, url, 200, []) if observation == 'live' else ('', url, 403, ['Access blocked']))
+    coverage = source()
+    coverage['candidates'][0]['url'] = URL
+    status, result = evaluate(tmp_path, monkeypatch, coverage, today='2026-11-18')
+    assert status == (0 if observation == 'live' else 1)
+    assert result['verification'] == ('independently_verified' if observation == 'live' else 'inconclusive')
+    assert result['canaries'][0]['availability'] == observation
+    assert result['canaries'][0]['checked_on'] == '2026-11-18'
+    assert result['canaries'][0]['prior_evidence']['checked_on'] == TODAY
+    assert result['canaries'][0]['provenance'] == 'user_supplied'
+    assert result['integration_ticket'] is None
     assert (directory / 'source_state.json').read_bytes() == before
 
 
