@@ -104,7 +104,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    bash scripts/start_setup_agent.sh --agent gemini
    ```
 
-   The setup flow fills local profile files, stores reviewed decisions as bounded JSON under `artifacts/setup/<setup-id>/`, discovers sources in a fresh economical worker, creates the track with a deterministic no-model scaffolder, and ranks the first preview from a compact context in a second fresh worker. It then asks which delivery methods you want, configures scheduling if requested, and validates the track. Ordinary scheduled runs remain unchanged.
+   Setup optionally collects interesting job links as durable reference examples and live canary evidence. The setup flow fills local profile files, stores reviewed decisions as bounded JSON under `artifacts/setup/<setup-id>/`, discovers sources in a fresh economical worker, creates the track with a deterministic no-model scaffolder, and ranks the first preview from a compact context in a second fresh worker. Source verification stays queued until the first digest is ready and can run in the background. It then asks which delivery methods you want, configures scheduling if requested, and validates the track. Ordinary scheduled runs remain unchanged.
 
    Track-specific preferences live in `tracks/<track-slug>/prefs.md`. They are still required even when `profile/cv.md` and `profile/prefs_global.md` are filled, because each track can have narrower goals, keywords, constraints, and red flags.
 
@@ -123,7 +123,7 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
 
 ## Update a track's preferences
 
-Ask your agent, for example: "Update my crypto track to also include privacy engineering." The existing `set-up` skill updates the preferences and reviews retrieval terms, source overrides and filters together. Changes that only affect ranking may need no retrieval edits.
+Ask your agent, for example: "Update my crypto track to also include privacy engineering." The `existing-source-curation` skill updates the preferences and reviews retrieval terms, source overrides and filters together. Changes that only affect ranking may need no retrieval edits.
 
 If you edit `tracks/<track-slug>/prefs.md` directly, ask: "Reconcile this track's retrieval configuration with its updated preferences." File edits do not automatically synchronize retrieval. Normal runs may report possible gaps as search-quality observations in coverage notes; they do not change configuration. Updated retrieval applies to the next discovery run.
 

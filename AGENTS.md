@@ -28,7 +28,7 @@ Agents also help develop and maintain source integrations when needed.
 This repository supports six kinds of work:
 
 1. Track runs
-2. Track setup and maintenance
+2. New-track setup
 3. Existing-track source curation
 4. Repo development
 5. Code review
@@ -41,11 +41,11 @@ Mode selection:
 - In track-run mode, follow the scheduled or user prompt first, then the relevant `tracks/<track>/AGENTS.md`.
 - If the prompt asks to create, scaffold, initialize, or set up a new search track, or names the project skill `set-up`, treat the task as track setup.
 - In track-setup mode, use the project skill `set-up`.
-- If the prompt asks to update an existing track's preferences or reconcile its retrieval configuration (including after manual preference edits), use the existing-track maintenance branch of `set-up`. This is maintenance, not a normal track run; do not scaffold the track again.
+- If the prompt asks to update an existing track's preferences or reconcile its retrieval configuration (including after manual preference edits), use `existing-source-curation`. This is maintenance, not a normal track run; do not scaffold the track again.
 - If the prompt clearly asks to add, evaluate, confirm, or look up a named employer or official source for an existing track, treat it as existing-track source curation. Examples include prompts like `add <company> as a source to <track>` or `evaluate <company> for <track>`.
-- Existing-track source curation is narrow: use it for adding or evaluating a named source for an existing track, not for broad source discovery, removals, cadence changes, or search-term edits.
+- Existing-track source curation includes portfolio discovery, coverage reviews, preference/retrieval reconciliation, cadence and source-selection recommendations. Keep named-source requests narrow; preserve confirmed sources and preferences unless changes are authorized.
 - In existing-track source-curation mode, use the project skill `existing-source-curation`.
-- If the request expands into broad source discovery or broader source maintenance, route it back to `set-up`.
+- For bounded employer/board discovery on new or existing tracks, use `discover-sources` through its isolated worker. It recommends sources; setup or curation owns selection and registration.
 - If the prompt asks to review a pull request, commit, branch, or local code changes, or to merge a pull request, treat the task as code review. This includes follow-up requests such as "check the changes to PR 24", "did they address the findings?", or "review and merge PR 24 if ready".
 - In code-review mode, use the project skill `reviewing`. Review-only work follows that skill's verification and reporting rules.
 - If the user also requests fixes, use `reviewing` for the assessment and invoke `coding` before implementing the requested changes.

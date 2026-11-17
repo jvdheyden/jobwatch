@@ -171,11 +171,13 @@ def fetch_http(url: str, timeout: int) -> tuple[str, str, int, list[str]]:
     try:
         with urlopen(request, timeout=timeout, context=context) as response:
             charset = response.headers.get_content_charset() or "utf-8"
-            body = response.read()
+            body = response.read(2 * 1024 * 1024 + 1)
+            if len(body) > 2 * 1024 * 1024:
+                return "", response.geturl(), 0, ["HTTP response exceeded the 2 MiB probe limit"]
             final_url = response.geturl()
             return body.decode(charset, errors="replace"), final_url, int(response.status), hints
     except HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
+        body = exc.read(2 * 1024 * 1024).decode("utf-8", errors="replace")
         if exc.code == 403:
             hints.append("HTTP 403; source may block scripted requests")
         return body, exc.geturl() or url, int(exc.code), hints
@@ -230,7 +232,9 @@ def probe(url: str, *, source_name: str = "", terms: list[str] | None = None, ti
         "suggested_discovery_mode": mode,
         "fetch_status": status,
         "hints": hints,
-        "candidate_canaries": extract_canary_candidates(html, final_url or url, terms) if html else [],
+        "candidate_canaries": extract_canary_candidates(html, final_url or url, terms) if html and (status == 200 or playwright_used) else [],
+        "canary_provenance": "independent_probe",
+        "canary_review_required": True,
         "playwright_needed": playwright_needed,
         "playwright_used": playwright_used,
     }

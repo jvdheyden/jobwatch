@@ -79,6 +79,11 @@ def test_filter_coverage_prunes_broad_source_roles_without_sector_evidence(tmp_p
 
     filtered = discover_jobs.filter_coverage_for_track("demo", coverage, tracks_root=tmp_path)
 
+    from dataclasses import asdict
+    from source_quality import validate_source_coverage
+    check = validate_source_coverage(asdict(filtered), canary_url="https://example.com/plain", canary_title="Software Engineer",
+                                     raw_text_fetcher=lambda *_: "")
+    assert check["canary_results"][0]["diagnosis"] == "track_match_rules"
     assert filtered.matched_jobs == 2
     assert [candidate.employer for candidate in filtered.candidates] == ["Enveritas", "SPADE Agriculture"]
     assert filtered.limitations == [

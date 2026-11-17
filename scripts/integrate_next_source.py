@@ -22,6 +22,7 @@ from source_config import (
     write_json_atomic,
 )
 from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, source_slug
+from source_evidence import stored_canaries
 
 
 ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]))
@@ -110,7 +111,12 @@ def select_next_source(
         if requested and requested not in {source["id"].lower(), source["name"].lower()}:
             continue
         status = str(integration.get("status", "") or "")
-        if not requested and status not in PENDING_STATUSES:
+        evidence = stored_canaries(integration, source["id"])
+        needs_verification = bool(evidence) and (
+            integration.get("verification") in {None, "pending", "inconclusive", "unverified"}
+            or any(c.get("availability") != "expired" and (not c.get("expires_on") or c["expires_on"] < today) for c in evidence)
+        )
+        if not requested and status not in PENDING_STATUSES and not needs_verification:
             continue
         if requested and not status:
             integration["status"] = "pending"
@@ -123,23 +129,6 @@ def select_next_source(
         return None, "no queued source is pending or eligible today"
     candidates.sort(key=lambda item: (-item[0], item[1].lower()))
     return candidates[0][2], "selected"
-
-
-def canary_from_state(integration: dict[str, Any], *, today: str | None = None) -> tuple[str, str]:
-    canary = integration.get("canary") if isinstance(integration.get("canary"), dict) else {}
-    # Automatically selected suggestions and expired vacancies are not evidence
-    # that extraction is broken. Preserve them in state for operator review.
-    if canary.get("review_required"):
-        return "", ""
-    if canary.get("expires_on"):
-        try:
-            if date.fromisoformat(canary["expires_on"]) < date.fromisoformat(today or date.today().isoformat()):
-                return "", ""
-        except (TypeError, ValueError):
-            return "", ""
-    title = str(canary.get("title") or integration.get("canary_title") or "")
-    url = str(canary.get("url") or integration.get("canary_url") or "")
-    return title, url
 
 
 def eval_dir(track: str, source_name: str) -> Path:
@@ -325,6 +314,9 @@ def apply_config_tuning(
         normalized = _normalize_terms_payload(terms_payload, strategy)
         if not normalized:
             return False, "integration ticket asks for search-term tuning but no usable terms were queued"
+        if strategy == "config_terms_append" and source.get("search_terms"):
+            current = source["search_terms"]
+            normalized = {"mode": current["mode"], "terms": list(dict.fromkeys([*current["terms"], *normalized["terms"]]))}
         source["search_terms"] = normalized
         return True, f"updated source search_terms using {strategy}"
 
@@ -333,9 +325,12 @@ def apply_config_tuning(
         new_url = suggestion.get("source_url")
         if not new_url:
             return False, "integration ticket asks for config_url_correction but no URL was suggested"
+        from source_evidence import posting_url
+        posting_url(new_url)  # Validate the suggested URL before persisting it.
         source["url"] = new_url
         if "discovery_mode" in suggestion:
-            supported_modes = {"workday_api", "greenhouse_api", "lever_json", "ashby_api", "ashby_html"}
+            from discover.registry import load_registry
+            supported_modes = load_registry()
             if suggestion["discovery_mode"] in supported_modes:
                 source["discovery_mode"] = suggestion["discovery_mode"]
         return True, f"updated source url to {new_url}"
@@ -413,7 +408,31 @@ def write_state(
 
     def overlay(current: dict[str, dict[str, Any]]) -> None:
         if source_id is not None and source_id in state:
-            current[source_id] = state[source_id]
+            # Long evaluations must not overwrite concurrent cadence updates,
+            # reference registration, canary reviews or unrelated metadata.
+            target = current.setdefault(source_id, {"last_checked": None})
+            integration = target.setdefault("integration", {})
+            evidence_keys = {"canary", "canaries", "canary_history", "canary_checks", "canary_title", "canary_url"}
+            old_evidence = {k: v for k, v in state[source_id].get("integration", {}).items() if k in evidence_keys}
+            new_evidence = {k: v for k, v in integration.items() if k in evidence_keys}
+            result = state[source_id].get("integration", {})
+            result_fields = {"status", "last_attempted", "attempts", "next_action", "last_ticket_summary", "last_note",
+                             "last_config_tuning", "verification", "quality_level"}
+            for key in result_fields:
+                if key in result:
+                    integration[key] = result[key]
+                else:
+                    integration.pop(key, None)
+            if "artifacts" in result:
+                integration.setdefault("artifacts", {}).update(result["artifacts"])
+            disk_config = load_sources_config(track_dir / "sources.json", track)
+            disk_source = source_by_id(disk_config).get(source_id)
+            changed_config = disk_source != source_by_id(config).get(source_id) or disk_config["track_terms"] != config["track_terms"]
+            if old_evidence != new_evidence or changed_config:
+                integration["status"] = "pending"
+                integration["verification"] = "pending"
+                integration["quality_level"] = "configured"
+                integration.pop("last_attempted", None)
 
     mutate_source_state(state_path, track, source_ids, overlay)
 
@@ -474,9 +493,9 @@ def main() -> int:
 
     state_entry = state.setdefault(source["id"], {"last_checked": None})
     integration = _integration_state(state_entry)
-    canary_title, canary_url = canary_from_state(integration, today=args.today)
-    if integration.get("canary") and not (canary_title or canary_url):
-        print("Stored canary needs review or has expired; excluding it from integration failure evidence.")
+    # The evaluator loads all stored evidence itself. Do not flatten it to one
+    # title/URL, which would lose provenance, availability and review deadlines.
+    canary_title, canary_url = "", ""
     source_name = source["name"]
     discovery_path = discovery_artifact_path(args.track, source_name, args.today)
     eval_path = eval_artifact_path(args.track, source_name, args.today)
@@ -521,11 +540,25 @@ def main() -> int:
 
     status = str(eval_payload.get("final_status") or "blocked")
     ticket = eval_payload.get("integration_ticket") if isinstance(eval_payload.get("integration_ticket"), dict) else None
+    integration["verification"] = eval_payload.get("verification", "unverified")
+    integration["quality_level"] = eval_payload.get("quality_level", "basic_support" if status == "pass" else "configured")
+    if status == "inconclusive":
+        update_integration_state(state_entry, today=args.today, status="deferred", discovery_path=discovery_path, eval_path=eval_path,
+                                 note="Independent availability or scope is inconclusive; review evidence before integration.")
+        write_state(args.track, config, state, source_id=source["id"])
+        print(f"{source_name}: inconclusive; evidence retained")
+        return 1
     if status == "pass":
         update_integration_state(state_entry, today=args.today, status="pass", discovery_path=discovery_path, eval_path=eval_path)
         write_state(args.track, config, state, source_id=source["id"])
         print(f"{source_name}: pass")
         return 0
+
+    if ticket and ticket.get("suggested_strategy") == "config_match_rules":
+        update_integration_state(state_entry, today=args.today, status="deferred", discovery_path=discovery_path, eval_path=eval_path,
+                                 ticket=ticket, note="Review the identified track match rule against preferences before changing it.")
+        write_state(args.track, config, state, source_id=source["id"])
+        return 1
 
     is_config_tuning = ticket and str(ticket.get("suggested_strategy")) in CONFIG_TUNING_STRATEGIES
 
@@ -547,6 +580,7 @@ def main() -> int:
         return 1
 
     if is_config_tuning:
+        before_tuning = json.loads(json.dumps(source))
         applied, note = apply_config_tuning(config, source_id=source["id"], integration=integration, ticket=ticket)
         if not applied:
             update_integration_state(
@@ -568,19 +602,15 @@ def main() -> int:
         # different sources can clobber each other's url/discovery_mode
         # changes when writing the full config back.
         with file_lock(sources_path):
-            try:
-                disk_config = load_sources_config(sources_path, args.track)
-            except SourceConfigError:
-                disk_config = config
+            disk_config = load_sources_config(sources_path, args.track)
             sid = source["id"]
-            replaced = False
-            for i, src in enumerate(disk_config["sources"]):
-                if src["id"] == sid:
-                    disk_config["sources"][i] = source
-                    replaced = True
-                    break
-            if not replaced:
-                disk_config["sources"].append(source)
+            disk_source = source_by_id(disk_config).get(sid)
+            if disk_source != before_tuning:
+                update_integration_state(state_entry, today=args.today, status="deferred", discovery_path=discovery_path,
+                                         eval_path=eval_path, note="Source configuration changed during evaluation; retry with current config.")
+                write_state(args.track, config, state, source_id=sid)
+                return 1
+            disk_config["sources"] = [source if item["id"] == sid else item for item in disk_config["sources"]]
             write_json_atomic(sources_path, disk_config)
         render = subprocess.run(
             [resolve_repo_python(), str(ROOT / "scripts" / "render_sources_md.py"), "--track", args.track],
@@ -641,6 +671,8 @@ def main() -> int:
         status = str(eval_payload.get("final_status") or "blocked")
         ticket = eval_payload.get("integration_ticket") if isinstance(eval_payload.get("integration_ticket"), dict) else None
         integration["last_config_tuning"] = note
+        integration["verification"] = eval_payload.get("verification", "unverified")
+        integration["quality_level"] = eval_payload.get("quality_level", "configured")
         if tuned_eval.returncode == 0 and status == "pass":
             update_integration_state(
                 state_entry,
@@ -654,6 +686,11 @@ def main() -> int:
             write_state(args.track, config, state, source_id=source["id"])
             print(f"{source_name}: pass after config tuning")
             return 0
+        if status == "inconclusive" or ticket and str(ticket.get("suggested_strategy", "")).startswith("config_"):
+            update_integration_state(state_entry, today=args.today, status="deferred", discovery_path=discovery_path, eval_path=eval_path,
+                                     ticket=ticket, note="Further configuration or evidence review is needed before provider implementation.")
+            write_state(args.track, config, state, source_id=source["id"])
+            return 1
         if status == "blocked":
             update_integration_state(
                 state_entry,
@@ -688,6 +725,9 @@ def main() -> int:
         try:
             summary = json.loads(summary_path.read_text())
             loop_status = str(summary.get("final_status") or "blocked")
+            final_eval = summary.get("final_eval") or {}
+            integration["verification"] = final_eval.get("verification", "unverified")
+            integration["quality_level"] = final_eval.get("quality_level", "configured")
         except json.JSONDecodeError:
             loop_status = "blocked"
     state_status = "pass" if loop_status == "pass" else "integration_needed" if loop_status == "retry_limit" else "blocked"

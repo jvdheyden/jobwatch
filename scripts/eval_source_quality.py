@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date
+from datetime import date, timedelta
 import json
 import os
 import sys
@@ -23,7 +23,9 @@ from source_quality import (
     source_slug,
     validate_source_coverage,
 )
-
+from source_config import load_source_state, load_sources_config
+from source_evidence import stored_canaries, effective_canaries, matches_posting, PROVENANCES
+from setup_contracts import write_json_atomic, normalize_track_slug
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,6 +51,8 @@ def main() -> int:
     parser.add_argument("--output", help="Write the evaluation JSON here")
     parser.add_argument("--canary-title", default="", help="Expected canary title for this source")
     parser.add_argument("--canary-url", default="", help="Expected canary URL for this source")
+    parser.add_argument("--canary-provenance", choices=sorted(PROVENANCES), default="legacy",
+                        help="Acquisition provenance; legacy flags alone do not certify independent coverage")
     parser.add_argument(
         "--reviewer",
         choices=("auto", "off", "force"),
@@ -65,18 +69,19 @@ def main() -> int:
         default=DEFAULT_REVIEW_TIMEOUT_SECONDS,
         help="Timeout for reviewer/raw page fetches",
     )
-    parser.add_argument("--canary-expires-on", help="Reviewed canary expiry date; expired canaries are advisory only")
+    parser.add_argument("--canary-expires-on", help="Canary review deadline; past deadlines trigger independent rechecking, not assumed closure")
     parser.add_argument("--min-candidates", type=int, help="Independently reviewed candidate floor for this configured search")
     parser.add_argument("--min-enumerated", type=int, help="Independently reviewed board enumeration floor")
     parser.add_argument("--min-detail-fraction", type=float, help="Reviewed minimum fraction of candidates with substantive role detail (0 to 1)")
     args = parser.parse_args()
     canary_review = None
     try:
+        normalize_track_slug(args.track)
+        date.fromisoformat(args.today)
         if args.canary_expires_on and date.fromisoformat(args.canary_expires_on) < date.fromisoformat(args.today):
-            canary_review = {"status": "expired", "expires_on": args.canary_expires_on,
+            canary_review = {"status": "review_due", "expires_on": args.canary_expires_on,
                              "title": args.canary_title, "url": args.canary_url,
                              "action": "Review the official vacancy before renewing this canary."}
-            args.canary_title = args.canary_url = ""
         if any(value is not None and value < 0 for value in (args.min_candidates, args.min_enumerated)):
             raise ValueError("minimum counts must be nonnegative")
         if args.min_detail_fraction is not None and not 0 <= args.min_detail_fraction <= 1:
@@ -104,10 +109,33 @@ def main() -> int:
         return 2
     try:
         _, source = load_source_coverage(artifact_path, args.source)
+        state = load_source_state(ROOT / "tracks" / args.track / "source_state.json", args.track)
+        source_id = source.get("source_id")
+        config_path = ROOT / "tracks" / args.track / "sources.json"
+        if config_path.exists():
+            config = load_sources_config(config_path, args.track)
+            configured_source = next((s for s in config["sources"] if s["name"].casefold() == args.source.casefold()), None)
+            if configured_source:
+                source_id = configured_source["id"]
+        canaries = stored_canaries(state.get(source_id, {}).get("integration", {}), source_id or "explicit_source")
+        if args.canary_title or args.canary_url:
+            explicit = {"id": "explicit_canary", "source_id": source_id, "title": args.canary_title, "url": args.canary_url,
+                        "provenance": args.canary_provenance, "availability": "live", "scope": "in_scope",
+                        "checked_on": args.today, "expires_on": args.canary_expires_on or (date.fromisoformat(args.today) + timedelta(days=14)).isoformat()}
+            # Stored evidence is authoritative: old integration invocations may
+            # forward one canary, but must not downgrade provenance or renew it.
+            if not any(matches_posting(explicit, c) for c in canaries):
+                canaries.append(explicit)
+        resolved = effective_canaries(canaries, source.get("candidates", []), today=args.today, timeout=args.timeout_seconds)
+        active = [c for c in resolved if c.get("availability") == "live" and c.get("scope") == "in_scope"]
+        active.sort(key=lambda c: any(matches_posting(candidate, c) for candidate in source.get("candidates", [])))
+        args.canary_title = active[0].get("title", "") if active else ""
+        args.canary_url = active[0].get("url", "") if active else ""
         deterministic = validate_source_coverage(
             source,
             canary_title=args.canary_title,
             canary_url=args.canary_url,
+            canaries=resolved,
             timeout_seconds=args.timeout_seconds,
             minimum_candidates=args.min_candidates,
             minimum_enumerated=args.min_enumerated,
@@ -189,7 +217,7 @@ def main() -> int:
             },
         }
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(json.dumps(payload, indent=2) + "\n")
+        write_json_atomic(output_path, payload, max_bytes=1024 * 1024)
         print(json.dumps(payload, indent=2))
         return 1
 
@@ -201,7 +229,7 @@ def main() -> int:
         canary_title=args.canary_title,
         canary_url=args.canary_url,
     )
-    final_status = "pass"
+    final_status = "inconclusive" if deterministic["verification"] == "inconclusive" else "pass"
     if integration_ticket:
         final_status = "integration_needed"
     if deterministic["confidence"] == "failed" and reviewer.get("status") == "blocked":
@@ -216,6 +244,9 @@ def main() -> int:
         "artifact_path": str(artifact_path),
         "canary": {"title": args.canary_title, "url": args.canary_url},
         "canary_review": canary_review,
+        "canaries": resolved,
+        "verification": deterministic["verification"],
+        "quality_level": "configured" if integration_ticket else deterministic["quality_level"],
         "deterministic": deterministic,
         "reviewer": reviewer,
         "final_status": final_status,
@@ -223,7 +254,7 @@ def main() -> int:
     }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(payload, indent=2) + "\n")
+    write_json_atomic(output_path, payload, max_bytes=1024 * 1024)
     print(json.dumps(payload, indent=2))
     return 0 if final_status == "pass" else 1
 

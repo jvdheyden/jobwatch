@@ -121,7 +121,7 @@ flowchart LR
   Telegram -.reads.-> StructDigest
 
   SetUp -.scaffolds.-> SrcState
-  SetUp -.runs eval + integration on top probed sources.-> Integrate
+  SetUp -.starts background verification after first digest.-> IntegrateNext
   SetUp -.queues remaining sources.-> SrcState
   DiscoverSources -.recommends sources to.-> SetUp
   CurateSource -.reads/writes.-> SrcConfig
@@ -236,7 +236,8 @@ flowchart LR
 | `tracks/T/AGENTS.md` | Track workflow and setup-derived fit summary | Track agent; `prefs.md` remains authoritative for fit |
 | `tracks/T/sources.json` | Sources, cadence, `track_terms`, source `search_terms` (`append`/`override`), native filters | Discovery; `find-jobs` coverage audit |
 | `tracks/T/match_rules.json` (optional) | Source-specific deterministic rules | Discovery, before fallback description enrichment |
-| `tracks/T/source_state.json` | Last successful source checks and integration queue state | Discovery cadence; updated by scripts for complete sources |
+| `tracks/T/reference_jobs.json` (optional) | Durable posting URLs, user relevance notes and source associations | Setup/curation; finding and ranking calibration |
+| `tracks/T/source_state.json` | Last successful source checks, canaries, review history, verification and integration queue state | Discovery cadence; updated by scripts for complete sources |
 | `tracks/T/seen_jobs.json` | Previously reported jobs | `find-jobs` deduplication; updated from the digest by scripts |
 
 `tracks/T/sources.md` is generated from `sources.json`; it is not another source of truth. Discovery writes `artifacts/discovery/T/YYYY-MM-DD.json`; the agent produces `artifacts/digests/T/YYYY-MM-DD.json`. The runner renders `tracks/T/digests/YYYY-MM-DD.md` and updates `tracks/T/ranked_overview.md` and `shared/ranked_jobs/T.json`.
@@ -309,7 +310,7 @@ it receives against semantic preferences.
 
 Users request maintenance with prompts such as "Update my crypto track to
 include privacy engineering" or "I edited this track's preferences; reconcile
-retrieval." The existing `set-up` skill updates semantic preferences when
+retrieval." The `existing-source-curation` skill updates semantic preferences when
 requested and reviews global terms, all source overrides, native filters and
 existing match rules together. Ranking-only changes may require no retrieval
 edits. Maintenance reuses source rendering, discovery planning and targeted
@@ -391,17 +392,129 @@ A minimal setup artifact has this synthetic shape:
 }
 ```
 
-An empty selected source list is valid before confirmation but blocks `scaffold_track.py`. Source entries and match rules use the same canonical schemas as track `sources.json` and `match_rules.json`.
+An empty selected source list is valid before confirmation but blocks `scaffold_track.py`. Persisted source entries and match rules use the same canonical schemas as track `sources.json` and `match_rules.json`. For provider-independent strict worker output, native filters arrive as at most 20 `{key, values}` entries; the validator normalizes them into the existing canonical filter map. Older object-shaped filter maps remain readable.
 
-The deterministic assembler joins candidate judgments back to URLs and source coverage, then emits the existing digest schema. The two workers cannot write the workspace and never resume the coordinator conversation. Source discovery is web-capable; preview ranking is instructed and configured without routine web access. `scaffold_track.py` has no model role because it makes no model call.
+The deterministic assembler joins candidate judgments back to URLs and source coverage, then emits the existing digest schema. The source runner reads the canonical `discover-sources/SKILL.md` and `shared/source_curation.md` and includes their text inline, followed by its supported-mode and output contract. No workspace access or second instruction copy is needed. Runtime provider policy, isolation, hashes, output validation and persistence remain runner-owned. The two workers cannot write the workspace and never resume the coordinator conversation. Source discovery is web-capable; preview ranking is instructed and configured without routine web access. `scaffold_track.py` has no model role because it makes no model call.
 
 Setup model defaults and provider command construction live in `scripts/agent_provider.py`. Explicit CLI arguments override provider/role environment values, which override tested defaults. These setup-only policies do not change `run_track.sh`, `source_reviewer`, or `source_coder` behavior.
+
+## Source selection and portfolio maintenance
+
+`set-up` owns interactive new-track onboarding and the first digest.
+`discover-sources` recommends a bounded source pack for new or existing tracks.
+`existing-source-curation` owns existing-track additions, portfolio reviews and
+preference/retrieval reconciliation. Shared scripts own registration, evidence,
+quality checks and integration. Official-source/mode heuristics and the common
+operator procedure live in `shared/source_curation.md`.
+
+`curate_sources.py prepare` combines a reviewed setup-format brief with at most
+80 canonical existing source records and stored examples; it fails rather than
+silently truncating a larger portfolio. Existing configuration is user context,
+not authorization to modify it. The worker may associate examples with existing
+IDs but cannot recommend duplicates by ID, normalized URL or exact source name.
+`register --setup` adds reviewed selections without recreating tracks, changing
+global terms or replacing existing sources. New retrieval vocabulary applies only
+to additions. Match-rule changes require separate explicit maintenance. Removal,
+cadence and consequential filter recommendations remain subject to user control.
+
+### Source evidence contracts
+
+These are optional extensions to v1 artifacts. Existing setup artifacts retain
+their normalized shape/hash when the new input fields are absent. Legacy packs
+can omit evidence fields; missing seed accounting is rendered explicitly as
+unresolved. New workers receive the extended schema. Strict key/URL/ID checks,
+32 KiB setup and 128 KiB source-pack limits still apply.
+
+| Artifact | Added fields / purpose |
+| --- | --- |
+| `setup.json` | `reference_jobs` (up to 20), `canaries` (up to 40, five/source), optional `existing_sources`, and selected `seed_outcomes` |
+| `source-pack.json` | One `reference_associations` record per input example (`reference_job_id`, nullable `source_id`, `reason`); `seed_outcomes` for each employer/official URL seed (`seed`, nullable `source_id`, `reason`); bounded `canaries` |
+| `preview-context.json` | Durable `reference_jobs` for calibration, never additional candidates |
+| `tracks/T/reference_jobs.json` | `{schema_version: 1, track: T, reference_jobs: [...]}`; survives posting closure |
+| `source_state.json` per-source `integration` | `canaries`, `canary_checks`, bounded `canary_history`, `verification`, `quality_level`, existing queue/artifact fields |
+
+A reference has `id`, `url`, optional `title`, `employer`, `relevance`, nullable
+`source_id` and `association_reason`. Selection preserves all references,
+including examples whose recommended source was not selected, and records that
+reason. Supplied canaries remain in the setup decision artifact; only selected
+or already configured source IDs enter operational state.
+
+An evidence-registration file can contain:
+
+```json
+{
+  "reference_jobs": [{
+    "id": "interesting_role", "url": "https://careers.example.com/jobs/42",
+    "title": "Privacy Engineer", "employer": "Example",
+    "relevance": "Hands-on privacy protocol work",
+    "source_id": "example", "association_reason": "Official employer board"
+  }],
+  "canaries": [{
+    "id": "posting_42", "source_id": "example", "reference_job_id": "interesting_role",
+    "url": "https://careers.example.com/jobs/42", "title": "Privacy Engineer",
+    "posting_id": "42", "provenance": "user_supplied", "availability": "live",
+    "scope": "in_scope", "checked_on": "2026-11-17", "expires_on": "2026-12-01",
+    "evidence_url": "https://careers.example.com/jobs/42",
+    "evidence_note": "User independently confirmed the official vacancy is open."
+  }]
+}
+```
+
+Canary provenance is `user_supplied`, `official_page`, `independent_probe`,
+`discovery_output` or backward-compatible `legacy`. Availability is `live`,
+`expired` or `unknown`; scope is `in_scope`, `out_of_scope` or `unknown` and
+refers to intended preferences, so restrictive retrieval cannot excuse a miss.
+Confirmed availability requires a dated evidence URL and note. Review deadlines
+default to 14 days; they never assert closure. Reference IDs/URLs/source
+associations are cross-validated. Evidence files are limited to 64 KiB.
+
+### Verification and evidence lifecycle
+
+The evaluator automatically reads all stored canaries. A current in-scope
+canary's absence fails even with plausible, complete results. Posting IDs take
+precedence when both sides provide them; otherwise normalized primary/alternate
+URLs are compared. Job-defining query parameters are retained; known tracking
+parameters and fragments are ignored. Title matching is only allowed when the
+canary has no stronger identity.
+
+A same-day explicit observation supplies availability evidence. Older missing,
+unknown or stale postings receive a separate bounded official-vacancy check.
+HTTP 404/410 or an expired matching JobPosting validity date establishes closure;
+a matching current JobPosting with role detail supplies live evidence. Dynamic,
+blocked, redirected or ambiguous pages remain inconclusive and can be reviewed
+manually. This conservative generic check does not cover all ATSs. Stored
+observations are never erased by inconclusive evaluation.
+
+`update_source_canary.py` archives a posting only after independent closure is
+confirmed. It then probes official pages before falling back to a discovery
+suggestion; every new suggestion requires intended-scope review. A live missing
+canary remains a defect. Unknown checks preserve the prior record alongside the
+latest observation. Discovery-output/legacy provenance remains weaker even after
+availability review. The last 100 archived canary observations are retained;
+durable reference jobs are never pruned by rotation.
+
+Evaluator `verification` is `unverified`, `inconclusive`, `regression_only`,
+`failed` or `independently_verified`. `quality_level` distinguishes `configured`,
+`basic_support` and `independently_verified`; verified means a sampled independent
+check, never exhaustive coverage. No-canary tracks continue operating normally.
+Deterministic track-rule rejections retain up to 100 posting identities for
+failure attribution. Enumeration vs search terms/native filters cannot always be
+separated from the current artifact; tickets state that uncertainty. Detail
+extraction has separate existing quality checks.
+
+Evidence mutations use the existing state lock and atomic replacement. Long
+integration runs overlay only their operational result fields; concurrent canary
+or cadence changes survive and invalidate a stale verification result. Source
+registration locks configuration/reference files, validates before writes and
+supports idempotent retries. These files commit individually, not as one database
+transaction. Legacy singular `integration.canary` and title/URL fields load as
+review-needed evidence; they are migrated lazily when evidence is changed.
 
 ## Source integration loop
 
 New sources should be integrated in layers. First choose the best existing `discovery_mode`; then tune source-specific `search_terms` and native `filters` from the user's CV and preferences; then add provider filter support; only then add dedicated provider parsing or enumeration logic. The source integration loop in `scripts/source_integration.py` automates the coding-and-reevaluation part of that process for one source.
 
-During track setup, the `set-up` skill probes newly added sources with canaries, tunes config first when results are noisy or too broad, dispatches `source_integration.py` for at most the top 2 sources that still need code, and writes the rest to `tracks/<track>/source_state.json` for one-per-day follow-up via `scripts/integrate_next_source.py`. Outside setup, run `integrate_next_source.py` manually to drain that queue. This loop is not triggered from scheduled track runs.
+Both scaffolding and existing-track registration queue sources in `source_state.json`. The first setup digest completes before expensive verification. `start_source_integration.py` starts bounded background work through `integrate_next_source.py`; explicit maintenance can queue affected sources through `curate_sources.py queue`. The same discovery/evaluator/config-tuning path handles all sources, including those reporting complete execution. Available, in-scope canaries must be found. Inconclusive availability defers integration, and track-rule changes require preference review. This queue is never drained by scheduled track runs.
 
 The reviewer role lives **inside each re-eval cycle**, not as a separate step between attempts. `scripts/eval_source_quality.py` runs a deterministic validator (`source_quality.validate_source_coverage`) and an LLM reviewer (`source_quality.review_source_with_llm`) over the discovery output; if defects remain, the eval emits an `integration_ticket` with a next action such as `config_terms_override`, `config_terms_append`, `config_native_filters`, `provider_filter_support`, or `dedicated_provider_logic`.
 

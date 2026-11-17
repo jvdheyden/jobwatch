@@ -81,8 +81,8 @@ not an automatically installed schedule.
 
 1. Open the official board and independently record a current job, the visible
    total (if meaningful), and the configured search. Set conservative count floors
-   and a canary expiry, normally within 14 days. A candidate selected by
-   `update_source_canary.py` is only a **review suggestion**, not independent proof.
+   and a canary expiry, normally within 14 days. Record provenance when registering with `update_source_canary.py --register`.
+   A discovery-output suggestion remains a weaker regression check after review.
 2. Run bounded discovery into an evaluation artifact, preserving normal run state:
 
    ```bash
@@ -106,16 +106,20 @@ not an automatically installed schedule.
    nonempty board, count shortfall, repeated or missing pages, non-vacancy links,
    weak/boilerplate descriptions and missing current canaries. Compare with the
    previous reviewed artifact and check a job from the **last** result page.
-   An expired canary is recorded as expired and excluded from failure decisions.
-   Even an unexpired absence requires checking whether the vacancy closed.
-   The queued integration workflow ignores stored canaries marked `review_required`
-   or past `expires_on`; confirm them in source state only after checking the
-   official vacancy. Legacy canaries without expiry still require manual review.
+   A stale review deadline is not confirmed vacancy closure. Stored canaries
+   are loaded automatically; older missing or uncertain postings receive an
+   independent availability check. Inconclusive checks preserve prior evidence
+   and defer verification. Only confirmed expiration permits archival/rotation.
+   Use the [shared review procedure](../shared/source_curation.md#review-and-rotation-coordinators-only)
+   for dynamic pages or manual availability/scope confirmation. Legacy singular
+   canaries remain readable but require review before independent verification.
 4. Distinguish execution from search quality. A complete filtered feed can exclude
    a desired role because terms or native filters are restrictive. Compare the
    official vacancy text and configured retrieval; report a retrieval gap without
-   labelling a technically complete scan failed. Floors/canaries must match the
-   configured search. Follow the existing maintenance workflow for preference or
+   changing the provider's execution status. The quality evaluator still fails an
+   available, in-scope missing canary and reports the retrieval defect. Count floors describe the
+   reviewed search; canary scope follows intended preferences so restrictive
+   terms or filters remain detectable. Follow the existing maintenance workflow for preference or
    retrieval changes.
 5. Capture a minimal sanitized response from a demonstrated failure, preserve its
    structure/page counts and a provenance note (URL/date/redactions), and write

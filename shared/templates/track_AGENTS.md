@@ -44,6 +44,8 @@ If useful, also use:
 14. Use the project skill `rank-jobs`.
 15. `../../scripts/discover_jobs.py`
 
+Read `./reference_jobs.json` when present for durable relevance examples. Expired examples still calibrate fit; they are not new candidates.
+
 ## Scope
 
 Only search the sources listed in `./sources.json`.
@@ -128,7 +130,7 @@ The digest must include enough source coverage detail to show what was actually 
 
 If required coverage evidence is missing, mark the source partial and say why. Local filtering counts as term application; an intentionally empty term list for a provider that does not apply terms is not missing evidence. Sources not due this run are not coverage gaps.
 
-Use `find-jobs` to report concrete possible retrieval gaps as `Search-quality observation:` entries in the existing `runs[].source_notes[].limitations` field. Name the requested role/domain, relevant configuration, and potential omission. Missing preference keywords or zero matches alone do not prove a gap. Keep successful execution complete; these observations recommend user-triggered `set-up` maintenance and do not authorize configuration changes or automatic workers.
+Use `find-jobs` to report concrete possible retrieval gaps as `Search-quality observation:` entries in the existing `runs[].source_notes[].limitations` field. Name the requested role/domain, relevant configuration, and potential omission. Missing preference keywords or zero matches alone do not prove a gap. Keep successful execution complete; these observations recommend user-triggered `existing-source-curation` maintenance and do not authorize configuration changes or automatic workers.
 
 For scheduled runs, the artifact paths in `../../artifacts/discovery/{track_slug}/` are the source of truth for discovery. Use `YYYY-MM-DD.json` first and `latest.json` second.
 

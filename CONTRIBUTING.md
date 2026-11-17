@@ -48,6 +48,14 @@ If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — on
 | Touch the track-run pipeline | `scripts/run_track.sh`, `scripts/run_scheduled_jobs.sh`, and the post-processing helpers around them. See [`docs/architecture.md`](./docs/architecture.md) for the call graph. |
 | Add a new provider contract test | `tests/contract/` with fixtures under `tests/fixtures/sources/<discovery_mode>/`. |
 
+Source selection and integration are separate. Use `curate_sources.py` and the
+shared evidence helpers for source registration; never hand-edit operational
+canary state. Changes to setup/curation contracts must preserve user examples,
+source associations and provenance through scaffolding and evaluation. See the
+[source lifecycle](docs/architecture.md#source-selection-and-portfolio-maintenance).
+Test independent expected postings, inconclusive availability and concurrent
+state updates; keep live/model checks separate from offline verification.
+
 ## Docs placement
 
 - Keep human-facing documentation in `docs/`.

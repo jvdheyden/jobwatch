@@ -15,6 +15,7 @@ Read these files before ranking:
 - `profile/cv.md` — the user's CV
 - `profile/prefs_global.md` — global preferences
 - `tracks/<track>/prefs.md` — track-specific preferences
+- `tracks/<track>/reference_jobs.json`, when present — durable examples and relevance notes for calibration, including expired jobs; never treat these as newly discovered candidates
 
 The candidate roles come from the discovery artifact or the find-jobs skill output for the current run.
 

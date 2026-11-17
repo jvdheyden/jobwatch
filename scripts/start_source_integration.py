@@ -15,7 +15,7 @@ ROOT = Path(os.environ.get("JOB_AGENT_ROOT", Path(__file__).resolve().parents[1]
 
 sys.path.insert(0, str(ROOT / "scripts"))
 try:
-    from integrate_next_source import PENDING_STATUSES, _integration_state, _priority
+    from integrate_next_source import select_next_source, _integration_state, _priority
     from source_config import load_source_state, load_sources_config
 except ImportError:
     pass
@@ -66,7 +66,8 @@ def get_eligible_sources(
             continue
             
         status = str(integration.get("status", "") or "")
-        if not requested and status not in PENDING_STATUSES:
+        eligible, _ = select_next_source({"sources": [source]}, state, today=today, requested_source=source_query)
+        if eligible is None:
             continue
             
         if requested and not status:

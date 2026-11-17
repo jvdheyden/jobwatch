@@ -58,6 +58,7 @@ class Coverage:
     candidates: list[Candidate] = field(default_factory=list)
     source_id: str = ""
     filters: dict[str, list[str]] = field(default_factory=dict)
+    filter_rejections: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass

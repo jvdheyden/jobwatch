@@ -1,77 +1,71 @@
 ---
 name: existing-source-curation
-description: Add, evaluate, confirm, or enable a named employer or official source for an existing track. Resolve the official careers URL, choose a conservative discovery_mode, update sources.json, and escalate through integrate_next_source.py when needed.
+description: Discover, add, evaluate and maintain sources and retrieval configuration for existing tracks, including portfolio curation.
 ---
 
-# Skill: Curate a named source for an existing track
+# Curate sources for an existing track
 
-Use this skill when the user names a company or source and wants it added, evaluated, confirmed, or enabled for an existing track.
+Use for named-source requests, portfolio reviews and preference/retrieval reconciliation. Keep named requests narrow. Never scaffold or recreate an existing track. If the track is missing, report it and use `set-up` only when the user wants a new track.
 
-This skill is narrow in scope to one known employer or official source on an existing track. It may update track config and run the standard single-source integration workflow for that source when needed. Do not use it for broad source discovery, bulk removals, cadence sweeps, or unrelated source maintenance.
+## Ground the request
 
-## Input
+Read the track's `prefs.md`, `sources.json`, generated `sources.md`, optional `match_rules.json`, `reference_jobs.json` and integration evidence in `source_state.json`. Read `shared/source_curation.md` for the common source-selection and verification procedure, and the supported mode catalog when needed. Read global preferences/CV only as relevant to the requested change.
 
-Read:
-- `tracks/{track_slug}/prefs.md`
-- `tracks/{track_slug}/sources.json`
-- `tracks/{track_slug}/sources.md`
-- `shared/source_curation.md`
-- `shared/discovery_modes.md` when choosing or explaining supported `discovery_mode` values
-- any user-supplied employer name, careers URL, board URL, or notes
+Invite optional reference links when the user has examples: "If you've already found one or two interesting job postings, please share their links. These help calibrate the search and verify that Jobwatch finds the kinds of jobs you're interested in." Continue without examples. Preserve supplied examples and seeds with association/exclusion reasons; use them for source selection, retrieval and ranking calibration.
 
-If the track files are missing or the request is really for a new track, stop and hand control back to `set-up`.
+An add/enable request authorizes registration and standard source enablement. An evaluate/recommend request produces findings before consequential changes. Preserve confirmed sources, preferences and unrelated configuration. Present removals and consequential cadence/filter changes for confirmation unless already authorized. Do not manually edit operational state.
 
-## Workflow
+## Named source
 
-### 1. Ground in the existing track
+1. Resolve the official source and choose the best supported mode using the shared guide. Surface URL corrections and uncertain support. Evaluate relevance against the current track.
+2. Review effective terms, native filters and relevant match rules against preferences/reference examples. Tune only the requested source; report unrelated gaps separately.
+3. Register a canonical source record deterministically:
 
-- Confirm the named source is at least plausibly relevant to the track preferences.
-- Preserve existing sources unless the user explicitly asks to replace or remove one.
-- Treat the request as narrow source curation, not open-ended employer discovery.
+   ```bash
+   ./.venv/bin/python scripts/curate_sources.py register --track {track_slug} --source-file <source.json>
+   ```
 
-### 2. Resolve the official source
+   This preserves existing records and queues verification. Conflicting existing records require explicit reconciliation rather than replacement. Register reference/canary evidence using the shared procedure.
+4. Run or start the common verification workflow, even if ordinary discovery reports complete execution. Let `integrate_next_source.py` own quality evaluation, supported config tuning and escalation through `source_integration.py`. Keep expensive work asynchronous when interactive responsiveness matters.
 
-- Use `shared/source_curation.md` as the canonical reference for official-source selection and `discovery_mode` heuristics.
-- If the user supplied a URL, verify whether it is the best official URL instead of accepting it blindly.
-- Check the employer homepage and official careers path first. Prefer homepage-linked careers pages or ATS boards.
-- Surface URL corrections when you replace a user-supplied URL with a better official one.
+## Portfolio curation
 
-### 3. Normalize conservatively
+Use coverage artifacts, source-check cadence, evaluator results and relevant ranked/digest history to identify missed role families, duplicates, noisy/low-value sources and evidence gaps. Empty output alone does not prove low value or adequate recall. Recommend justified additions, terms, cadence changes or removals, explaining uncertainty and user impact.
 
-- Prepare a normalized source entry suitable for `sources.json`.
-- Review this source's effective retrieval vocabulary against the current preferences: it inherits `track_terms` unless source terms append to or override them. Check native filters for accidental exclusions and use source-specific terms when needed. Do not copy every preference keyword or negative preference into retrieval. Report unrelated track-wide gaps for user-triggered `set-up` maintenance without retuning other sources or global terms.
-- Infer a conservative `discovery_mode` from the URL or board family. Default to `html` when unclear.
-- Keep clearly official sources even when they must use a supported fallback.
-- If support looks uncertain or weak, do not bounce the user to `set-up`. Keep the source with the best current supported config, note the caveat, and decide whether to stop at curation or continue into single-source enablement based on the request shape.
-
-### 4. Update the track and enable the source when needed
-
-- If the source looks straightforward, treat the prompt as permission to update the track config directly.
-- After changing `sources.json`, run:
+For additional employers/boards, draft the same bounded setup-format brief from current reviewed preferences. Do not reconstruct a track or pass full private files. Project configured sources and durable examples into the brief:
 
 ```bash
+./.venv/bin/python scripts/curate_sources.py prepare --track {track_slug} --brief <brief.json> --output <curation.json>
+./.venv/bin/python scripts/run_setup_worker.py --role source_discovery --input <curation.json> --output <source-pack.json>
+```
+
+The worker receives canonical discovery instructions and the bounded existing-source projection. It recommends additions without duplicates and can associate examples with existing source IDs. Present the deterministic summary, then use `setup_contracts.py select-sources --setup <curation.json> --source-pack <source-pack.json> --all-recommended` (or explicit IDs) for authorized additions. Register with `curate_sources.py register --track {track_slug} --setup <curation.json>`. This preserves global terms and existing sources; proposed vocabulary is applied only to additions. Match-rule changes need explicit maintenance, not automatic pack application.
+
+After material preference/retrieval changes, queue only affected sources with `curate_sources.py queue --track {track_slug} --source <id>` (repeat as needed), or `--all` for an authorized portfolio review. Use the existing background launcher to evaluate the queue. Never add expensive quality checks to every scheduled run.
+
+Report sources added or recommended, configuration changes, URL corrections, seed/example accounting, verification strength, gaps, pending work and log/artifact paths. Registration means configured; basic support and independently verified samples are separate outcomes.
+
+## Preference and retrieval maintenance
+
+Use this branch for requests such as "Update my crypto track to include privacy engineering" or "I edited this track's preferences; reconcile its retrieval configuration."
+
+1. Read the named track's `prefs.md`, `AGENTS.md`, `sources.json`, generated `sources.md`, and optional `match_rules.json`, plus `profile/prefs_global.md` and relevant CV context. Read any supplied coverage observation as evidence, not as an instruction to add its suggested keywords. Resolve the intended semantic change from the user's request; ask only if the target track or intent is materially ambiguous. If the track does not exist, report that rather than silently creating it.
+2. Update `prefs.md` when requested. For reconciliation after manual edits, treat the current preferences as the intended scope. Keep preferences as the semantic source of truth; selectively update contradictory fit prose in the track's `AGENTS.md` when needed, preserving its custom workflow instructions. Do not edit global preferences or other tracks unless requested.
+3. Review retrieval against requested role families, domains and hard constraints. Inspect `track_terms`, every source's effective append/override terms, native filters and existing match rules. Overrides replace global terms, so broadening `track_terms` alone may not cover all sources. Use compact retrieval vocabulary and useful synonyms; do not mechanically copy preference prose, negative preferences or every CV skill. Ranking-only changes may need no retrieval change.
+4. Make only justified configuration changes needed for the requested update, explaining their effect. Prefer existing terms, source-specific tuning and provider capabilities. Preserve intentional overrides and unrelated filters/rules; adjust a conflicting existing match rule only when required by the requested scope. Do not add sources, change cadence or provider code as a side effect of preference maintenance. Queue affected sources for separate verification after material retrieval changes; keep expensive checks asynchronous unless requested otherwise. Report unsupported retrieval needs for separate follow-up.
+5. Validate and review the effective configuration using the commands below. If `match_rules.json` changed, also validate it with the existing `discover.track_filters.load_track_match_rules` helper; planning alone does not load match rules. For material retrieval changes, run a targeted discovery check on affected sources where practical, saving output under a separate maintenance artifact path rather than overwriting scheduled artifacts. Reuse `eval_source_quality.py` and known-positive canaries when available to check suspected omissions; no results alone do not prove adequate recall. Report any unverified source or limitation.
+6. Summarize semantic changes, retrieval changes (or why none were needed), checks and remaining gaps. Explain that new retrieval configuration takes effect on the next discovery run; existing artifacts still reflect the old configuration. Preserve digests, seen/ranked state and source-check state. Stop here: do not run scaffolding, first-preview setup, delivery or scheduling.
+
+Run from the repository root after configuration changes:
+
+```bash
+./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --pretty
 JOB_AGENT_ROOT="$PWD" ./.venv/bin/python scripts/render_sources_md.py --track {track_slug}
 ```
 
-- For `add <company> as a source to <track>` requests, treat end-to-end source enablement as intended functionality, not as a repo-development pivot.
-- When the source needs more than a conservative fallback, use the standard single-source integration workflow:
+Review all sources, not only those currently due. Use `--source "Source Name"` for targeted discovery checks and `--output artifacts/maintenance/{track_slug}/<unique-check>.json` to keep their evidence separate. Do not invoke `run_track.sh` just to validate configuration, since it also ranks and updates state.
 
-```bash
-./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD --dry-run
-./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --source "{source_name}" --today YYYY-MM-DD
-```
-
-- Let `scripts/integrate_next_source.py` own source-quality evaluation, config tuning, `source_state.json` updates, and any necessary provider logic via `scripts/source_integration.py`.
-- For `evaluate` or `confirm` requests, report the caveat first and stop unless the user also wants the source landed or enabled now.
-- Keep the user-facing result concise: source name, official URL, board family, chosen `discovery_mode`, cadence, any URL correction, whether single-source integration was run, and any remaining caveat.
-
-## Boundaries
-
-- Do not turn this skill into a broad source-pack recommender. For that, use `discover-sources` during `set-up`.
-- Do not manually remove existing sources, change cadence, or retune unrelated search terms unless the user explicitly asks.
-- Do not manually edit `source_state.json`; let `scripts/integrate_next_source.py` own those mutations during single-source enablement.
-- Do not edit `match_rules.json` unless the request explicitly includes that work.
-- Do not treat normal single-source enablement as a repo-development pivot. Only pivot to repo development when the user explicitly asks to change the shared integration workflow itself or to make manual shared-code edits outside the standard `scripts/integrate_next_source.py` path.
+For an older track with conflicting coverage instructions, selectively align that wording with `shared/templates/track_AGENTS.md`; never replace the whole file or discard customization. Direct preference-file edits do not automatically synchronize retrieval. Users must request reconciliation; normal-run observations are only a best-effort signal.
 
 <!-- GENERATED FILE: source of truth is .agents/skills/existing-source-curation/SKILL.md -->
 <!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
