@@ -120,6 +120,12 @@ def filter_coverage_for_track(
         removed = len(coverage.candidates) - len(kept_candidates)
         if removed <= 0:
             continue
+        # Bounded identity evidence lets explicit quality checks distinguish a
+        # track-rule exclusion from a provider omission without retaining JDs.
+        for candidate in coverage.candidates:
+            if not _candidate_matches_rule(candidate, rule) and len(coverage.filter_rejections) < 100:
+                coverage.filter_rejections.append({"url": candidate.url, "alternate_url": candidate.alternate_url,
+                                                   "title": candidate.title, "rule_id": rule["id"]})
         coverage.candidates = kept_candidates
         coverage.matched_jobs = len(kept_candidates)
         limitation = rule["limitation"].format(removed=removed, rule_id=rule["id"])

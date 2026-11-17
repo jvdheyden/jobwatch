@@ -21,6 +21,7 @@ from source_config import (
     source_state_payload,
 )
 from update_ranked_overview import write_ranked_outputs
+from source_evidence import initial_source_state, reference_payload
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -54,7 +55,8 @@ def _render_templates(root: Path, setup: dict[str, Any]) -> dict[str, str]:
     }
     if selected["match_rules"]:
         normalize_track_match_rules_payload(match_rules_payload, slug)
-    state_payload = source_state_payload(slug, [source["id"] for source in sources_payload["sources"]], {})
+    state_payload = source_state_payload(slug, [source["id"] for source in sources_payload["sources"]],
+        initial_source_state(sources_payload["sources"], setup.get("canaries", [])))
 
     prefs_template = (root / "shared" / "templates" / "track_prefs.md").read_text()
     prefs = (
@@ -96,6 +98,8 @@ def _render_templates(root: Path, setup: dict[str, Any]) -> dict[str, str]:
         )
         + "\n",
     }
+    if "reference_jobs" in setup:
+        rendered["reference_jobs.json"] = json.dumps(reference_payload(slug, setup["reference_jobs"]), indent=2) + "\n"
     if selected["match_rules"]:
         rendered["match_rules.json"] = json.dumps(match_rules_payload, indent=2, ensure_ascii=False) + "\n"
     return rendered

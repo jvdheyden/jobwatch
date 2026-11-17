@@ -1021,8 +1021,8 @@ def main() -> int:
             final_status = "pass"
             attempts.append(attempt_record)
             break
-        if status == "blocked":
-            final_status = "blocked"
+        if status in {"blocked", "inconclusive"}:
+            final_status = status
             attempts.append(attempt_record)
             break
         if status != "integration_needed":
@@ -1044,6 +1044,12 @@ def main() -> int:
         if not integration_ticket:
             final_status = "blocked"
             attempt_record["error"] = "Eval reported integration_needed but produced no integration_ticket."
+            attempts.append(attempt_record)
+            break
+
+        if integration_ticket.get("suggested_strategy") == "config_match_rules":
+            final_status = "blocked"
+            attempt_record["error"] = "Track match-rule changes require preference review before provider implementation."
             attempts.append(attempt_record)
             break
 

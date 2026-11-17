@@ -84,6 +84,15 @@ When testing migrated providers, patch `discover.http.fetch_text`,
 `discover.http.fetch_json`, or `discover.http.post_json`. Unmigrated legacy
 handlers may still be patched through `discover_jobs.*` until they move.
 
+## Source onboarding
+
+Select the official URL and best supported mode using
+[`shared/source_curation.md`](../../shared/source_curation.md). Register through
+`scaffold_track.py` or `curate_sources.py`, and register user/independent canaries
+with `update_source_canary.py --register`. Both paths queue the same evaluation
+workflow. Complete execution alone does not establish recall. A missing live,
+in-scope posting must be investigated before accepting provider support.
+
 ## Live Quality Gate
 
 Contract tests are a mechanical floor. For real source integration, also run a
@@ -91,7 +100,7 @@ live canary check through the existing quality workflow:
 
 ```bash
 ./.venv/bin/python scripts/discover_jobs.py --track <track> --source "<Source Name>" --today YYYY-MM-DD --pretty
-./.venv/bin/python scripts/eval_source_quality.py --track <track> --source "<Source Name>" --today YYYY-MM-DD --canary-title "<Expected Title>"
+./.venv/bin/python scripts/eval_source_quality.py --track <track> --source "<Source Name>" --today YYYY-MM-DD --canary-title "<Expected Title>" --canary-url "<Official vacancy URL>"
 ```
 
 If the evaluator reports `integration_needed`, use the generated source integration ticket to
@@ -108,7 +117,7 @@ the orchestrator instead of editing manually:
   --track <track> \
   --source "<Source Name>" \
   --today YYYY-MM-DD \
-  --canary-title "<Expected Title>" \
+  --canary-title "<Expected Title>" --canary-url "<Official vacancy URL>" \
   --max-attempts 3
 ```
 

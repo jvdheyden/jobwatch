@@ -26,7 +26,7 @@ def test_nonempty_board_with_zero_matches_fails_independent_recall_floor():
     assert 'retrieval constraints' in checks['candidate_recall']['details']
 
 
-def test_expired_canary_is_not_reported_as_extraction_failure(tmp_path, monkeypatch):
+def test_stale_canary_review_is_inconclusive_without_availability_evidence(tmp_path, monkeypatch):
     artifact = tmp_path / 'discovery.json'
     artifact.write_text(json.dumps({'sources': [source()]}))
     output = tmp_path / 'eval.json'
@@ -36,7 +36,8 @@ def test_expired_canary_is_not_reported_as_extraction_failure(tmp_path, monkeypa
         '--canary-title', 'Closed role', '--canary-expires-on', '2030-01-31'])
     eval_source_quality.main()
     payload = json.loads(output.read_text())
-    assert payload['canary_review']['status'] == 'expired'
+    assert payload['canary_review']['status'] == 'review_due'
+    assert payload['verification'] == 'inconclusive'
     assert payload['canary']['title'] == ''
     assert not any(c['name'] == 'canary_present' and c['status'] == 'fail' for c in payload['deterministic']['checks'])
 
@@ -46,19 +47,14 @@ def test_unexpired_missing_canary_remains_a_failure():
     assert any(c['name'] == 'canary_present' and c['status'] == 'fail' for c in result['checks'])
 
 
-@pytest.mark.parametrize(('canary', 'usable'), [
-    ({'expires_on': '2030-01-31', 'review_required': False}, False),
-    ({'expires_on': '2030-02-01', 'review_required': False}, True),
-    ({'expires_on': '2030-03-01', 'review_required': True}, False),
-    ({'expires_on': 'invalid date'}, False),
-    ({}, True),  # Legacy manually supplied canaries retain their behavior.
-])
-def test_queued_integration_excludes_unreviewed_and_expired_canaries(canary, usable):
-    from integrate_next_source import canary_from_state
-    original = {'title': 'Reviewed vacancy', 'url': 'https://jobs.example.com/jobs/1', **canary}
+def test_legacy_canaries_load_as_review_needed_without_erasing_evidence():
+    from source_evidence import stored_canaries
+    original = {'title': 'Reviewed vacancy', 'url': 'https://jobs.example.com/jobs/1', 'expires_on': '2030-01-31'}
     integration = {'canary': dict(original)}
-    assert canary_from_state(integration, today='2030-02-01') == (
-        ('Reviewed vacancy', 'https://jobs.example.com/jobs/1') if usable else ('', ''))
+    loaded = stored_canaries(integration, 'example')
+    assert loaded[0]['url'] == original['url']
+    assert loaded[0]['availability'] == 'unknown'
+    assert loaded[0]['provenance'] == 'legacy'
     assert integration['canary'] == original
 
 

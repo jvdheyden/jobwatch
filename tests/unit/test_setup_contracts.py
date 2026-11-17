@@ -537,3 +537,17 @@ def test_empty_preview_result_is_valid_for_contexts_without_candidates(tmp_path:
     assert result["judgments"] == []
     digest = setup_contracts.assemble_preview_digest(context, result, generated_at="2026-07-20T12:00:00Z")
     assert digest["runs"][0]["top_matches"] == []
+
+
+def test_worker_native_filters_normalize_into_canonical_source_configuration():
+    setup = setup_contracts.normalize_setup(setup_payload())
+    pack = source_pack_payload(setup)
+    pack['recommended_sources'][0]['filters'] = [{'key': 'location', 'values': ['Berlin', 'Remote']}]
+    normalized = setup_contracts.normalize_source_pack(pack, setup)
+    assert normalized['recommended_sources'][0]['filters'] == {'location': ['Berlin', 'Remote']}
+    assert setup_contracts.normalize_source_pack(normalized, setup) == normalized
+    selected = setup_contracts.apply_source_selection(setup, normalized)
+    assert selected['selected_sources']['sources'][0]['filters'] == {'location': ['Berlin', 'Remote']}
+    pack['recommended_sources'][0]['filters'] *= 2
+    with pytest.raises(setup_contracts.SetupContractError, match='duplicate source filter'):
+        setup_contracts.normalize_source_pack(pack, setup)

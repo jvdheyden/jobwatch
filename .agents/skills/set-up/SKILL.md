@@ -1,33 +1,11 @@
 ---
 name: set-up
-description: Set up a new search track, or update an existing track's preferences and reconcile its retrieval configuration.
+description: Interactively onboard a new search track, gather preferences and reference jobs, and produce its first digest.
 ---
 
-# Skill: Set up or maintain a search track
+# Skill: Set up a new search track
 
-For an existing track's preference update or retrieval reconciliation, use **Existing-track maintenance** below and stop after that workflow. For a new track, use **New-track setup**. A normal track run's search-quality observation is advisory, not a request to start maintenance.
-
-## Existing-track maintenance
-
-Use this branch for requests such as "Update my crypto track to include privacy engineering" or "I edited this track's preferences; reconcile its retrieval configuration."
-
-1. Read the named track's `prefs.md`, `AGENTS.md`, `sources.json`, generated `sources.md`, and optional `match_rules.json`, plus `profile/prefs_global.md` and relevant CV context. Read any supplied coverage observation as evidence, not as an instruction to add its suggested keywords. Resolve the intended semantic change from the user's request; ask only if the target track or intent is materially ambiguous. If the track does not exist, report that rather than silently creating it.
-2. Update `prefs.md` when requested. For reconciliation after manual edits, treat the current preferences as the intended scope. Keep preferences as the semantic source of truth; selectively update contradictory fit prose in the track's `AGENTS.md` when needed, preserving its custom workflow instructions. Do not edit global preferences or other tracks unless requested.
-3. Review retrieval against requested role families, domains and hard constraints. Inspect `track_terms`, every source's effective append/override terms, native filters and existing match rules. Overrides replace global terms, so broadening `track_terms` alone may not cover all sources. Use compact retrieval vocabulary and useful synonyms; do not mechanically copy preference prose, negative preferences or every CV skill. Ranking-only changes may need no retrieval change.
-4. Make only justified configuration changes needed for the requested update, explaining their effect. Prefer existing terms, source-specific tuning and provider capabilities. Preserve intentional overrides and unrelated filters/rules; adjust a conflicting existing match rule only when required by the requested scope. Do not add sources, change cadence, launch setup or maintenance workers, or change provider code as a side effect of preference maintenance. Report unsupported retrieval needs for separate follow-up.
-5. Validate and review the effective configuration using the commands below. If `match_rules.json` changed, also validate it with the existing `discover.track_filters.load_track_match_rules` helper; planning alone does not load match rules. For material retrieval changes, run a targeted discovery check on affected sources where practical, saving output under a separate maintenance artifact path rather than overwriting scheduled artifacts. Reuse `eval_source_quality.py` and known-positive canaries when available to check suspected omissions; no results alone do not prove adequate recall. Report any unverified source or limitation.
-6. Summarize semantic changes, retrieval changes (or why none were needed), checks and remaining gaps. Explain that new retrieval configuration takes effect on the next discovery run; existing artifacts still reflect the old configuration. Preserve digests, seen/ranked state and source-check state. Stop here: do not run scaffolding, first-preview setup, delivery or scheduling.
-
-Run from the repository root after configuration changes:
-
-```bash
-./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --pretty
-JOB_AGENT_ROOT="$PWD" ./.venv/bin/python scripts/render_sources_md.py --track {track_slug}
-```
-
-Review all sources, not only those currently due. Use `--source "Source Name"` for targeted discovery checks and `--output artifacts/maintenance/{track_slug}/<unique-check>.json` to keep their evidence separate. Do not invoke `run_track.sh` just to validate configuration, since it also ranks and updates state.
-
-For an older track with conflicting coverage instructions, selectively align that wording with `shared/templates/track_AGENTS.md`; never replace the whole file or discard customization. Direct preference-file edits do not automatically synchronize retrieval. Users must request reconciliation; normal-run observations are only a best-effort signal.
+For existing-track preferences, source discovery or maintenance, use `existing-source-curation`.
 
 ## New-track setup
 
@@ -80,7 +58,9 @@ Offer a recommended draft based on the reviewed profile. Do not start source dis
 
 ### 2. Gather source seeds
 
-Ask for known employers, official careers pages, job boards, sectors, labs, and organizations. Offer a starter seed list and default cadence/search posture in the same message. Preserve good user-supplied official sources.
+Ask for known employers, official careers pages, job boards, sectors, labs, and organizations. Offer a starter seed list and default cadence/search posture in the same message. Also invite optional reference postings: **"If you've already found one or two interesting job postings, please share their links. These help calibrate the search and verify that Jobwatch finds the kinds of jobs you're interested in."** Do not wait for examples or block onboarding if the user has none.
+
+Use `shared/source_curation.md` for selection and evidence policy. Store examples in `reference_jobs`, including why the user likes them. An example remains useful after expiration; only independently confirmed available, in-scope postings become live canaries. Keep all examples and official seeds, including unresolved associations or explicit exclusion reasons. Refer to the evidence contracts in `docs/architecture.md`.
 
 The durable setup state uses this layout:
 
@@ -101,7 +81,7 @@ Generate a setup id shaped like `YYYYMMDDTHHMMSSZ-xxxxxxxx`. Draft the v1 `jobwa
   --output artifacts/setup/<setup-id>/setup.json
 ```
 
-Store only the reviewed bounded profile projection, track brief, source seeds, and selected-source section. Never store transcripts, prompts, full CV prose, delivery credentials, secrets, or environment dumps. Reload `setup.json` before every later command instead of trusting conversation state.
+Store only the reviewed bounded profile projection, track brief, source seeds, reference jobs, canary evidence and selected-source section. Never store transcripts, prompts, full CV prose, delivery credentials, secrets, or environment dumps. Reload `setup.json` before every later command instead of trusting conversation state.
 
 ### 3. Discover and confirm sources through a bounded worker
 
@@ -116,9 +96,9 @@ Run exactly one fresh source worker:
   --output artifacts/setup/<setup-id>/source-pack.json
 ```
 
-The worker receives only `setup.json`, has web access but no workspace writes, and returns bounded validated JSON. Do not pass the conversation, profile files, or a second prose brief. The worker excludes current or recent employers, prefers official sources, recommends roughly 4–8 primary sources, validates no more than three URLs, and proposes match rules only for broad/noisy boards.
+The worker receives only `setup.json` as user context, plus the canonical discovery skill and shared selection instructions inline. It has web access but no workspace writes and returns bounded validated JSON. Do not pass the conversation, profile files or a second prose brief.
 
-Present the deterministic summary printed by the runner. Lead with `recommended_source_ids`, URL corrections, dropped/follow-up sources, and genuinely unresolved decisions. Treat the pack as a recommendation until the user confirms or delegates it.
+Present the deterministic summary printed by the runner. Lead with `recommended_source_ids`, URL corrections, seed outcomes, reference associations, dropped/follow-up sources and genuinely unresolved decisions. Resolve omitted or unexplained user seeds/examples before selection. Treat the pack as a recommendation until the user confirms or delegates it.
 
 Before confirming the pack, review its retrieval vocabulary against the brief's requested role families and domains. Check effective source overrides, native filters and proposed match rules for accidental exclusions. Keep semantic preferences distinct from literal retrieval terms; missing preference words alone do not require adding terms. Resolve concrete gaps in the pack before selection and revalidate it with the existing source-pack validator. A zero-result preview later proves execution, not adequate recall.
 
@@ -131,7 +111,7 @@ Apply recommended sources:
   --all-recommended
 ```
 
-For overrides, use repeated `--source-id <id>` instead. Add repeated `--match-rule-id <id>` only for broad-source rules the user accepted. This atomically stores only canonical source records, track terms, and accepted match rules in `setup.json`. At least one source is required before scaffolding.
+For overrides, use repeated `--source-id <id>` instead. Add repeated `--match-rule-id <id>` only for broad-source rules the user accepted. This atomically stores canonical source records, track terms, accepted match rules, reference associations, seed outcomes and canary evidence in `setup.json`. Evidence for unselected sources remains in that decision artifact. At least one source is required before scaffolding.
 
 ### 4. Scaffold the track deterministically
 
@@ -142,7 +122,7 @@ Run:
   --input artifacts/setup/<setup-id>/setup.json
 ```
 
-This command validates the completed setup, renders all shared templates, creates source config/state/docs, optional match rules, instructions, empty seen state, the digest directory, and initial ranked state/overview. It invokes no model and refuses to overwrite an existing track or ranked-state file.
+This command validates the completed setup, renders all shared templates, creates source config/state/docs, durable reference jobs, pending source verification (including live canaries), optional match rules, instructions, empty seen state, the digest directory, and initial ranked state/overview. It invokes no model and refuses to overwrite an existing track or ranked-state file.
 
 Do not hand-render these files during normal setup. If the command returns `status: incomplete`, do not delete the committed track; report its exact incomplete output and run the returned `recovery_command`.
 
@@ -177,21 +157,17 @@ Confirm these outputs:
 
 Paste the rendered digest body if short, otherwise its first roughly 40 lines, and summarize strong versus borderline matches in one line. Say explicitly when no relevant roles were found; a valid zero-result digest still proves the scaffold works. Treat runner failure as a blocker unless the user explicitly defers the preview.
 
-### 6. Handle weak sources after the milestone
+### 6. Verify sources asynchronously after the milestone
 
-Use source coverage notes to identify partial, failed, or landing-page-only sources. Offer to start background integration for the top two or three while continuing delivery setup. If accepted, run:
+Use the common onboarding/verification procedure in `shared/source_curation.md`. All newly registered sources are queued, including sources reporting complete execution. Prioritize user canaries, other independent evidence and weak/high-value sources. A complete scrape with a missing live canary still needs evaluation; no canary means basic support at best.
 
-```bash
-./.venv/bin/python scripts/start_source_integration.py --track {track_slug} --source "{source_name}"
-```
-
-Report each log under `logs/source-integration/<track>/`. Do not synchronously wait unless explicitly asked. Queue additional work through existing `source_state.json` integration state and validate it with:
+Start authorized verification/integration in the background for the top two or three sources while continuing delivery setup:
 
 ```bash
-./.venv/bin/python scripts/integrate_next_source.py --track {track_slug} --today YYYY-MM-DD --dry-run
+./.venv/bin/python scripts/start_source_integration.py --track {track_slug} --limit 3
 ```
 
-Use `scripts/probe_career_source.py`, `scripts/eval_source_quality.py`, and `scripts/update_source_canary.py` only for sources coverage shows need follow-up. Source parser changes belong in provider modules under `scripts/discover/sources/`, never in track config or the scaffolder.
+Report logs under `logs/source-integration/<track>/` and leave remaining sources queued. Do not synchronously wait unless asked. No expensive evaluation belongs in scaffolding, the first-preview runner or scheduled track runs. Report configured, basic-support and independently-verified sources accurately; canary presence never proves exhaustive coverage.
 
 ### 7. Configure delivery and scheduling
 

@@ -4,6 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import threading
 
 import run_setup_preview
@@ -80,7 +81,10 @@ if role == "source_discovery":
         "url_corrections": [],
         "match_rule_suggestions": [],
         "recommended_source_ids": ["local_careers"],
-        "decisions_needed": []
+        "decisions_needed": [],
+        "reference_associations": [{"reference_job_id": r["id"], "source_id": "local_careers", "reason": "Official board"}
+                                   for r in input_payload.get("reference_jobs", [])],
+        "canaries": input_payload.get("canaries", [])
     }
 else:
     judgments = []
@@ -113,6 +117,12 @@ output.write_text(serialized)
 def test_guided_setup_uses_two_bounded_workers_and_no_model_scaffolding(
     tmp_path: Path, monkeypatch
 ) -> None:
+    real_popen = subprocess.Popen
+    def without_expensive_integration(command, *args, **kwargs):
+        forbidden = {"source_integration.py", "integrate_next_source.py", "eval_source_quality.py", "probe_career_source.py"}
+        assert not any(Path(str(part)).name in forbidden for part in command), "First digest must not wait for source quality/integration"
+        return real_popen(command, *args, **kwargs)
+    monkeypatch.setattr(subprocess, "Popen", without_expensive_integration)
     server = ThreadingHTTPServer(("127.0.0.1", 0), _CareersHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -126,6 +136,12 @@ def test_guided_setup_uses_two_bounded_workers_and_no_model_scaffolding(
         setup["source_seeds"]["career_pages_or_boards"] = [
             f"http://127.0.0.1:{server.server_port}/careers"
         ]
+        setup["reference_jobs"] = [{"id": "interesting", "url": f"http://127.0.0.1:{server.server_port}/jobs/crypto",
+            "title": "Senior Cryptography Engineer", "relevance": "Hands-on protocol work"}]
+        setup["canaries"] = [{"id": "live_example", "source_id": "local_careers", "reference_job_id": "interesting",
+            "url": setup["reference_jobs"][0]["url"], "title": "Senior Cryptography Engineer", "provenance": "user_supplied",
+            "availability": "live", "scope": "in_scope", "checked_on": "2026-07-20",
+            "evidence_url": setup["reference_jobs"][0]["url"], "evidence_note": "User confirmed the official posting is open."}]
         setup_contracts.write_setup(setup_path, setup)
         fake = tmp_path / "fake-codex"
         log_path = tmp_path / "worker.log"
@@ -166,6 +182,14 @@ def test_guided_setup_uses_two_bounded_workers_and_no_model_scaffolding(
         assert [item["role"] for item in invocations] == ["source_discovery", "preview_ranker"]
         assert "Static HTML enumeration" not in invocations[1]["prompt"]
         assert "BEGIN_INPUT_JSON" in invocations[1]["prompt"]
+        context = json.loads(Path(preview["preview_context"]).read_text())
+        assert context["reference_jobs"][0]["relevance"] == "Hands-on protocol work"
+        assert context["reference_jobs"][0]["source_id"] == "local_careers"
+        track_dir = root / "tracks/applied_crypto"
+        assert json.loads((track_dir / "reference_jobs.json").read_text())["reference_jobs"] == context["reference_jobs"]
+        integration = json.loads((track_dir / "source_state.json").read_text())["sources"]["local_careers"]["integration"]
+        assert integration["status"] == "pending"  # Expensive quality/integration has not run before the digest.
+        assert integration["canaries"][0]["provenance"] == "user_supplied"
         assert preview["candidates_ranked"] == 1
         assert Path(preview["digest_json"]).is_file()
         markdown = Path(preview["digest_markdown"]).read_text()

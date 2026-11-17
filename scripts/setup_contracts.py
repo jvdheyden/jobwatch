@@ -21,6 +21,9 @@ from discover.registry import load_registry
 from discover.track_filters import normalize_track_match_rules_payload
 from source_config import SourceConfigError, normalize_sources_payload
 from update_seen_jobs import load_seen_jobs
+from source_evidence import (
+    EvidenceError, normalize_references, normalize_canaries, identity_url, canary_json_schema,
+)
 
 
 SCHEMA_VERSION = 1
@@ -307,6 +310,8 @@ def _normalize_source_seeds(value: Any, field: str = "source_seeds") -> dict[str
     raw = _expect_object(value, field)
     keys = {"employers", "sectors_or_organizations", "career_pages_or_boards"}
     _expect_keys(raw, keys, field)
+    if len(_expect_list(raw["career_pages_or_boards"], field)) > 30:
+        raise SetupContractError("career_pages_or_boards exceeds 30 URLs")
     urls = [normalize_url(item, f"{field}.career_pages_or_boards[{index}]") for index, item in enumerate(
         _expect_list(raw["career_pages_or_boards"], f"{field}.career_pages_or_boards")
     )]
@@ -409,7 +414,8 @@ def _normalize_selected_sources(value: Any, track: str, field: str = "selected_s
 def normalize_setup(payload: dict[str, Any]) -> dict[str, Any]:
     _reject_sensitive_keys(payload)
     keys = {"schema_version", "kind", "setup_id", "profile", "track", "source_seeds", "selected_sources"}
-    _expect_keys(payload, keys, "setup")
+    optional = {"reference_jobs", "canaries", "existing_sources", "seed_outcomes"}
+    _expect_keys(payload, keys | optional, "setup", required=keys)
     if payload["schema_version"] != SCHEMA_VERSION:
         raise SetupContractError(f"schema_version must be {SCHEMA_VERSION}")
     if payload["kind"] != SETUP_KIND:
@@ -425,6 +431,28 @@ def normalize_setup(payload: dict[str, Any]) -> dict[str, Any]:
         "source_seeds": _normalize_source_seeds(payload["source_seeds"]),
         "selected_sources": _normalize_selected_sources(payload["selected_sources"], track["slug"]),
     }
+    try:
+        if "reference_jobs" in payload:
+            normalized["reference_jobs"] = normalize_references(payload["reference_jobs"])
+        if "canaries" in payload:
+            normalized["canaries"] = normalize_canaries(payload["canaries"])
+        if "existing_sources" in payload:
+            records = _expect_list(payload["existing_sources"], "existing_sources")
+            if len(records) > 80:
+                raise SetupContractError("existing_sources exceeds 80 sources; narrow the portfolio review")
+            normalized["existing_sources"] = [_normalize_source_record(v, "existing_sources") for v in records]
+            if len({v["id"] for v in normalized["existing_sources"]}) != len(records):
+                raise SetupContractError("duplicate existing source ids")
+        if "seed_outcomes" in payload:
+            normalized["seed_outcomes"] = _normalize_seed_outcomes(payload["seed_outcomes"], normalized, None)
+        references = {r["id"]: r for r in normalized.get("reference_jobs", [])}
+        for canary in normalized.get("canaries", []):
+            if canary["reference_job_id"]:
+                reference = references.get(canary["reference_job_id"])
+                if not reference or identity_url(reference["url"]) != identity_url(canary["url"]):
+                    raise SetupContractError("canary must match a known reference job")
+    except EvidenceError as exc:
+        raise SetupContractError(str(exc)) from exc
     _assert_size(normalized, SETUP_MAX_BYTES, "setup")
     return normalized
 
@@ -444,7 +472,22 @@ def _normalize_pack_source(value: Any, field: str) -> dict[str, Any]:
     extra = {"fit_reason", "confidence"}
     canonical = {"id", "name", "url", "discovery_mode", "cadence_group", "search_terms", "filters"}
     _expect_keys(raw, canonical | extra, field, required={"id", "name", "url", "discovery_mode", "cadence_group", *extra})
-    source = _normalize_source_record({key: raw[key] for key in canonical if key in raw}, field)
+    prepared = {key: raw[key] for key in canonical if key in raw}
+    # Strict structured-output providers cannot express arbitrary map keys.
+    # Accept bounded worker entries, then persist the existing canonical map.
+    if isinstance(prepared.get("filters"), list):
+        entries = prepared["filters"]
+        if len(entries) > 20:
+            raise SetupContractError("source filters exceed 20 entries")
+        filters = {}
+        for entry in entries:
+            _expect_keys(_expect_object(entry, "filter entry"), {"key", "values"}, "filter entry")
+            key = _text(entry["key"], "filter key", max_chars=100)
+            if key in filters:
+                raise SetupContractError("duplicate source filter key")
+            filters[key] = _text_list(entry["values"], "filter values", max_items=30)
+        prepared["filters"] = filters
+    source = _normalize_source_record(prepared, field)
     return {
         **source,
         "fit_reason": _text(raw["fit_reason"], f"{field}.fit_reason", max_chars=500),
@@ -471,6 +514,49 @@ def _looks_like_excluded_employer(source_name: str, employers: list[str]) -> boo
     return False
 
 
+def _normalize_associations(value: Any, references: list[dict], known_ids: set[str]) -> list[dict]:
+    records = _expect_list(value, "reference_associations")
+    by_id = {}
+    for raw in records:
+        _expect_keys(_expect_object(raw, "association"), {"reference_job_id", "source_id", "reason"}, "association")
+        ref_id = _identifier(raw["reference_job_id"], "reference_job_id")
+        source_id = _identifier(raw["source_id"], "source_id") if raw["source_id"] is not None else None
+        if ref_id in by_id or (source_id is not None and source_id not in known_ids):
+            raise SetupContractError("duplicate association or unknown source id")
+        by_id[ref_id] = {"reference_job_id": ref_id, "source_id": source_id,
+                         "reason": _text(raw["reason"], "association.reason", max_chars=500)}
+    if set(by_id) != {r["id"] for r in references}:
+        raise SetupContractError("reference_associations must account for every reference job exactly once")
+    return list(by_id.values())
+
+
+def _normalize_seed_outcomes(value: Any, setup: dict, known_ids: set[str] | None) -> list[dict]:
+    seeds = [*setup["source_seeds"]["employers"], *setup["source_seeds"]["career_pages_or_boards"]]
+    records = _expect_list(value, "seed_outcomes")
+    by_seed = {}
+    for raw in records:
+        _expect_keys(_expect_object(raw, "seed outcome"), {"seed", "source_id", "reason"}, "seed outcome")
+        seed = _text(raw["seed"], "seed", max_chars=4096)
+        source_id = _identifier(raw["source_id"], "source_id") if raw["source_id"] is not None else None
+        if seed in by_seed or seed not in seeds or (known_ids is not None and source_id and source_id not in known_ids):
+            raise SetupContractError("invalid seed outcome or unknown source id")
+        by_seed[seed] = {"seed": seed, "source_id": source_id, "reason": _text(raw["reason"], "seed reason", max_chars=500)}
+    if set(by_seed) != set(seeds):
+        raise SetupContractError("seed_outcomes must account for every employer and official URL seed")
+    return list(by_seed.values())
+
+
+def _legacy_seed_outcomes(setup: dict, sources: list[dict], dropped: list[dict], corrections: list[dict]) -> list[dict]:
+    outcomes = []
+    corrected = {c["original_url"]: c["corrected_url"] for c in corrections}
+    for seed in dict.fromkeys([*setup["source_seeds"]["employers"], *setup["source_seeds"]["career_pages_or_boards"]]):
+        source = next((s for s in sources if seed.casefold() == s["name"].casefold() or corrected.get(seed, seed) == s["url"]), None)
+        exclusion = next((s for s in dropped if seed.casefold() == s["name"].casefold() or seed == s["url"]), None)
+        outcomes.append({"seed": seed, "source_id": source["id"] if source else None,
+                         "reason": "Associated with official source." if source else exclusion["reason"] if exclusion else "Unresolved: legacy pack did not account for this seed; coordinator review required."})
+    return outcomes
+
+
 def normalize_source_pack(payload: dict[str, Any], setup: dict[str, Any]) -> dict[str, Any]:
     setup = normalize_setup(setup)
     _reject_sensitive_keys(payload)
@@ -488,7 +574,8 @@ def normalize_source_pack(payload: dict[str, Any], setup: dict[str, Any]) -> dic
         "recommended_source_ids",
         "decisions_needed",
     }
-    _expect_keys(payload, keys, "source_pack")
+    optional = {"reference_associations", "canaries", "seed_outcomes"}
+    _expect_keys(payload, keys | optional, "source_pack", required=keys)
     if payload["schema_version"] != SCHEMA_VERSION or payload["kind"] != SOURCE_PACK_KIND:
         raise SetupContractError(f"source pack must use schema_version {SCHEMA_VERSION} and kind {SOURCE_PACK_KIND!r}")
     if _setup_id(payload["setup_id"]) != setup["setup_id"]:
@@ -507,6 +594,11 @@ def normalize_source_pack(payload: dict[str, Any], setup: dict[str, Any]) -> dic
     ids = [source["id"] for source in all_sources]
     if len(ids) != len(set(ids)):
         raise SetupContractError("source pack contains duplicate source ids")
+    existing = setup.get("existing_sources", [])
+    for source in all_sources:
+        if any(source["id"] == old["id"] or identity_url(source["url"]) == identity_url(old["url"])
+               or source["name"].casefold() == old["name"].casefold() for old in existing):
+            raise SetupContractError(f"source {source['name']!r} is already configured")
     excluded = setup["profile"]["current_or_recent_employers"]
     for source in all_sources:
         if _looks_like_excluded_employer(source["name"], excluded):
@@ -572,6 +664,33 @@ def normalize_source_pack(payload: dict[str, Any], setup: dict[str, Any]) -> dic
         "recommended_source_ids": recommended_ids,
         "decisions_needed": _text_list(payload["decisions_needed"], "source_pack.decisions_needed", max_items=8),
     }
+    association_ids = known_ids | {s["id"] for s in existing}
+    normalized["reference_associations"] = _normalize_associations(
+        payload.get("reference_associations", []), setup.get("reference_jobs", []), association_ids)
+    existing_ids = {s["id"] for s in existing}
+    reference_map = {r["id"]: r for r in setup.get("reference_jobs", [])}
+    for association in normalized["reference_associations"]:
+        confirmed_id = reference_map[association["reference_job_id"]]["source_id"]
+        if confirmed_id in existing_ids and association["source_id"] != confirmed_id:
+            raise SetupContractError("worker cannot change a confirmed existing reference association")
+    normalized["seed_outcomes"] = _normalize_seed_outcomes(
+        payload.get("seed_outcomes", _legacy_seed_outcomes(setup, [*all_sources, *existing], dropped, corrections)), setup, association_ids)
+    try:
+        normalized["canaries"] = normalize_canaries(payload.get("canaries", []))
+    except EvidenceError as exc:
+        raise SetupContractError(str(exc)) from exc
+    refs = {r["id"]: r for r in setup.get("reference_jobs", [])}
+    associations = {r["reference_job_id"]: r["source_id"] for r in normalized["reference_associations"]}
+    for canary in normalized["canaries"]:
+        if canary["source_id"] not in association_ids:
+            raise SetupContractError("canary references unknown source id")
+        ref_id = canary["reference_job_id"]
+        if ref_id and (ref_id not in refs or associations[ref_id] != canary["source_id"] or identity_url(refs[ref_id]["url"]) != identity_url(canary["url"])):
+            raise SetupContractError("canary must match its reference job and associated source")
+        if canary["provenance"] == "user_supplied" and not ref_id:
+            raise SetupContractError("worker user-supplied canary must identify a supplied reference job")
+        if canary["provenance"] not in {"user_supplied", "official_page", "independent_probe"}:
+            raise SetupContractError("source worker cannot claim discovery-output or legacy evidence")
     _assert_size(normalized, SOURCE_PACK_MAX_BYTES, "source pack")
     return normalized
 
@@ -617,6 +736,14 @@ def render_source_pack_summary(source_pack: dict[str, Any], setup: dict[str, Any
         lines.append("URL corrections:")
         for correction in pack["url_corrections"]:
             lines.append(f"- {correction['original_url']} -> {correction['corrected_url']}: {correction['reason']}")
+    if pack["seed_outcomes"]:
+        lines.append("Seed accounting:")
+        lines.extend(f"- {r['seed']}: {r['source_id'] or 'unresolved/excluded'} — {r['reason']}" for r in pack["seed_outcomes"])
+    if pack["reference_associations"]:
+        lines.append("Reference jobs:")
+        lines.extend(f"- {r['reference_job_id']}: {r['source_id'] or 'unresolved'} — {r['reason']}" for r in pack["reference_associations"])
+    if pack["canaries"]:
+        lines.append(f"Canary evidence: {len(pack['canaries'])} posting(s); verification runs separately.")
     if warnings := track_term_warnings(pack["track_terms"]):
         lines.append("Warnings:")
         lines.extend(f"- {warning}" for warning in warnings)
@@ -638,7 +765,7 @@ def apply_source_selection(
     setup = normalize_setup(setup)
     pack = normalize_source_pack(source_pack, setup)
     chosen_ids = source_ids if source_ids is not None else list(pack["recommended_source_ids"])
-    if not chosen_ids:
+    if not chosen_ids and not setup.get("existing_sources"):
         raise SetupContractError("source selection must include at least one source")
     source_map = {source["id"]: source for source in [*pack["recommended_sources"], *pack["follow_up_sources"]]}
     unknown = sorted(set(chosen_ids) - set(source_map))
@@ -656,6 +783,31 @@ def apply_source_selection(
         "sources": [{key: source_map[source_id][key] for key in canonical_keys if key in source_map[source_id]} for source_id in chosen_ids],
         "match_rules": [rule_map[rule_id] for rule_id in rule_ids],
     }
+    available_ids = set(chosen_ids) | {s["id"] for s in setup.get("existing_sources", [])}
+    associations = {a["reference_job_id"]: a for a in pack["reference_associations"]}
+    if "reference_jobs" in setup:
+        updated["reference_jobs"] = []
+        for reference in setup["reference_jobs"]:
+            association = associations[reference["id"]]
+            kept = association["source_id"] in available_ids
+            updated["reference_jobs"].append(dict(reference, source_id=association["source_id"] if kept else None,
+                association_reason=association["reason"] if kept or not association["source_id"] else
+                f"Source {association['source_id']} was not selected. {association['reason']}"))
+    # Preserve supplied evidence even if its source was not selected; scaffolding
+    # registers only selected sources and the setup remains the durable decision record.
+    canaries = {}
+    for supplied in setup.get("canaries", []):
+        associated = associations.get(supplied["reference_job_id"], {})
+        canaries[supplied["id"]] = dict(supplied, source_id=associated.get("source_id") or supplied["source_id"])
+    for canary in pack["canaries"]:
+        if canary["id"] in canaries and canaries[canary["id"]] != canary:
+            raise SetupContractError("worker cannot overwrite supplied canary evidence")
+        canaries[canary["id"]] = canary
+    if canaries or "canaries" in setup:
+        updated["canaries"] = list(canaries.values())
+    updated["seed_outcomes"] = [dict(r, source_id=r["source_id"] if r["source_id"] in available_ids else None,
+        reason=r["reason"] if not r["source_id"] or r["source_id"] in available_ids else
+        f"Source {r['source_id']} was not selected. {r['reason']}") for r in pack["seed_outcomes"]]
     return normalize_setup(updated)
 
 
@@ -785,7 +937,7 @@ def normalize_preview_context(payload: dict[str, Any]) -> dict[str, Any]:
         "coverage_limitations",
         "omitted_candidate_count",
     }
-    _expect_keys(payload, keys, "preview_context")
+    _expect_keys(payload, keys | {"reference_jobs"}, "preview_context", required=keys)
     if payload["schema_version"] != SCHEMA_VERSION or payload["kind"] != PREVIEW_CONTEXT_KIND:
         raise SetupContractError(
             f"preview context must use schema_version {SCHEMA_VERSION} and kind {PREVIEW_CONTEXT_KIND!r}"
@@ -827,6 +979,11 @@ def normalize_preview_context(payload: dict[str, Any]) -> dict[str, Any]:
         ),
         "omitted_candidate_count": omitted,
     }
+    if "reference_jobs" in payload:
+        try:
+            normalized["reference_jobs"] = normalize_references(payload["reference_jobs"])
+        except EvidenceError as exc:
+            raise SetupContractError(str(exc)) from exc
     _assert_size(normalized, PREVIEW_CONTEXT_MAX_BYTES, "preview context")
     return normalized
 
@@ -970,6 +1127,11 @@ def build_preview_context(
         "coverage_limitations": coverage_limitations,
         "omitted_candidate_count": total_unseen,
     }
+    if "reference_jobs" in setup:
+        base["reference_jobs"] = setup["reference_jobs"]
+    evidence_ids = {s["id"] for s in setup["selected_sources"]["sources"]}
+    if any(c["source_id"] in evidence_ids for c in setup.get("canaries", [])):
+        coverage_limitations.append("Independent canary verification is queued separately; complete discovery does not certify recall.")
     retained: list[dict[str, Any]] = []
     for _, candidate in limited:
         prospective = [*retained, candidate]
@@ -1212,9 +1374,9 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
             },
         }
         filters = {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {},
+            "type": "array", "maxItems": 20,
+            "items": {"type": "object", "additionalProperties": False, "required": ["key", "values"],
+                      "properties": {"key": {"type": "string"}, "values": {"type": "array", "maxItems": 30, "items": {"type": "string"}}}},
         }
         source = {
             "type": "object",
@@ -1274,10 +1436,19 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
                 "limitation": {"anyOf": [{"type": "string"}, {"type": "null"}]},
             },
         }
+        association = {"type": "object", "additionalProperties": False,
+            "required": ["reference_job_id", "source_id", "reason"],
+            "properties": {"reference_job_id": identifier, "source_id": {"anyOf": [identifier, {"type": "null"}]},
+                           "reason": {"type": "string"}}}
+        seed_outcome = {"type": "object", "additionalProperties": False,
+            "required": ["seed", "source_id", "reason"],
+            "properties": {"seed": {"type": "string"}, "source_id": {"anyOf": [identifier, {"type": "null"}]},
+                           "reason": {"type": "string"}}}
         return {
             "type": "object",
             "additionalProperties": False,
             "required": [
+                "reference_associations", "canaries", "seed_outcomes",
                 "schema_version", "kind", "setup_id", "input_hash", "track_terms", "recommended_sources",
                 "follow_up_sources", "dropped_sources", "url_corrections", "match_rule_suggestions",
                 "recommended_source_ids", "decisions_needed",
@@ -1285,6 +1456,9 @@ def worker_json_schema(role: str, input_payload: dict[str, Any]) -> dict[str, An
             "properties": {
                 **common,
                 "kind": {"type": "string", "const": SOURCE_PACK_KIND},
+                "reference_associations": {"type": "array", "maxItems": 20, "items": association},
+                "canaries": {"type": "array", "maxItems": 40, "items": canary_json_schema()},
+                "seed_outcomes": {"type": "array", "maxItems": 60, "items": seed_outcome},
                 "track_terms": {"type": "array", "items": {"type": "string"}},
                 "recommended_sources": {"type": "array", "maxItems": MAX_PRIMARY_SOURCES, "items": source},
                 "follow_up_sources": {"type": "array", "maxItems": MAX_FOLLOW_UP_SOURCES, "items": source},
@@ -1376,15 +1550,11 @@ def build_worker_prompt(role: str, input_payload: dict[str, Any]) -> str:
         return (
             "JOBWATCH_SETUP_WORKER_ROLE=source_discovery\n"
             + common
-            + "Use web search/fetch only to find official employer career pages or clearly first-party hosted boards. "
-            "Exclude current or recent employers. Recommend at most 8 primary and 4 follow-up sources, validate at most "
-            "3 URLs, use only the supported discovery modes below, and prefer every_3_runs unless a source clearly warrants "
-            "another cadence. Suggest match rules only for broad/noisy sources. Every source must already use the canonical "
-            "sources.json fields plus fit_reason and confidence. Discovery keeps a posting only when a track term appears "
-            "verbatim in it, usually in the job title, so make each track term a short title-level phrase of one to three "
-            "words that real postings contain (for example \"product manager\", \"head of product\", \"game designer\"); "
-            "never append the industry or employer (not \"product manager games\"). Include only genuinely unresolved "
-            "decisions_needed.\n"
+            + "Use web search/fetch only. Follow these canonical source-discovery instructions:\n"
+            + (Path(__file__).resolve().parents[1] / ".agents/skills/discover-sources/SKILL.md").read_text()
+            + "\nShared source-selection guide:\n"
+            + (Path(__file__).resolve().parents[1] / "shared/source_curation.md").read_text()
+            + "\nRunner contract (mandatory):\n"
             f"Supported discovery modes: {modes}\n"
             f"Required kind: {SOURCE_PACK_KIND}\n"
             f"Required input_hash: {artifact_hash(input_payload)}\n"
@@ -1397,7 +1567,7 @@ def build_worker_prompt(role: str, input_payload: dict[str, Any]) -> str:
             "JOBWATCH_SETUP_WORKER_ROLE=preview_ranker\n"
             + common
             + "Do not use web search. Judge only the bounded profile, track, and candidates in the input. Give every "
-            "candidate exactly one disposition. Score holistic fit on a 1-10 scale (for example 8.5, never 0.85). "
+            "candidate exactly one disposition. Use reference_jobs as calibration examples, never as additional candidates. Score holistic fit on a 1-10 scale (for example 8.5, never 0.85). "
             "Use top_match with score, recommendation, match_reasons, and concerns; "
             "other_role with score, recommendation, and short_note; or filtered with a concrete reason. Treat hard "
             "constraints conservatively and do not invent evidence when descriptions are missing. Do not repeat URLs, "
@@ -1476,7 +1646,11 @@ def main(argv: list[str] | None = None) -> int:
             chosen = None if args.all_recommended or not args.source_id else args.source_id
             updated = apply_source_selection(setup, pack, source_ids=chosen, match_rule_ids=args.match_rule_id)
             write_setup(setup_path, updated)
-            print(json.dumps({"status": "updated", "setup_id": updated["setup_id"], "sources": len(updated["selected_sources"]["sources"])}))
+            selected_ids = {source["id"] for source in updated["selected_sources"]["sources"]} | {source["id"] for source in updated.get("existing_sources", [])}
+            print(json.dumps({"status": "updated", "setup_id": updated["setup_id"], "sources": len(updated["selected_sources"]["sources"]),
+                "seed_outcomes": updated.get("seed_outcomes", []),
+                "unresolved_reference_ids": [r["id"] for r in updated.get("reference_jobs", []) if not r["source_id"]],
+                "deferred_canary_ids": [c["id"] for c in updated.get("canaries", []) if c["source_id"] not in selected_ids]}))
             return 0
     except (OSError, SetupContractError) as exc:
         print(f"setup_contracts.py: {exc}", file=sys.stderr)

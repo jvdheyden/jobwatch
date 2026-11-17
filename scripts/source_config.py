@@ -248,7 +248,9 @@ def mutate_source_state(
         mutate(current)
         for source_id in source_ids:
             current.setdefault(source_id, {"last_checked": None})
-        write_json_atomic(state_path, source_state_payload(track, source_ids, current))
+        # A caller may have loaded configuration before another writer added a
+        # source. Never prune unrelated state during a source-scoped mutation.
+        write_json_atomic(state_path, source_state_payload(track, list(dict.fromkeys([*source_ids, *current])), current))
     return current
 
 

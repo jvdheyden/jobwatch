@@ -16,7 +16,7 @@ Assume the current track provides:
 - preferences for what counts as a match
 - a `seen_jobs.json` file for deduplication
 
-Read those files before searching.
+Read those files before searching. Read `reference_jobs.json` when present for durable examples and relevance notes; expired examples still calibrate fit but are not new candidates.
 
 If the current track provides `source_state.json`, honor the track's cadence rules and treat `last_checked` as track-owned source state. Do not update source state yourself during a normal scheduled run; the runner updates it from the discovery artifact.
 
@@ -77,7 +77,7 @@ Put an observation in the affected source's existing coverage limitations, prefi
 
 Example: `Search-quality observation: Preferences include privacy engineering, but this source retrieves only "cryptography". Privacy roles without that term may be missed. Request retrieval reconciliation for this track.`
 
-Do not edit preferences or retrieval configuration, invoke maintenance or a maintenance subagent, or rerun discovery to investigate these observations during a normal run. Maintenance is user-triggered through `set-up`; observations are advisory and cannot guarantee recall.
+Do not edit preferences or retrieval configuration, invoke maintenance or a maintenance subagent, or rerun discovery to investigate these observations during a normal run. Maintenance is user-triggered through `existing-source-curation`; observations are advisory and cannot guarantee recall.
 
 ## Extraction
 

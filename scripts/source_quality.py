@@ -13,6 +13,9 @@ from datetime import datetime, timezone
 from html import unescape
 from pathlib import Path
 from typing import Any, Callable
+
+from source_evidence import matches_posting, INDEPENDENT_PROVENANCES
+from discover.helpers import match_terms
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
@@ -330,11 +333,7 @@ def _raw_detail_categories(raw_text: str) -> set[str]:
 
 
 def _candidate_matches_canary(candidate: dict[str, Any], canary_title: str, canary_url: str) -> bool:
-    normalized_canary_url = normalize_url_without_fragment(canary_url) if canary_url else ""
-    if normalized_canary_url and normalize_url_without_fragment(candidate.get("url", "")) == normalized_canary_url:
-        return True
-    normalized_canary_title = normalize_for_matching(canary_title) if canary_title else ""
-    return bool(normalized_canary_title) and normalize_for_matching(candidate.get("title", "")) == normalized_canary_title
+    return matches_posting(candidate, {"title": canary_title, "url": canary_url})
 
 
 def _select_reviewer_candidates(
@@ -369,6 +368,7 @@ def validate_source_coverage(
     *,
     canary_title: str = "",
     canary_url: str = "",
+    canaries: list[dict[str, Any]] | None = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     minimum_candidates: int | None = None,
     minimum_enumerated: int | None = None,
@@ -560,30 +560,38 @@ def validate_source_coverage(
     else:
         results.append(ValidatorResult("listing_kind", "pass", "info", "Surfaced candidates look like job listings."))
 
-    if canary_title or canary_url:
-        normalized_canary_title = normalize_for_matching(canary_title)
-        normalized_canary_url = normalize_url_without_fragment(canary_url) if canary_url else ""
-        canary_found = False
-        for candidate in candidates:
-            if normalized_canary_url and normalize_url_without_fragment(candidate.get("url", "")) == normalized_canary_url:
-                canary_found = True
-                break
-            if normalized_canary_title and normalize_for_matching(candidate.get("title", "")) == normalized_canary_title:
-                canary_found = True
-                break
-        if canary_found:
-            results.append(ValidatorResult("canary_present", "pass", "info", "Canary was found in the extracted candidates."))
+    evidence = canaries if canaries is not None else ([{
+        "id": "explicit_canary", "title": canary_title, "url": canary_url,
+        "availability": "live", "scope": "in_scope", "provenance": "legacy",
+    }] if canary_title or canary_url else [])
+    canary_results = []
+    for canary in evidence:
+        found = any(matches_posting(candidate, canary) for candidate in candidates)
+        applicable = canary.get("availability") == "live" and canary.get("scope") == "in_scope"
+        status = ("pass" if found else "fail") if applicable else "skip"
+        if canary.get("availability") == "expired" or canary.get("scope") == "out_of_scope":
+            detail = "Confirmed expired or outside the intended search scope; not a recall failure."
+            diagnosis = "not_applicable"
+        elif not applicable:
+            detail = "Availability or intended scope is inconclusive; retain evidence and review independently."
+            diagnosis = "inconclusive"
+        elif found:
+            detail = "Canary was found by posting identity; this is sampled evidence, not exhaustive coverage."
+            diagnosis = "present"
         else:
-            results.append(
-                ValidatorResult(
-                    "canary_present",
-                    "fail",
-                    "blocking",
-                    "Canary was not found in the extracted candidates.",
-                )
-            )
-    else:
-        results.append(ValidatorResult("canary_present", "skip", "info", "No canary provided."))
+            rejected = source.get("filter_rejections", [])
+            rejected_match = next((r for r in rejected if matches_posting(r, canary)), None)
+            diagnosis = "track_match_rules" if rejected_match else "enumeration_or_retrieval"
+            detail = "Available, in-scope canary was not found in the extracted candidates. "
+            detail += (f"Track rule {rejected_match['rule_id']} removed this posting." if rejected_match else
+                       "Check enumeration/detail extraction, search terms and native filters; the artifact does not isolate the cause.")
+        results.append(ValidatorResult("canary_present", status, "blocking" if status == "fail" else "info", detail))
+        canary_results.append({"id": canary.get("id"), "url": canary.get("url", ""),
+                               "posting_id": canary.get("posting_id", ""), "evidence_url": canary.get("evidence_url", ""), "title": canary.get("title", ""), "provenance": canary.get("provenance", "legacy"),
+                               "availability": canary.get("availability", "unknown"), "scope": canary.get("scope", "unknown"),
+                               "status": status, "diagnosis": diagnosis})
+    if not evidence:
+        results.append(ValidatorResult("canary_present", "skip", "info", "No canary provided; coverage is unverified."))
 
     if not candidates:
         results.append(ValidatorResult("detail_depth", "skip", "info", "No candidates to evaluate for role-detail depth."))
@@ -741,8 +749,20 @@ def validate_source_coverage(
     else:
         confidence = "high"
 
+    verification = "unverified"
+    if any(r["status"] == "fail" for r in canary_results):
+        verification = "failed"
+    elif any(r["diagnosis"] == "inconclusive" for r in canary_results):
+        verification = "inconclusive"
+    elif any(r["status"] == "pass" and r["provenance"] in INDEPENDENT_PROVENANCES for r in canary_results):
+        verification = "independently_verified" if not blocking else "failed"
+    elif any(r["status"] == "pass" for r in canary_results):
+        verification = "regression_only"
     return {
         "confidence": confidence,
+        "verification": verification,
+        "quality_level": "independently_verified" if verification == "independently_verified" else "configured" if blocking else "basic_support",
+        "canary_results": canary_results,
         "checks": [result.__dict__ for result in results],
         "warnings": warnings,
     }
@@ -1172,7 +1192,7 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
     if failure_mode == "missing_detail":
         return "Fresh discovery artifact keeps the relevant candidates and adds substantive extracted role detail in notes or detail fields." + canary_clause
     if failure_mode == "missing_canary":
-        return "Fresh discovery artifact includes the canary candidate with the expected title or URL."
+        return "Fresh discovery artifact includes the canary by posting ID or normalized URL; use title only without stronger identity."
     if failure_mode == "bad_url":
         return "Fresh discovery artifact emits candidate URLs that point to the correct job detail pages for this source." + canary_clause
     if failure_mode == "duplication":
@@ -1404,6 +1424,16 @@ def build_integration_ticket(
         source=source,
         failing_checks=failing_checks,
     )
+    missing = [r for r in deterministic.get("canary_results", []) if r.get("status") == "fail"]
+    if failure_mode == "missing_canary" and missing:
+        terms = source.get("search_terms_tried", [])
+        # A title already matching retrieval terms cannot be rescued by adding
+        # the same vocabulary again. Inspect native restrictions, or escalate
+        # enumeration/detail support after the existing config has been tried.
+        if all(not r.get("title") or match_terms(r["title"], terms) for r in missing):
+            suggested_strategy = "config_native_filters" if source.get("filters") else "dedicated_provider_logic"
+    if any(r.get("diagnosis") == "track_match_rules" for r in deterministic.get("canary_results", [])):
+        suggested_strategy = "config_match_rules"
     primary_evidence = _collect_primary_evidence(failing_checks, blocking_defects)
     summary = ""
     defect_types: list[str] = []
@@ -1435,6 +1465,7 @@ def build_integration_ticket(
         "canary_url": canary_url,
         "search_terms_tried": source.get("search_terms_tried", []),
         "configured_filters": source.get("filters", {}),
+        "canary_results": deterministic.get("canary_results", []),
         "candidate_counts": {
             "candidates": len(source.get("candidates", []) if isinstance(source.get("candidates"), list) else []),
             "matched_jobs": source.get("matched_jobs"),

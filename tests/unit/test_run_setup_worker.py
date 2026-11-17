@@ -93,7 +93,9 @@ def test_source_worker_uses_fresh_artifact_only_process_and_validates_output(
     invocation = json.loads(log_path.read_text())
     assert "JOBWATCH_SETUP_WORKER_ROLE=source_discovery" in invocation["prompt"]
     assert str(setup_path) not in invocation["prompt"]
-    assert "transcript" not in invocation["prompt"].lower()
+    root = Path(__file__).resolve().parents[2]
+    assert (root / ".agents/skills/discover-sources/SKILL.md").read_text() in invocation["prompt"]
+    assert (root / "shared/source_curation.md").read_text() in invocation["prompt"]
     assert invocation["cwd"] != str(tmp_path)
     assert invocation["files"] == ["output-schema.json"]
     if provider == "codex":

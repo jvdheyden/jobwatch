@@ -196,3 +196,18 @@ def test_update_integration_state_clears_stale_ticket_fields_on_pass():
     assert "next_action" not in integration
     assert "last_ticket_summary" not in integration
     assert "last_note" not in integration
+
+
+def test_passed_source_with_unverified_canaries_still_gets_selected():
+    config = {'sources': [{'id': 'example', 'name': 'Example'}]}
+    state = {'example': {'integration': {'status': 'pass', 'canary': {'title': 'Known vacancy', 'url': 'https://jobs.example.test/42'}}}}
+    selected, _ = integrate_next_source.select_next_source(config, state, today='2026-11-17')
+    assert selected['id'] == 'example'
+
+
+def test_term_append_preserves_deliberate_override_and_previous_terms():
+    config = {'sources': [{'id': 'example', 'search_terms': {'mode': 'override', 'terms': ['cryptography']}}]}
+    changed, _ = integrate_next_source.apply_config_tuning(config, source_id='example', integration={},
+        ticket={'suggested_strategy': 'config_terms_append', 'config_suggestion': {'search_terms': ['privacy']}})
+    assert changed
+    assert config['sources'][0]['search_terms'] == {'mode': 'override', 'terms': ['cryptography', 'privacy']}
