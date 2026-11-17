@@ -493,6 +493,10 @@ latest observation. Discovery-output/legacy provenance remains weaker even after
 availability review. The last 100 archived canary observations are retained;
 durable reference jobs are never pruned by rotation.
 
+Evaluation uses the latest dated review, including unknown availability or scope,
+while retaining the earlier record as prior evidence. A same-day review is honored;
+older unknown observations can be resolved by a fresh independent availability check.
+
 Evaluator `verification` is `unverified`, `inconclusive`, `regression_only`,
 `failed` or `independently_verified`. `quality_level` distinguishes `configured`,
 `basic_support` and `independently_verified`; verified means a sampled independent

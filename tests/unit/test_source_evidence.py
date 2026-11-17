@@ -150,6 +150,14 @@ def test_availability_requires_independent_matching_vacancy(monkeypatch, status,
     assert result['availability'] == expected
 
 
+def test_older_review_does_not_override_newer_canary_evidence():
+    from source_evidence import effective_canaries
+    canary = normalize_canaries(pack(brief())['canaries'])[0]
+    checks = {canary['id']: {'availability': 'unknown', 'scope': 'unknown', 'checked_on': '2026-11-16',
+                             'evidence_url': canary['url'], 'evidence_note': 'Earlier unavailable page.'}}
+    assert effective_canaries([canary], [canary], today='2026-11-17', checks=checks) == [canary]
+
+
 def test_selection_resolves_provisional_canary_source_without_losing_user_evidence():
     setup = brief()
     supplied = dict(pack(setup)['canaries'][0], source_id='provisional_employer')

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import time
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -1330,7 +1331,8 @@ def test_run_track_aborts_idle_codex_and_logs_heartbeat(tmp_job_agent_root: Path
         "JOB_AGENT_TODAY": "2030-01-15",
         "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
         "AGENT_HEARTBEAT_SECS": "1",
-        "AGENT_IDLE_TIMEOUT_SECS": "1",
+        # Give the heartbeat its own interval before the idle cutoff.
+        "AGENT_IDLE_TIMEOUT_SECS": "3",
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
 
@@ -1350,9 +1352,9 @@ def test_run_track_aborts_idle_codex_and_logs_heartbeat(tmp_job_agent_root: Path
     assert result.returncode == 125, result.stderr
 
     log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
-    assert "Codex still running after 1s" in log_text
-    assert "Codex went idle after 1s without new output; terminating" in log_text
-    assert "Codex phase went idle after 1s without new output" in log_text
+    assert re.search(r"Codex still running after \d+s", log_text)
+    assert "Codex went idle after 3s without new output; terminating" in log_text
+    assert "Codex phase went idle after 3s without new output" in log_text
     assert "Codex phase finished successfully" not in log_text
     assert not (tmp_job_agent_root / "tracks" / "demo" / "digests" / "2030-01-15.md").exists()
     assert not (tmp_job_agent_root / "sync.log").exists()
