@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from agent_provider import build_coder_command, resolve_agent_bin, resolve_agent_provider
+from agent_provider import build_coder_command, resolve_agent_bin, resolve_agent_provider, resolve_model_policy
 from runtime_env import RuntimeEnvError, apply_runtime_env
 from source_config import SourceConfigError, load_sources_config
 from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, generated_at, source_slug, truncate_text
@@ -631,7 +631,7 @@ def run_eval(
         command,
         check=False,
         text=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
         cwd=WORK_ROOT,
     )
     payload = json.loads(eval_output.read_text())
@@ -884,12 +884,14 @@ def run_coder(
     )
     if provider == "gemini":
         env["GEMINI_SANDBOX"] = env.get("JOB_AGENT_GEMINI_SANDBOX") or env.get("GEMINI_SANDBOX") or "false"
-    command = build_coder_command(provider, WORK_ROOT, coder_bin, last_message_path)
+    policy = resolve_model_policy(provider, "coder", env=env)
+    command = build_coder_command(policy, WORK_ROOT, coder_bin, last_message_path)
     stdout_log_path.parent.mkdir(parents=True, exist_ok=True)
     stderr_log_path.parent.mkdir(parents=True, exist_ok=True)
     stdout_handle = stdout_log_path.open("w", encoding="utf-8")
     stderr_handle = stderr_log_path.open("w", encoding="utf-8")
     try:
+        print(policy.describe(), file=sys.stderr)
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,

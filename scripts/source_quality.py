@@ -7,6 +7,7 @@ import json
 import re
 import ssl
 import subprocess
+import sys
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -19,8 +20,7 @@ from discover.helpers import match_terms
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
-from agent_provider import build_reviewer_command as build_provider_reviewer_command
-from agent_provider import resolve_agent_provider
+from agent_provider import build_reviewer_command, resolve_model_policy
 from discover.helpers import LinkCollector
 
 
@@ -861,10 +861,6 @@ def _listing_links(html: str) -> list[str]:
     return links
 
 
-def build_reviewer_command(root: Path, reviewer_bin: Path, provider: str | None = None) -> list[str]:
-    return build_provider_reviewer_command(resolve_agent_provider(provider or "codex"), root, reviewer_bin)
-
-
 def review_source_with_llm(
     root: Path,
     artifact_path: Path,
@@ -882,6 +878,13 @@ def review_source_with_llm(
             "defects": [],
             "error": "No reviewer binary available.",
         }
+
+    try:
+        policy = resolve_model_policy(provider or "codex", "reviewer")
+        command = build_reviewer_command(policy, root, reviewer_bin)
+    except ValueError as exc:
+        print(f"source-quality reviewer: {exc}", file=sys.stderr)
+        return {"status": "blocked", "defects": [], "error": str(exc)}
 
     context = _build_reviewer_context(artifact_path, source, canary_title, canary_url, timeout_seconds)
     canary_instruction = (
@@ -906,10 +909,7 @@ def review_source_with_llm(
         + canary_instruction
         + json.dumps(context, ensure_ascii=False, indent=2)
     )
-    try:
-        command = build_reviewer_command(root, reviewer_bin, provider)
-    except Exception as exc:
-        return {"status": "blocked", "defects": [], "error": str(exc)}
+    print(policy.describe(), file=sys.stderr)
     try:
         completed = subprocess.run(
             command,

@@ -715,69 +715,18 @@ def test_build_reviewer_context_includes_canary_candidate_outside_cap():
     assert raw_sample_urls[0] == f"https://jobs.example.com/jobs/{canary_index}"
 
 
-def test_build_reviewer_command_forces_low_reasoning_effort():
-    command = source_quality.build_reviewer_command(
-        Path("/tmp/jobwatch"),
-        Path("/usr/local/bin/codex"),
-    )
-
-    assert command == [
-        "/usr/local/bin/codex",
-        "--search",
-        "-a",
-        "never",
-        "exec",
-        "-c",
-        'model_reasoning_effort="low"',
-        "-C",
-        "/tmp/jobwatch",
-        "-s",
-        "read-only",
-        "-",
-    ]
-
-
-def test_build_reviewer_command_supports_claude_print_mode(monkeypatch):
-    monkeypatch.setenv("JOB_AGENT_CLAUDE_PERMISSION_MODE", "acceptEdits")
-    monkeypatch.delenv("JOB_AGENT_CLAUDE_REVIEWER_ALLOWED_TOOLS", raising=False)
-
-    command = source_quality.build_reviewer_command(
-        Path("/tmp/jobwatch"),
-        Path("/usr/local/bin/claude"),
-        provider="claude",
-    )
-
-    assert command == [
-        "/usr/local/bin/claude",
-        "-p",
-        "--no-session-persistence",
-        "--output-format",
-        "text",
-        "--permission-mode",
-        "acceptEdits",
-        "--allowedTools",
-        "Read,Glob,Grep,LS",
-    ]
-
-
-def test_build_reviewer_command_supports_gemini_headless_mode(monkeypatch):
-    monkeypatch.delenv("JOB_AGENT_GEMINI_REVIEWER_APPROVAL_MODE", raising=False)
-
-    command = source_quality.build_reviewer_command(
-        Path("/tmp/jobwatch"),
-        Path("/usr/local/bin/gemini"),
-        provider="gemini",
-    )
-
-    assert command == [
-        "/usr/local/bin/gemini",
-        "--skip-trust",
-        "--output-format",
-        "text",
-    ]
-
-
-def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fields(monkeypatch):
+@pytest.mark.parametrize(
+    ("provider", "expected_args"),
+    [
+        ("codex", ["--search", "-a", "never", "exec", "-m", "gpt-6.2-astra",
+                   "-c", 'model_reasoning_effort="high"', "-C", "/tmp/jobwatch", "-s", "read-only", "-"]),
+        ("claude", ["-p", "--no-session-persistence", "--model", "opus", "--effort", "high",
+                    "--output-format", "text", "--permission-mode", "acceptEdits",
+                    "--allowedTools", "Read,Glob,Grep,LS"]),
+        ("gemini", ["--skip-trust", "--model", "pro", "--output-format", "text"]),
+    ],
+)
+def test_reviewer_invocation_preserves_permissions_and_validates_defects(monkeypatch, capsys, provider, expected_args):
     source = {
         "source": "Example Source",
         "source_url": "https://jobs.example.com/search",
@@ -803,7 +752,11 @@ def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fiel
 """
         stderr = ""
 
-    monkeypatch.setattr(source_quality.subprocess, "run", lambda *args, **kwargs: Completed())
+    def fake_reviewer(command, **kwargs):
+        assert command[1:] == expected_args
+        return Completed()
+
+    monkeypatch.setattr(source_quality.subprocess, "run", fake_reviewer)
 
     reviewer = source_quality.review_source_with_llm(
         Path("/tmp/jobwatch"),
@@ -813,9 +766,11 @@ def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fiel
         canary_url="",
         reviewer_bin=Path("/bin/bash"),
         timeout_seconds=5,
+        provider=provider,
     )
 
     assert reviewer["status"] == "completed"
+    assert "tier=frontier-latest" in capsys.readouterr().err
     assert reviewer["defects"] == [
         {
             "type": "partial_description",

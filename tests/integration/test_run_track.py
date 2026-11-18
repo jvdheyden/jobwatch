@@ -398,9 +398,9 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Codex phase started" in log_text
     assert "Codex phase finished successfully" in log_text
     args = (tmp_job_agent_root / "codex-args.txt").read_text().splitlines()
-    assert args[args.index("-m") + 1] == "gpt-5.6-sol"
+    assert args[args.index("-m") + 1] == "gpt-6.2-sol"
     assert args[args.index("-c") + 1] == 'model_reasoning_effort="medium"'
-    assert "Using Codex scheduled model: gpt-5.6-sol (reasoning effort: medium)" in log_text
+    assert "gpt-6.2-sol (tier=workhorse-latest, reasoning effort=medium)" in log_text
     assert "Source state update finished successfully" in log_text
     assert "Markdown digest rendered successfully" in log_text
     assert "Seen jobs updated successfully" in log_text
@@ -434,6 +434,7 @@ def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
                 "export JOB_AGENT_PROVIDER=codex",
                 f"export JOB_AGENT_BIN={bash_quote(tmp_job_agent_root / 'fake_codex.sh')}",
                 "export JOB_AGENT_CODEX_SCHEDULED_MODEL=custom-scheduled-model",
+                "export JOB_AGENT_SCHEDULED_TIER=frontier-latest",
                 "export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=low",
                 "",
             ]
@@ -466,7 +467,7 @@ def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
     args = (tmp_job_agent_root / "codex-args.txt").read_text().splitlines()
     assert args[args.index("-m") + 1] == "custom-scheduled-model"
     assert args[args.index("-c") + 1] == 'model_reasoning_effort="low"'
-    assert "Using Codex scheduled model: custom-scheduled-model (reasoning effort: low)" in log_text
+    assert "custom-scheduled-model (tier=explicit override, reasoning effort=low)" in log_text
 
 
 @pytest.mark.parametrize(
@@ -476,8 +477,9 @@ def test_run_track_loads_runtime_config_from_env_file_for_manual_invocation(
         ("JOB_AGENT_CODEX_SCHEDULED_MODEL", "bad model"),
         ("JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT", ""),
         ("JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT", "invalid"),
+        ("JOB_AGENT_SCHEDULED_TIER", "economical"),
     ],
-    ids=["empty-model", "malformed-model", "empty-reasoning", "invalid-reasoning"],
+    ids=["empty-model", "malformed-model", "empty-reasoning", "invalid-reasoning", "invalid-tier"],
 )
 def test_run_track_rejects_invalid_codex_policy_before_discovery(
     tmp_job_agent_root: Path, repo_root: Path, run_cmd, key: str, value: str
@@ -500,6 +502,27 @@ def test_run_track_rejects_invalid_codex_policy_before_discovery(
     assert key in log_text
     assert "Discovery phase started" not in log_text
     assert not (tmp_job_agent_root / "codex-args.txt").exists()
+
+
+def test_run_track_surfaces_an_unsupported_model_without_retry(tmp_job_agent_root, repo_root, run_cmd):
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_executable(
+        tmp_job_agent_root / "fake_codex.sh",
+        '#!/bin/bash\necho "Unsupported model: unavailable-model" >&2\nexit 42\n',
+    )
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_codex.sh"),
+        "JOB_AGENT_CODEX_SCHEDULED_MODEL": "unavailable-model",
+    }
+    result = run_cmd(
+        "bash", str(repo_root / "scripts" / "run_track.sh"), "--track", "demo", env=env, cwd=repo_root
+    )
+
+    assert result.returncode == 42
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert log_text.count("Unsupported model: unavailable-model") == 1
 
 
 def test_run_track_logseq_delivery_runs_sync_and_preserves_caffeinate_args(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -1063,6 +1086,7 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
 
     assert result.returncode == 0, result.stderr
     args_text = (tmp_job_agent_root / "claude-args.txt").read_text()
+    args = args_text.splitlines()
     prompt_text = (tmp_job_agent_root / "claude-prompt.txt").read_text()
     log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
 
@@ -1071,10 +1095,13 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
     assert "stream-json" in args_text
     assert "--verbose" in args_text
     assert "--allowedTools" in args_text
+    assert args[args.index("--model") + 1] == "sonnet"
+    assert args[args.index("--effort") + 1] == "medium"
     assert (tmp_job_agent_root / "claude-cwd.txt").read_text().strip() == str(tmp_job_agent_root)
     assert "Run today's demo workflow from the repository root in mode: track_run." in prompt_text
     assert "A discovery artifact for today's scheduled run has already been written" in prompt_text
     assert "Claude phase started" in log_text
+    assert "sonnet (tier=workhorse-latest, reasoning effort=medium)" in log_text
     assert "Claude phase finished successfully" in log_text
 
 
@@ -1086,6 +1113,7 @@ def test_run_track_invokes_gemini_provider_with_same_prompt(tmp_job_agent_root: 
         "JOB_AGENT_ROOT": str(tmp_job_agent_root),
         "JOB_AGENT_TODAY": "2030-01-15",
         "JOB_AGENT_PROVIDER": "gemini",
+        "JOB_AGENT_SCHEDULED_TIER": "cheapo-latest",
         "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_gemini.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }
@@ -1105,6 +1133,7 @@ def test_run_track_invokes_gemini_provider_with_same_prompt(tmp_job_agent_root: 
 
     assert result.returncode == 0, result.stderr
     args_text = (tmp_job_agent_root / "gemini-args.txt").read_text()
+    args = args_text.splitlines()
     prompt_text = (tmp_job_agent_root / "gemini-prompt.txt").read_text()
     log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
 
@@ -1113,11 +1142,13 @@ def test_run_track_invokes_gemini_provider_with_same_prompt(tmp_job_agent_root: 
     assert "stream-json" in args_text
     assert "--approval-mode" in args_text
     assert "yolo" in args_text
+    assert args[args.index("--model") + 1] == "flash-lite"
     assert (tmp_job_agent_root / "gemini-sandbox.txt").read_text() == "false\n"
     assert (tmp_job_agent_root / "gemini-cwd.txt").read_text().strip() == str(tmp_job_agent_root)
     assert "Run today's demo workflow from the repository root in mode: track_run." in prompt_text
     assert "A discovery artifact for today's scheduled run has already been written" in prompt_text
     assert "Gemini phase started" in log_text
+    assert "flash-lite (tier=cheapo-latest, reasoning effort=provider-managed)" in log_text
     assert "Gemini phase finished successfully" in log_text
 
 

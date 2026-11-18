@@ -133,12 +133,16 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     with env_file.open("a") as handle:
         handle.write("export JOB_AGENT_CODEX_SCHEDULED_MODEL=custom-scheduled-model\n")
         handle.write("export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=low\n")
+        handle.write("export JOB_AGENT_SOURCE_DISCOVERY_TIER=cheapo-latest\n")
+        handle.write("export JOB_AGENT_GEMINI_SETUP_MODEL=pro\n")
 
     second = run_cmd("bash", str(repo_root / "scripts" / "setup_machine.sh"), "--agent", "codex", env=env, cwd=repo_root)
     assert second.returncode == 0, second.stderr
     assert schedule_file.read_text() == "daily 08:00 track demo\n"
     assert "export JOB_AGENT_CODEX_SCHEDULED_MODEL=custom-scheduled-model\n" in env_file.read_text()
     assert "export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=low\n" in env_file.read_text()
+    assert "export JOB_AGENT_SOURCE_DISCOVERY_TIER=cheapo-latest\n" in env_file.read_text()
+    assert "export JOB_AGENT_GEMINI_SETUP_MODEL=pro\n" in env_file.read_text()
 
 
 def test_setup_machine_prefers_xdg_config_home_for_linux_secrets_path(
@@ -1275,8 +1279,9 @@ pwd > "{cwd_file}"
     assert str(tmp_job_agent_root) in args
     assert "-s" in args
     assert "workspace-write" in args
-    assert args[args.index("-m") + 1] == "gpt-5.5"
+    assert args[args.index("-m") + 1] == "gpt-6.2-sol"
     assert 'model_reasoning_effort="medium"' in args
+    assert "gpt-6.2-sol (tier=workhorse-latest, reasoning effort=medium)" in result.stderr
     assert "Use the project skill $set-up" in prompt_file.read_text()
     assert "scripts/scaffold_track.py" in prompt_file.read_text()
     assert "scripts/run_setup_preview.py" in prompt_file.read_text()
@@ -1325,6 +1330,8 @@ printf '%s\\n' "${{@: -1}}" > "{prompt_file}"
     assert "acceptEdits" in args
     assert "--allowedTools" in args
     assert "--append-system-prompt" in args
+    assert args[args.index("--model") + 1] == "sonnet"
+    assert args[args.index("--effort") + 1] == "medium"
     assert not any("WebSearch" in arg for arg in args)
     assert not any("WebFetch" in arg for arg in args)
     assert "Use the project skill $set-up" in args_file.read_text()
@@ -1375,6 +1382,8 @@ printf '%s\\n' "${{JOB_AGENT_SMTP_PASSWORD_CMD-}}" > "{password_cmd_file}"
     assert "--skip-trust" in args_text
     assert "--approval-mode" in args_text
     assert "yolo" in args_text
+    args = args_text.splitlines()
+    assert args[args.index("--model") + 1] == "flash"
 
     assert "--prompt-interactive" in args_text
     assert "Use the project skill $set-up" in args_text

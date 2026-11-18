@@ -87,7 +87,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --model)
-      if [[ $# -lt 2 ]]; then
+      if [[ -z "${2:-}" ]]; then
         echo "missing value for --model" >&2
         usage >&2
         exit 2
@@ -96,7 +96,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --reasoning)
-      if [[ $# -lt 2 ]]; then
+      if [[ -z "${2:-}" ]]; then
         echo "missing value for --reasoning" >&2
         usage >&2
         exit 2
@@ -164,10 +164,10 @@ from pathlib import Path
 
 script_dir, provider, agent_bin, root, model, reasoning = sys.argv[1:]
 sys.path.insert(0, script_dir)
-from agent_provider import build_setup_coordinator_command, resolve_setup_policy
+from agent_provider import build_setup_coordinator_command, resolve_model_policy
 
 try:
-    policy = resolve_setup_policy(
+    policy = resolve_model_policy(
         provider,
         "setup_coordinator",
         model=model or None,
@@ -177,6 +177,7 @@ try:
 except ValueError as exc:
     print(f"start_setup_agent.sh: {exc}", file=sys.stderr)
     raise SystemExit(2)
+print(policy.describe(), file=sys.stderr)
 sys.stdout.buffer.write(b"\0".join(item.encode() for item in command) + b"\0")
 PY
 )

@@ -145,6 +145,7 @@ def test_source_integration_runs_coder_and_reaches_pass(tmp_job_agent_root: Path
     coder_script.write_text(
         """#!/bin/bash
 set -euo pipefail
+printf '%s\\n' "$@" >"$JOB_AGENT_ROOT/coder-args.txt"
 cat >"$JOB_AGENT_ROOT/prompt.txt"
 echo '{"type":"status","message":"touching fix marker"}'
 touch "$JOB_AGENT_ROOT/fixed.marker"
@@ -185,6 +186,11 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
     )
 
     assert result.returncode == 0, result.stderr
+    args = (tmp_job_agent_root / "coder-args.txt").read_text().splitlines()
+    assert args[args.index("-m") + 1] == "gpt-6.2-sol"
+    assert args[args.index("-s") + 1] == "workspace-write"
+    assert 'model_reasoning_effort="medium"' in args
+    assert "gpt-6.2-sol (tier=workhorse-latest, reasoning effort=medium)" in result.stderr
     summary = json.loads(summary_output.read_text())
     prompt_text = (tmp_job_agent_root / "prompt.txt").read_text()
     assert summary["final_status"] == "pass"
@@ -271,6 +277,9 @@ JSON
     assert "stream-json" in args_text
     assert "--verbose" in args_text
     assert "Privacy Engineer" in (tmp_job_agent_root / "claude-prompt.txt").read_text()
+    args = args_text.splitlines()
+    assert args[args.index("--model") + 1] == "sonnet"
+    assert args[args.index("--effort") + 1] == "medium"
 
 
 def test_source_integration_runs_gemini_coder_with_stream_json(tmp_job_agent_root: Path, run_cmd, repo_root: Path):
@@ -340,6 +349,8 @@ JSON
     assert "yolo" in args_text
     assert (tmp_job_agent_root / "gemini-sandbox.txt").read_text() == "false\n"
     assert "Privacy Engineer" in (tmp_job_agent_root / "gemini-prompt.txt").read_text()
+    args = args_text.splitlines()
+    assert args[args.index("--model") + 1] == "flash"
 
 
 def test_source_integration_stops_at_retry_limit(tmp_job_agent_root: Path, run_cmd, repo_root: Path):

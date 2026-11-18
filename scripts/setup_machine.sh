@@ -601,13 +601,14 @@ fi
   echo "# Required: automation provider and executable agent binary for scheduled runs."
   printf 'export JOB_AGENT_PROVIDER=%s\n' "$(shell_escape "$AGENT_PROVIDER_VALUE")"
   printf 'export JOB_AGENT_BIN=%s\n' "$(shell_escape "$AGENT_BIN_VALUE")"
-  echo "# Optional: override the scheduled Codex model policy; see README.md."
-  if [[ -n "${JOB_AGENT_CODEX_SCHEDULED_MODEL+x}" ]]; then
-    printf 'export JOB_AGENT_CODEX_SCHEDULED_MODEL=%s\n' "$(shell_escape "$JOB_AGENT_CODEX_SCHEDULED_MODEL")"
-  fi
-  if [[ -n "${JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT+x}" ]]; then
-    printf 'export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=%s\n' "$(shell_escape "$JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT")"
-  fi
+  echo "# Optional: agent model and reasoning overrides. See docs/machine_setup.md."
+  while IFS= read -r model_setting; do
+    case "$model_setting" in
+      JOB_AGENT_*_TIER|JOB_AGENT_*_MODEL|JOB_AGENT_*_REASONING_EFFORT)
+        printf 'export %s=%s\n' "$model_setting" "$(shell_escape "${!model_setting}")"
+        ;;
+    esac
+  done < <(compgen -A variable JOB_AGENT_)
   echo "# Optional: Logseq graph root for digest publication."
   if [[ -n "$LOGSEQ_GRAPH_DIR_VALUE" ]]; then
     printf 'export LOGSEQ_GRAPH_DIR=%s\n' "$(shell_escape "$LOGSEQ_GRAPH_DIR_VALUE")"
