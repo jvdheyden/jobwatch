@@ -113,7 +113,13 @@ For an independent manual review, use:
   --evidence-url '<official vacancy URL>' --evidence-note '<what establishes availability and scope>'
 ```
 
-Use `expired` only for confirmed closure; this archives the live record and
-permits a replacement while preserving its reference job. Use `unknown` for an
-inconclusive check. Registration adds evidence; it cannot silently overwrite an
-existing canary or turn discovery-output provenance into independent evidence.
+The evidence URL identifies the posting by default. If the evidence is at a
+different URL, pass `--posting` with the stored posting URL or ID, or with the
+title for a title-only canary. When a canary ID and its URL have both been
+reused for a different posting, pass the current posting ID with `--posting`.
+
+Use `expired` for confirmed closure. This archives the live record and permits a
+replacement while preserving its reference job. Registering the same posting
+again requires independent evidence that it was live on a later date than the
+recorded closure. Use `unknown` for an inconclusive check. Update active
+canaries through review, which preserves their acquisition provenance.

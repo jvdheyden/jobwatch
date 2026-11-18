@@ -1,5 +1,6 @@
 """Independent expected postings exercise the real setup/curation/evaluation boundary."""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,7 @@ from source_config import load_source_state, mutate_source_state
 from source_quality import validate_source_coverage
 
 FIXTURES = Path(__file__).resolve().parents[1] / 'fixtures/setup'
+SCRIPTS = Path(__file__).resolve().parents[2] / 'scripts'
 TODAY = '2026-11-17'
 URL = 'https://jobs.example.test/jobs/42'
 
@@ -46,6 +48,14 @@ def selected_setup():
     return setup_contracts.normalize_setup(result)
 
 
+def empty_portfolio(tmp_path):
+    directory = tmp_path / 'tracks/applied_crypto'
+    directory.mkdir(parents=True)
+    (directory / 'sources.json').write_text(json.dumps({'schema_version': 1, 'track': 'applied_crypto',
+        'track_terms': ['privacy'], 'sources': []}))
+    return directory
+
+
 def configure(tmp_path, entry='existing'):
     setup = selected_setup()
     directory = tmp_path / 'tracks/applied_crypto'
@@ -56,9 +66,7 @@ def configure(tmp_path, entry='existing'):
         setup_contracts.write_setup(setup_path, setup)
         scaffold_track.scaffold_track(setup_path, root=tmp_path)
     else:
-        directory.mkdir(parents=True)
-        (directory / 'sources.json').write_text(json.dumps({'schema_version': 1, 'track': 'applied_crypto',
-            'track_terms': ['privacy'], 'sources': []}))
+        directory = empty_portfolio(tmp_path)
         curate_sources.register(tmp_path, 'applied_crypto', setup=setup)
         # Repeated source registration must be safe after interrupted multi-file writes.
         curate_sources.register(tmp_path, 'applied_crypto', setup=setup)
@@ -74,6 +82,19 @@ def evaluate(tmp_path, monkeypatch, coverage, *, today=TODAY):
         '--today', today, '--artifact-path', str(artifact), '--output', str(output), '--reviewer', 'off'])
     status = eval_source_quality.main()
     return status, json.loads(output.read_text())
+
+
+def run_cli(tmp_path, script, *args):
+    return subprocess.run(
+        [sys.executable, str(SCRIPTS / script), *args, '--track', 'applied_crypto'],
+        env={**os.environ, 'JOB_AGENT_ROOT': str(tmp_path)}, capture_output=True, text=True, check=False,
+    )
+
+
+def closure_args(today):
+    return ('--source', 'example_labs', '--review-canary', 'desired_role', '--today', today,
+            '--availability', 'expired', '--evidence-url', URL,
+            '--evidence-note', 'Official page confirms applications closed.')
 
 
 @pytest.mark.parametrize('entry', ['setup', 'existing'])
@@ -431,6 +452,142 @@ def test_reviewed_expiration_archives_but_inconclusive_review_preserves_evidence
     state = load_source_state(directory / 'source_state.json', 'applied_crypto')['example_labs']['integration']
     assert state['canaries'] == []
     assert state['canary_history'][0]['url'] == URL
+
+
+def test_setup_registration_retry_does_not_reopen_closed_posting(tmp_path, monkeypatch):
+    directory = empty_portfolio(tmp_path)
+    setup_path = tmp_path / 'selection.json'
+    setup_contracts.write_setup(setup_path, selected_setup())
+    register = ('register', '--setup', str(setup_path))
+    result = run_cli(tmp_path, 'curate_sources.py', *register)
+    assert result.returncode == 0, result.stderr
+
+    closed_on = '2026-11-18'
+    closed = run_cli(tmp_path, 'update_source_canary.py', *closure_args(closed_on))
+    assert closed.returncode == 0, closed.stderr
+    state_path = directory / 'source_state.json'
+    before = state_path.read_bytes()
+
+    replay = run_cli(tmp_path, 'curate_sources.py', *register)
+    assert replay.returncode == 2
+    assert state_path.read_bytes() == before
+    integration = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+    assert integration['canaries'] == []
+    assert [(c['url'], c['checked_on']) for c in integration['canary_history']] == [(URL, closed_on)]
+    coverage = source()
+    coverage['candidates'][0]['url'] = URL
+    status, result = evaluate(tmp_path, monkeypatch, coverage, today=closed_on)
+    assert (status, result['final_status'], result['verification']) == (0, 'pass', 'unverified')
+
+
+@pytest.mark.parametrize(('checked_on', 'provenance', 'expected_exit'), [
+    ('2026-11-18', 'official_page', 2),
+    ('2026-11-19', 'discovery_output', 2),
+    ('2026-11-19', 'official_page', 0),
+])
+def test_reopening_same_posting_requires_newer_independent_evidence(tmp_path, checked_on, provenance, expected_exit):
+    directory = configure(tmp_path)
+    closed = run_cli(tmp_path, 'update_source_canary.py', *closure_args('2026-11-18'))
+    assert closed.returncode == 0, closed.stderr
+    state_path = directory / 'source_state.json'
+    before = state_path.read_bytes()
+    reopened_url = URL + '?utm_source=careers'
+    reopened = dict(canary(), id='renamed_canary', url=reopened_url, evidence_url=reopened_url,
+                    checked_on=checked_on, provenance=provenance)
+    payload = tmp_path / 'evidence.json'
+    payload.write_text(json.dumps({'canaries': [reopened]}))
+    result = run_cli(tmp_path, 'update_source_canary.py', '--source', 'example_labs', '--register', str(payload))
+    assert result.returncode == expected_exit, result.stderr
+    if expected_exit:
+        assert state_path.read_bytes() == before
+    else:
+        integration = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+        assert integration['canaries'] == [reopened]
+        assert [c['url'] for c in integration['canary_history']] == [URL]
+
+
+@pytest.mark.parametrize('replacement_url', ['https://jobs.example.test/jobs/100', URL], ids=['new_url', 'reused_url'])
+def test_closure_retry_cannot_retire_replacement_with_reused_id(tmp_path, monkeypatch, replacement_url):
+    directory = empty_portfolio(tmp_path)
+    curate_sources.register(
+        tmp_path, 'applied_crypto', setup=dict(selected_setup(), canaries=[canary(posting_id='42')]),
+    )
+    review = closure_args(TODAY)
+    closed = run_cli(tmp_path, 'update_source_canary.py', *review)
+    assert closed.returncode == 0, closed.stderr
+    replacement = dict(canary(), url=replacement_url, evidence_url=replacement_url, posting_id='100')
+    payload = tmp_path / 'replacement.json'
+    payload.write_text(json.dumps({'canaries': [replacement]}))
+    registered = run_cli(tmp_path, 'update_source_canary.py', '--source', 'example_labs', '--register', str(payload))
+    assert registered.returncode == 0, registered.stderr
+
+    status, result = evaluate(tmp_path, monkeypatch, source())
+    assert (status, result['final_status'], result['verification']) == (1, 'integration_needed', 'failed')
+    state_path = directory / 'source_state.json'
+    before = state_path.read_bytes()
+    replay = run_cli(tmp_path, 'update_source_canary.py', *review)
+    assert replay.returncode == 2
+    assert state_path.read_bytes() == before
+    status, result = evaluate(tmp_path, monkeypatch, source())
+    assert (status, result['final_status'], result['verification']) == (1, 'integration_needed', 'failed')
+    assert result['canaries'] == [replacement]
+
+    # A different evidence URL can support a review with an explicit posting identity.
+    closed_replacement = run_cli(
+        tmp_path, 'update_source_canary.py', '--source', 'example_labs', '--review-canary', 'desired_role',
+        '--posting', '100', '--today', TODAY, '--availability', 'expired',
+        '--evidence-url', 'https://jobs.example.test/closure-notices/100',
+        '--evidence-note', 'Official closure notice identifies the replacement posting.',
+    )
+    assert closed_replacement.returncode == 0, closed_replacement.stderr
+    integration = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+    assert integration['canaries'] == []
+    assert [(c['url'], c['posting_id']) for c in integration['canary_history']] == [(URL, '42'), (replacement_url, '100')]
+
+
+def test_posting_id_alone_preserves_closure_identity(tmp_path):
+    directory = empty_portfolio(tmp_path)
+    setup = selected_setup()
+    record = dict(canary(), url='', title='', posting_id='42')
+    curate_sources.register(tmp_path, 'applied_crypto', setup=dict(setup, canaries=[record]))
+    closed_on = '2026-11-18'
+    closed = run_cli(tmp_path, 'update_source_canary.py', *closure_args(closed_on), '--posting', '42')
+    assert closed.returncode == 0, closed.stderr
+
+    state_path = directory / 'source_state.json'
+    before = state_path.read_bytes()
+    integration = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+    assert integration['canaries'] == []
+    assert [c['posting_id'] for c in integration['canary_history']] == ['42']
+    payload = tmp_path / 'evidence.json'
+    payload.write_text(json.dumps({'canaries': [dict(record, id='renamed_canary', url=URL)]}))
+    result = run_cli(tmp_path, 'update_source_canary.py', '--source', 'example_labs', '--register', str(payload))
+    assert result.returncode == 2
+    assert state_path.read_bytes() == before
+
+
+def test_refresh_excludes_closed_posting_from_discovery_suggestions(tmp_path, monkeypatch):
+    directory = configure(tmp_path)
+    coverage = source()
+    coverage['candidates'].insert(0, dict(coverage['candidates'][0], url=URL))
+    today = '2026-12-02'
+
+    def discover(root, track, name, today, output):
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps({'sources': [coverage]}))
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    monkeypatch.setattr(update_source_canary, 'run_discovery', discover)
+    monkeypatch.setattr(probe_career_source, 'fetch_http', lambda url, timeout: ('', url, 410, []))
+    monkeypatch.setattr(update_source_canary, 'probe', lambda *_a, **_k: {'candidate_canaries': []})
+    ok, result = update_source_canary.refresh_canary(
+        root=tmp_path, track='applied_crypto', source_query='example_labs', today=today,
+    )
+    assert ok
+    assert result['canary']['url'] == 'https://jobs.example.test/jobs/99'
+    integration = load_source_state(directory / 'source_state.json', 'applied_crypto')['example_labs']['integration']
+    assert [c['url'] for c in integration['canaries']] == ['https://jobs.example.test/jobs/99']
+    assert [c['url'] for c in integration['canary_history']] == [URL]
 
 
 @pytest.mark.parametrize('legacy_checks', [False, True], ids=['current', 'legacy'])

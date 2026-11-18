@@ -24,6 +24,7 @@ from source_config import (
 from source_evidence import (
     EvidenceError, EVIDENCE_MAX_BYTES, canary_id, check_posting_availability, matches_posting,
     latest_canary_check, stored_canaries, register_canaries, normalize_canaries, normalize_references, merge_references,
+    blocking_canary_closure, confirmed_canary_closures, posting_url,
 )
 from setup_contracts import normalize_track_slug, read_json_limited
 from probe_career_source import probe
@@ -91,9 +92,7 @@ def pick_canary(candidates: list[dict[str, Any]], source_url: str) -> dict[str, 
 def append_canary_history(integration: dict[str, Any], old_canary: Any, today: str, reason: str) -> None:
     if not isinstance(old_canary, dict):
         return
-    title = str(old_canary.get("title") or "").strip()
-    url = str(old_canary.get("url") or "").strip()
-    if not title and not url:
+    if not any(str(old_canary.get(key) or "").strip() for key in ("title", "url", "posting_id")):
         return
     history = integration.get("canary_history")
     if not isinstance(history, list):
@@ -184,8 +183,16 @@ def _apply_observations(integration: dict, original: list[dict], observations: d
     return retained
 
 
-def review_canary(*, root: Path, track: str, source_query: str, evidence_id: str, observation: dict, today: str) -> dict:
+def review_canary(*, root: Path, track: str, source_query: str, evidence_id: str, observation: dict, today: str,
+                  posting: str | None = None) -> dict:
     directory, config, source = _context(root, track, source_query)
+    if posting is None:
+        target = {'url': posting_url(observation.get('evidence_url', ''), 'evidence_url')}
+    elif posting.lower().startswith(('https://', 'http://')):
+        target = {'url': posting_url(posting, 'posting URL')}
+    else:
+        target = {'posting_id': posting, 'title': posting}
+
     def mutate(state):
         entry = state.setdefault(source['id'], {'last_checked': None})
         integration = entry.setdefault('integration', {})
@@ -193,6 +200,13 @@ def review_canary(*, root: Path, track: str, source_query: str, evidence_id: str
         canary = next((c for c in current if c['id'] == evidence_id), None)
         if canary is None:
             raise EvidenceError('unknown canary id')
+        if not matches_posting(target, canary):
+            raise EvidenceError(f"Review for canary {evidence_id} requires the active posting's identity.")
+        if 'url' in target and any(
+            c.get('id') == evidence_id and matches_posting(target, c) and not matches_posting(canary, c)
+            for c in confirmed_canary_closures(integration)
+        ):
+            raise EvidenceError(f"Canary {evidence_id} has a reused URL. Pass its posting ID with --posting.")
         latest = latest_canary_check(canary, integration.get('canary_checks'))
         reviewed = normalize_canaries([{**canary, **latest, **observation, 'checked_on': today, 'expires_on': ''}])[0]
         integration['canaries'] = _apply_observations(integration, current, {evidence_id: reviewed})
@@ -241,14 +255,19 @@ def refresh_canary(*, root: Path, track: str, source_query: str, today: str,
     may_acquire = not original or all(observations.get(c['id'], {}).get('availability') == 'expired' for c in original)
     selected = None
     if may_acquire:
+        closures = confirmed_canary_closures(integration)
+        closures.extend(dict(c, **observations[c['id']]) for c in original)
         report = probe(source['url'], source_name=source_name, terms=config['track_terms'])
         for suggestion in report['candidate_canaries'][:3]:
             observation = check_posting_availability(suggestion, today=today)
             if observation['availability'] == 'live':
-                selected = dict(suggestion, **observation, provenance='independent_probe')
-                break
+                candidate = dict(suggestion, **observation, provenance='independent_probe')
+                if not blocking_canary_closure(candidate, closures):
+                    selected = candidate
+                    break
         if selected is None:
-            suggestion = pick_canary(candidates, source['url'])
+            eligible = [c for c in candidates if not blocking_canary_closure(c, closures)]
+            suggestion = pick_canary(eligible, source['url'])
             if suggestion:
                 selected = dict(suggestion, provenance='discovery_output', availability='unknown', checked_on='',
                                 expires_on='', evidence_url=source['url'], evidence_note='Regression suggestion selected from discovery; independent availability and scope review required.')
@@ -284,6 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
     operation = parser.add_mutually_exclusive_group()
     operation.add_argument('--register', help='Bounded JSON object with canaries and/or reference_jobs')
     operation.add_argument('--review-canary', help='Existing canary ID to review, or retire after confirmed expiration')
+    parser.add_argument('--posting', help='Posting URL, ID or fallback title for manual review (defaults to the evidence URL)')
     parser.add_argument('--availability', choices=['live', 'expired', 'unknown'])
     parser.add_argument('--scope', choices=['in_scope', 'out_of_scope', 'unknown'])
     parser.add_argument('--evidence-url')
@@ -307,7 +327,7 @@ def main() -> int:
             if args.scope:
                 observation['scope'] = args.scope
             payload = review_canary(root=ROOT, track=args.track, source_query=args.source, evidence_id=args.review_canary,
-                                    observation=observation, today=args.today)
+                                    observation=observation, today=args.today, posting=args.posting)
             ok = True
         else:
             ok, payload = refresh_canary(root=ROOT, track=args.track, source_query=args.source, today=args.today,
