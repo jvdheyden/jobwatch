@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import source_quality
 
 
@@ -142,6 +144,160 @@ def test_validate_source_coverage_fails_when_raw_pages_show_dropped_detail():
     check_by_name = {check["name"]: check for check in result["checks"]}
     assert check_by_name["detail_depth"]["status"] == "fail"
     assert result["confidence"] == "failed"
+
+
+def _feed_source(description: str) -> dict:
+    # Mirrors a feed provider (e.g. kula_rss) that stores the posting body in
+    # `description` and keeps provenance-only notes.
+    return {
+        "source": "Nothing",
+        "source_url": "https://careers.kula.ai/nothing",
+        "discovery_mode": "kula_rss",
+        "enumerated_jobs": 19,
+        "candidates": [
+            {
+                "employer": "Nothing",
+                "title": "Product Manager, Subscription Products",
+                "url": "https://careers.kula.ai/nothing/59045",
+                "source_url": "https://careers.kula.ai/nothing",
+                "location": "London, England, United Kingdom",
+                "notes": "Enumerated through Kula job feed; Department: Labs",
+                "description": description,
+            }
+        ],
+    }
+
+
+DETAIL_PAGE = "<h3>What you'll do</h3><p>Own subscription pricing.</p><h3>Requirements</h3><p>5+ years in product.</p>"
+
+
+def test_validate_source_coverage_counts_a_description_with_detail_sections():
+    result = source_quality.validate_source_coverage(
+        _feed_source("About Nothing. What you'll do: own subscription pricing. Requirements: 5+ years in product."),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "pass"
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Careers Product Design Diversity, Equity & Inclusion Compensation calculator Contact",
+        "About us. We offer a competitive salary and equity, plus flexible hours.",
+    ],
+    ids=["dei-navigation", "benefits-boilerplate"],
+)
+def test_validate_source_coverage_does_not_count_compensation_only_descriptions(description):
+    result = source_quality.validate_source_coverage(
+        _feed_source(description),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "fail"
+
+
+@pytest.mark.parametrize("apostrophe", ["'", "\u2019", "\u2018", "\u02bc"])
+def test_detail_markers_match_typographic_apostrophes(apostrophe):
+    text = f"What you{apostrophe}ll do: own subscription pricing. What you{apostrophe}ll need: 5+ years in product."
+
+    assert source_quality._raw_detail_categories(text) == {"tasks", "qualifications"}
+
+
+def test_validate_source_coverage_counts_a_description_with_curly_apostrophe_sections():
+    result = source_quality.validate_source_coverage(
+        _feed_source("About Nothing. What you\u2019ll do: own subscription pricing."),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "pass"
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Requirements: five years in product.",
+        "About Nothing. Responsibilities: own subscription pricing.",
+        "Qualifications: experience with product launches.",
+        "About Nothing. What you’ll do: own subscription pricing.",
+        "About Nothing. What you'll need: five years in product.",
+        "About Nothing. Minimum qualifications include product experience.",
+        "Ihre Aufgaben: Produktentwicklung begleiten.",
+        "Anforderungen: Erfahrung in der Produktentwicklung.",
+    ],
+)
+def test_validate_source_coverage_accepts_description_role_context(description):
+    result = source_quality.validate_source_coverage(
+        _feed_source(description),
+        raw_text_fetcher=lambda *_: pytest.fail("Stored detail should not need a refetch"),
+    )
+
+    assert result["confidence"] == "high"
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Security Policy. We comply with applicable security requirements to protect customer data.",
+        "Security requirements: protect customer data.",
+        "We take responsibility for protecting customer data.",
+        "Our security responsibilities include protecting customer data.",
+        "Professional qualifications of our security auditors are verified annually.",
+        "About Nothing Requirements five years in product.",
+    ],
+)
+def test_validate_source_coverage_reviews_ambiguous_description_keywords(description):
+    source = _feed_source(description)
+    result = source_quality.validate_source_coverage(
+        source,
+        raw_text_fetcher=lambda *_: pytest.fail("Ambiguous stored detail should not need a refetch"),
+    )
+
+    assert result["confidence"] == "low"
+    assert not any(check["status"] == "fail" for check in result["checks"])
+    # The reviewer should decide whether this is a job, not receive a false
+    # missing-detail ticket when the body is already stored.
+    assert source_quality.build_integration_ticket(
+        "test", source, result, {"status": "completed", "defects": []}, canary_title="", canary_url=""
+    ) is None
+
+
+@pytest.mark.parametrize("discovery_mode", ["html", "browser"])
+@pytest.mark.parametrize("include_real_job", [False, True])
+def test_ambiguous_description_requires_review_even_with_other_job_detail(discovery_mode, include_real_job):
+    source = _feed_source("We comply with security requirements to protect customer data.")
+    source["discovery_mode"] = discovery_mode
+    source["status"] = "complete"
+    if include_real_job:
+        real_job = _feed_source("What you’ll do: build secure software.")["candidates"][0]
+        real_job.update(title="Security Engineer", url="https://careers.kula.ai/nothing/123")
+        source["candidates"].append(real_job)
+
+    result = source_quality.validate_source_coverage(source)
+
+    assert result["confidence"] == "low"
+    assert not any(check["status"] == "fail" for check in result["checks"])
+
+
+@pytest.mark.parametrize("detail_field", ["tasks", "notes"])
+def test_description_ambiguity_preserves_other_candidate_detail(detail_field):
+    source = _feed_source("We comply with security requirements to protect customer data.")
+    source["candidates"][0][detail_field] = "Responsibilities: build secure software."
+
+    assert source_quality.validate_source_coverage(source)["confidence"] == "high"
+
+
+def test_validate_source_coverage_still_fails_a_description_without_detail_sections():
+    result = source_quality.validate_source_coverage(
+        _feed_source("About Nothing. We build technology that feels exciting again."),
+        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+    )
+
+    check_by_name = {check["name"]: check for check in result["checks"]}
+    assert check_by_name["detail_depth"]["status"] == "fail"
 
 
 def test_build_integration_ticket_prefers_blocking_deterministic_failure():
@@ -673,3 +829,245 @@ def test_review_source_with_llm_ignores_empty_canary_and_normalizes_message_fiel
             "repro_step": "raw_samples",
         }
     ]
+
+
+def _navigation_only_html_source() -> dict:
+    # Mirrors a JavaScript-rendered Pinpoint board scanned in generic html mode:
+    # every page link is counted as enumerated, but none is a posting.
+    return {
+        "source": "inMusic",
+        "source_url": "https://inmusicbrands.pinpointhq.com/",
+        "discovery_mode": "html",
+        "status": "complete",
+        "search_terms_tried": ["product manager"],
+        "enumerated_jobs": 13,
+        "matched_jobs": 0,
+        "candidates": [],
+    }
+
+
+def test_validate_source_coverage_does_not_trust_html_link_count_without_candidates():
+    result = source_quality.validate_source_coverage(_navigation_only_html_source())
+
+    check = next(check for check in result["checks"] if check["name"] == "artifact_nonempty")
+    assert check["status"] == "warn"
+    assert result["confidence"] == "low"
+
+
+def test_validate_source_coverage_keeps_trusting_api_enumeration_without_candidates():
+    source = _navigation_only_html_source() | {"discovery_mode": "pinpoint_api"}
+
+    result = source_quality.validate_source_coverage(source)
+
+    check = next(check for check in result["checks"] if check["name"] == "artifact_nonempty")
+    assert check["status"] == "pass"
+
+
+def _listing_context(source: dict, html: str, *, canary_url: str = "") -> tuple[dict, list[str]]:
+    fetched: list[str] = []
+
+    def fetch(url: str, _timeout: int) -> str:
+        fetched.append(url)
+        return html if url == source["source_url"] else "<p>Canary posting page</p>"
+
+    context = source_quality._build_reviewer_context(
+        Path("artifacts/discovery/music_audio_pm/2026-10-10.json"),
+        source,
+        canary_title="",
+        canary_url=canary_url,
+        timeout_seconds=5,
+        raw_text_fetcher=fetch,
+    )
+    return context, fetched
+
+
+def test_build_reviewer_context_samples_listing_page_without_scripts_when_no_candidates():
+    html = (
+        "<html><head><script>window.app = {big: 'bundle'}</script></head><body>"
+        '<a href="#main">Skip</a><a href="/register-your-interest/new">Join <b>us</b></a>'
+        '<a href="/register-your-interest/new">Again</a></body></html>'
+    )
+
+    context, fetched = _listing_context(_navigation_only_html_source(), html)
+
+    assert fetched == ["https://inmusicbrands.pinpointhq.com/"]
+    assert context["source"]["enumerated_jobs"] == 13
+    assert context["raw_samples"] == [
+        {
+            "kind": "listing_page",
+            "url": "https://inmusicbrands.pinpointhq.com/",
+            "raw_text": "Skip Join us Again",
+            "text_truncated": False,
+            "links": ["Join us -> /register-your-interest/new"],
+            "links_total": 1,
+            "links_truncated": False,
+        }
+    ]
+
+
+def test_listing_sample_keeps_links_that_discovery_parses():
+    html = (
+        '<a href = "/jobs/accountant">Accountant</a>'
+        "<a href=/jobs/designer>Designer</a>"
+        "<a href='/jobs/editor?a=1&amp;b=2'>Editor</a>"
+    )
+
+    context, _ = _listing_context(_navigation_only_html_source(), html)
+
+    assert context["raw_samples"][0]["links"] == [
+        "Accountant -> /jobs/accountant",
+        "Designer -> /jobs/designer",
+        "Editor -> /jobs/editor?a=1&b=2",
+    ]
+
+
+def test_listing_sample_reaches_a_posting_after_many_navigation_links():
+    # The maintainer's repro: cookie text, 120 navigation links, then one posting.
+    navigation = "".join(f'<a href="/nav/{index}">Nav {index}</a>' for index in range(120))
+    html = f"<p>{'We use cookies. ' * 600}</p>{navigation}<a href=\"/jobs/accountant\">Accountant</a>"
+
+    context, _ = _listing_context(_navigation_only_html_source() | {"enumerated_jobs": 121}, html)
+
+    [sample] = context["raw_samples"]
+    assert sample["text_truncated"] is True
+    assert sample["links_total"] == 121
+    assert sample["links_truncated"] is False
+    assert sample["links"][-1] == "Accountant -> /jobs/accountant"
+
+
+def test_listing_sample_reports_when_links_are_cut():
+    html = "".join(f'<a href="/nav/{index}">Nav {index}</a>' for index in range(source_quality.LISTING_SAMPLE_MAX_LINKS + 5))
+
+    context, _ = _listing_context(_navigation_only_html_source(), html)
+
+    [sample] = context["raw_samples"]
+    assert len(sample["links"]) == source_quality.LISTING_SAMPLE_MAX_LINKS
+    assert sample["links_total"] == source_quality.LISTING_SAMPLE_MAX_LINKS + 5
+    assert sample["links_truncated"] is True
+
+
+def test_build_reviewer_context_does_not_sample_listing_page_for_api_sources():
+    source = _navigation_only_html_source() | {"discovery_mode": "pinpoint_api"}
+
+    context, fetched = _listing_context(source, "<a href='/x'>x</a>")
+
+    assert fetched == []
+    assert context["raw_samples"] == []
+
+
+def test_build_reviewer_context_samples_listing_page_alongside_canary():
+    context, _ = _listing_context(
+        _navigation_only_html_source(),
+        "<a href='/register'>Register</a>",
+        canary_url="https://inmusicbrands.pinpointhq.com/postings/123",
+    )
+
+    assert [sample["kind"] for sample in context["raw_samples"]] == ["listing_page", "canary"]
+
+
+def test_build_integration_ticket_routes_reviewer_no_postings_to_provider_logic():
+    deterministic = source_quality.validate_source_coverage(_navigation_only_html_source())
+    reviewer = {
+        "status": "completed",
+        "defects": [
+            {
+                "type": "no_postings",
+                "severity": "blocking",
+                "observed": "Listing page shows only navigation and a register-your-interest link; jobs render client-side.",
+            }
+        ],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm",
+        _navigation_only_html_source(),
+        deterministic,
+        reviewer,
+        canary_title="",
+        canary_url="",
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "no_postings"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert "real postings" in ticket["target_outcome"]
+
+
+def test_build_integration_ticket_routes_no_postings_ahead_of_missing_canary():
+    source = _navigation_only_html_source()
+    canary_title = "Product Manager, Instruments"
+    canary_url = "https://inmusicbrands.pinpointhq.com/postings/123"
+    deterministic = source_quality.validate_source_coverage(source, canary_title=canary_title, canary_url=canary_url)
+    assert [check["name"] for check in deterministic["checks"] if check["status"] == "fail"] == ["canary_present"]
+    reviewer = {
+        "status": "completed",
+        "defects": [
+            {
+                "type": "no_postings",
+                "severity": "blocking",
+                "observed": "Listing page shows only navigation; jobs render client-side.",
+            }
+        ],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, reviewer, canary_title=canary_title, canary_url=canary_url
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "no_postings"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert ticket["summary"] == "Listing page shows only navigation; jobs render client-side."
+    assert ticket["failing_checks"] == ["canary_present"]
+    assert "canary is present" in ticket["success_condition"]
+
+
+def test_build_integration_ticket_keeps_missing_canary_routing_without_no_postings():
+    source = _navigation_only_html_source()
+    canary_url = "https://inmusicbrands.pinpointhq.com/postings/123"
+    deterministic = source_quality.validate_source_coverage(source, canary_title="PM", canary_url=canary_url)
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, {"status": "completed", "defects": []}, canary_title="PM", canary_url=canary_url
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "missing_canary"
+    assert ticket["suggested_strategy"] == "config_terms_append"
+
+
+def test_build_integration_ticket_routes_no_postings_ahead_of_navigation_link_volume():
+    # The maintainer's repro: 121 navigation links counted as enumerated, no candidates.
+    source = _navigation_only_html_source() | {"enumerated_jobs": 121}
+    canary_url = "https://inmusicbrands.pinpointhq.com/postings/123"
+    deterministic = source_quality.validate_source_coverage(source, canary_title="PM", canary_url=canary_url)
+    assert {check["name"] for check in deterministic["checks"] if check["status"] == "fail"} == {
+        "canary_present",
+        "result_volume",
+    }
+    reviewer = {
+        "status": "completed",
+        "defects": [{"type": "no_postings", "severity": "blocking", "observed": "Only navigation links."}],
+    }
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, reviewer, canary_title="PM", canary_url=canary_url
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "no_postings"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert set(ticket["failing_checks"]) == {"canary_present", "result_volume"}
+
+
+def test_build_integration_ticket_keeps_volume_routing_without_no_postings():
+    source = _navigation_only_html_source() | {"enumerated_jobs": 121}
+    deterministic = source_quality.validate_source_coverage(source)
+
+    ticket = source_quality.build_integration_ticket(
+        "music_audio_pm", source, deterministic, {"status": "completed", "defects": []}, canary_title="", canary_url=""
+    )
+
+    assert ticket is not None
+    assert ticket["failure_mode"] == "candidate_noise"
+    assert ticket["suggested_strategy"] == "config_native_filters"

@@ -1,0 +1,50 @@
+{
+  "data": [
+    {
+      "id": "a1",
+      "title": "Security Engineer",
+      "url": "https://example.pinpointhq.com/en/postings/a1",
+      "description": "<p>Build secure audio software.</p>",
+      "key_responsibilities": "<ul><li>Ship features.</li></ul>",
+      "skills_knowledge_expertise": "",
+      "benefits": "",
+      "employment_type_text": "Full Time",
+      "workplace_type_text": "Hybrid",
+      "job": {
+        "department": {
+          "name": "Engineering"
+        },
+        "division": {
+          "name": "Example Europe Ltd"
+        }
+      },
+      "location": {
+        "name": "Berlin, Germany",
+        "city": "Berlin"
+      }
+    },
+    {
+      "id": "a1",
+      "title": "Security Engineer",
+      "url": "https://example.pinpointhq.com/en/postings/a1",
+      "description": "<p>Build secure audio software.</p>",
+      "key_responsibilities": "<ul><li>Ship features.</li></ul>",
+      "skills_knowledge_expertise": "",
+      "benefits": "",
+      "employment_type_text": "Full Time",
+      "workplace_type_text": "Hybrid",
+      "job": {
+        "department": {
+          "name": "Engineering"
+        },
+        "division": {
+          "name": "Example Europe Ltd"
+        }
+      },
+      "location": {
+        "name": "Berlin, Germany",
+        "city": "Berlin"
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date
+from datetime import date, timedelta
 import json
 import os
 from pathlib import Path
@@ -114,7 +114,7 @@ def run_discovery(root: Path, track: str, source_name: str, today: str, output: 
     env = os.environ.copy()
     env["JOB_AGENT_ROOT"] = str(root)
     output.parent.mkdir(parents=True, exist_ok=True)
-    return subprocess.run(command, text=True, capture_output=True, cwd=root, env=env)
+    return subprocess.run(command, text=True, capture_output=True, cwd=root, env=env, timeout=120)
 
 
 def refresh_canary(
@@ -140,6 +140,11 @@ def refresh_canary(
             "stderr": discovery.stderr.strip(),
         }
 
+    artifact = json.loads(output.read_text())
+    coverage = next((item for item in artifact.get("sources", []) if item.get("source") == source_name), {})
+    if coverage.get("status") != "complete":
+        return False, {"status": "incomplete_discovery", "source": source_name,
+                       "output": str(output), "limitations": coverage.get("limitations", [])}
     candidates = load_candidates(output, source_name)
     selected = pick_canary(candidates, source["url"])
     state_path = track_dir / "source_state.json"
@@ -150,6 +155,8 @@ def refresh_canary(
             "title": selected["title"],
             "url": selected["url"],
             "selected_at": today,
+            "expires_on": (date.fromisoformat(today) + timedelta(days=14)).isoformat(),
+            "review_required": True,
         }
         if selected
         else None
@@ -212,7 +219,7 @@ def main() -> int:
             today=args.today,
             discovery_output=Path(args.output) if args.output else None,
         )
-    except (SourceConfigError, OSError, json.JSONDecodeError) as exc:
+    except (SourceConfigError, OSError, json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
         print(f"update_source_canary.py: {exc}", file=sys.stderr)
         return 2
     print(json.dumps(payload, indent=2 if args.pretty else None, ensure_ascii=True))

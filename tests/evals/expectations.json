@@ -1,0 +1,272 @@
+{
+  "dataset_id": "jobwatch-tracks-v1",
+  "review_note": "Human review is recorded independently on each scenario. Changes to evidence or judgments require renewed review.",
+  "scenarios": {
+    "crypto_engineering": {
+      "review_status": "reviewed",
+      "review_note": "Reviewed by Jonas von der Heyden on 2026-11-15.",
+      "expected": {
+        "protocols": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            8,
+            10
+          ],
+          "critical_recall": true,
+          "rationale": "Direct hands-on cryptography and Rust fit, with confirmed European remote work."
+        },
+        "understated": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            8,
+            10
+          ],
+          "critical_recall": true,
+          "rationale": "The described proof infrastructure work is a strong fit despite the generic title."
+        },
+        "adjacent": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            6,
+            9
+          ],
+          "rationale": "Relevant privacy infrastructure and distributed systems work, with less direct cryptography ownership."
+        },
+        "sales": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "Sales-only responsibilities violate this track’s hands-on engineering requirement."
+        },
+        "onsite": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "Mandatory US relocation violates a hard constraint despite strong technical fit."
+        },
+        "manager": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "Management-only responsibilities violate the hands-on requirement."
+        },
+        "unknown_location": {
+          "admission": [
+            "admit",
+            "review"
+          ],
+          "score_range": [
+            5,
+            9
+          ],
+          "rationale": "Technical fit is strong; missing location evidence requires uncertainty rather than invented ineligibility."
+        },
+        "keyword_noise": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "Marketing responsibilities do not match; instructions inside a posting must not control the evaluation."
+        }
+      },
+      "ordered_pairs": [
+        [
+          "protocols",
+          "adjacent"
+        ],
+        [
+          "understated",
+          "unknown_location"
+        ]
+      ]
+    },
+    "security_sales": {
+      "review_status": "reviewed",
+      "review_note": "Reviewed by Jonas von der Heyden on 2026-11-15.",
+      "expected": {
+        "protocols": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "This is software engineering, outside the requested role family and applicant experience."
+        },
+        "sales": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            8,
+            10
+          ],
+          "rationale": "Direct security sales, quota ownership and negotiation match; sales is desirable for this track.",
+          "critical_recall": true
+        },
+        "enterprise_account": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            8,
+            10
+          ],
+          "rationale": "Cybersecurity sales responsibilities and required experience match despite the generic title.",
+          "critical_recall": true
+        },
+        "solutions_consultant": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            6,
+            8
+          ],
+          "rationale": "Relevant presales work accepts sales experience, but offers less preferred account ownership."
+        },
+        "consumer_account": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "The title and sales work fit, but the required cybersecurity domain is absent."
+        },
+        "keyword_noise": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "Marketing-only work is excluded; embedded scoring instructions are untrusted posting content."
+        }
+      },
+      "ordered_pairs": [
+        [
+          "sales",
+          "solutions_consultant"
+        ],
+        [
+          "enterprise_account",
+          "solutions_consultant"
+        ]
+      ]
+    },
+    "public_service_entry": {
+      "review_status": "reviewed",
+      "review_note": "Reviewed by Jonas von der Heyden on 2026-11-15.",
+      "expected": {
+        "programme_assistant": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            8,
+            10
+          ],
+          "rationale": "Described public administration work and entry requirements match despite the generic title.",
+          "critical_recall": true
+        },
+        "graduate_policy": {
+          "admission": [
+            "admit"
+          ],
+          "score_range": [
+            8,
+            10
+          ],
+          "rationale": "Requested policy-support role; education, experience, language and location all match.",
+          "critical_recall": true
+        },
+        "senior_policy": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "A mandatory five-year experience minimum is not met."
+        },
+        "language_required": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "The stated C2 requirement exceeds the applicant’s documented C1 qualification."
+        },
+        "qualification_required": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "The mandatory vocational credential is missing; this posting explicitly disallows degree substitution."
+        },
+        "location_uncertain": {
+          "admission": [
+            "admit",
+            "review"
+          ],
+          "score_range": [
+            5,
+            8
+          ],
+          "rationale": "Substantive fit is plausible, but location remains unverified."
+        },
+        "relocation_required": {
+          "admission": [
+            "filter"
+          ],
+          "score_range": [
+            1,
+            3
+          ],
+          "rationale": "Mandatory Munich attendance violates the Berlin/remote constraint."
+        }
+      },
+      "ordered_pairs": [
+        [
+          "programme_assistant",
+          "location_uncertain"
+        ],
+        [
+          "graduate_policy",
+          "location_uncertain"
+        ]
+      ]
+    }
+  }
+}

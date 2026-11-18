@@ -48,6 +48,7 @@ def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds
         offset = 0
         term_pages = 0
         term_seen = 0
+        term_ids: set[str] = set()
         term_total: int | None = None
         while term_pages < max_pages_per_term:
             html = http.fetch_text(build_enbw_search_url(source.url, term, offset), timeout_seconds)
@@ -56,12 +57,15 @@ def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds
                 limitations.append(f"EnBW search payload for '{term}' was not found in the page HTML.")
                 break
             payload = ddo.get("eagerLoadRefineSearch") or {}
-            jobs = payload.get("data", {}).get("jobs") or []
+            if not isinstance(payload.get("data"), dict) or not isinstance(payload["data"].get("jobs"), list):
+                limitations.append(f"EnBW search payload for '{term}' is missing the jobs list")
+                break
+            jobs = payload["data"]["jobs"]
             hits = int(payload.get("hits") or len(jobs))
             term_total = int(payload.get("totalHits") or len(jobs))
             term_pages += 1
             listing_pages_scanned += 1
-            term_seen += len(jobs)
+            previous_seen = term_seen
 
             for job in jobs:
                 if not isinstance(job, dict):
@@ -70,6 +74,7 @@ def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds
                 if not job_id:
                     continue
                 raw_seen_ids.add(job_id)
+                term_ids.add(job_id)
                 title = helpers.normalize_whitespace(helpers.join_text(job.get("title"))) or "unknown"
                 employer = helpers.normalize_whitespace(helpers.join_text(job.get("company"))) or source.source
                 location = helpers.normalize_whitespace(
@@ -102,7 +107,8 @@ def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds
                     ),
                 )
 
-            if not jobs or term_total is None or term_seen >= term_total:
+            term_seen = len(term_ids)
+            if not jobs or term_seen == previous_seen or term_total is None or term_seen >= term_total:
                 break
             offset += hits or ENBW_RESULTS_PAGE_SIZE
 

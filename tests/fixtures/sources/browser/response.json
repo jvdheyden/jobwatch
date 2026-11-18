@@ -1,0 +1,9 @@
+[
+  {
+    "script": [
+      {
+        "text": "AF_initDataCallback({key: 'ds:1', data:[[[\"1\", \"Security Engineer\", \"https://careers.google.com/jobs/results/1\", [\"Responsibilities\", \"<p>Build security tools.</p>\"], [\"Qualifications\", \"<p>Applied cryptography.</p>\"], null, null, \"Google\", null, [[\"Remote\"]]], [\"2\", \"Security Sales Manager\", \"https://careers.google.com/jobs/results/2\", [\"Responsibilities\", \"<p>Build security tools.</p>\"], [\"Qualifications\", \"<p>Applied cryptography.</p>\"], null, null, \"Google\", null, [[\"Remote\"]]]]], sideChannel: {}});"
+      }
+    ]
+  }
+]

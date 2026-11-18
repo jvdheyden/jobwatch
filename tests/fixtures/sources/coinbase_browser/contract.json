@@ -1,0 +1,31 @@
+{
+  "source": {
+    "source": "Coinbase",
+    "url": "https://www.coinbase.com/careers"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [],
+  "empty_status": "partial",
+  "transport": "browser",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [
+        "contract/test_source_contract.py"
+      ],
+      "note": "Raw DOM boundary fixture exercises navigation and extraction; installed browser failure is shared."
+    }
+  },
+  "empty_reason": "No authoritative result count or explicit empty marker; an empty DOM must remain uncertain."
+}

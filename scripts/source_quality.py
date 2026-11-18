@@ -18,14 +18,18 @@ from urllib.request import Request, urlopen
 
 from agent_provider import build_reviewer_command as build_provider_reviewer_command
 from agent_provider import resolve_agent_provider
+from discover.helpers import LinkCollector
 
 
 USER_AGENT = "job-agent-source-quality/0.1"
 DEFAULT_TIMEOUT_SECONDS = 20
 DEFAULT_REVIEW_TIMEOUT_SECONDS = 120
 REVIEWER_MAX_CANDIDATES = 10
+LISTING_SAMPLE_CHAR_BUDGET = 8000
+LISTING_SAMPLE_MAX_LINKS = 200
 REVIEWER_REASONING_EFFORT = "low"
 HTML_TAG_RE = re.compile(r"<[^>]+>")
+SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1\s*>", flags=re.IGNORECASE | re.DOTALL)
 NON_JOB_TITLE_MARKERS = (
     "open positions",
     "open jobs",
@@ -123,6 +127,16 @@ RAW_DETAIL_MARKERS = {
         "besoldung",
     ),
 }
+DESCRIPTION_DETAIL_CATEGORIES = {"tasks", "qualifications"}
+# Generic words such as "requirements" also occur in policy pages. Require
+# a role-specific phrase or a standalone heading before trusting description
+# keywords enough to skip review. Enrichment flattens HTML, so ambiguous text
+# still counts as stored detail; the reviewer decides whether it is a posting.
+DESCRIPTION_ROLE_CONTEXT_RE = re.compile(
+    r"\b(?:what you'll (?:do|need)|what you (?:will do|need)|your (?:tasks|profile)|"
+    r"ihre aufgaben|ihr profil|job description|(?:required|minimum|preferred) qualifications)\b"
+    r"|(?:^|[.!?;]\s+)(?:responsibilit(?:y|ies)|requirements|qualifications|aufgaben|anforderungen)\s*:\s*\S"
+)
 
 
 @dataclass(frozen=True)
@@ -155,8 +169,13 @@ def truncate_text(value: str, limit: int = 400) -> str:
     return text[:boundary].rstrip() + "..."
 
 
+# Typographic apostrophes would be dropped by the ASCII step below, turning
+# "What you’ll do" into "what youll do", which no marker matches.
+APOSTROPHE_TRANSLATION = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'"})
+
+
 def normalize_for_matching(value: str) -> str:
-    normalized = unicodedata.normalize("NFKD", value or "")
+    normalized = unicodedata.normalize("NFKD", (value or "").translate(APOSTROPHE_TRANSLATION))
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
     return ascii_text.lower()
 
@@ -268,7 +287,26 @@ def _has_substantive_notes(candidate: dict[str, Any]) -> bool:
 def _candidate_has_detail(candidate: dict[str, Any]) -> bool:
     if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
         return True
+    # Providers and description enrichment store the posting body in
+    # `description`; it counts when it carries role sections. Compensation
+    # markers alone do not count: enrichment also stores navigation and benefits
+    # text, where "salary" or "Diversity, Equity & Inclusion" are common. The
+    # listing-kind check keeps ambiguous description keywords eligible for review.
+    if _raw_detail_categories(str(candidate.get("description") or "")) & DESCRIPTION_DETAIL_CATEGORIES:
+        return True
     return _has_substantive_notes(candidate)
+
+
+def _description_needs_review(candidate: dict[str, Any]) -> bool:
+    if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
+        return False
+    if _has_substantive_notes(candidate):
+        return False
+    description = str(candidate.get("description") or "")
+    if not (_raw_detail_categories(description) & DESCRIPTION_DETAIL_CATEGORIES):
+        return False
+    normalized = normalize_for_matching(strip_html_fragment(description))
+    return DESCRIPTION_ROLE_CONTEXT_RE.search(normalized) is None
 
 
 def _candidate_has_direct_job_url(source_url: str, candidate: dict[str, Any]) -> bool:
@@ -332,6 +370,9 @@ def validate_source_coverage(
     canary_title: str = "",
     canary_url: str = "",
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    minimum_candidates: int | None = None,
+    minimum_enumerated: int | None = None,
+    minimum_detail_fraction: float | None = None,
     raw_text_fetcher: Callable[[str, int], str] = fetch_text,
 ) -> dict[str, Any]:
     candidates = source.get("candidates", [])
@@ -339,7 +380,41 @@ def validate_source_coverage(
     results: list[ValidatorResult] = []
     warnings: list[str] = []
 
-    if source.get("enumerated_jobs", 0) or candidates:
+    if minimum_detail_fraction is not None:
+        if not 0 <= minimum_detail_fraction <= 1:
+            raise ValueError("Reviewed minimum detail fraction must be between 0 and 1")
+        detailed = sum(_candidate_has_detail(candidate) for candidate in candidates)
+        fraction = detailed / len(candidates) if candidates else 0
+        results.append(ValidatorResult("detail_coverage", "pass" if fraction >= minimum_detail_fraction else "fail", "blocking",
+            f"{detailed}/{len(candidates)} candidates have substantive role detail; reviewed minimum fraction is {minimum_detail_fraction}."))
+
+    if source.get("status") in {"partial", "failed"}:
+        results.append(ValidatorResult("execution_complete", "fail", "blocking",
+            f"Source execution was {source['status']}: {source.get('limitations', [])}"))
+    for name, minimum, observed in (
+        ("candidate_recall", minimum_candidates, len(candidates)),
+        ("enumeration_recall", minimum_enumerated, source.get("enumerated_jobs", 0)),
+    ):
+        if minimum is not None:
+            if minimum < 0:
+                raise ValueError("Reviewed minimum counts must be nonnegative")
+            results.append(ValidatorResult(name, "pass" if observed >= minimum else "fail", "blocking",
+                f"Observed {observed}; independently reviewed minimum is {minimum}. Check source changes, pagination, and retrieval constraints."))
+
+    if not candidates and source.get("discovery_mode") == "html" and source.get("enumerated_jobs", 0):
+        # Generic html counts every link on the page, so a nonzero count with no
+        # matches cannot tell a postings page from a navigation-only one (for
+        # example a JavaScript-rendered board). Leave that call to the reviewer.
+        warnings.append("Generic html enumeration matched no links; the listing page may show no postings.")
+        results.append(
+            ValidatorResult(
+                "artifact_nonempty",
+                "warn",
+                "major",
+                "Generic html enumeration counts every page link and none matched; the listing page may show no postings.",
+            )
+        )
+    elif source.get("enumerated_jobs", 0) or candidates:
         results.append(ValidatorResult("artifact_nonempty", "pass", "info", "Source enumerated at least one posting or candidate."))
     else:
         results.append(ValidatorResult("artifact_nonempty", "fail", "blocking", "Source artifact enumerated no postings and produced no candidates."))
@@ -449,6 +524,9 @@ def validate_source_coverage(
         reasons = _suspicious_candidate(candidate)
         if reasons:
             suspicious.append(f"{candidate.get('title', 'unknown')}: {', '.join(reasons)}")
+    ambiguous_descriptions = [
+        candidate.get("url", "") for candidate in candidates if _description_needs_review(candidate)
+    ]
     if suspicious and len(suspicious) == len(candidates):
         results.append(
             ValidatorResult(
@@ -466,6 +544,17 @@ def validate_source_coverage(
                 "warn",
                 "major",
                 "Some candidates look suspicious: " + "; ".join(suspicious[:4]),
+            )
+        )
+    elif ambiguous_descriptions:
+        warnings.append("Some descriptions have detail keywords without clear job context and need review.")
+        results.append(
+            ValidatorResult(
+                "listing_kind",
+                "warn",
+                "major",
+                "Description keywords alone do not establish that these candidates are job postings: "
+                + ", ".join(ambiguous_descriptions[:4]),
             )
         )
     else:
@@ -673,23 +762,32 @@ def _build_reviewer_context(
         canary_title=canary_title,
         canary_url=canary_url,
     )
-    samples: list[dict[str, str]] = []
-    sample_urls: list[str] = []
+    samples: list[dict[str, Any]] = []
+    sample_urls: list[tuple[str, str]] = []
+    # Generic html counts every page link as enumerated, so with no candidates
+    # the listing page itself is the evidence of whether postings exist.
+    # Provider modes enumerate real postings and are not judged by their page.
+    if not candidates and source.get("discovery_mode") == "html" and source.get("source_url"):
+        sample_urls.append((source["source_url"], "listing_page"))
     if canary_url:
-        sample_urls.append(canary_url)
-    sample_urls.extend(candidate.get("url", "") for candidate in reviewer_candidates[:3])
+        sample_urls.append((canary_url, "canary"))
+    sample_urls.extend((candidate.get("url", ""), "candidate") for candidate in reviewer_candidates[:3])
 
     seen_urls: set[str] = set()
-    for url in sample_urls:
+    for url, kind in sample_urls:
         normalized = normalize_url_without_fragment(url)
         if not normalized or normalized in seen_urls:
             continue
         seen_urls.add(normalized)
         try:
-            raw_text = truncate_text(strip_html_fragment(raw_text_fetcher(normalized, timeout_seconds)), 2000)
+            raw_html = raw_text_fetcher(normalized, timeout_seconds)
         except Exception as exc:
-            raw_text = f"FETCH_FAILED: {exc}"
-        samples.append({"url": normalized, "raw_text": raw_text})
+            samples.append({"kind": kind, "url": normalized, "raw_text": f"FETCH_FAILED: {exc}"})
+            continue
+        if kind == "listing_page":
+            samples.append({"kind": kind, "url": normalized, **_listing_sample(raw_html)})
+        else:
+            samples.append({"kind": kind, "url": normalized, "raw_text": truncate_text(strip_html_fragment(raw_html), 2000)})
 
     return {
         "artifact_path": str(artifact_path),
@@ -700,6 +798,7 @@ def _build_reviewer_context(
             "status": source.get("status"),
             "search_terms_tried": source.get("search_terms_tried", []),
             "configured_filters": source.get("filters", {}),
+            "enumerated_jobs": source.get("enumerated_jobs", 0),
             "candidate_count_total": len(candidates),
             "candidate_count_shared": len(reviewer_candidates),
             "candidate_context_truncated": len(reviewer_candidates) < len(candidates),
@@ -710,6 +809,36 @@ def _build_reviewer_context(
         "canary": {"title": canary_title, "url": canary_url},
         "raw_samples": samples,
     }
+
+
+def _listing_sample(raw_html: str) -> dict[str, Any]:
+    """Visible text and links of a listing page, with how much of each was kept."""
+    visible_text = strip_html_fragment(SCRIPT_STYLE_RE.sub(" ", raw_html))
+    links = _listing_links(raw_html)
+    return {
+        "raw_text": truncate_text(visible_text, LISTING_SAMPLE_CHAR_BUDGET),
+        "text_truncated": len(visible_text) > LISTING_SAMPLE_CHAR_BUDGET,
+        "links": links[:LISTING_SAMPLE_MAX_LINKS],
+        "links_total": len(links),
+        "links_truncated": len(links) > LISTING_SAMPLE_MAX_LINKS,
+    }
+
+
+def _listing_links(html: str) -> list[str]:
+    # Same parser as generic html discovery, so the reviewer sees the links it counted.
+    collector = LinkCollector()
+    collector.feed(html)
+    collector.close()
+    links: list[str] = []
+    seen: set[str] = set()
+    for link in collector.links:
+        href = link["href"].strip()
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")) or href in seen:
+            continue
+        seen.add(href)
+        text = normalize_whitespace(link["text"])
+        links.append(f"{truncate_text(text, 80)} -> {href}" if text else href)
+    return links
 
 
 def build_reviewer_command(root: Path, reviewer_bin: Path, provider: str | None = None) -> list[str]:
@@ -737,11 +866,20 @@ def review_source_with_llm(
     context = _build_reviewer_context(artifact_path, source, canary_title, canary_url, timeout_seconds)
     canary_instruction = (
         "If canary.title and canary.url are both empty, treat the canary as not provided and do not emit canary_missing.\n"
+        "A raw_samples entry with kind listing_page is the source's listing page, sampled because generic html "
+        "enumeration counted its links (source.enumerated_jobs) but none matched. Judge it as follows. "
+        "If it shows job postings, even ones unrelated to the search terms, emit no defect for that. "
+        "If it says there are currently no open positions, emit no defect: an empty board is a valid state. "
+        "If text_truncated or links_truncated is true and the shown part has no postings, do not conclude that the page has none; "
+        "emit at most one minor other defect saying the sample was incomplete. "
+        "Only if the sample is complete and shows neither postings nor an empty-board statement (only navigation, marketing copy, "
+        "or a general application form, e.g. a JavaScript-rendered board), emit one blocking no_postings defect whose observed "
+        "text says what the page shows instead. Never emit no_postings without a listing_page sample.\n"
     )
     prompt = (
         "You are a non-interactive source-quality reviewer. Return JSON only per the contract below.\n"
         "Review this job-source extraction and return JSON only.\n"
-        "Allowed defect types: missing_field, wrong_content, navigation_noise, partial_description, canary_missing, bad_url, duplication, other.\n"
+        "Allowed defect types: missing_field, wrong_content, navigation_noise, no_postings, partial_description, canary_missing, bad_url, duplication, other.\n"
         "Allowed severities: blocking, major, minor.\n"
         "Return exactly: {\"defects\": [...]}.\n"
         "If no issues, return {\"defects\": []}.\n\n"
@@ -957,6 +1095,8 @@ def _failure_mode_from_defect(defect: dict[str, Any]) -> str:
         return "duplication"
     if defect_type == "partial_description":
         return "missing_detail"
+    if defect_type == "no_postings":
+        return "no_postings"
     if defect_type in {"navigation_noise", "wrong_content"}:
         return "candidate_noise"
     if defect_type == "missing_field":
@@ -982,7 +1122,18 @@ def _failure_mode_from_defect(defect: dict[str, Any]) -> str:
     return "unknown"
 
 
+# Checks a listing page without postings fails as a side effect: the canary is
+# not found, and every navigation link counts toward a broad enumeration.
+NO_POSTINGS_SYMPTOM_CHECKS = {"canary_present", "result_volume"}
+
+
 def _determine_failure_mode(failing_checks: list[dict[str, Any]], blocking_defects: list[dict[str, Any]]) -> str:
+    # Route a confirmed no_postings defect by its cause, not its symptoms. The
+    # canary stays part of the success condition.
+    if _no_postings_defect(blocking_defects) and all(
+        check.get("name") in NO_POSTINGS_SYMPTOM_CHECKS for check in failing_checks
+    ):
+        return "no_postings"
     if failing_checks:
         return _failure_mode_from_check(failing_checks[0])
     for defect in blocking_defects:
@@ -990,6 +1141,10 @@ def _determine_failure_mode(failing_checks: list[dict[str, Any]], blocking_defec
         if failure_mode != "unknown":
             return failure_mode
     return "unknown"
+
+
+def _no_postings_defect(blocking_defects: list[dict[str, Any]]) -> dict[str, Any] | None:
+    return next((defect for defect in blocking_defects if _failure_mode_from_defect(defect) == "no_postings"), None)
 
 
 def _collect_primary_evidence(failing_checks: list[dict[str, Any]], blocking_defects: list[dict[str, Any]]) -> list[str]:
@@ -1026,6 +1181,8 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
         return "Fresh discovery artifact proves the browser fallback is usable: complete status, direct job URLs, substantive detail, stable pagination behavior, and canary coverage." + canary_clause
     if failure_mode == "validator_failure":
         return "Fresh discovery artifact satisfies the failing deterministic validator for this source." + canary_clause
+    if failure_mode == "no_postings":
+        return "Fresh discovery artifact enumerates the source's real postings (for example through the board's API or embedded payload) instead of page navigation links." + canary_clause
     return "Fresh discovery artifact addresses the primary evidence in the integration ticket with the narrowest source-specific fix." + canary_clause
 
 
@@ -1171,6 +1328,9 @@ def _suggested_strategy(
     search_terms_tried = source.get("search_terms_tried") if isinstance(source.get("search_terms_tried"), list) else []
     if failure_mode in {"bad_url", "url_allowlist"} and _url_correction_suggestion(source):
         return "config_url_correction"
+    if failure_mode == "no_postings":
+        # Filters cannot narrow a page that lists no postings.
+        return "dedicated_provider_logic"
 
     if "result_volume" in failing_check_names:
         return "provider_filter_support" if configured_filters else "config_native_filters"
@@ -1247,7 +1407,11 @@ def build_integration_ticket(
     primary_evidence = _collect_primary_evidence(failing_checks, blocking_defects)
     summary = ""
     defect_types: list[str] = []
-    if failing_checks:
+    no_postings_defect = _no_postings_defect(blocking_defects)
+    if failure_mode == "no_postings" and no_postings_defect:
+        summary = no_postings_defect.get("observed") or "Listing page shows no postings."
+        defect_types.append(no_postings_defect.get("type", "no_postings"))
+    elif failing_checks:
         primary = failing_checks[0]
         summary = primary["details"]
         defect_types.append(primary["name"])

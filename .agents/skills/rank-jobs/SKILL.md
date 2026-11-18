@@ -63,9 +63,11 @@ before scoring. Do not score from the title and location alone when a
 description is present. The `notes` field is enumeration/diagnostic metadata,
 not the JD.
 
-If `description` is empty or missing for a candidate, say so in `concerns`
-rather than scoring high on title alone. Use `likely` or `appears` when you
-must infer from the title.
+If `description` is empty, missing, or unusable (for example, only scripts or
+page navigation), record the evidence gap in `concerns` rather than scoring
+from that text or the title alone. Missing evidence does not establish poor
+fit. If it prevents a recommendation, record that limitation when omitting the
+role. Use `likely` or `appears` when you must infer from the title.
 
 Do not overrate a role just because the employer is prestigious.
 

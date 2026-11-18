@@ -1,0 +1,41 @@
+{
+  "source": {
+    "source": "Thales",
+    "url": "https://careers.thalesgroup.com/global/en/search-results"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://careers.thalesgroup.com/global/en/job/1/role"
+    },
+    {
+      "title": "Security Sales Manager",
+      "url": "https://careers.thalesgroup.com/global/en/job/2/role"
+    }
+  ],
+  "empty_status": "complete",
+  "transport": "browser",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "contract/test_browser_capabilities.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [
+        "contract/test_browser_capabilities.py"
+      ],
+      "note": "Raw DOM boundary fixture exercises navigation and extraction; installed browser failure is shared."
+    }
+  }
+}

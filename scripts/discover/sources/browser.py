@@ -653,25 +653,37 @@ def extract_google_jobs(page: Any, source: SourceConfig, term: str, terms: list[
         raw_ids.append(job_id)
         if not matched_terms:
             continue
-        candidates.append(
-            Candidate(
-                employer=employer,
-                title=title,
-                url=url,
-                source_url=source.url,
-                alternate_url=apply_url if apply_url and apply_url != url else "",
-                location=location,
-                matched_terms=matched_terms,
-                notes=build_google_candidate_notes(
-                    source,
-                    term,
-                    page_num,
-                    summary=summary,
-                    responsibilities=responsibilities,
-                    requirements=requirements,
-                ),
-            )
+        candidate = Candidate(
+            employer=employer,
+            title=title,
+            url=url,
+            source_url=source.url,
+            alternate_url=apply_url if apply_url and apply_url != url else "",
+            location=location,
+            matched_terms=matched_terms,
+            notes=build_google_candidate_notes(
+                source,
+                term,
+                page_num,
+                summary=summary,
+                responsibilities=responsibilities,
+                requirements=requirements,
+            ),
         )
+        if responsibilities or requirements or summary:
+            # Keep role evidence ahead of boilerplate in the bounded description.
+            description = " ".join(
+                f"{heading}: {text}"
+                for heading, text in (
+                    ("Responsibilities", responsibilities),
+                    ("Qualifications", requirements),
+                    ("Working location", working_location),
+                    ("About the job", summary),
+                )
+                if text
+            )
+            helpers.set_candidate_description(candidate, description)
+        candidates.append(candidate)
     page_signature = ",".join(raw_ids[:10]) if raw_ids else f"{term}:{page_num}:empty"
     return BrowserPageResult(
         candidates=candidates,
@@ -1567,15 +1579,6 @@ BROWSER_STRATEGIES = {
         page_size=GOOGLE_RESULTS_PAGE_SIZE,
         max_pages=MAX_BROWSER_PAGES,
     ),
-    "GIZ Career Opportunities": BrowserStrategy(
-        search_url_builder=giz_search_url,
-        extract_page=extract_giz_jobs,
-        prepare_page=prepare_giz_results,
-        advance_page=advance_giz_results,
-        supports_pagination=True,
-        page_size=10,
-        max_pages=MAX_BROWSER_PAGES,
-    ),
     "Meta": BrowserStrategy(
         search_url_builder=meta_search_url,
         extract_page=extract_meta_jobs,
@@ -1645,6 +1648,8 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                 while page_num <= strategy.max_pages:
                     result = strategy.extract_page(page, source, term, terms, page_num)
                     if not result.page_signature or result.page_signature in term_page_signatures:
+                        status = "partial"
+                        limitations.append(f"{source.source} browser search repeated a page before enumeration finished")
                         break
                     term_pages_scanned += 1
                     pages_scanned += 1
@@ -1655,6 +1660,8 @@ def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: in
                     if term_declared_total is None and result.declared_total is not None:
                         term_declared_total = result.declared_total
                     limitations.extend(result.limitations)
+                    if result.limitations:
+                        status = "partial"
                     for raw_id in result.raw_ids:
                         raw_seen_ids.add(raw_id)
                     for candidate in result.candidates:
@@ -1746,7 +1753,7 @@ SOURCES = [
     SourceAdapter(modes=("asml_browser",), discover=discover_asml_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("automattic_browser",), discover=discover_automattic_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("browser",), discover=discover_browser, requires=("playwright.sync_api",)),
-    SourceAdapter(modes=("coinbase_browser",), discover=discover_coinbase_browser, requires=("playwright.sync_api",)),
+    SourceAdapter(modes=("coinbase_browser",), discover=discover_coinbase_browser, requires=("playwright.sync_api",), emits_candidates=False),
     SourceAdapter(modes=("helsing_browser",), discover=discover_helsing_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("thales_browser",), discover=discover_thales_browser, requires=("playwright.sync_api",)),
     SourceAdapter(modes=("trailofbits_browser",), discover=discover_trailofbits_browser, requires=("playwright.sync_api",)),

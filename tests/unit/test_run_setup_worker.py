@@ -192,3 +192,66 @@ def test_provider_payload_fails_fast_on_unclosed_fence() -> None:
 def test_provider_payload_prefers_structured_output_over_prose_result() -> None:
     envelope = json.dumps({"result": "Done.", "structured_output": _PACK}).encode()
     assert run_setup_worker._provider_payload(envelope) == _PACK
+
+
+def _write_static_codex(path: Path, payload: dict) -> None:
+    path.write_text(
+        f"""#!/usr/bin/env python3
+from pathlib import Path
+import sys
+sys.stdin.read()
+output = Path(sys.argv[sys.argv.index("--output-last-message") + 1])
+output.write_text({json.dumps(json.dumps(payload))})
+"""
+    )
+    path.chmod(0o755)
+
+
+def test_worker_keeps_raw_payload_when_validation_fails(tmp_path: Path) -> None:
+    setup_path = tmp_path / "setup.json"
+    setup_contracts.write_setup(setup_path, json.loads((FIXTURES / "setup.json").read_text()))
+    output_path = tmp_path / "source-pack.json"
+    raw_path = tmp_path / "source-pack.raw.json"
+    invalid = {"kind": "jobwatch_source_pack", "recommended_sources": [{"id": "sony/interactive"}]}
+    fake = tmp_path / "fake-codex"
+    _write_static_codex(fake, invalid)
+
+    with pytest.raises(setup_contracts.SetupContractError, match="raw worker output saved to"):
+        run_setup_worker.run_worker(
+            role="source_discovery",
+            input_path=setup_path,
+            output_path=output_path,
+            provider="codex",
+            agent_bin_value=str(fake),
+            model=None,
+            reasoning=None,
+            timeout_seconds=30,
+        )
+
+    assert not output_path.exists()
+    assert json.loads(raw_path.read_text()) == invalid
+
+
+def test_worker_removes_stale_raw_payload_after_success(tmp_path: Path, monkeypatch) -> None:
+    setup_path = tmp_path / "setup.json"
+    setup_contracts.write_setup(setup_path, json.loads((FIXTURES / "setup.json").read_text()))
+    output_path = tmp_path / "source-pack.json"
+    raw_path = run_setup_worker.raw_output_path(output_path)
+    raw_path.write_text("{}\n")
+    fake = tmp_path / "fake-codex"
+    _write_fake_provider(fake)
+    monkeypatch.setenv("FAKE_SETUP_WORKER_LOG", str(tmp_path / "codex.log"))
+
+    run_setup_worker.run_worker(
+        role="source_discovery",
+        input_path=setup_path,
+        output_path=output_path,
+        provider="codex",
+        agent_bin_value=str(fake),
+        model=None,
+        reasoning=None,
+        timeout_seconds=30,
+    )
+
+    assert output_path.is_file()
+    assert not raw_path.exists()

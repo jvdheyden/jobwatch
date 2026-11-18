@@ -1,0 +1,33 @@
+{
+  "source": {
+    "source": "Qedit Inline",
+    "url": "https://qed-it.com/careers"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Cryptography Engineer",
+      "url": "https://qed-it.com/careers"
+    }
+  ],
+  "empty_status": "partial",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "empty_reason": "Inline role disappeared; no authoritative inventory endpoint."
+}

@@ -140,6 +140,10 @@ def failed_coverage(source: SourceConfig, terms: list[str], limitation: str) -> 
     )
 
 
+class DescriptionBudgetExhausted(Exception):
+    """Raised by a description fetcher that ran out of the enrichment deadline."""
+
+
 def enrich_candidate_descriptions(
     coverage: Coverage,
     timeout_seconds: int,
@@ -149,6 +153,9 @@ def enrich_candidate_descriptions(
     max_fetches: int | None = None,
 ) -> None:
     """Fetch each matched candidate's URL and store the JD body in `description`.
+
+    `notion_site` candidates are read through the Notion page API instead of
+    their HTML, which is only a JavaScript shell.
 
     The runner calls this after track filtering, so only candidates that
     survived both term matching and track filters trigger a fetch. Candidates a
@@ -179,6 +186,22 @@ def enrich_candidate_descriptions(
     failures = 0
     budget_exhausted_at: int | None = None
     started_at = time.monotonic()
+    deadline = started_at + max_seconds
+
+    if coverage.discovery_mode == "notion_site":
+        # A notion.site page's HTML is only a JavaScript shell, so read the
+        # posting's blocks through the Notion API and never fall back to HTML.
+        # One posting can take several requests, so the fetcher checks the
+        # shared deadline before each one.
+        from discover.sources.notion import fetch_notion_description
+
+        def fetch_description(url: str, timeout: int) -> str:
+            return fetch_notion_description(url, timeout, deadline=deadline)
+    else:
+
+        def fetch_description(url: str, timeout: int) -> str:
+            return helpers.visible_text_from_html(http.fetch_text(url, timeout))
+
     for candidate in coverage.candidates:
         if candidate.description:
             continue
@@ -192,13 +215,14 @@ def enrich_candidate_descriptions(
         # dead links cannot spin through unbounded fetch attempts.
         attempts += 1
         try:
-            html = http.fetch_text(url, timeout_seconds)
+            text = fetch_description(url, timeout_seconds)
+        except DescriptionBudgetExhausted:
+            budget_exhausted_at = attempts
+            break
         except Exception:
             failures += 1
             continue
-        helpers.set_candidate_description(
-            candidate, helpers.visible_text_from_html(html), char_budget=char_budget
-        )
+        helpers.set_candidate_description(candidate, text, char_budget=char_budget)
     if failures:
         coverage.limitations.append(f"JD fetch failed for {failures} candidate(s)")
     if budget_exhausted_at is not None:

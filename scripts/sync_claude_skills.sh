@@ -31,9 +31,10 @@ expected_skill_file() {
   local output_file="$3"
 
   {
-    printf '<!-- GENERATED FILE: source of truth is .agents/skills/%s/SKILL.md -->\n' "$skill"
-    printf '<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->\n\n'
+    # Claude requires YAML front matter to start on the first line.
     cat "$source_file"
+    printf '\n<!-- GENERATED FILE: source of truth is .agents/skills/%s/SKILL.md -->\n' "$skill"
+    printf '<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->\n'
   } >"$output_file"
 }
 

@@ -63,6 +63,7 @@ During a normal scheduled run:
 - read only the track inputs above plus today's digest, if it already exists
 - write only today's structured digest artifact in `../../artifacts/digests/{track_slug}/` and today's rendered digest in `./digests/`
 - do not edit `./sources.md`, `./sources.json`, or `./source_state.json` during a normal run
+- do not edit preferences, track instructions, or match rules, or launch maintenance workers; report plausible retrieval gaps in coverage limitations for user-triggered maintenance
 - do not inspect `./logs` or downstream publication targets such as the configured Logseq graph
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
 - if today's discovery artifact exists in `../../artifacts/discovery/{track_slug}/`, consume it directly instead of rerunning `../../scripts/discover_jobs.py`
@@ -91,7 +92,7 @@ For each run:
 7. Use the project skill `find-jobs` to collect plausible new roles and structured coverage notes.
 8. If the fresh artifact is missing, stale, incomplete for the due-source set, or inconsistent with the track inputs, mark the affected sources as not checked in the coverage notes and note why.
 9. Treat a source as fully checked only if the coverage notes include status, listing pages scanned, search terms tried, result pages scanned, direct job pages opened, and limitations.
-10. Do not mark a source complete unless the discovery artifact shows the full source was enumerated and the full term set was applied.
+10. Judge execution against the source's configured retrieval and provider strategy: inherit `track_terms`, append source terms, or replace them for `search_terms.mode: override`; trim and deduplicate case-insensitively. Do not derive additional required terms from preferences, track instructions, or the CV. Complete execution can return zero matches. Preserve genuine execution limitations and separately name unfinished candidate review or missing fit evidence.
 11. Use the project skill `rank-jobs` to score and prioritize them.
 12. Create or update today's structured digest artifact at `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` using `../../shared/digest_schema.md` as the source-of-truth schema.
 13. Leave source-state updates, markdown rendering, ranked-overview rebuilds, and seen-jobs updates to the runner. Do not edit `./source_state.json` or `./seen_jobs.json` yourself.
@@ -125,7 +126,9 @@ On same-day reruns, never hand-edit the markdown digest. Update the JSON source 
 
 The digest must include enough source coverage detail to show what was actually searched. Do not write a source as fully checked if you cannot show the coverage record.
 
-If the discovery artifact cannot show which terms were tried for a source, mark that source as partial and say so in the digest.
+If required coverage evidence is missing, mark the source partial and say why. Local filtering counts as term application; an intentionally empty term list for a provider that does not apply terms is not missing evidence. Sources not due this run are not coverage gaps.
+
+Use `find-jobs` to report concrete possible retrieval gaps as `Search-quality observation:` entries in the existing `runs[].source_notes[].limitations` field. Name the requested role/domain, relevant configuration, and potential omission. Missing preference keywords or zero matches alone do not prove a gap. Keep successful execution complete; these observations recommend user-triggered `set-up` maintenance and do not authorize configuration changes or automatic workers.
 
 For scheduled runs, the artifact paths in `../../artifacts/discovery/{track_slug}/` are the source of truth for discovery. Use `YYYY-MM-DD.json` first and `latest.json` second.
 

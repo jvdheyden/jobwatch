@@ -1,0 +1,24 @@
+[
+  {
+    "body": [
+      {
+        "text": "Showing 1 - 2 of 2 results"
+      }
+    ],
+    "a[href*=\"/global/en/job/\"]": [
+      {
+        "text": "Security Engineer",
+        "href": "https://careers.thalesgroup.com/global/en/job/1/role",
+        "card_text": "Security Engineer Work Location Munich Security"
+      },
+      {
+        "text": "Security Sales Manager",
+        "href": "https://careers.thalesgroup.com/global/en/job/2/role",
+        "card_text": "Security Sales Manager Work Location Munich Security"
+      }
+    ],
+    "a[data-ph-at-id=\"pagination-next-link\"]": [],
+    "button:Accept": [],
+    "[ph-module=\"gdpr\"]": []
+  }
+]

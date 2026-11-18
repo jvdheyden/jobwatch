@@ -1,0 +1,34 @@
+{
+  "source": {
+    "source": "Ibm Api",
+    "url": "https://www.ibm.com/careers/search"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://careers.ibm.com/job/security-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "contract/test_api_pagination.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/existing-source-curation/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: existing-source-curation
 description: Add, evaluate, confirm, or enable a named employer or official source for an existing track. Resolve the official careers URL, choose a conservative discovery_mode, update sources.json, and escalate through integrate_next_source.py when needed.
@@ -42,6 +39,7 @@ If the track files are missing or the request is really for a new track, stop an
 ### 3. Normalize conservatively
 
 - Prepare a normalized source entry suitable for `sources.json`.
+- Review this source's effective retrieval vocabulary against the current preferences: it inherits `track_terms` unless source terms append to or override them. Check native filters for accidental exclusions and use source-specific terms when needed. Do not copy every preference keyword or negative preference into retrieval. Report unrelated track-wide gaps for user-triggered `set-up` maintenance without retuning other sources or global terms.
 - Infer a conservative `discovery_mode` from the URL or board family. Default to `html` when unclear.
 - Keep clearly official sources even when they must use a supported fallback.
 - If support looks uncertain or weak, do not bounce the user to `set-up`. Keep the source with the best current supported config, note the caveat, and decide whether to stop at curation or continue into single-source enablement based on the request shape.
@@ -74,3 +72,6 @@ JOB_AGENT_ROOT="$PWD" ./.venv/bin/python scripts/render_sources_md.py --track {t
 - Do not manually edit `source_state.json`; let `scripts/integrate_next_source.py` own those mutations during single-source enablement.
 - Do not edit `match_rules.json` unless the request explicitly includes that work.
 - Do not treat normal single-source enablement as a repo-development pivot. Only pivot to repo development when the user explicitly asks to change the shared integration workflow itself or to make manual shared-code edits outside the standard `scripts/integrate_next_source.py` path.
+
+<!-- GENERATED FILE: source of truth is .agents/skills/existing-source-curation/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->

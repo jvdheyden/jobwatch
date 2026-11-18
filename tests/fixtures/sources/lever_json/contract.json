@@ -1,0 +1,41 @@
+{
+  "source": {
+    "source": "Lever Json",
+    "url": "https://jobs.lever.co/example"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://jobs.lever.co/example/security-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_lever_json.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "response_expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://jobs.lever.co/example/security-engineer",
+      "location": "Remote"
+    }
+  ]
+}

@@ -121,6 +121,12 @@ Each track run produces local JSON and Markdown artifacts first. Delivery is a s
    On Linux, scheduler install updates your user crontab with a checkout-specific per-minute dispatcher. On macOS, it installs a checkout-specific LaunchAgent. If you skip scheduling during setup, you can still run tracks manually.
 
 
+## Update a track's preferences
+
+Ask your agent, for example: "Update my crypto track to also include privacy engineering." The existing `set-up` skill updates the preferences and reviews retrieval terms, source overrides and filters together. Changes that only affect ranking may need no retrieval edits.
+
+If you edit `tracks/<track-slug>/prefs.md` directly, ask: "Reconcile this track's retrieval configuration with its updated preferences." File edits do not automatically synchronize retrieval. Normal runs may report possible gaps as search-quality observations in coverage notes; they do not change configuration. Updated retrieval applies to the next discovery run.
+
 ## Manual Run
 
 To run a track immediately:
@@ -215,6 +221,8 @@ bash scripts/install_scheduler.sh
 
 Daily digest emails are rendered from the structured digest JSON and ranked overview JSON, not from the Logseq/Markdown output.
 
+When a run with `--delivery email` fails (for example because the agent CLI login expired, or a later delivery target failed after the email went out), `run_track.sh` sends a short failure alert to the same recipients, with the likely cause, which targets were delivered, and the last log lines of that attempt. The alert gives up after 60 seconds (`JOB_AGENT_ALERT_TIMEOUT_SECS`) so an unresponsive SMTP server cannot stall the scheduler.
+
 Preview an email without sending it:
 
 ```bash
@@ -291,11 +299,15 @@ Then run `scripts/run_track.sh` with `--delivery logseq`.
 -->
 ## Development Checks
 
-To run the repo test suite:
+To run the full offline regression suite (also run by PR CI):
 
 ```bash
 bash scripts/test.sh
 ```
+
+Use `bash scripts/test.sh --fast` for unit tests and provider contracts during
+development. See [Testing Jobwatch](docs/testing.md) for fixture requirements,
+isolation, and separate live-source and model evaluations.
 
 ## Contributing
 

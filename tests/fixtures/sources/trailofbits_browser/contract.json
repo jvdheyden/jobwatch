@@ -1,0 +1,40 @@
+{
+  "source": {
+    "source": "Trail of Bits",
+    "url": "https://trailofbits.com/careers/"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://apply.workable.com/trailofbits/j/1"
+    },
+    {
+      "title": "Security Sales Manager",
+      "url": "https://apply.workable.com/trailofbits/j/2"
+    }
+  ],
+  "empty_status": "partial",
+  "transport": "browser",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [
+        "contract/test_source_contract.py"
+      ],
+      "note": "Raw DOM boundary fixture exercises navigation and extraction; installed browser failure is shared."
+    }
+  },
+  "empty_reason": "No authoritative result count or explicit empty marker; an empty DOM must remain uncertain."
+}

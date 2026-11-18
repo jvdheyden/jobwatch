@@ -1,0 +1,41 @@
+{
+  "source": {
+    "source": "Kula Rss",
+    "url": "https://careers.kula.ai/example"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Senior Engineer, Software Security",
+      "url": "https://careers.kula.ai/example/59060"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [
+        "unit/test_kula_provider.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "duplicates_expected": [
+    {
+      "title": "Security Lead, Subscription Products",
+      "url": "https://careers.kula.ai/example/58931",
+      "location": "London, United Kingdom; San Francisco, United States"
+    }
+  ]
+}

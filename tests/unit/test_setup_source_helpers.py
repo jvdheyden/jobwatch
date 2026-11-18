@@ -78,6 +78,7 @@ def test_update_source_canary_refreshes_state_and_preserves_history(tmp_path, mo
                     "sources": [
                         {
                             "source": "Example",
+                            "status": "complete",
                             "candidates": [
                                 {
                                     "title": "Privacy Engineer",
@@ -104,6 +105,8 @@ def test_update_source_canary_refreshes_state_and_preserves_history(tmp_path, mo
 
     assert ok is True
     assert payload["canary"]["title"] == "Privacy Engineer"
+    assert payload["canary"]["expires_on"] == "2026-05-06"
+    assert payload["canary"]["review_required"] is True
     state = json.loads((track_dir / "source_state.json").read_text())
     integration = state["sources"]["example"]["integration"]
     assert integration["canary"]["url"] == "https://jobs.example.com/jobs/new"
@@ -139,7 +142,7 @@ def test_update_source_canary_marks_missing_when_no_candidate(tmp_path, monkeypa
 
     def fake_run_discovery(root, track, source_name, today, output):
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps({"sources": [{"source": "Example", "candidates": []}]}) + "\n")
+        output.write_text(json.dumps({"sources": [{"source": "Example", "status": "complete", "candidates": []}]}) + "\n")
         return subprocess.CompletedProcess(["discover"], 0, "", "")
 
     monkeypatch.setattr(update_source_canary, "run_discovery", fake_run_discovery)

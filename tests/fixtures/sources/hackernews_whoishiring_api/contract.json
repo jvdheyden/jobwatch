@@ -1,0 +1,33 @@
+{
+  "source": {
+    "source": "Hackernews Whoishiring Api",
+    "url": "https://news.ycombinator.com/user?id=whoishiring"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Cryptography Engineer",
+      "url": "https://news.ycombinator.com/item?id=101",
+      "alternate_url": "https://example.com/jobs/cryptography-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

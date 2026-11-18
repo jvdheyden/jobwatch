@@ -1,0 +1,38 @@
+{
+  "source": {
+    "source": "Yc Jobs Board",
+    "url": "https://www.ycombinator.com/jobs/role/software-engineer"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Cryptography Engineer",
+      "url": "https://www.ycombinator.com/companies/cipher/jobs/abc123-cryptography-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "duplicates_expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://www.ycombinator.com/companies/cipher/jobs/dup-security-engineer"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "source": {
+    "source": "Sennheiser Rss",
+    "url": "https://jobs.sennheiser.com/"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer, Audio Products",
+      "url": "https://jobs.sennheiser.com/job/wedemark/security-engineer/9"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tomllib
 
 from hooks import install_codex_project_config as config
 
@@ -14,9 +15,9 @@ def test_clean_install_writes_shell_environment_policy(tmp_case_dir: Path) -> No
     assert status == config.STATUS_INSTALLED
     text = target.read_text(encoding="utf-8")
     assert config.BEGIN_MARKER in text
-    assert "[shell_environment_policy]" in text
-    assert 'inherit = "all"' in text
-    assert f'PATH = "{root / ".venv" / "bin"}:/usr/bin:/bin"' in text
+    policy = tomllib.loads(text)["shell_environment_policy"]
+    assert policy["inherit"] == "all"
+    assert policy["set"]["PATH"] == f"{root / '.venv' / 'bin'}:/usr/bin:/bin"
 
 
 def test_idempotent_second_run(tmp_case_dir: Path) -> None:
@@ -42,9 +43,10 @@ def test_preserves_existing_unrelated_config(tmp_case_dir: Path) -> None:
 
     text = target.read_text(encoding="utf-8")
     assert status == config.STATUS_UPDATED
-    assert 'model = "gpt-5.4"' in text
-    assert "[profiles.default]" in text
-    assert "[shell_environment_policy]" in text
+    parsed = tomllib.loads(text)
+    assert parsed["model"] == "gpt-5.4"
+    assert parsed["profiles"]["default"]["approval_policy"] == "on-request"
+    assert parsed["shell_environment_policy"]["inherit"] == "all"
 
 
 def test_updates_managed_block_when_path_changes(tmp_case_dir: Path) -> None:
@@ -57,8 +59,7 @@ def test_updates_managed_block_when_path_changes(tmp_case_dir: Path) -> None:
 
     text = target.read_text(encoding="utf-8")
     assert status == config.STATUS_UPDATED
-    assert "/opt/bin:/usr/bin:/bin" in text
-    assert text.count("[shell_environment_policy]") == 1
+    assert tomllib.loads(text)["shell_environment_policy"]["set"]["PATH"] == f"{root / '.venv' / 'bin'}:/opt/bin:/usr/bin:/bin"
     assert text.count(config.BEGIN_MARKER) == 1
 
 

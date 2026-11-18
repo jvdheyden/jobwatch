@@ -103,6 +103,8 @@ LOG_FILE="$LOG_DIR/$TRACK-$TODAY.log"
 
 mkdir -p "$DIGEST_DIR" "$DISCOVERY_DIR" "$LOG_DIR"
 exec >>"$LOG_FILE" 2>&1
+# The day's log collects every attempt; a failure alert reads only this one.
+LOG_START_OFFSET="$(wc -c <"$LOG_FILE" | tr -d '[:space:]')"
 
 timestamp() {
   date '+%Y-%m-%d %H:%M:%S'
@@ -290,11 +292,20 @@ stop_helper() {
   pkill -KILL -P "$pid" 2>/dev/null || true
 }
 
+# Stops whatever is left in a process group started under `set -m`.
+stop_process_group() {
+  local pgid="$1"
+  kill -TERM -- "-$pgid" 2>/dev/null || return 0
+  sleep 1
+  kill -KILL -- "-$pgid" 2>/dev/null || true
+}
+
 terminate_process() {
   local target_pid="$1"
   local label="$2"
 
-  kill "$target_pid" 2>/dev/null || true
+  # Agent phases own a process group, including any spawned tools.
+  kill -TERM -- "-$target_pid" 2>/dev/null || kill "$target_pid" 2>/dev/null || true
   sleep 5
   if kill -0 "$target_pid" 2>/dev/null; then
     log "$label still running after TERM; forcing kill"
@@ -414,7 +425,64 @@ AGENT_IDLE_FLAG="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-idle.$$"
 AGENT_ACTIVITY_FILE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-activity.$$"
 AGENT_OUTPUT_PIPE="${TMPDIR:-/tmp}/${TRACK}-${AGENT_PROVIDER}-output.$$"
 rm -f "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
-trap 'rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"' EXIT
+ALERT_TIMEOUT_SECS="${JOB_AGENT_ALERT_TIMEOUT_SECS:-60}"
+ALERT_TIMEOUT_FLAG="${TMPDIR:-/tmp}/${TRACK}-alert-timeout.$$"
+ALERT_BY_EMAIL=0
+for delivery_target in "${DELIVERY_TARGETS[@]+"${DELIVERY_TARGETS[@]}"}"; do
+  if [[ "$delivery_target" == "email" ]]; then
+    ALERT_BY_EMAIL=1
+  fi
+done
+
+# Runs that requested email delivery send a failure alert instead of failing
+# silently, so an expired agent login does not go unnoticed for weeks.
+send_failure_alert() {
+  local exit_status="$1"
+  local alert_pid watchdog_pid alert_status=0
+
+  # The whole attempt, credential loading included, runs under a deadline so
+  # a hung SMTP server cannot hold the scheduler's run lock. Job control gives
+  # the sender its own process group, so its helpers (the runtime-env shell,
+  # JOB_AGENT_SMTP_PASSWORD_CMD) can be stopped with it.
+  rm -f "$ALERT_TIMEOUT_FLAG"
+  set -m
+  env \
+    -u JOB_AGENT_SMTP_PASSWORD \
+    -u JOB_AGENT_TELEGRAM_BOT_TOKEN \
+    -u JOB_AGENT_RUNTIME_SECRETS_FILE_LOADED \
+    JOB_AGENT_ROOT="$ROOT" \
+    "$PYTHON_BIN" "$ROOT/scripts/send_run_failure_alert.py" \
+      --track "$TRACK" --date "$TODAY" --status "$exit_status" \
+      --log-file "$LOG_FILE" --log-offset "$LOG_START_OFFSET" &
+  alert_pid="$!"
+  set +m
+  start_timeout_watchdog "$alert_pid" "$ALERT_TIMEOUT_SECS" "Failure alert email" "$ALERT_TIMEOUT_FLAG"
+  watchdog_pid="$LAST_BG_PID"
+  wait "$alert_pid" || alert_status=$?
+  stop_helper "$watchdog_pid"
+  stop_process_group "$alert_pid"
+
+  if [[ -f "$ALERT_TIMEOUT_FLAG" ]]; then
+    log "Failure alert email could not be sent: timed out after ${ALERT_TIMEOUT_SECS}s"
+  elif [[ $alert_status -eq 0 ]]; then
+    log "Sent failure alert email"
+  else
+    log "Failure alert email could not be sent"
+  fi
+  rm -f "$ALERT_TIMEOUT_FLAG"
+}
+
+# Runs that requested email delivery send a failure alert instead of failing
+# silently, so an expired agent login does not go unnoticed for weeks.
+on_exit() {
+  local exit_status=$?
+  rm -f "$PROMPT_FILE" "$DISCOVERY_TIMEOUT_FLAG" "$AGENT_TIMEOUT_FLAG" "$AGENT_IDLE_FLAG" "$AGENT_ACTIVITY_FILE" "$AGENT_OUTPUT_PIPE"
+  if [[ $exit_status -ne 0 && $ALERT_BY_EMAIL -eq 1 ]]; then
+    send_failure_alert "$exit_status"
+  fi
+  exit "$exit_status"
+}
+trap on_exit EXIT
 
 log "Starting $TRACK daily run"
 log "Discovery phase started"
@@ -542,6 +610,7 @@ printf '%s\n' "$(date +%s)" >"$AGENT_ACTIVITY_FILE"
 ) &
 AGENT_READER_PID=$!
 
+set -m
 (
   export JOB_AGENT_ROOT="$ROOT"
   export JOB_AGENT_TRACK="$TRACK"
@@ -551,6 +620,7 @@ AGENT_READER_PID=$!
   run_agent_command
 ) >"$AGENT_OUTPUT_PIPE" 2>&1 &
 AGENT_PID=$!
+set +m
 start_timeout_watchdog "$AGENT_PID" "$TIMEOUT_SECS" "$AGENT_LABEL" "$AGENT_TIMEOUT_FLAG"
 AGENT_WATCHDOG_PID="$LAST_BG_PID"
 if [[ "$AGENT_HEARTBEAT_SECS" -gt 0 ]]; then
@@ -570,6 +640,9 @@ set -e
 stop_helper "$AGENT_WATCHDOG_PID"
 stop_helper "$AGENT_HEARTBEAT_PID"
 stop_helper "$AGENT_IDLE_WATCHDOG_PID"
+if [[ -f "$AGENT_TIMEOUT_FLAG" || -f "$AGENT_IDLE_FLAG" ]]; then
+  stop_process_group "$AGENT_PID"
+fi
 wait "$AGENT_READER_PID" 2>/dev/null || true
 
 if [[ -f "$AGENT_TIMEOUT_FLAG" ]]; then
@@ -589,6 +662,30 @@ fi
 
 log "$AGENT_LABEL phase finished successfully"
 
+# macOS Bash compares file times at whole-second precision. Agents can finish
+# within that second; use the filesystem's full precision to reject stale output.
+if "$PYTHON_BIN" - "$STRUCTURED_DIGEST" "$PROMPT_FILE" <<'PY'
+from pathlib import Path
+import sys
+
+digest, prompt = map(Path, sys.argv[1:])
+sys.exit(0 if digest.is_file() and digest.stat().st_mtime_ns > prompt.stat().st_mtime_ns else 1)
+PY
+then
+  log "Rendering markdown digest from $STRUCTURED_DIGEST"
+  if "$PYTHON_BIN" "$ROOT/scripts/render_digest.py" --track "$TRACK" --date "$TODAY"; then
+    log "Markdown digest rendered successfully"
+  else
+    render_status=$?
+    log "Markdown digest rendering failed with status $render_status"
+    exit "$render_status"
+  fi
+else
+  log "Missing or stale structured digest at $STRUCTURED_DIGEST after successful agent exit"
+  exit 1
+fi
+
+# Validation/rendering must succeed before advancing cadence or seen state.
 if [[ $DISCOVERY_STATUS -eq 0 && -f "$DISCOVERY_ARTIFACT" ]]; then
   log "Source state update started"
   if "$PYTHON_BIN" "$ROOT/scripts/update_source_state.py" --track "$TRACK" --date "$TODAY" --artifact "$DISCOVERY_ARTIFACT"; then
@@ -600,19 +697,6 @@ if [[ $DISCOVERY_STATUS -eq 0 && -f "$DISCOVERY_ARTIFACT" ]]; then
   fi
 else
   log "Skipping source state update because no complete fresh discovery artifact is available"
-fi
-
-if [[ -f "$STRUCTURED_DIGEST" ]]; then
-  log "Rendering markdown digest from $STRUCTURED_DIGEST"
-  if "$PYTHON_BIN" "$ROOT/scripts/render_digest.py" --track "$TRACK" --date "$TODAY"; then
-    log "Markdown digest rendered successfully"
-  else
-    render_status=$?
-    log "Markdown digest rendering failed with status $render_status"
-    exit "$render_status"
-  fi
-else
-  log "No structured digest at $STRUCTURED_DIGEST; skipping markdown rendering"
 fi
 
 if [[ -f "$STRUCTURED_DIGEST" ]]; then

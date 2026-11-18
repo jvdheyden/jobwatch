@@ -1,0 +1,43 @@
+{
+  "source": {
+    "source": "Notion Site",
+    "url": "https://example.notion.site/Careers-0123456789abcdef0123456789abcdef"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://example.notion.site/aaaaaaaa000000000000000000000001"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "unit/test_notion_provider.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [
+        "unit/test_notion_provider.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "response_expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://example.notion.site/aaaaaaaa000000000000000000000001",
+      "location": "Remote"
+    }
+  ]
+}

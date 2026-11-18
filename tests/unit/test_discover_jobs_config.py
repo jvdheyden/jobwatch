@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 from datetime import date
+from io import StringIO
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
 import discover_jobs
+from discover import runner
 from source_config import SourceConfigError
 
 
@@ -95,6 +97,50 @@ def test_load_track_config_fails_without_json_config(tmp_path, monkeypatch):
 
     with pytest.raises(SourceConfigError, match="sources.json"):
         discover_jobs.load_track_config("legacy_demo")
+
+
+@pytest.mark.parametrize(
+    ("source_terms", "expected_terms"),
+    [
+        (None, ["Cryptography"]),
+        ({"mode": "append", "terms": ["cryptography", " privacy ", "PRIVACY"]}, ["Cryptography", "privacy"]),
+        ({"mode": "override", "terms": [" privacy ", "PRIVACY"]}, ["privacy"]),
+    ],
+)
+def test_discovery_plan_uses_effective_configured_terms_despite_preference_changes(
+    tmp_path, source_terms, expected_terms
+):
+    track_dir = tmp_path / "tracks" / "retrieval_demo"
+    track_dir.mkdir(parents=True)
+    source = {
+        "id": "example",
+        "name": "Example",
+        "url": "https://example.com/jobs",
+        "discovery_mode": "html",
+        "cadence_group": "every_run",
+    }
+    if source_terms is not None:
+        source["search_terms"] = source_terms
+    (track_dir / "sources.json").write_text(json.dumps({
+        "schema_version": 1,
+        "track": "retrieval_demo",
+        "track_terms": [" Cryptography ", "cryptography"],
+        "sources": [source],
+    }))
+
+    for preferences in (
+        "Prefer cryptography engineering.",
+        "Include privacy engineering and confidential computing. Prefer Rust experience.",
+    ):
+        (track_dir / "prefs.md").write_text(preferences)
+        output = StringIO()
+        assert runner.main(
+            ["--track", "retrieval_demo", "--today", "2026-11-14", "--plan-only"],
+            load_track_config_func=lambda track: runner.load_track_config(track, tmp_path),
+            stdout=output,
+        ) == 0
+        planned_source = json.loads(output.getvalue())["sources"][0]
+        assert planned_source["search_terms"] == expected_terms
 
 
 def test_source_to_dict_includes_filters():

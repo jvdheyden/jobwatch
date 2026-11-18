@@ -125,8 +125,18 @@ def select_next_source(
     return candidates[0][2], "selected"
 
 
-def canary_from_state(integration: dict[str, Any]) -> tuple[str, str]:
+def canary_from_state(integration: dict[str, Any], *, today: str | None = None) -> tuple[str, str]:
     canary = integration.get("canary") if isinstance(integration.get("canary"), dict) else {}
+    # Automatically selected suggestions and expired vacancies are not evidence
+    # that extraction is broken. Preserve them in state for operator review.
+    if canary.get("review_required"):
+        return "", ""
+    if canary.get("expires_on"):
+        try:
+            if date.fromisoformat(canary["expires_on"]) < date.fromisoformat(today or date.today().isoformat()):
+                return "", ""
+        except (TypeError, ValueError):
+            return "", ""
     title = str(canary.get("title") or integration.get("canary_title") or "")
     url = str(canary.get("url") or integration.get("canary_url") or "")
     return title, url
@@ -464,7 +474,9 @@ def main() -> int:
 
     state_entry = state.setdefault(source["id"], {"last_checked": None})
     integration = _integration_state(state_entry)
-    canary_title, canary_url = canary_from_state(integration)
+    canary_title, canary_url = canary_from_state(integration, today=args.today)
+    if integration.get("canary") and not (canary_title or canary_url):
+        print("Stored canary needs review or has expired; excluding it from integration failure evidence.")
     source_name = source["name"]
     discovery_path = discovery_artifact_path(args.track, source_name, args.today)
     eval_path = eval_artifact_path(args.track, source_name, args.today)

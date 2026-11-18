@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from discover import http
+from discover import helpers, http
 from discover.core import Candidate, Coverage, enrich_candidate_descriptions
 
 
@@ -71,6 +71,46 @@ def test_enrich_skips_candidates_that_already_have_description(monkeypatch):
     enrich_candidate_descriptions(coverage, timeout_seconds=5)
 
     assert candidate.description == "Already fetched JD body."
+
+
+def test_enrich_removes_script_and_style_bodies_before_truncating(monkeypatch):
+    script = 'const config = "<div>not a job</div>"; ' * 200
+    stylesheet = '.hidden::before { content: "not a requirement"; } ' * 200
+    html = (
+        f'<html><head><SCRIPT>{script}</SCRIPT><style>{stylesheet}</style></head>'
+        '<body><!-- Not part of the description -->'
+        '<h1>Proof and Verification Engineer</h1>'
+        '<p>Build <strong>Rust</strong> verification tools &amp; security proofs.</p>'
+        '<p>Use &lt;script&gt; examples in documentation.</p>'
+        '<script>window.tracking = true;</script>'
+        '<p>Minimum qualifications:<br>Applied cryptography experience.</p>'
+        '</body></html>'
+    )
+    monkeypatch.setattr(http, "fetch_text", lambda url, timeout_seconds: html)
+    candidate = Candidate(
+        employer="Example",
+        title="Proof and Verification Engineer",
+        url="https://example.com/jobs/proof-engineer",
+        source_url="https://example.com/jobs",
+    )
+    coverage = _coverage([candidate])
+
+    enrich_candidate_descriptions(coverage, timeout_seconds=5, char_budget=300)
+
+    assert candidate.description == (
+        "Proof and Verification Engineer Build Rust verification tools & security proofs. "
+        "Use <script> examples in documentation. "
+        "Minimum qualifications: Applied cryptography experience."
+    )
+    assert candidate.description_truncated is False
+    assert coverage.limitations == []
+
+
+def test_visible_text_does_not_treat_scripts_as_description_evidence():
+    assert helpers.visible_text_from_html(
+        '<script type="application/ld+json">{"description": "Cryptography role"}</script>'
+        '<style>.cryptography { display: none; }</style><!-- Security role -->'
+    ) == ""
 
 
 def test_enrich_records_failures_in_limitations(monkeypatch):

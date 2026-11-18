@@ -52,6 +52,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Requires Playwright and extracts visible job-card links only.",
     },
+    "avature_html": {
+        "url_shape": "`https://<host>/[<locale>/]careers/SearchJobs` Avature search listing; existing query parameters such as a keyword are kept.",
+        "filters": "none",
+        "limitations": "Pages through `jobOffset` (capped at 40 pages) and matches terms against card title, department, location, and worker type; reports `partial` when fewer jobs are enumerated than the listing's reported total (including none) or when the page shows neither a result count nor job links; only a listing reporting 0 results is a `complete` empty scan. Descriptions come from the shared enrichment step.",
+    },
     "bamboohr_api": {
         "url_shape": "`https://<tenant>.bamboohr.com/careers`",
         "filters": "none",
@@ -138,9 +143,9 @@ MODE_DETAILS = {
         "limitations": "Parses the active Who Is Hiring thread and infers employer/title fields from post text.",
     },
     "harman_html": {
-        "url_shape": "`https://jobsearch.harman.com/<locale>/careers/...` listing page.",
+        "url_shape": "`https://jobsearch.harman.com/<locale>/careers/SearchJobs` Avature search listing.",
         "filters": "none",
-        "limitations": "Only direct Avature JobDetail links visible in the listing HTML are enumerated.",
+        "limitations": "Compatibility alias for the `avature_html` provider.",
     },
     "helsing_browser": {
         "url_shape": "`https://helsing.ai/jobs`",
@@ -187,6 +192,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Enumerates direct /jobs/<slug> links and enriches from each job-detail page.",
     },
+    "kula_rss": {
+        "url_shape": "Kula-hosted careers page `https://careers.kula.ai/<company>`; the provider reads its public feed at `/<company>/feed`.",
+        "filters": "none",
+        "limitations": "Reads the whole board from one RSS request and merges the feed's per-office items by job id. Matches terms against title, department, locations, workplace, and employment type; descriptions come from the feed. A response that is not an RSS feed fails the source; an empty channel is a `complete` empty board; items without a job id are skipped and report `partial`.",
+    },
     "leastauthority_careers": {
         "url_shape": "Least Authority careers page.",
         "filters": "none",
@@ -212,6 +222,11 @@ MODE_DETAILS = {
         "filters": "none",
         "limitations": "Static page provider for visible job links.",
     },
+    "notion_site": {
+        "url_shape": "Public Notion page `https://<workspace>.notion.site/<Page-Title>-<32-hex-page-id>` that embeds a jobs database.",
+        "filters": "none",
+        "limitations": "Reads the page and each embedded database through Notion's undocumented public `/api/v3` endpoints (`loadPageChunk`, `queryCollection`, 200 rows per database) and matches terms against the row title and text properties; property values such as deadlines go into notes. Description enrichment reads each matched row's page blocks through `loadPageChunk` (never the JavaScript-only HTML). Both follow the page's `loadPageChunk` cursor for up to 10 chunks; a careers page with more reports `partial`, and posting pages stop at the enrichment deadline. A page response without a `recordMap` fails the source; a database query without a `blockIds` list, or row ids that do not resolve to a readable record, report `partial`.",
+    },
     "partisia_site": {
         "url_shape": "Partisia careers/company site URLs.",
         "filters": "none",
@@ -232,6 +247,11 @@ MODE_DETAILS = {
         "filters": "encode `keywords=` and other native Phenom parameters in the source URL",
         "limitations": "Runs one embedded-payload keyword search per configured term (URL keywords are prepended and act as a scope filter) with a cap of 5 result pages per term; opens matched job-detail pages for the embedded description.",
     },
+    "pinpoint_api": {
+        "url_shape": "`https://<company>.pinpointhq.com/`",
+        "filters": "none",
+        "limitations": "Reads the board's public `postings.json` feed in one request and matches terms against title, department, division, location, and the posting description. A feed without a `data` list fails the source; matching postings with no URL or path are skipped and reported as `partial`.",
+    },
     "qedit_inline": {
         "url_shape": "QEDIT careers page.",
         "filters": "none",
@@ -251,6 +271,11 @@ MODE_DETAILS = {
         "url_shape": "Rheinmetall current jobs page, including encoded native filters in the source URL.",
         "filters": "encode Rheinmetall native filters in the source URL",
         "limitations": "Parses Rheinmetall result-card HTML and pagination.",
+    },
+    "smartrecruiters_api": {
+        "url_shape": "`https://careers.smartrecruiters.com/<CompanyIdentifier>` or `https://jobs.smartrecruiters.com/<CompanyIdentifier>`",
+        "filters": "none",
+        "limitations": "Pages the public postings API (100 per page, capped at 20 pages) and matches terms against title, function, department, location, level, and custom-field labels; the list API carries no description text. A page without a `content` list and integer `totalFound` fails the source; `partial` when fewer postings are enumerated than `totalFound` or matching postings lack an id.",
     },
     "secunet_jobboard": {
         "url_shape": "secunet careers or `https://jobs.secunet.com/` page with `*-j<id>.html` job links.",
@@ -315,7 +340,7 @@ MODE_DETAILS = {
     "workable_api": {
         "url_shape": "`https://apply.workable.com/<board>/`",
         "filters": "none",
-        "limitations": "Uses Workable public board endpoints.",
+        "limitations": "Uses the Workable public v3 board endpoint, following `nextPage` tokens (10 jobs per page, capped at 30 pages); reports `partial` when fewer jobs are enumerated than the board total or matching jobs lack a shortcode. A page without a `results` list and integer `total` fails the source.",
     },
     "workday_api": {
         "url_shape": "`https://<tenant>.wd<region>.myworkdayjobs.com/<site>`",

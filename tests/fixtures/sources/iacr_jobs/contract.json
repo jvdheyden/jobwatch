@@ -1,0 +1,33 @@
+{
+  "source": {
+    "source": "Iacr Jobs",
+    "url": "https://www.iacr.org/jobs/"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Cryptography Engineer",
+      "url": "https://www.iacr.org/jobs/item/1001",
+      "alternate_url": "https://example.com/crypto-role"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [],
+      "note": "Single catalog/feed/page strategy; does not promise multi-page enumeration."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

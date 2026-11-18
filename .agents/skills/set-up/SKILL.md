@@ -1,9 +1,35 @@
 ---
 name: set-up
-description: Set up a new search track for the job-agent.
+description: Set up a new search track, or update an existing track's preferences and reconcile its retrieval configuration.
 ---
 
-# Skill: Set up a new track for the job-agent
+# Skill: Set up or maintain a search track
+
+For an existing track's preference update or retrieval reconciliation, use **Existing-track maintenance** below and stop after that workflow. For a new track, use **New-track setup**. A normal track run's search-quality observation is advisory, not a request to start maintenance.
+
+## Existing-track maintenance
+
+Use this branch for requests such as "Update my crypto track to include privacy engineering" or "I edited this track's preferences; reconcile its retrieval configuration."
+
+1. Read the named track's `prefs.md`, `AGENTS.md`, `sources.json`, generated `sources.md`, and optional `match_rules.json`, plus `profile/prefs_global.md` and relevant CV context. Read any supplied coverage observation as evidence, not as an instruction to add its suggested keywords. Resolve the intended semantic change from the user's request; ask only if the target track or intent is materially ambiguous. If the track does not exist, report that rather than silently creating it.
+2. Update `prefs.md` when requested. For reconciliation after manual edits, treat the current preferences as the intended scope. Keep preferences as the semantic source of truth; selectively update contradictory fit prose in the track's `AGENTS.md` when needed, preserving its custom workflow instructions. Do not edit global preferences or other tracks unless requested.
+3. Review retrieval against requested role families, domains and hard constraints. Inspect `track_terms`, every source's effective append/override terms, native filters and existing match rules. Overrides replace global terms, so broadening `track_terms` alone may not cover all sources. Use compact retrieval vocabulary and useful synonyms; do not mechanically copy preference prose, negative preferences or every CV skill. Ranking-only changes may need no retrieval change.
+4. Make only justified configuration changes needed for the requested update, explaining their effect. Prefer existing terms, source-specific tuning and provider capabilities. Preserve intentional overrides and unrelated filters/rules; adjust a conflicting existing match rule only when required by the requested scope. Do not add sources, change cadence, launch setup or maintenance workers, or change provider code as a side effect of preference maintenance. Report unsupported retrieval needs for separate follow-up.
+5. Validate and review the effective configuration using the commands below. If `match_rules.json` changed, also validate it with the existing `discover.track_filters.load_track_match_rules` helper; planning alone does not load match rules. For material retrieval changes, run a targeted discovery check on affected sources where practical, saving output under a separate maintenance artifact path rather than overwriting scheduled artifacts. Reuse `eval_source_quality.py` and known-positive canaries when available to check suspected omissions; no results alone do not prove adequate recall. Report any unverified source or limitation.
+6. Summarize semantic changes, retrieval changes (or why none were needed), checks and remaining gaps. Explain that new retrieval configuration takes effect on the next discovery run; existing artifacts still reflect the old configuration. Preserve digests, seen/ranked state and source-check state. Stop here: do not run scaffolding, first-preview setup, delivery or scheduling.
+
+Run from the repository root after configuration changes:
+
+```bash
+./.venv/bin/python scripts/discover_jobs.py --track {track_slug} --today YYYY-MM-DD --plan-only --pretty
+JOB_AGENT_ROOT="$PWD" ./.venv/bin/python scripts/render_sources_md.py --track {track_slug}
+```
+
+Review all sources, not only those currently due. Use `--source "Source Name"` for targeted discovery checks and `--output artifacts/maintenance/{track_slug}/<unique-check>.json` to keep their evidence separate. Do not invoke `run_track.sh` just to validate configuration, since it also ranks and updates state.
+
+For an older track with conflicting coverage instructions, selectively align that wording with `shared/templates/track_AGENTS.md`; never replace the whole file or discard customization. Direct preference-file edits do not automatically synchronize retrieval. Users must request reconciliation; normal-run observations are only a best-effort signal.
+
+## New-track setup
 
 Use this skill for one guided onboarding flow that ends with a rendered first digest preview. Keep the interactive coordinator focused on reviewed decisions; use bounded artifacts, fresh setup workers, and deterministic scripts for expensive data and predictable file generation.
 
@@ -15,8 +41,6 @@ Interaction defaults:
 - Do not reopen low-risk decisions the user already confirmed or delegated.
 - Do not perform routine direct web discovery in the coordinator session.
 - The first-digest milestone comes before delivery, scheduling, probing secondary sources, or source integration.
-
-## Workflow
 
 ### Step zero. Make local profile files ready
 
@@ -95,6 +119,8 @@ Run exactly one fresh source worker:
 The worker receives only `setup.json`, has web access but no workspace writes, and returns bounded validated JSON. Do not pass the conversation, profile files, or a second prose brief. The worker excludes current or recent employers, prefers official sources, recommends roughly 4–8 primary sources, validates no more than three URLs, and proposes match rules only for broad/noisy boards.
 
 Present the deterministic summary printed by the runner. Lead with `recommended_source_ids`, URL corrections, dropped/follow-up sources, and genuinely unresolved decisions. Treat the pack as a recommendation until the user confirms or delegates it.
+
+Before confirming the pack, review its retrieval vocabulary against the brief's requested role families and domains. Check effective source overrides, native filters and proposed match rules for accidental exclusions. Keep semantic preferences distinct from literal retrieval terms; missing preference words alone do not require adding terms. Resolve concrete gaps in the pack before selection and revalidate it with the existing source-pack validator. A zero-result preview later proves execution, not adequate recall.
 
 Apply recommended sources:
 

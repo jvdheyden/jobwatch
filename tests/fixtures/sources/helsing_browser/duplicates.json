@@ -1,0 +1,22 @@
+[
+  {
+    "a[href^=\"/jobs/\"]": [
+      {
+        "text": "Security Engineer\nSecurity\nFull-time\nRemote",
+        "href": "https://helsing.ai/jobs/1"
+      },
+      {
+        "text": "Security Sales Manager\nSecurity\nFull-time\nRemote",
+        "href": "https://helsing.ai/jobs/2"
+      },
+      {
+        "text": "Security Engineer\nSecurity\nFull-time\nRemote",
+        "href": "https://helsing.ai/jobs/1"
+      },
+      {
+        "text": "Security Sales Manager\nSecurity\nFull-time\nRemote",
+        "href": "https://helsing.ai/jobs/2"
+      }
+    ]
+  }
+]

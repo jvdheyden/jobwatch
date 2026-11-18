@@ -55,6 +55,21 @@ If you haven't yet, skim [`docs/architecture.md`](./docs/architecture.md) — on
 
 ## Before you push
 
+Apply the [testing skill](./.agents/skills/testing/SKILL.md). The
+[testing guide](./docs/testing.md) describes automatic discovery, provider fixtures,
+offline isolation and separate live/model checks. During development,
+`bash scripts/test.sh --fast` runs the fast offline suite. PR CI runs the full suite.
+
+| Change | Verification to include |
+| --- | --- |
+| Deterministic logic | Behavioral unit checks and meaningful edge cases |
+| Bug fix | Regression that fails on the original defect |
+| New provider | Automatically inherited registry contracts, independent expected jobs, capability checks |
+| Existing provider | Existing contracts and a fixture for the changed behavior |
+| Agent/artifact boundary | Production schema validation and malformed-input contracts |
+| Persistence or orchestration | State transitions, failure/retry integration |
+| Critical workflow | Representative execution through the real orchestrator |
+
 ```bash
 bash scripts/sync_claude_skills.sh --check   # if you touched any .agents/skills/ file
 bash scripts/test.sh

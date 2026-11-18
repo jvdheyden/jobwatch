@@ -1,6 +1,3 @@
-<!-- GENERATED FILE: source of truth is .agents/skills/discover-sources/SKILL.md -->
-<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->
-
 ---
 name: discover-sources
 description: Find employers and official job-board sources for a new job-search track from a bounded setup artifact and return a validated source pack.
@@ -37,6 +34,7 @@ The fresh `source_discovery` worker receives `setup.json` as its only user-speci
 - Use only discovery modes listed in the runner's fixed prompt. Prefer `html` when a source is official but its board family is uncertain.
 - Default to `every_3_runs`; use `every_run` only for unusually valuable or fast-moving sources and `every_month` for slower/broad follow-up sources.
 - Put source-specific search terms and native filters in the source record.
+- Derive compact retrieval vocabulary from the brief's requested role families and domains, including useful alternate wording. Review effective source terms (`append` extends track terms; `override` replaces them), native filters and proposed match rules for accidental exclusions. Do not copy semantic keep-only constraints, negative preferences or all profile skills mechanically into retrieval. Prioritize recall; semantic admission and ranking handle fit later.
 - Suggest match rules only for broad/noisy ecosystem, public-service, community, or multi-employer boards—not normal employer boards.
 - Do not run `discover_jobs.py`, source-quality evaluation, canary probing, or source integration.
 
@@ -86,3 +84,6 @@ The runner rejects unknown fields, unsafe URLs, unsupported modes, invalid ids/e
 The runner renders the human-facing summary deterministically after validation. The coordinator should not reproduce the worker transcript or dump raw records. It presents the recommended package, records confirmed ids and accepted broad-source rules in `setup.json` with `scripts/setup_contracts.py select-sources`, and continues to deterministic scaffolding.
 
 If no strong official sources exist, return an empty primary list and only credible follow-up options; say why through the bounded dropped/follow-up fields rather than padding the recommendation.
+
+<!-- GENERATED FILE: source of truth is .agents/skills/discover-sources/SKILL.md -->
+<!-- Do not edit here directly. After changing the source, resync mirrored skills. -->

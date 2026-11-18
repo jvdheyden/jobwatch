@@ -18,9 +18,11 @@ from setup_contracts import (
     SetupContractError,
     assemble_preview_digest,
     build_preview_context,
+    empty_preview_result,
     load_setup,
     write_json_atomic,
     write_preview_context,
+    write_preview_result,
 )
 
 
@@ -125,16 +127,27 @@ def run_first_preview(
             f"discovery artifact date {context['date']} does not match requested preview date {stamp}"
         )
     write_preview_context(context_path, context)
-    result, worker_status = run_worker(
-        role="preview_ranker",
-        input_path=context_path,
-        output_path=result_path,
-        provider=provider,
-        agent_bin_value=agent_bin,
-        model=model,
-        reasoning=reasoning,
-        timeout_seconds=worker_timeout_seconds,
-    )
+    if context["candidates"]:
+        result, worker_status = run_worker(
+            role="preview_ranker",
+            input_path=context_path,
+            output_path=result_path,
+            provider=provider,
+            agent_bin_value=agent_bin,
+            model=model,
+            reasoning=reasoning,
+            timeout_seconds=worker_timeout_seconds,
+        )
+    else:
+        # Nothing to rank: providers reject a schema whose candidate_id enum is
+        # empty, and a zero-result digest is still a valid preview.
+        result = write_preview_result(result_path, empty_preview_result(context), context)
+        worker_status = {
+            "status": "skipped",
+            "role": "preview_ranker",
+            "reason": "no preview candidates",
+            "output": str(result_path),
+        }
     digest = assemble_preview_digest(context, result)
     digest_path = root / "artifacts" / "digests" / track / f"{stamp}.json"
     write_json_atomic(digest_path, digest, max_bytes=2 * 1024 * 1024)

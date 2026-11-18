@@ -1,0 +1,34 @@
+{
+  "source": {
+    "source": "Workable Api",
+    "url": "https://apply.workable.com/example/"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://apply.workable.com/example/j/SEC123"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_followup_sources.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [],
+      "note": "Listing metadata only; description enrichment belongs to the common enrichment stage."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

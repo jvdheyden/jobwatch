@@ -1,0 +1,38 @@
+{
+  "source": {
+    "source": "Bundeswehr Jobsuche",
+    "url": "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html#joblist/none/TwoColumnsMidExpanded"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer Informationstechnik",
+      "url": "https://bewerbung.bundeswehr-karriere.de/erece/portal/index.html?job=security-engineer-417",
+      "alternate_url": "https://www.bundeswehrkarriere.de/security-engineer-417"
+    }
+  ],
+  "empty_status": "partial",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "integration/test_discover_public_service_sources.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_public_service_sources.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  },
+  "empty_reason": "Portal HTML fallback cannot establish complete OData enumeration."
+}

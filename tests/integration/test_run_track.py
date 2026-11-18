@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import time
+import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -34,6 +37,7 @@ echo "sync $*" >> "$ROOT/sync.log"
 from __future__ import annotations
 
 import os
+import time
 import sys
 from pathlib import Path
 
@@ -44,11 +48,27 @@ raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_EMAIL_STATUS", "0")))
 """,
     )
     _write_executable(
+        root / "scripts" / "send_run_failure_alert.py",
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import time
+import sys
+from pathlib import Path
+
+
+root = Path(os.environ["JOB_AGENT_ROOT"])
+(root / "alert.log").write_text("alert " + " ".join(sys.argv[1:]) + "\\n")
+""",
+    )
+    _write_executable(
         root / "scripts" / "send_digest_telegram.py",
         """#!/usr/bin/env python3
 from __future__ import annotations
 
 import os
+import time
 import sys
 from pathlib import Path
 
@@ -58,38 +78,14 @@ root = Path(os.environ["JOB_AGENT_ROOT"])
 raise SystemExit(int(os.environ.get("JOB_AGENT_FAKE_TELEGRAM_STATUS", "0")))
 """,
     )
-    _write_executable(
-        root / "scripts" / "update_source_state.py",
-        """#!/usr/bin/env python3
-from __future__ import annotations
-
-import argparse
-import json
-import os
-from pathlib import Path
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--track", required=True)
-parser.add_argument("--date", required=True)
-parser.add_argument("--artifact", required=True)
-args = parser.parse_args()
-
-root = Path(os.environ["JOB_AGENT_ROOT"])
-artifact = json.loads(Path(args.artifact).read_text())
-state_path = root / "tracks" / args.track / "source_state.json"
-state_path.parent.mkdir(parents=True, exist_ok=True)
-if state_path.exists():
-    state = json.loads(state_path.read_text())
-else:
-    state = {"schema_version": 1, "track": args.track, "sources": {}}
-for source in artifact.get("sources", []):
-    if source.get("status") == "complete":
-        state["sources"].setdefault(source["source_id"], {})["last_checked"] = args.date
-state_path.write_text(json.dumps(state, indent=2) + "\\n")
-(root / "source-state-updated.txt").write_text(args.date + "\\n")
-""",
-    )
+    # Real persistence; process-control tests must not duplicate state logic.
+    scripts = Path(__file__).resolve().parents[2] / "scripts"
+    for name in ("source_config.py", "update_source_state.py"):
+        shutil.copyfile(scripts / name, root / "scripts" / name)
+    (root / "tracks/demo/sources.json").write_text(json.dumps({
+        "schema_version": 1, "track": "demo", "track_terms": ["cryptography"],
+        "sources": [{"id": "example_source", "name": "Example Source", "url": "https://example.com/jobs",
+                     "discovery_mode": "html", "cadence_group": "every_run"}]}))
     _write_executable(
         root / "scripts" / "render_digest.py",
         """#!/usr/bin/env python3
@@ -97,6 +93,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import time
 from pathlib import Path
 
 
@@ -120,6 +117,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import time
 from pathlib import Path
 
 
@@ -139,6 +137,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import time
 from pathlib import Path
 
 
@@ -161,7 +160,6 @@ printf '%s\\n' "$@" > "$ROOT/codex-args.txt"
 cat > "$ROOT/codex-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
-printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 """,
     )
@@ -177,7 +175,6 @@ pwd > "$ROOT/claude-cwd.txt"
 cat > "$ROOT/claude-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
-printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 printf '{"type":"result","subtype":"success","result":"done"}\\n'
 """,
@@ -195,7 +192,6 @@ pwd > "$ROOT/gemini-cwd.txt"
 cat > "$ROOT/gemini-prompt.txt"
 mkdir -p "$ROOT/tracks/$TRACK/digests"
 mkdir -p "$ROOT/artifacts/digests/$TRACK"
-printf '# Demo digest\\n' > "$ROOT/tracks/$TRACK/digests/$TODAY.md"
 printf '{"schema_version":1,"track":"%s","date":"%s","runs":[]}\\n' "$TRACK" "$TODAY" > "$ROOT/artifacts/digests/$TRACK/$TODAY.json"
 printf '{"type":"result","result":"done"}\\n'
 """,
@@ -350,23 +346,20 @@ time.sleep(5)
 
 
 def _slow_codex_exit_zero_on_term_script() -> str:
-    return """#!/bin/bash
-set -euo pipefail
-trap 'exit 0' TERM
-cat >/dev/null
-echo "codex starting long run"
-sleep 30
+    # A single process handles TERM immediately; a shell waiting on `sleep`
+    # defers its trap and leaves the child's output pipe open for 30 seconds.
+    return """#!/usr/bin/env python3
+import signal
+import sys
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+sys.stdin.read()
+print("codex emitted one line", flush=True)
+signal.pause()
 """
 
 
 def _idle_codex_script() -> str:
-    return """#!/bin/bash
-set -euo pipefail
-trap 'exit 0' TERM
-cat >/dev/null
-echo "codex emitted one line"
-sleep 30
-"""
+    return _slow_codex_exit_zero_on_term_script()
 
 
 def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -419,7 +412,7 @@ def test_run_track_uses_caffeinate_and_logs_phase_markers(tmp_job_agent_root: Pa
     assert "Finished demo daily run" in log_text
     assert not (tmp_job_agent_root / "sync.log").exists()
     assert not (tmp_job_agent_root / "email.log").exists()
-    assert (tmp_job_agent_root / "source-state-updated.txt").read_text() == "2030-01-15\n"
+    assert json.loads((tmp_job_agent_root / "tracks/demo/source_state.json").read_text())["sources"]["example_source"]["last_checked"] == "2030-01-15"
 
     caffeinate_args = (tmp_job_agent_root / "caffeinate-args.txt").read_text()
     assert "-dimsu" in caffeinate_args
@@ -631,6 +624,7 @@ def test_run_track_email_delivery_loads_external_secrets_file(
 from __future__ import annotations
 
 import os
+import time
 import sys
 from pathlib import Path
 
@@ -872,6 +866,145 @@ def test_run_track_fails_when_requested_delivery_fails(tmp_job_agent_root: Path,
     assert "Delivery phase started: email" in log_text
     assert "Delivery phase failed: email status 17" in log_text
     assert "Finished demo daily run" not in log_text
+
+
+def test_run_track_sends_failure_alert_when_agent_fails_with_email_delivery(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    log_path = tmp_job_agent_root / "logs" / "demo-2030-01-15.log"
+    log_path.write_text("[2030-01-15 08:00:00] earlier attempt that failed differently\n")
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(
+        tmp_job_agent_root / "failing_agent.sh",
+        "#!/bin/bash\ncat >/dev/null\necho 'API Error: 401 OAuth access token has expired.'\nexit 1\n",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "failing_agent.sh"),
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 1, result.stderr
+
+    log_text = log_path.read_text()
+    assert "Codex exited with status 1" in log_text
+    assert "Sent failure alert email" in log_text
+    assert not (tmp_job_agent_root / "email.log").exists()
+    alert_call = (tmp_job_agent_root / "alert.log").read_text()
+    prefix = f"alert --track demo --date 2030-01-15 --status 1 --log-file {log_path} --log-offset "
+    assert alert_call.startswith(prefix)
+    attempt_log = log_path.read_bytes()[int(alert_call.removeprefix(prefix)) :].decode()
+    assert "earlier attempt" not in attempt_log
+    assert "Codex exited with status 1" in attempt_log
+
+
+def test_run_track_gives_up_on_a_hung_failure_alert_and_keeps_the_run_status(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(tmp_job_agent_root / "failing_agent.sh", "#!/bin/bash\ncat >/dev/null\nexit 1\n")
+    # Stands in for an SMTP server that accepts the connection and never answers.
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "send_run_failure_alert.py",
+        "#!/usr/bin/env python3\nimport time\ntime.sleep(60)\n",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "failing_agent.sh"),
+        "JOB_AGENT_ALERT_TIMEOUT_SECS": "1",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    started = time.monotonic()
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 1, result.stderr
+    assert time.monotonic() - started < 30
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Failure alert email could not be sent: timed out after 1s" in log_text
+    assert "Sent failure alert email" not in log_text
+
+
+def test_run_track_stops_the_alert_credential_helper_on_timeout(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
+    _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
+    _write_fake_caffeinate(tmp_job_agent_root)
+    _write_executable(tmp_job_agent_root / "failing_agent.sh", "#!/bin/bash\ncat >/dev/null\nexit 7\n")
+    helper_pid_file = tmp_job_agent_root / "helper.pid"
+    # Stands in for a JOB_AGENT_SMTP_PASSWORD_CMD that hangs: the sender waits on it.
+    _write_executable(
+        tmp_job_agent_root / "scripts" / "send_run_failure_alert.py",
+        "#!/usr/bin/env python3\n"
+        "import subprocess\n"
+        "helper = subprocess.Popen(['sleep', '60'])\n"
+        f"open({str(helper_pid_file)!r}, 'w').write(str(helper.pid))\n"
+        "helper.wait()\n",
+    )
+
+    env = os.environ | {
+        "JOB_AGENT_ROOT": str(tmp_job_agent_root),
+        "JOB_AGENT_TODAY": "2030-01-15",
+        "JOB_AGENT_BIN": str(tmp_job_agent_root / "failing_agent.sh"),
+        "JOB_AGENT_ALERT_TIMEOUT_SECS": "1",
+        "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+    }
+
+    result = run_cmd(
+        "bash",
+        str(repo_root / "scripts" / "run_track.sh"),
+        "--track",
+        "demo",
+        "--delivery",
+        "email",
+        "--timeout-secs",
+        "120",
+        "--discovery-timeout-secs",
+        "30",
+        env=env,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 7, result.stderr
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert "Failure alert email could not be sent: timed out after 1s" in log_text
+    helper_pid = int(helper_pid_file.read_text())
+    with pytest.raises(ProcessLookupError):
+        os.kill(helper_pid, 0)
 
 
 def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
@@ -1184,6 +1317,7 @@ def test_run_track_fails_when_codex_times_out_even_if_codex_exits_zero_on_term(
     assert "Codex phase finished successfully" not in log_text
     assert not (tmp_job_agent_root / "tracks" / "demo" / "digests" / "2030-01-15.md").exists()
     assert not (tmp_job_agent_root / "sync.log").exists()
+    assert not (tmp_job_agent_root / "alert.log").exists()
 
 
 def test_run_track_aborts_idle_codex_and_logs_heartbeat(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:

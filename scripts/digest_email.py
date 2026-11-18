@@ -76,6 +76,7 @@ def normalize_ranked_payload(payload: dict[str, Any] | None, *, expected_track: 
                 "date_seen": _optional_text(job.get("date_seen")) or "unknown",
                 "last_seen": _optional_text(job.get("last_seen")) or "unknown",
                 "times_seen": _optional_int(job.get("times_seen"), f"ranked overview jobs[{index}].times_seen"),
+                "closed_on": _optional_text(job.get("closed_on")),
             }
         )
 

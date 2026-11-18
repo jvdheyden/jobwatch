@@ -1,0 +1,36 @@
+{
+  "source": {
+    "source": "Enbw Phenom",
+    "url": "https://careers.enbw.com/en_US/careers"
+  },
+  "terms": [
+    "cryptography",
+    "zero-knowledge",
+    "security"
+  ],
+  "expected": [
+    {
+      "title": "Security Engineer",
+      "url": "https://careers.enbw.com/de/de/job/23176/security-engineer"
+    }
+  ],
+  "empty_status": "complete",
+  "capabilities": {
+    "pagination": {
+      "tests": [
+        "contract/test_api_pagination.py"
+      ],
+      "note": "Exercise the provider paging boundary in addition to shared extraction."
+    },
+    "details": {
+      "tests": [
+        "integration/test_discover_public_service_sources.py"
+      ],
+      "note": "Provider-specific role content or enrichment; common fallback is tested in unit/test_enrich_candidate_descriptions.py."
+    },
+    "browser": {
+      "tests": [],
+      "note": "HTTP transport; no browser automation."
+    }
+  }
+}

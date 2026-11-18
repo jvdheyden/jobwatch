@@ -108,25 +108,9 @@ def test_setup_machine_creates_local_files_and_preserves_schedule(tmp_job_agent_
     assert f"export JOB_AGENT_ROOT={bash_quote(tmp_job_agent_root)}" in env_text
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
     assert f"export JOB_AGENT_BIN={bash_quote(fake_bin_dir / 'codex')}" in env_text
-    assert "# Optional: Logseq graph root for digest publication." in env_text
-    assert "# Optional: Telegram delivery for digest notifications." in env_text
-    assert "# export JOB_AGENT_TELEGRAM_CHAT_ID=123456789" in env_text
-    assert "# export JOB_AGENT_TELEGRAM_BOT_TOKEN_CMD='pass show chat/jobwatch-telegram-bot'" in env_text
-    assert "# export JOB_AGENT_TELEGRAM_BOT_TOKEN=123456:telegram-bot-token" in env_text
-    assert "# Optional: SMTP settings for email delivery." in env_text
-    assert "# export JOB_AGENT_EMAIL_PROVIDER=gmail" in env_text
-    assert "# export JOB_AGENT_EMAIL_ACCOUNT=jobs@example.com" in env_text
-    assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" in env_text
-    assert "# export JOB_AGENT_SMTP_PORT=587" in env_text
-    assert "# export JOB_AGENT_SMTP_FROM=jobs@example.com" in env_text
-    assert "# export JOB_AGENT_SMTP_TO=you@example.com" in env_text
-    assert "# export JOB_AGENT_SMTP_USERNAME=jobs@example.com" in env_text
     assert f"export JOB_AGENT_SECRETS_FILE={bash_quote(tmp_job_agent_root / 'home' / '.config' / 'jobwatch' / 'secrets.sh')}" in env_text
-    assert "# export JOB_AGENT_SMTP_PASSWORD_CMD='pass show email/jobwatch-smtp'" in env_text
-    assert "# export JOB_AGENT_SMTP_PASSWORD=app-password" in env_text
     assert "Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported." in env_text
     assert bash_quote(tmp_job_agent_root / "home" / ".config" / "jobwatch" / "secrets.sh") in env_text
-    assert "# export JOB_AGENT_SMTP_TLS=starttls" in env_text
     assert (profile_dir / "cv.md").exists()
     assert (profile_dir / "prefs_global.md").exists()
     assert "JOB_AGENT_PROFILE_TEMPLATE: cv.md" in (profile_dir / "cv.md").read_text()
@@ -294,7 +278,6 @@ def test_setup_machine_preserves_existing_smtp_values_but_removes_plaintext_pass
     assert bash_quote(secrets_file) in env_text
     assert "Plaintext repo-local JOB_AGENT_SMTP_PASSWORD is no longer supported." in env_text
     assert "export JOB_AGENT_SMTP_TLS=none" in env_text
-    assert "# export JOB_AGENT_SMTP_HOST=smtp.example.com" not in env_text
     assert "Removed legacy JOB_AGENT_SMTP_PASSWORD" in result.stdout
 
 
@@ -570,7 +553,6 @@ def test_setup_machine_interactively_prompts_for_missing_codex(tmp_job_agent_roo
     env_text = env_file.read_text()
     assert "export JOB_AGENT_PROVIDER=codex" in env_text
     assert f"export JOB_AGENT_BIN={bash_quote(fake_codex)}" in env_text
-    assert "# export LOGSEQ_GRAPH_DIR=/absolute/path/to/logseq" in env_text
 
 
 def test_setup_machine_interactively_accepts_detected_defaults(tmp_job_agent_root: Path, repo_root: Path) -> None:
@@ -1296,7 +1278,6 @@ pwd > "{cwd_file}"
     assert args[args.index("-m") + 1] == "gpt-5.5"
     assert 'model_reasoning_effort="medium"' in args
     assert "Use the project skill $set-up" in prompt_file.read_text()
-    assert "pick whatever you think is best" in prompt_file.read_text()
     assert "scripts/scaffold_track.py" in prompt_file.read_text()
     assert "scripts/run_setup_preview.py" in prompt_file.read_text()
     assert password_file.read_text() == "\n"

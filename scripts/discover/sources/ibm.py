@@ -119,7 +119,9 @@ def discover_ibm_api(source: SourceConfig, terms: list[str], timeout_seconds: in
             timeout_seconds,
             headers={"Referer": "https://www.ibm.com/"},
         )
-        hits = response.get("hits", {})
+        if not isinstance(response, dict) or not isinstance(response.get("hits"), dict) or not isinstance(response["hits"].get("hits"), list):
+            raise ValueError("IBM search response is missing hits.hits list")
+        hits = response["hits"]
         total = hits.get("total", {})
         total_hits = int(total.get("value", total_hits or 0) or 0)
         page_hits = hits.get("hits", [])

@@ -24,16 +24,17 @@ def filter_recent_ranked_jobs(
     as_of: date | None,
     days: int = RECENT_CUTOFF_DAYS,
 ) -> list[dict[str, Any]]:
-    """Return jobs whose `last_seen` is within `days` of `as_of`.
+    """Return open jobs whose `last_seen` is within `days` of `as_of`.
 
-    When `as_of` is None, returns the list unchanged (no filter).
-    Jobs with missing or non-date `last_seen` values sort above YYYY-MM-DD
-    strings and are therefore kept.
+    Jobs with a `closed_on` date are always dropped. When `as_of` is None,
+    no date filter is applied. Jobs with missing or non-date `last_seen`
+    values sort above YYYY-MM-DD strings and are therefore kept.
     """
+    open_jobs = [job for job in jobs if not job.get("closed_on")]
     if as_of is None:
-        return list(jobs)
+        return open_jobs
     cutoff = (as_of - timedelta(days=days)).isoformat()
-    return [job for job in jobs if str(job.get("last_seen", "")) >= cutoff]
+    return [job for job in open_jobs if str(job.get("last_seen", "")) >= cutoff]
 
 
 class DigestValidationError(ValueError):

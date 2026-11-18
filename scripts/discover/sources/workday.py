@@ -171,6 +171,7 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
         term_total = 0
         offset = 0
         page_signatures: set[str] = set()
+        term_ids: set[str] = set()
         while True:
             payload = {"limit": WORKDAY_RESULTS_PAGE_SIZE, "offset": offset, "searchText": term}
             try:
@@ -179,7 +180,10 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
                 errored_terms.append(term)
                 break
 
-            postings = response.get("jobPostings", []) if isinstance(response, dict) else []
+            if not isinstance(response, dict) or not isinstance(response.get("jobPostings"), list):
+                limitations.append(f"Workday response for '{term}' is missing the jobPostings list")
+                break
+            postings = response["jobPostings"]
             if term_total == 0:
                 term_total = int(response.get("total", 0) or 0) if isinstance(response, dict) else 0
             if not postings:
@@ -200,6 +204,7 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
                 absolute_url = build_workday_job_url(source.url, external_path)
                 raw_id = external_path or title
                 raw_seen_ids.add(raw_id)
+                term_ids.add(raw_id)
                 location = posting.get("locationsText") or "unknown"
                 searchable_text = " ".join(
                     part
@@ -235,6 +240,8 @@ def discover_workday_api(source: SourceConfig, terms: list[str], timeout_seconds
             if term_total and offset >= term_total:
                 break
 
+        if len(term_ids) < term_total:
+            limitations.append(f"Workday search for '{term}' enumerated {len(term_ids)} of {term_total} jobs")
         term_summaries.append(f"{term}={term_pages_scanned}p/{term_total}")
 
     direct_job_pages_opened = 0

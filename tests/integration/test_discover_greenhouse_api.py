@@ -1,7 +1,51 @@
 from __future__ import annotations
 
+import pytest
+
 import discover_jobs
 from discover import http as discover_http
+
+
+@pytest.mark.parametrize(
+    ("terms", "expected_matches"),
+    [
+        (["cryptography"], 0),
+        (["cryptography", "privacy"], 1),
+        (["privacy"], 1),
+    ],
+)
+def test_greenhouse_coverage_is_complete_even_when_configured_terms_match_nothing(
+    monkeypatch, terms, expected_matches
+):
+    source = discover_jobs.SourceConfig(
+        source="Example Greenhouse",
+        url="https://job-boards.greenhouse.io/example",
+        discovery_mode="greenhouse_api",
+        last_checked=None,
+        cadence_group="every_run",
+    )
+    monkeypatch.setattr(
+        discover_http,
+        "fetch_json",
+        lambda url, timeout_seconds: {
+            "jobs": [{
+                "title": "Software Engineer",
+                "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1",
+                "location": {"name": "Remote"},
+                "content": "<p>Build privacy engineering tools and data protection systems.</p>",
+            }],
+        },
+    )
+
+    coverage = discover_jobs.discover_greenhouse_api(source, terms, timeout_seconds=5)
+
+    assert coverage.status == "complete"
+    assert coverage.search_terms_tried == terms
+    assert coverage.enumerated_jobs == 1
+    assert coverage.matched_jobs == expected_matches
+    assert len(coverage.candidates) == expected_matches
+    if expected_matches:
+        assert coverage.candidates[0].matched_terms == ["privacy"]
 
 
 def test_discover_greenhouse_api_populates_description_from_html_content(monkeypatch):
