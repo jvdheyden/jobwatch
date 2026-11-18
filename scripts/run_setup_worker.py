@@ -14,11 +14,9 @@ from pathlib import Path
 from typing import Any
 
 from agent_provider import (
-    SETUP_ROLES,
     build_setup_worker_command,
     resolve_agent_bin,
-    resolve_agent_provider,
-    resolve_setup_policy,
+    resolve_model_policy,
 )
 from runtime_env import RuntimeEnvError, apply_runtime_env
 from setup_contracts import (
@@ -37,7 +35,7 @@ from setup_contracts import (
 )
 
 
-WORKER_ROLES = tuple(role for role in SETUP_ROLES if role != "setup_coordinator")
+WORKER_ROLES = ("source_discovery", "preview_ranker")
 DEFAULT_TIMEOUT_SECONDS = 900
 
 
@@ -49,7 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--provider", choices=("codex", "claude", "gemini"))
     parser.add_argument("--agent-bin", help="Explicit provider executable")
     parser.add_argument("--model", help="Explicit model override for this invocation")
-    parser.add_argument("--reasoning", help="Explicit Codex reasoning override")
+    parser.add_argument("--reasoning", help="Explicit Codex or Claude reasoning override")
     parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
     return parser
 
@@ -144,13 +142,13 @@ def run_worker(
     if timeout_seconds <= 0:
         raise SetupContractError("timeout must be positive")
     input_payload = load_setup(input_path) if role == "source_discovery" else load_preview_context(input_path)
-    resolved_provider = resolve_agent_provider(provider)
-    policy = resolve_setup_policy(
-        resolved_provider,
+    policy = resolve_model_policy(
+        provider,
         role,
         model=model,
         reasoning=reasoning,
     )
+    resolved_provider = policy.provider
     agent_bin = resolve_agent_bin(agent_bin_value, provider=resolved_provider)
     if agent_bin is None:
         raise SetupContractError(f"could not find executable for {resolved_provider}")
@@ -173,6 +171,7 @@ def run_worker(
             schema_path=schema_path,
             schema=schema,
         )
+        print(policy.describe(), file=sys.stderr)
         try:
             completed = subprocess.run(
                 command,

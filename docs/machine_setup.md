@@ -67,17 +67,78 @@ When `scripts/setup_machine.sh` is run with `--agent claude`, it merges a repo-l
 
 When `scripts/setup_machine.sh` is run with `--agent codex`, it writes a repo-local `.codex/config.toml` with a managed `shell_environment_policy` that puts the checkout's `./.venv/bin` first on `PATH`. This ensures that Codex shell commands use the project's virtualenv. If an existing unmanaged `shell_environment_policy` is present, setup reports a conflict and leaves it unchanged.
 
-Guided setup has three model roles without changing ordinary scheduled ranking or source-integration routing:
+### Agent Model Selection
 
-| Role | Default posture | Invocation |
-| --- | --- | --- |
-| `setup_coordinator` | balanced, medium reasoning where supported | interactive `start_setup_agent.sh` |
-| `source_discovery` | economical, web-capable, read-only | fresh `run_setup_worker.py` process |
-| `preview_ranker` | economical, no-web, read-only | fresh `run_setup_worker.py` process |
+Jobwatch selects a model when it launches an agent for guided setup, a track run,
+or source maintenance. The guided setup coordinator is included because Jobwatch
+launches it. Skills and separately started interactive sessions use their normal
+provider configuration.
 
-The default models are centralized in `scripts/agent_provider.py`: Codex uses `gpt-5.5`/medium for the coordinator and `gpt-5.4-mini`/low for both workers; Claude uses `sonnet` for the coordinator and `claude-haiku-4-5` for workers; Gemini uses `gemini-3-pro-preview` for the coordinator and `gemini-3-flash-preview` for workers.
+| Tier | Intended use | Codex | Claude | Gemini |
+| --- | --- | --- | --- | --- |
+| `frontier-latest` | Difficult evaluations and reviews | `gpt-6.2-astra` | `opus` | `pro` |
+| `workhorse-latest` | Coding, research, and general agent work | `gpt-6.2-sol` | `sonnet` | `flash` |
+| `cheapo-latest` | Inexpensive, tightly constrained work | `gpt-6-luna` | `haiku` | `flash-lite` |
 
-Override one role with `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, for example `JOB_AGENT_CODEX_PREVIEW_RANKER_MODEL`. Codex reasoning uses `JOB_AGENT_CODEX_<ROLE>_REASONING_EFFORT`. Explicit launcher/worker `--model` and `--reasoning` arguments take precedence. `JOB_AGENT_CODEX_SETUP_MODEL`, `JOB_AGENT_CODEX_SETUP_REASONING_EFFORT`, `JOB_AGENT_CLAUDE_SETUP_MODEL`, and `JOB_AGENT_GEMINI_SETUP_MODEL` remain compatibility aliases for `setup_coordinator`.
+| Agent | Role key | Default tier | Codex and Claude effort |
+| --- | --- | --- | --- |
+| Guided setup coordinator | `SETUP_COORDINATOR` | `workhorse-latest` | `medium` |
+| Source discovery worker | `SOURCE_DISCOVERY` | `workhorse-latest` | `medium` |
+| First-preview ranker | `PREVIEW_RANKER` | `workhorse-latest` | `medium` |
+| Track agent, including manual runs through `run_track.sh` | `SCHEDULED` | `workhorse-latest` | `medium` |
+| Source-quality reviewer | `REVIEWER` | `frontier-latest` | `high` |
+| Source-integration coder | `CODER` | `workhorse-latest` | `medium` |
+
+#### Overrides
+
+Put persistent overrides in the checkout's gitignored `.env.local`. Jobwatch
+resolves the model in this order.
+
+1. Explicit model. The setup launcher, setup worker, and preview runner accept
+   `--model`. The next choice is `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, with the
+   provider and role in uppercase. For the setup coordinator, the older
+   `JOB_AGENT_<PROVIDER>_SETUP_MODEL` keys still work. The scheduled, reviewer,
+   and coder roles also honor an exported `ANTHROPIC_MODEL` or `GEMINI_MODEL`
+   for the corresponding provider when no Jobwatch model override is set.
+2. Configured tier. Set `JOB_AGENT_<ROLE>_TIER` to select the same tier across
+   providers for that role.
+3. The role's default tier from the table above.
+
+For example, `export JOB_AGENT_SCHEDULED_TIER=frontier-latest` applies to track
+runs across all providers. `export JOB_AGENT_CLAUDE_SCHEDULED_MODEL=sonnet`
+takes precedence on Claude runs.
+
+Reasoning is independent of tier. The setup entry points accept `--reasoning`
+for Codex and Claude. It takes precedence over
+`JOB_AGENT_<PROVIDER>_<ROLE>_REASONING_EFFORT` and the role default. The legacy
+`JOB_AGENT_CODEX_SETUP_REASONING_EFFORT` remains a fallback for the coordinator.
+Codex accepts `none`, `low`, `medium`, `high`, and `xhigh` in Jobwatch.
+Claude accepts `low`, `medium`, `high`, `xhigh`, and `max`. Claude's native
+`CLAUDE_CODE_EFFORT_LEVEL` takes precedence over its `--effort` flag. Gemini
+thinking is controlled by its model settings and is logged as provider-managed.
+
+Jobwatch logs the requested tier (or explicit override), model or alias, and
+reasoning effort at launch. Invalid tier names, malformed model IDs, and invalid
+effort settings fail locally. The provider CLI checks whether a well-formed
+model ID is available to the account and supports the requested effort. Jobwatch
+does not retry with a different model or provider.
+
+#### CLI compatibility and updates
+
+Verified offline with Codex CLI 0.170.0, Claude Code 2.1.121, and Gemini CLI
+0.39.1. The Codex client's cached catalog listed all three IDs with the default
+efforts above. Claude's CLI exposes `--model` and `--effort`, and Gemini's
+installed CLI recognizes the three aliases through `--model`. Provider and
+account settings affect alias targets, effort support, and native routing.
+See the [Codex model selection guide](https://developers.openai.com/api/docs/guides/model-selection),
+[Claude Code model configuration](https://code.claude.com/docs/en/model-config),
+and [Gemini CLI model reference](https://geminicli.com/docs/cli/cli-reference/#model-selection).
+
+When new Codex families are available, update the Codex entries in
+`TIER_MODELS` in [`scripts/agent_provider.py`](../scripts/agent_provider.py).
+Verify the new IDs and default efforts against the supported CLI, then update
+the focused test expectations and this table. Claude and Gemini manage their
+alias targets.
 
 ### Basic Options
 - `JOB_AGENT_PROVIDER` stores that selected provider in `.env.local`.

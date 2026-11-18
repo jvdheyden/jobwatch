@@ -146,7 +146,9 @@ flowchart LR
 
 The sequence diagram shows what happens for a single scheduled run.
 
-Before discovery, `run_track.sh` resolves the Codex scheduled model policy from `.env.local` through `agent_provider.py`, validates it, and logs the model and reasoning effort. It passes both explicitly to Codex. `find-jobs` and `rank-jobs` run within that same session. The policy also applies when `run_track.sh` is invoked manually.
+Before discovery, `run_track.sh` resolves and logs the [scheduled agent's model policy](machine_setup.md#agent-model-selection).
+Both `find-jobs` and `rank-jobs` run in the same session. Manual runs through
+`run_track.sh` use the same policy.
 
 ```mermaid
 sequenceDiagram
@@ -396,7 +398,8 @@ An empty selected source list is valid before confirmation but blocks `scaffold_
 
 The deterministic assembler joins candidate judgments back to URLs and source coverage, then emits the existing digest schema. The source runner reads the canonical `discover-sources/SKILL.md` and `shared/source_curation.md` and includes their text inline, followed by its supported-mode and output contract. No workspace access or second instruction copy is needed. Runtime provider policy, isolation, hashes, output validation and persistence remain runner-owned. The two workers cannot write the workspace and never resume the coordinator conversation. Source discovery is web-capable; preview ranking is instructed and configured without routine web access. `scaffold_track.py` has no model role because it makes no model call.
 
-Setup model defaults and provider command construction live in `scripts/agent_provider.py`. Explicit CLI arguments override provider/role environment values, which override tested defaults. These setup-only policies do not change `run_track.sh`, `source_reviewer`, or `source_coder` behavior.
+Guided setup uses the shared [agent model policy](machine_setup.md#agent-model-selection)
+in `scripts/agent_provider.py`.
 
 ## Source selection and portfolio maintenance
 

@@ -64,9 +64,12 @@ else:
     path.chmod(0o755)
 
 
-@pytest.mark.parametrize("provider", ["codex", "claude", "gemini"])
+@pytest.mark.parametrize(
+    ("provider", "model_flag", "model"),
+    [("codex", "-m", "gpt-6.2-sol"), ("claude", "--model", "sonnet"), ("gemini", "--model", "flash")],
+)
 def test_source_worker_uses_fresh_artifact_only_process_and_validates_output(
-    tmp_path: Path, monkeypatch, provider: str
+    tmp_path: Path, monkeypatch, capsys, provider: str, model_flag: str, model: str
 ) -> None:
     setup_path = tmp_path / "setup.json"
     setup = json.loads((FIXTURES / "setup.json").read_text())
@@ -89,8 +92,12 @@ def test_source_worker_uses_fresh_artifact_only_process_and_validates_output(
     )
 
     assert status["role"] == "source_discovery"
+    assert status["model"] == model
     assert payload == setup_contracts.load_source_pack(output_path, setup_contracts.load_setup(setup_path))
     invocation = json.loads(log_path.read_text())
+    args = invocation["args"]
+    assert args[args.index(model_flag) + 1] == model
+    assert "tier=workhorse-latest" in capsys.readouterr().err
     assert "JOBWATCH_SETUP_WORKER_ROLE=source_discovery" in invocation["prompt"]
     assert str(setup_path) not in invocation["prompt"]
     root = Path(__file__).resolve().parents[2]

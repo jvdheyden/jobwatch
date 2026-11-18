@@ -36,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--provider", choices=("codex", "claude", "gemini"))
     parser.add_argument("--agent-bin")
     parser.add_argument("--model", help="Explicit preview-ranker model override")
-    parser.add_argument("--reasoning", help="Explicit Codex preview-ranker reasoning override")
+    parser.add_argument("--reasoning", help="Explicit Codex or Claude preview-ranker reasoning override")
     parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument("--discovery-timeout-seconds", type=int, default=900)
     parser.add_argument("--root", help=argparse.SUPPRESS)

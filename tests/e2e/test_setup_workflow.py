@@ -180,6 +180,9 @@ def test_guided_setup_uses_two_bounded_workers_and_no_model_scaffolding(
 
         invocations = [json.loads(line) for line in log_path.read_text().splitlines()]
         assert [item["role"] for item in invocations] == ["source_discovery", "preview_ranker"]
+        args = invocations[1]["args"]
+        assert args[args.index("-m") + 1] == "gpt-6.2-sol"
+        assert 'model_reasoning_effort="medium"' in args
         assert "Static HTML enumeration" not in invocations[1]["prompt"]
         assert "BEGIN_INPUT_JSON" in invocations[1]["prompt"]
         context = json.loads(Path(preview["preview_context"]).read_text())

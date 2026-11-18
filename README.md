@@ -127,6 +127,8 @@ Ask your agent, for example: "Update my crypto track to also include privacy eng
 
 If you edit `tracks/<track-slug>/prefs.md` directly, ask: "Reconcile this track's retrieval configuration with its updated preferences." File edits do not automatically synchronize retrieval. Normal runs may report possible gaps as search-quality observations in coverage notes; they do not change configuration. Updated retrieval applies to the next discovery run.
 
+See [agent model selection](docs/machine_setup.md#agent-model-selection) for the tiers, role defaults, and overrides used by Jobwatch launchers.
+
 ## Manual Run
 
 To run a track immediately:
@@ -165,25 +167,12 @@ Successful source integrations land as edits in your working tree. To upstream t
 
 Select the provider explicitly during setup. The setup scripts write the selected provider and executable path into `.env.local`.
 
-Guided setup routes three roles independently: interactive `setup_coordinator`, web-capable `source_discovery`, and no-web `preview_ranker`. Override a setup role with `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, such as `JOB_AGENT_CODEX_PREVIEW_RANKER_MODEL`; Codex reasoning overrides use the matching `_REASONING_EFFORT` suffix. Explicit `--model` and `--reasoning` arguments on `start_setup_agent.sh` or `run_setup_worker.py` take precedence. Existing `JOB_AGENT_CODEX_SETUP_MODEL`, `JOB_AGENT_CODEX_SETUP_REASONING_EFFORT`, `JOB_AGENT_CLAUDE_SETUP_MODEL`, and `JOB_AGENT_GEMINI_SETUP_MODEL` values remain coordinator aliases.
-
 For Codex:
 
 ```bash
 export JOB_AGENT_PROVIDER=codex
 export JOB_AGENT_BIN=/absolute/path/to/codex
 ```
-
-Codex track runs launched through `scripts/run_track.sh` (scheduled or manual) use `gpt-5.6-sol` with `medium` reasoning by default. The runner passes both settings explicitly, so changing your interactive Codex defaults does not change track runs. Both `find-jobs` and `rank-jobs` share this model within one session.
-
-Override these settings in each checkout's gitignored `.env.local`:
-
-```bash
-export JOB_AGENT_CODEX_SCHEDULED_MODEL=gpt-5.6-sol
-export JOB_AGENT_CODEX_SCHEDULED_REASONING_EFFORT=medium
-```
-
-The runner logs the resolved settings before discovery and rejects empty or malformed overrides. Reasoning levels are `none`, `low`, `medium`, `high`, and `xhigh`; the selected model must support the chosen level. Defaults and validation live in `scripts/agent_provider.py`. `setup_machine.sh` preserves these overrides when rerun. Setup, coding, and reviewer sessions use their own existing policies.
 
 For Claude Code:
 

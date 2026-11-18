@@ -210,7 +210,7 @@ def run_eval(
         command.extend(["--canary-url", canary_url])
     if reviewer_bin:
         command.extend(["--reviewer-bin", reviewer_bin])
-    return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+    return subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, check=False)
 
 
 def run_source_integration(
@@ -259,7 +259,7 @@ def run_source_integration(
         command.extend(["--reviewer-bin", reviewer_bin])
     if coder_bin:
         command.extend(["--coder-bin", coder_bin])
-    return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+    return subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, check=False)
 
 
 def _normalize_terms_payload(value: Any, strategy: str) -> dict[str, Any] | None:

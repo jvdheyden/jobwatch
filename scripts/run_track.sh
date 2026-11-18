@@ -257,26 +257,29 @@ fi
 log "Using discovery Python interpreter: $PYTHON_BIN"
 log "Using $AGENT_LABEL provider via $AGENT_BIN"
 
-if [[ "$AGENT_PROVIDER" == "codex" ]]; then
-  if ! CODEX_SCHEDULED_POLICY="$("$PYTHON_BIN" - "$SCRIPT_DIR" <<'PY'
+# Bash 3.2 on macOS has no mapfile.
+AGENT_MODEL_ARGS=()
+while IFS= read -r -d '' model_arg; do
+  AGENT_MODEL_ARGS+=("$model_arg")
+done < <(
+  "$PYTHON_BIN" - "$SCRIPT_DIR" "$AGENT_PROVIDER" <<'PY'
 import sys
 
 sys.path.insert(0, sys.argv[1])
-from agent_provider import resolve_codex_scheduled_policy
+from agent_provider import model_args, resolve_model_policy
 
 try:
-    policy = resolve_codex_scheduled_policy()
+    policy = resolve_model_policy(sys.argv[2], "scheduled")
 except ValueError as exc:
     print(f"run_track.sh: {exc}", file=sys.stderr)
     raise SystemExit(2)
-print(policy.model, policy.reasoning)
+print(policy.describe(), file=sys.stderr)
+sys.stdout.buffer.write(b"\0".join(arg.encode() for arg in model_args(policy)) + b"\0")
 PY
-)"; then
-    log "Could not resolve Codex scheduled model policy"
-    exit 2
-  fi
-  read -r CODEX_SCHEDULED_MODEL CODEX_SCHEDULED_REASONING_EFFORT <<<"$CODEX_SCHEDULED_POLICY"
-  log "Using Codex scheduled model: $CODEX_SCHEDULED_MODEL (reasoning effort: $CODEX_SCHEDULED_REASONING_EFFORT)"
+)
+if [[ ${#AGENT_MODEL_ARGS[@]} -eq 0 ]]; then
+  log "Could not resolve $AGENT_LABEL scheduled model policy"
+  exit 2
 fi
 
 LAST_BG_PID=""
@@ -565,8 +568,7 @@ run_agent_command() {
   case "$AGENT_PROVIDER" in
     codex)
       "$AGENT_BIN" --search -a never exec \
-        -m "$CODEX_SCHEDULED_MODEL" \
-        -c "model_reasoning_effort=\"$CODEX_SCHEDULED_REASONING_EFFORT\"" \
+        "${AGENT_MODEL_ARGS[@]}" \
         -C "$ROOT" -s workspace-write - <"$PROMPT_FILE"
       ;;
     claude)
@@ -575,6 +577,7 @@ run_agent_command() {
         "$AGENT_BIN" \
           -p \
           --no-session-persistence \
+          "${AGENT_MODEL_ARGS[@]}" \
           --output-format stream-json \
           --permission-mode "${JOB_AGENT_CLAUDE_PERMISSION_MODE:-acceptEdits}" \
           --allowedTools "${JOB_AGENT_CLAUDE_SCHEDULED_ALLOWED_TOOLS:-Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite}" \
@@ -588,6 +591,7 @@ run_agent_command() {
         export GEMINI_SANDBOX="${JOB_AGENT_GEMINI_SANDBOX:-${GEMINI_SANDBOX:-false}}"
         "$AGENT_BIN" \
           --skip-trust \
+          "${AGENT_MODEL_ARGS[@]}" \
           --output-format stream-json \
           --approval-mode "${JOB_AGENT_GEMINI_SCHEDULED_APPROVAL_MODE:-${JOB_AGENT_GEMINI_APPROVAL_MODE:-yolo}}" \
           <"$PROMPT_FILE"
