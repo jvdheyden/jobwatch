@@ -7,7 +7,7 @@ import re
 from typing import Any
 from urllib.parse import urlencode, urljoin
 
-from discover import helpers
+from discover import helpers, http
 from discover.constants import DEFAULT_BROWSER_TIMEOUT_MS, MAX_BROWSER_PAGES
 from discover.core import (
     BrowserEnrichmentResult,
@@ -22,6 +22,9 @@ from discover.registry import SourceAdapter
 
 
 GOOGLE_RESULTS_PAGE_SIZE = 20
+GIZ_JOBS_CATALOG_URL = "https://jobs.giz.de/index.php?ac=search_result"
+GIZ_JOBS_SEARCH_API_URL = "https://giz-beesite-production-gjb.app.beesite.de/search/"
+GIZ_RESULTS_PAGE_SIZE = 10
 GOOGLE_LOCATION_FILTERS = (
     "Munich, Germany",
     "Zurich, Switzerland",
@@ -139,6 +142,275 @@ def meta_search_url(source: SourceConfig, term: str, page_num: int) -> str:
     del page_num
     base = urljoin(source.url.rstrip("/") + "/", "/jobsearch")
     return f"{base}?{urlencode({'q': term})}"
+
+
+def giz_search_url(source: SourceConfig, term: str, page_num: int) -> str:
+    del source, page_num
+    params = {
+        "ac": "search_result",
+        "search_criterion_keyword": term,
+        "btn_dosearch": "1",
+        "language": "2",
+    }
+    return f"https://jobs.giz.de/index.php?{urlencode(params)}"
+
+
+def prepare_giz_results(page: Any) -> None:
+    try:
+        page.wait_for_function(
+            "() => !document.querySelector('[data-gjb-hidden-until-loaded]')?.hidden",
+            timeout=10000,
+        )
+    except Exception:
+        page.wait_for_timeout(1000)
+
+
+def advance_giz_results(page: Any, source: SourceConfig, term: str, page_num: int) -> bool:
+    del source, term
+    next_link = page.locator('ul.pagination a[title="Next page"]').first
+    if not next_link.count():
+        return False
+    parent_class = next_link.locator("xpath=parent::li").get_attribute("class") or ""
+    if "disabled" in parent_class.split():
+        return False
+
+    first_link = page.locator('a[href*="ac=jobad"]').first
+    current_first = first_link.get_attribute("href") if first_link.count() else ""
+    next_link.click(timeout=5000)
+    for _ in range(20):
+        page.wait_for_timeout(250)
+        active_page = page.locator("ul.pagination li.active a").first
+        active_label = active_page.inner_text().strip() if active_page.count() else ""
+        first_link = page.locator('a[href*="ac=jobad"]').first
+        next_first = first_link.get_attribute("href") if first_link.count() else ""
+        if active_label == str(page_num) and next_first != current_first:
+            return True
+    return False
+
+
+def giz_api_search_url(term: str, page_num: int) -> str:
+    payload = {
+        "LanguageCode": "EN",
+        "SearchParameters": {
+            "FirstItem": (page_num - 1) * GIZ_RESULTS_PAGE_SIZE + 1,
+            "CountItem": GIZ_RESULTS_PAGE_SIZE,
+            "Sort": [{"Criterion": "PublicationStartDate", "Direction": "DESC"}],
+            "MatchedObjectDescriptor": [
+                "ID",
+                "PositionTitle",
+                "PositionURI",
+                "PositionLocation.CountryName",
+                "PositionLocation.CityName",
+                "JobCategory.Name",
+                "PublicationEndDate",
+            ],
+        },
+        "SearchCriteria": [
+            {
+                "CriterionName": "PositionFormattedDescription.Content",
+                "CriterionValue": [term],
+            },
+            {
+                "CriterionName": "PublicationChannel.Code",
+                "CriterionValue": ["12"],
+            },
+        ],
+    }
+    return f"{GIZ_JOBS_SEARCH_API_URL}?{urlencode({'data': json.dumps(payload, separators=(',', ':'))})}"
+
+
+def giz_location_from_descriptor(descriptor: dict[str, Any]) -> str:
+    raw_locations = descriptor.get("PositionLocation")
+    if not isinstance(raw_locations, list):
+        return "unknown"
+    locations: list[str] = []
+    for raw_location in raw_locations:
+        if not isinstance(raw_location, dict):
+            continue
+        city = normalize_whitespace(str(raw_location.get("CityName") or ""))
+        country = normalize_whitespace(str(raw_location.get("CountryName") or ""))
+        location = city or country
+        if location and location not in locations:
+            locations.append(location)
+    return "; ".join(locations) or "unknown"
+
+
+def extract_giz_detail_text(detail_html: str) -> str:
+    detail_text = helpers.visible_text_from_html(detail_html)
+    start_matches = [
+        match
+        for pattern in (r"\bJob[- ]ID\s*:", r"\bEinsatzort\s*:?", r"\bLocation\s*:?")
+        if (match := re.search(pattern, detail_text, flags=re.IGNORECASE))
+    ]
+    if start_matches:
+        detail_text = detail_text[min(match.start() for match in start_matches) :]
+    stop_matches = [
+        match.start()
+        for pattern in (
+            r"\bJavaScript is disabled\b",
+            r"\bBitte aktivieren Sie JavaScript\b",
+        )
+        if (match := re.search(pattern, detail_text, flags=re.IGNORECASE))
+    ]
+    if stop_matches:
+        detail_text = detail_text[: min(stop_matches)]
+    return normalize_whitespace(detail_text)
+
+
+def extract_giz_detail_location(detail_text: str) -> str:
+    match = re.search(
+        r"(?:Einsatzort|Location)\s*:?\s*(.+?)"
+        r"(?=\s+(?:Einsatzzeitraum|Period of assignment|Fachgebiet|Field of activity|"
+        r"Art der Anstellung|Type of employment|Bewerbungsfrist|Application deadline|"
+        r"Tätigkeitsbereich|Your tasks|Ihre Aufgaben)\s*:?|$)",
+        detail_text,
+        flags=re.IGNORECASE,
+    )
+    return normalize_whitespace(match.group(1)) if match else "unknown"
+
+
+def discover_giz_jobs_api(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    candidates_by_url: dict[str, Candidate] = {}
+    raw_seen_ids: set[str] = set()
+    limitations: list[str] = []
+    result_summaries: list[str] = []
+    listing_pages_scanned = 0
+
+    for term in terms:
+        term_pages_scanned = 0
+        term_seen_urls: set[str] = set()
+        term_declared_total: int | None = None
+        term_page_signatures: set[tuple[str, ...]] = set()
+        page_num = 1
+        while page_num <= MAX_BROWSER_PAGES:
+            page_label = f"GIZ search API for '{term}' page {page_num}"
+            try:
+                response = http.fetch_json(giz_api_search_url(term, page_num), timeout_seconds)
+            except Exception as exc:
+                limitations.append(f"{page_label} could not be read: {exc}")
+                break
+
+            search_result = response.get("SearchResult") if isinstance(response, dict) else None
+            if not isinstance(search_result, dict):
+                limitations.append(f"{page_label} returned an invalid search response")
+                break
+            items = search_result.get("SearchResultItems")
+            if not isinstance(items, list):
+                limitations.append(f"{page_label} returned an invalid result list")
+                break
+
+            try:
+                declared_total = int(str(search_result.get("SearchResultCountAll")))
+                page_count = int(str(search_result.get("SearchResultCount", len(items))))
+            except ValueError:
+                limitations.append(f"{page_label} returned invalid result counts")
+            else:
+                if page_count == len(items) and declared_total >= page_count:
+                    term_declared_total = max(term_declared_total or 0, declared_total)
+                else:
+                    limitations.append(f"{page_label} returned inconsistent result counts")
+
+            page_urls: list[str] = []
+            parsed_items: list[tuple[dict[str, Any], str]] = []
+            for item in items:
+                descriptor = item.get("MatchedObjectDescriptor", {}) if isinstance(item, dict) else {}
+                if not isinstance(descriptor, dict):
+                    continue
+                url = normalize_url_without_fragment(str(descriptor.get("PositionURI") or ""))
+                if not url:
+                    continue
+                page_urls.append(url)
+                parsed_items.append((descriptor, url))
+
+            signature = tuple(page_urls)
+            if signature and signature in term_page_signatures:
+                limitations.append(f"GIZ search API repeated a result page for '{term}'")
+                break
+            if signature:
+                term_page_signatures.add(signature)
+
+            term_pages_scanned += 1
+            listing_pages_scanned += 1
+            term_seen_urls.update(page_urls)
+            for descriptor, url in parsed_items:
+                raw_seen_ids.add(url)
+                matched_terms = sorted(set([term, *match_terms(join_text(descriptor), terms)]))
+                merge_candidate(
+                    candidates_by_url,
+                    Candidate(
+                        employer=source.source,
+                        title=normalize_whitespace(str(descriptor.get("PositionTitle") or "")) or "unknown",
+                        url=url,
+                        source_url=source.url,
+                        location=giz_location_from_descriptor(descriptor),
+                        matched_terms=matched_terms,
+                        notes=f"GIZ career search API q='{term}' page={page_num}",
+                    ),
+                )
+
+            if not parsed_items or (
+                term_declared_total is not None and page_num * GIZ_RESULTS_PAGE_SIZE >= term_declared_total
+            ):
+                break
+            if page_num == MAX_BROWSER_PAGES:
+                limitations.append(
+                    f"GIZ search API for '{term}' hit the page cap ({MAX_BROWSER_PAGES}) "
+                    f"after {len(term_seen_urls)} of {term_declared_total or 'unknown'} results"
+                )
+                break
+            page_num += 1
+
+        term_unique_total = len(term_seen_urls)
+        if term_declared_total is not None and term_unique_total < term_declared_total:
+            limitations.append(
+                f"GIZ search API returned {term_unique_total} unique vacancies for '{term}' "
+                f"out of {term_declared_total} reported"
+            )
+        declared_label = term_declared_total if term_declared_total is not None else "unknown"
+        result_summaries.append(f"{term}={term_pages_scanned}page/{term_unique_total}of{declared_label}")
+
+    detail_failures = 0
+    missing_details = 0
+    direct_job_pages_opened = 0
+    for candidate in candidates_by_url.values():
+        try:
+            detail_html = http.fetch_text(candidate.url, timeout_seconds)
+        except Exception:
+            detail_failures += 1
+            continue
+        direct_job_pages_opened += 1
+        detail_text = extract_giz_detail_text(detail_html)
+        if not detail_text:
+            missing_details += 1
+            continue
+        detail_location = extract_giz_detail_location(detail_text)
+        if detail_location != "unknown":
+            candidate.location = detail_location
+        candidate.matched_terms = sorted(set(candidate.matched_terms + match_terms(detail_text, terms)))
+        helpers.set_candidate_description(candidate, detail_text)
+
+    if detail_failures:
+        limitations.append(f"GIZ detail fetch failed for {detail_failures} matched role(s)")
+    if missing_details:
+        limitations.append(f"GIZ detail parsing yielded no substantive text for {missing_details} matched role(s)")
+
+    return Coverage(
+        source=source.source,
+        source_url=source.url,
+        discovery_mode=source.discovery_mode,
+        cadence_group=source.cadence_group,
+        last_checked=source.last_checked,
+        due_today=False,
+        status="partial" if limitations else "complete",
+        listing_pages_scanned=listing_pages_scanned,
+        search_terms_tried=terms,
+        result_pages_scanned=", ".join(result_summaries) if result_summaries else "none",
+        direct_job_pages_opened=direct_job_pages_opened,
+        enumerated_jobs=len(raw_seen_ids),
+        matched_jobs=len(candidates_by_url),
+        limitations=limitations,
+        candidates=list(candidates_by_url.values()),
+    )
 
 
 def extract_visible_text_section(text: str, headings: tuple[str, ...], stop_headings: tuple[str, ...]) -> str:
@@ -492,6 +764,64 @@ def extract_meta_jobs(page: Any, source: SourceConfig, term: str, terms: list[st
         raw_ids=raw_ids,
         visible_results=len(raw_ids),
         declared_total=None,
+        page_signature=page_signature,
+        limitations=limitations,
+    )
+
+
+def extract_giz_jobs(page: Any, source: SourceConfig, term: str, terms: list[str], page_num: int) -> BrowserPageResult:
+    links = page.locator('a[href*="ac=jobad"]')
+    visible_count = links.count()
+    raw_ids: list[str] = []
+    candidates: list[Candidate] = []
+    seen_urls: set[str] = set()
+
+    for index in range(visible_count):
+        element = links.nth(index)
+        href = element.get_attribute("href") or ""
+        absolute_url = normalize_url_without_fragment(urljoin(GIZ_JOBS_CATALOG_URL, href))
+        if not href or absolute_url in seen_urls:
+            continue
+        seen_urls.add(absolute_url)
+        raw_ids.append(absolute_url)
+
+        title = normalize_whitespace(element.inner_text()) or "unknown"
+        row_text = element.evaluate("(element) => element.closest('tr')?.innerText || element.innerText")
+        row_lines = split_visible_lines(row_text)
+        location = row_lines[1] if len(row_lines) > 1 else "unknown"
+        searchable_text = " ".join([title, *row_lines[1:]])
+        matched_terms = sorted(set(match_terms(searchable_text, terms)))
+        if not matched_terms:
+            continue
+
+        candidates.append(
+            Candidate(
+                employer=source.source,
+                title=title,
+                url=absolute_url,
+                source_url=source.url,
+                location=location,
+                matched_terms=matched_terms,
+                notes=f"GIZ career portal browser enumeration q='{term}' page={page_num}",
+            )
+        )
+
+    declared_total = None
+    hits = page.locator(".js-gjb-hits").first
+    if hits.count():
+        count_text = re.sub(r"[^0-9]", "", hits.inner_text())
+        if count_text:
+            declared_total = int(count_text)
+
+    page_signature = f"{term}:{page_num}:{','.join(raw_ids[:10])}" if raw_ids else f"{term}:{page_num}:empty"
+    limitations: list[str] = []
+    if not raw_ids:
+        limitations.append(f"GIZ career portal search for '{term}' showed no visible job links")
+    return BrowserPageResult(
+        candidates=candidates,
+        raw_ids=raw_ids,
+        visible_results=len(raw_ids),
+        declared_total=declared_total,
         page_signature=page_signature,
         limitations=limitations,
     )
@@ -1287,6 +1617,9 @@ BROWSER_STRATEGIES = {
 
 
 def discover_browser(source: SourceConfig, terms: list[str], timeout_seconds: int) -> Coverage:
+    if source.source == "GIZ Career Opportunities":
+        return discover_giz_jobs_api(source, terms, timeout_seconds)
+
     try:
         sync_playwright = load_sync_playwright()
     except ImportError:
