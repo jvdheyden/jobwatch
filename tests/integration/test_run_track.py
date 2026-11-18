@@ -1105,7 +1105,9 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
     assert "Claude phase finished successfully" in log_text
 
 
-def test_run_track_invokes_gemini_provider_with_same_prompt(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+def test_run_track_uses_configured_gemini_tier_with_empty_native_model(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd
+) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)
 
@@ -1114,6 +1116,7 @@ def test_run_track_invokes_gemini_provider_with_same_prompt(tmp_job_agent_root: 
         "JOB_AGENT_TODAY": "2030-01-15",
         "JOB_AGENT_PROVIDER": "gemini",
         "JOB_AGENT_SCHEDULED_TIER": "cheapo-latest",
+        "GEMINI_MODEL": "",
         "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_gemini.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
     }

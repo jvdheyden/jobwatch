@@ -34,6 +34,7 @@ def isolate_machine_local_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     for name in list(os.environ):
         if name.startswith(("JOB_AGENT_", "XDG_", "AGENT_", "CODEX_", "CLAUDE_", "GEMINI_")):
             monkeypatch.delenv(name, raising=False)
+    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
     monkeypatch.delenv("LOGSEQ_GRAPH_DIR", raising=False)
     home = tmp_path / "home"
     home.mkdir()
