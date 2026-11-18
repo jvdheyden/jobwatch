@@ -23,7 +23,7 @@ from source_config import (
 
 from source_evidence import (
     EvidenceError, EVIDENCE_MAX_BYTES, canary_id, check_posting_availability, matches_posting,
-    stored_canaries, register_canaries, normalize_canaries, normalize_references, merge_references,
+    latest_canary_check, stored_canaries, register_canaries, normalize_canaries, normalize_references, merge_references,
 )
 from setup_contracts import normalize_track_slug, read_json_limited
 from probe_career_source import probe
@@ -187,7 +187,8 @@ def review_canary(*, root: Path, track: str, source_query: str, evidence_id: str
         canary = next((c for c in current if c['id'] == evidence_id), None)
         if canary is None:
             raise EvidenceError('unknown canary id')
-        reviewed = normalize_canaries([dict(canary, **observation, checked_on=today, expires_on='')])[0]
+        latest = latest_canary_check(canary, integration.get('canary_checks'))
+        reviewed = normalize_canaries([{**canary, **latest, **observation, 'checked_on': today, 'expires_on': ''}])[0]
         integration['canaries'] = _apply_observations(integration, current, {evidence_id: reviewed}, today)
         integration['status'] = 'pending'
         integration['verification'] = 'pending'
@@ -201,7 +202,9 @@ def refresh_canary(*, root: Path, track: str, source_query: str, today: str,
     directory, config, source = _context(root, track, source_query)
     source_id, source_name = source['id'], source['name']
     state_path = directory / 'source_state.json'
-    original = stored_canaries(load_source_state(state_path, track).get(source_id, {}).get('integration', {}), source_id)
+    integration = load_source_state(state_path, track).get(source_id, {}).get('integration', {})
+    original = stored_canaries(integration, source_id)
+    checks = integration.get('canary_checks', {})
     output = discovery_output or default_discovery_output(root, track, source_name, today)
     discovery = run_discovery(root, track, source_name, today, output)
     if discovery.returncode != 0:
@@ -213,12 +216,19 @@ def refresh_canary(*, root: Path, track: str, source_query: str, today: str,
     candidates = load_candidates(output, source_name)
     observations = {}
     missing_live = []
-    for canary in original:
+    inconclusive = False
+    for record in original:
+        canary = dict(record, **latest_canary_check(record, checks))
         present = any(matches_posting(c, canary) for c in candidates)
-        if not present or canary.get('availability') != 'live' or not canary.get('expires_on') or canary['expires_on'] < today:
-            observations[canary['id']] = check_posting_availability(canary, today=today)
-            if observations[canary['id']]['availability'] == 'live' and not present and canary.get('scope') == 'in_scope':
-                missing_live.append(canary['id'])
+        availability = canary['availability']
+        if not present or availability != 'live' or not canary['expires_on'] or canary['expires_on'] < today:
+            observation = check_posting_availability(canary, today=today)
+            observations[canary['id']] = dict(observation, scope=canary['scope'])
+            availability = observation['availability']
+        if availability == 'live' and not present and canary['scope'] == 'in_scope':
+            missing_live.append(canary['id'])
+        elif availability == 'unknown' or (availability == 'live' and canary['scope'] == 'unknown'):
+            inconclusive = True
     # Rotation requires independently confirmed closure of every prior active
     # posting. A live/unknown missing canary cannot be silently replaced.
     may_acquire = not original or all(observations.get(c['id'], {}).get('availability') == 'expired' for c in original)
@@ -240,19 +250,19 @@ def refresh_canary(*, root: Path, track: str, source_query: str, today: str,
     def mutate(state):
         entry = state.setdefault(source_id, {'last_checked': None})
         integration = entry.setdefault('integration', {})
-        if stored_canaries(integration, source_id) != original:
+        if stored_canaries(integration, source_id) != original or integration.get('canary_checks', {}) != checks:
             raise EvidenceError('canaries changed during refresh; retry with current evidence')
         retained = _apply_observations(integration, original, observations, today)
         if selected:
             retained.append(selected)
         integration['canaries'] = normalize_canaries(retained)
         integration['status'] = 'pending'
-        integration['verification'] = 'failed' if missing_live else 'inconclusive' if any(o['availability'] == 'unknown' for o in observations.values()) else 'pending'
+        integration['verification'] = 'failed' if missing_live else 'inconclusive' if inconclusive else 'pending'
         integration.pop('last_attempted', None)
     # A completely failed acquisition with no prior evidence has nothing to save.
     if original or selected:
         mutate_source_state(state_path, track, [s['id'] for s in config['sources']], mutate)
-    status = ('missing_live' if missing_live else 'inconclusive' if any(o['availability'] == 'unknown' for o in observations.values())
+    status = ('missing_live' if missing_live else 'inconclusive' if inconclusive
               else 'suggested' if selected else 'retained' if original and not may_acquire else 'missing')
     return status in {'suggested', 'retained'}, {'status': status, 'source': source_name, 'output': str(output),
         'canary': selected, 'checks': observations, 'missing_live_ids': missing_live, 'candidates_seen': len(candidates)}

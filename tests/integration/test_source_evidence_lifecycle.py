@@ -185,6 +185,16 @@ def test_latest_unknown_review_defers_evaluation_until_conclusive_review(tmp_pat
     assert result['canaries'][0]['prior_evidence'] == prior
     assert state_path.read_bytes() == before
 
+    if review_path == 'manual':
+        update_source_canary.review_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role',
+            observation={'availability': 'live', 'evidence_url': URL, 'evidence_note': 'Official page open again.'}, today=TODAY)
+        status, result = evaluate(tmp_path, monkeypatch, coverage)
+        assert status == 1
+        assert result['verification'] == 'inconclusive'
+        assert result['canaries'][0]['availability'] == 'live'
+        assert result['canaries'][0]['scope'] == 'unknown'
+        assert result['integration_ticket'] is None
+
     update_source_canary.review_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role',
         observation={'availability': 'live', 'scope': 'in_scope', 'evidence_url': URL, 'evidence_note': 'Official page confirmed open again.'}, today=TODAY)
     status, result = evaluate(tmp_path, monkeypatch, coverage)
@@ -192,6 +202,70 @@ def test_latest_unknown_review_defers_evaluation_until_conclusive_review(tmp_pat
     assert result['verification'] == ('independently_verified' if present else 'failed')
     assert result['final_status'] == ('pass' if present else 'integration_needed')
     assert result['canaries'][0]['provenance'] == 'user_supplied'
+
+
+@pytest.mark.parametrize('present', [False, True], ids=['missing', 'present'])
+def test_live_availability_refresh_preserves_unknown_scope(tmp_path, monkeypatch, present):
+    directory = configure(tmp_path)
+    update_source_canary.review_canary(
+        root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role', today=TODAY,
+        observation={'availability': 'unknown', 'scope': 'unknown', 'evidence_url': URL,
+                     'evidence_note': 'Official page unavailable; scope unclear.'},
+    )
+    coverage = source()
+    if present:
+        coverage['candidates'][0]['url'] = URL
+
+    def discover(root, track, name, today, output):
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps({'sources': [coverage]}))
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    body = '<script type="application/ld+json">' + json.dumps({'@type': 'JobPosting', 'url': URL,
+        'title': 'Privacy Engineer', 'description': 'Build privacy protocols.'}) + '</script>'
+    monkeypatch.setattr(update_source_canary, 'run_discovery', discover)
+    monkeypatch.setattr(probe_career_source, 'fetch_http', lambda url, timeout: (body, url, 200, []))
+    ok, refresh = update_source_canary.refresh_canary(
+        root=tmp_path, track='applied_crypto', source_query='example_labs', today=TODAY,
+    )
+    status, result = evaluate(tmp_path, monkeypatch, coverage)
+    assert result['verification'] == 'inconclusive'
+    assert status == 1
+    assert result['final_status'] == 'inconclusive'
+    assert result['integration_ticket'] is None
+    assert result['canaries'][0]['availability'] == 'live'
+    assert result['canaries'][0]['scope'] == 'unknown'
+    assert result['canaries'][0]['provenance'] == 'user_supplied'
+    assert not ok
+    assert refresh['status'] == 'inconclusive'
+    assert refresh['missing_live_ids'] == []
+    assert refresh['checks']['desired_role']['availability'] == 'live'
+    integration = load_source_state(directory / 'source_state.json', 'applied_crypto')['example_labs']['integration']
+    assert integration['verification'] == 'inconclusive'
+    assert integration['canary_checks']['desired_role']['scope'] == 'unknown'
+
+
+def test_refresh_preserves_scope_review_recorded_during_discovery(tmp_path, monkeypatch):
+    directory = configure(tmp_path)
+
+    def discover(root, track, name, today, output):
+        update_source_canary.review_canary(
+            root=root, track=track, source_query=name, evidence_id='desired_role', today=today,
+            observation={'availability': 'unknown', 'scope': 'unknown', 'evidence_url': URL,
+                         'evidence_note': 'Scope review submitted during discovery.'},
+        )
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps({'sources': [source()]}))
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    monkeypatch.setattr(update_source_canary, 'run_discovery', discover)
+    monkeypatch.setattr(probe_career_source, 'fetch_http', lambda url, timeout: ('', url, 403, ['Access blocked']))
+    with pytest.raises(source_evidence.EvidenceError, match='canaries changed during refresh'):
+        update_source_canary.refresh_canary(root=tmp_path, track='applied_crypto', source_query='example_labs', today=TODAY)
+
+    integration = load_source_state(directory / 'source_state.json', 'applied_crypto')['example_labs']['integration']
+    assert integration['canaries'] == [canary()]
+    assert integration['canary_checks']['desired_role']['scope'] == 'unknown'
 
 
 @pytest.mark.parametrize('observation', ['live', 'unknown'])

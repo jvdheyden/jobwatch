@@ -322,22 +322,25 @@ def check_posting_availability(canary: dict, *, today: str, timeout: int = 15) -
     return result
 
 
+def latest_canary_check(record: dict, checks: dict | None) -> dict:
+    """Return observation fields from a check at least as recent as the retained record."""
+    latest = (checks or {}).get(record.get('id'), {})
+    if not latest.get('checked_on') or latest['checked_on'] < record.get('checked_on', ''):
+        return {}
+    return {key: latest[key] for key in ('availability', 'scope', 'checked_on', 'expires_on',
+                                         'evidence_url', 'evidence_note') if key in latest}
+
+
 def effective_canaries(canaries: list[dict], candidates: list[dict], *, today: str, timeout: int = 15,
                        checks: dict | None = None) -> list[dict]:
     """Resolve uncertain/stale evidence outside scheduled discovery; preserve stored records."""
     resolved = []
     for record in canaries:
-        current = dict(record)
-        latest = (checks or {}).get(record.get('id'), {})
-        reviewed_today = False
-        if latest.get('checked_on') and latest['checked_on'] >= record.get('checked_on', ''):
-            # Unknown reviews retain the prior record in storage, but supersede
-            # its availability/scope for evaluation. Identity and provenance stay.
-            current.update({key: latest[key] for key in ('availability', 'scope', 'checked_on', 'expires_on',
-                                                        'evidence_url', 'evidence_note') if key in latest})
-            if current != record:
-                current['prior_evidence'] = dict(record)
-            reviewed_today = latest['checked_on'] == today
+        latest = latest_canary_check(record, checks)
+        current = dict(record, **latest)
+        if current != record:
+            current['prior_evidence'] = dict(record)
+        reviewed_today = latest.get('checked_on') == today
         if current.get('availability') == 'expired' or current.get('scope') == 'out_of_scope':
             resolved.append(current)
             continue
