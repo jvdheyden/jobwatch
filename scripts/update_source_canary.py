@@ -159,7 +159,7 @@ def register_evidence(*, root: Path, track: str, source_query: str, payload: dic
     return {'status': 'registered', 'source': source['name'], 'canary_ids': [c['id'] for c in canaries]}
 
 
-def _apply_observations(integration: dict, original: list[dict], observations: dict, today: str) -> list[dict]:
+def _apply_observations(integration: dict, original: list[dict], observations: dict) -> list[dict]:
     retained = []
     checks = integration.setdefault('canary_checks', {})
     for canary in original:
@@ -167,11 +167,17 @@ def _apply_observations(integration: dict, original: list[dict], observations: d
         if not observation:
             retained.append(canary)
             continue
-        checks[canary['id']] = observation
+        latest = latest_canary_check(canary, checks)
+        last_checked = latest.get('checked_on', canary['checked_on'])
+        if observation['checked_on'] < last_checked:
+            raise EvidenceError(f"observation for canary {canary['id']} predates its latest evidence ({last_checked})")
         if observation['availability'] == 'expired':
             archived = dict(canary, **observation)
-            append_canary_history(integration, archived, today, 'confirmed_expiration')
-        elif observation['availability'] == 'live':
+            append_canary_history(integration, archived, observation['checked_on'], 'confirmed_expiration')
+            checks.pop(canary['id'], None)
+            continue
+        checks[canary['id']] = observation
+        if observation['availability'] == 'live':
             retained.append(dict(canary, **observation))
         else:
             retained.append(canary)  # Inconclusive checks never erase prior evidence.
@@ -189,7 +195,7 @@ def review_canary(*, root: Path, track: str, source_query: str, evidence_id: str
             raise EvidenceError('unknown canary id')
         latest = latest_canary_check(canary, integration.get('canary_checks'))
         reviewed = normalize_canaries([{**canary, **latest, **observation, 'checked_on': today, 'expires_on': ''}])[0]
-        integration['canaries'] = _apply_observations(integration, current, {evidence_id: reviewed}, today)
+        integration['canaries'] = _apply_observations(integration, current, {evidence_id: reviewed})
         integration['status'] = 'pending'
         integration['verification'] = 'pending'
         integration.pop('last_attempted', None)
@@ -199,6 +205,7 @@ def review_canary(*, root: Path, track: str, source_query: str, evidence_id: str
 
 def refresh_canary(*, root: Path, track: str, source_query: str, today: str,
                    discovery_output: Path | None = None) -> tuple[bool, dict[str, Any]]:
+    today = date.fromisoformat(today).isoformat()
     directory, config, source = _context(root, track, source_query)
     source_id, source_name = source['id'], source['name']
     state_path = directory / 'source_state.json'
@@ -252,10 +259,9 @@ def refresh_canary(*, root: Path, track: str, source_query: str, today: str,
         integration = entry.setdefault('integration', {})
         if stored_canaries(integration, source_id) != original or integration.get('canary_checks', {}) != checks:
             raise EvidenceError('canaries changed during refresh; retry with current evidence')
-        retained = _apply_observations(integration, original, observations, today)
+        integration['canaries'] = normalize_canaries(_apply_observations(integration, original, observations))
         if selected:
-            retained.append(selected)
-        integration['canaries'] = normalize_canaries(retained)
+            register_canaries(integration, [selected], source_id)
         integration['status'] = 'pending'
         integration['verification'] = 'failed' if missing_live else 'inconclusive' if inconclusive else 'pending'
         integration.pop('last_attempted', None)

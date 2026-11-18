@@ -208,17 +208,21 @@ def merge_references(path: Path, track: str, references: list[dict]) -> None:
 def register_canaries(integration: dict, canaries: list[dict], source_id: str) -> None:
     incoming = normalize_canaries(canaries)
     current = {c['id']: c for c in stored_canaries(integration, source_id)}
-    added = False
+    added_ids = []
     for record in incoming:
         if record['source_id'] != source_id:
             raise EvidenceError("canary source does not match registration target")
         old = current.get(record['id'])
         if old and old != record:
             raise EvidenceError(f"canary {record['id']} already exists; use availability review or confirmed-expiration rotation")
-        added = added or old is None
+        if old is None:
+            added_ids.append(record['id'])
         current[record['id']] = record
     integration['canaries'] = normalize_canaries(list(current.values()))
-    if added:
+    if added_ids:
+        checks = integration.get('canary_checks', {})
+        for evidence_id in added_ids:
+            checks.pop(evidence_id, None)
         integration['status'] = 'pending'
         integration.pop('last_attempted', None)
         integration['verification'] = 'pending'
@@ -323,12 +327,17 @@ def check_posting_availability(canary: dict, *, today: str, timeout: int = 15) -
 
 
 def latest_canary_check(record: dict, checks: dict | None) -> dict:
-    """Return observation fields from a check at least as recent as the retained record."""
+    """Return an active check at least as recent as the retained record."""
     latest = (checks or {}).get(record.get('id'), {})
-    if not latest.get('checked_on') or latest['checked_on'] < record.get('checked_on', ''):
+    # Closure retires the posting. Older state files can still have its check under a reused ID.
+    if latest.get('availability') == 'expired' or not latest.get('checked_on'):
         return {}
-    return {key: latest[key] for key in ('availability', 'scope', 'checked_on', 'expires_on',
-                                         'evidence_url', 'evidence_note') if key in latest}
+    checked_on = date.fromisoformat(latest['checked_on']).isoformat()
+    if checked_on < record.get('checked_on', ''):
+        return {}
+    observation = {key: latest[key] for key in ('availability', 'scope', 'expires_on',
+                                               'evidence_url', 'evidence_note') if key in latest}
+    return dict(observation, checked_on=checked_on)
 
 
 def effective_canaries(canaries: list[dict], candidates: list[dict], *, today: str, timeout: int = 15,
