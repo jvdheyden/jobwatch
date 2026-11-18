@@ -205,13 +205,39 @@ def merge_references(path: Path, track: str, references: list[dict]) -> None:
         write_json_atomic(path, reference_payload(track, list(existing.values())))
 
 
+def confirmed_canary_closures(integration: dict) -> list[dict]:
+    history = integration.get('canary_history')
+    if not isinstance(history, list):
+        return []
+    return [c for c in history if isinstance(c, dict) and c.get('availability') == 'expired']
+
+
+def blocking_canary_closure(record: dict, closures: list[dict]) -> str:
+    """Return the latest closure date when the posting cannot be reactivated."""
+    closed_on = max(
+        (c.get('replaced_at') or c.get('checked_on') or '' for c in closures if matches_posting(record, c)),
+        default='',
+    )
+    if (record.get('availability') == 'live' and record.get('provenance') in INDEPENDENT_PROVENANCES
+            and record.get('checked_on', '') > closed_on):
+        return ''
+    return closed_on
+
+
 def register_canaries(integration: dict, canaries: list[dict], source_id: str) -> None:
     incoming = normalize_canaries(canaries)
     current = {c['id']: c for c in stored_canaries(integration, source_id)}
+    closures = confirmed_canary_closures(integration)
     added_ids = []
     for record in incoming:
         if record['source_id'] != source_id:
             raise EvidenceError("canary source does not match registration target")
+        closed_on = blocking_canary_closure(record, closures)
+        if closed_on:
+            raise EvidenceError(
+                f"Canary {record['id']} matches a posting closed on {closed_on}. "
+                "Reopening requires newer independent evidence of live availability."
+            )
         old = current.get(record['id'])
         if old and old != record:
             raise EvidenceError(f"canary {record['id']} already exists; use availability review or confirmed-expiration rotation")
