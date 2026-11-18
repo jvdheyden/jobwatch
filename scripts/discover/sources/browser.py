@@ -283,18 +283,32 @@ def discover_giz_jobs_api(source: SourceConfig, terms: list[str], timeout_second
         term_page_signatures: set[tuple[str, ...]] = set()
         page_num = 1
         while page_num <= MAX_BROWSER_PAGES:
-            response = http.fetch_json(giz_api_search_url(term, page_num), timeout_seconds)
-            search_result = response.get("SearchResult", {}) if isinstance(response, dict) else {}
-            raw_items = search_result.get("SearchResultItems", []) if isinstance(search_result, dict) else []
-            items = raw_items if isinstance(raw_items, list) else []
-            raw_total = search_result.get("SearchResultCountAll") if isinstance(search_result, dict) else None
+            page_label = f"GIZ search API for '{term}' page {page_num}"
             try:
-                declared_total = int(raw_total)
-            except (TypeError, ValueError):
-                pass
+                response = http.fetch_json(giz_api_search_url(term, page_num), timeout_seconds)
+            except Exception as exc:
+                limitations.append(f"{page_label} could not be read: {exc}")
+                break
+
+            search_result = response.get("SearchResult") if isinstance(response, dict) else None
+            if not isinstance(search_result, dict):
+                limitations.append(f"{page_label} returned an invalid search response")
+                break
+            items = search_result.get("SearchResultItems")
+            if not isinstance(items, list):
+                limitations.append(f"{page_label} returned an invalid result list")
+                break
+
+            try:
+                declared_total = int(str(search_result.get("SearchResultCountAll")))
+                page_count = int(str(search_result.get("SearchResultCount", len(items))))
+            except ValueError:
+                limitations.append(f"{page_label} returned invalid result counts")
             else:
-                if declared_total >= 0:
+                if page_count == len(items) and declared_total >= page_count:
                     term_declared_total = max(term_declared_total or 0, declared_total)
+                else:
+                    limitations.append(f"{page_label} returned inconsistent result counts")
 
             page_urls: list[str] = []
             parsed_items: list[tuple[dict[str, Any], str]] = []

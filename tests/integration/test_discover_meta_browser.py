@@ -7,6 +7,7 @@ import pytest
 
 import discover_jobs
 from discover.sources import browser as browser_source
+from update_source_state import complete_source_ids
 
 
 class FakeLink:
@@ -283,6 +284,66 @@ def test_discover_giz_jobs_uses_search_api_without_playwright(monkeypatch):
     assert "agricultural value-chain programmes" in candidate.description
     assert "Bookmark job ad" not in candidate.description
     assert "JavaScript is disabled" not in candidate.description
+
+
+@pytest.mark.parametrize(
+    "broken_payload",
+    [
+        pytest.param('{"error": "Service unavailable"}', id="api-error"),
+        pytest.param('{"SearchResult": {"SearchResultCountAll": 0}}', id="missing-items"),
+        pytest.param('{"SearchResult": {"SearchResultCountAll": 0, "SearchResultItems": {}}}', id="invalid-items"),
+        pytest.param('{"SearchResult": {"SearchResultItems": []}}', id="missing-total"),
+        pytest.param('{"SearchResult": {"SearchResultCountAll": 0.5, "SearchResultItems": []}}', id="invalid-total"),
+        pytest.param(
+            '{"SearchResult": {"SearchResultCountAll": 0, "SearchResultCount": 1, "SearchResultItems": []}}',
+            id="inconsistent-counts",
+        ),
+        pytest.param("<html>Service unavailable</html>", id="invalid-json"),
+        pytest.param(TimeoutError("request timed out"), id="timeout"),
+    ],
+)
+def test_discover_giz_jobs_retains_successful_terms_when_one_response_is_invalid(monkeypatch, broken_payload):
+    source = discover_jobs.SourceConfig(
+        source="GIZ Career Opportunities",
+        url="https://www.giz.de/en/career/jobs",
+        discovery_mode="browser",
+        last_checked="2026-11-15",
+        cadence_group="every_3_runs",
+        source_id="giz",
+    )
+    job_url = "https://jobs.giz.de/index.php?ac=jobad&id=81770"
+    valid_payload = {
+        "SearchResult": {
+            "SearchResultCount": 1,
+            "SearchResultCountAll": 1,
+            "SearchResultItems": [
+                {"MatchedObjectDescriptor": {"PositionTitle": "Programme Advisor", "PositionURI": job_url}}
+            ],
+        }
+    }
+
+    def fetch_text(url, timeout_seconds, headers=None):
+        if url == job_url:
+            return "<main>Programme Advisor in Bonn</main>"
+        payload = json.loads(parse_qs(urlparse(url).query)["data"][0])
+        term = payload["SearchCriteria"][0]["CriterionValue"][0]
+        if term == "agriculture":
+            if isinstance(broken_payload, Exception):
+                raise broken_payload
+            return broken_payload
+        assert term == "programme"
+        return json.dumps(valid_payload)
+
+    monkeypatch.setattr(browser_source.http, "fetch_text", fetch_text)
+
+    coverage = discover_jobs.discover_source(source, ["agriculture", "programme"], 5)
+
+    assert [candidate.url for candidate in coverage.candidates] == [job_url]
+    assert coverage.candidates[0].matched_terms == ["programme"]
+    artifact = {"sources": [discover_jobs.coverage_to_dict(coverage)]}
+    assert complete_source_ids(artifact, {"giz"}) == set()
+    assert coverage.status == "partial"
+    assert any("agriculture" in limitation for limitation in coverage.limitations)
 
 
 @pytest.mark.parametrize(
