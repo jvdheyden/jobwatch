@@ -100,6 +100,7 @@ from discover.sources.bundeswehr import (
 )
 from discover.sources.browser import (
     BROWSER_STRATEGIES,
+    GIZ_JOBS_CATALOG_URL,
     GOOGLE_LOCATION_FILTERS,
     GOOGLE_RESULTS_PAGE_SIZE,
     META_DETAIL_IGNORED_LINES,
@@ -111,6 +112,7 @@ from discover.sources.browser import (
     accept_thales_cookies,
     advance_asml_results,
     advance_bosch_results,
+    advance_giz_results,
     advance_meta_results,
     apply_meta_detail_text,
     bosch_search_url,
@@ -126,6 +128,7 @@ from discover.sources.browser import (
     extract_asml_jobs,
     extract_bosch_jobs,
     extract_google_jobs,
+    extract_giz_jobs,
     extract_helsing_jobs,
     extract_meta_detail_sections,
     extract_meta_jobs,
@@ -134,11 +137,13 @@ from discover.sources.browser import (
     google_location_filters,
     google_public_job_url,
     google_search_url,
+    giz_search_url,
     load_sync_playwright,
     meta_search_url,
     normalize_google_degree_filter,
     playwright_browsers_missing_coverage,
     playwright_import_missing_coverage,
+    prepare_giz_results,
 )
 from discover.sources.eightfold import (
     EIGHTFOLD_DOMAINS_BY_HOST,
