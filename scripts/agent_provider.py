@@ -87,7 +87,7 @@ def resolve_model_policy(
         # These launches previously inherited explicit provider environment defaults.
         if provider == "claude":
             model_keys.append("ANTHROPIC_MODEL")
-        elif provider == "gemini":
+        elif provider == "gemini" and values.get("GEMINI_MODEL"):
             model_keys.append("GEMINI_MODEL")
 
     tier = None

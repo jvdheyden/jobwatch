@@ -602,13 +602,15 @@ fi
   printf 'export JOB_AGENT_PROVIDER=%s\n' "$(shell_escape "$AGENT_PROVIDER_VALUE")"
   printf 'export JOB_AGENT_BIN=%s\n' "$(shell_escape "$AGENT_BIN_VALUE")"
   echo "# Optional: agent model and reasoning overrides. See docs/machine_setup.md."
-  while IFS= read -r model_setting; do
+  for model_setting in "${!JOB_AGENT_@}" ANTHROPIC_MODEL GEMINI_MODEL CLAUDE_CODE_EFFORT_LEVEL; do
     case "$model_setting" in
-      JOB_AGENT_*_TIER|JOB_AGENT_*_MODEL|JOB_AGENT_*_REASONING_EFFORT)
-        printf 'export %s=%s\n' "$model_setting" "$(shell_escape "${!model_setting}")"
+      JOB_AGENT_*_TIER|JOB_AGENT_*_MODEL|JOB_AGENT_*_REASONING_EFFORT|ANTHROPIC_MODEL|GEMINI_MODEL|CLAUDE_CODE_EFFORT_LEVEL)
+        if [[ -n "${!model_setting+x}" ]]; then
+          printf 'export %s=%s\n' "$model_setting" "$(shell_escape "${!model_setting}")"
+        fi
         ;;
     esac
-  done < <(compgen -A variable JOB_AGENT_)
+  done
   echo "# Optional: Logseq graph root for digest publication."
   if [[ -n "$LOGSEQ_GRAPH_DIR_VALUE" ]]; then
     printf 'export LOGSEQ_GRAPH_DIR=%s\n' "$(shell_escape "$LOGSEQ_GRAPH_DIR_VALUE")"

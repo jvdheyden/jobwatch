@@ -91,15 +91,17 @@ provider configuration.
 
 #### Overrides
 
-Put persistent overrides in the checkout's gitignored `.env.local`. Jobwatch
-resolves the model in this order.
+Put persistent overrides in the checkout's gitignored `.env.local`.
+`setup_machine.sh` carries model and reasoning overrides forward when it
+refreshes the file. Jobwatch resolves the model in this order.
 
 1. Explicit model. The setup launcher, setup worker, and preview runner accept
    `--model`. The next choice is `JOB_AGENT_<PROVIDER>_<ROLE>_MODEL`, with the
    provider and role in uppercase. For the setup coordinator, the older
    `JOB_AGENT_<PROVIDER>_SETUP_MODEL` keys still work. The scheduled, reviewer,
    and coder roles also honor an exported `ANTHROPIC_MODEL` or `GEMINI_MODEL`
-   for the corresponding provider when no Jobwatch model override is set.
+   for the corresponding provider when no Jobwatch model override is set. An
+   empty `GEMINI_MODEL` leaves tier selection in effect.
 2. Configured tier. Set `JOB_AGENT_<ROLE>_TIER` to select the same tier across
    providers for that role.
 3. The role's default tier from the table above.
