@@ -130,3 +130,13 @@ After making changes, always:
 3. State whether `scripts/test.sh` passed or failed.
 4. Mention any remaining caveats or assumptions.
 5. Suggest a succinct commit message.
+6. For substantial changes, and if no PR exists yet, provide a concise, copy-paste-ready GitHub PR title and description in the chat. Use the implementation plan as the starting point, but describe the changes actually made rather than the original intentions. Structure the response as:
+
+- **Title:** A short, descriptive PR title.
+- **Summary:** What problem was solved and why.
+- **Changes:** The main implementation changes, grouped logically.
+  Focus on behavior and architectural decisions, not individual files.
+- **Verification:** Tests and checks performed, including whether
+  `scripts/test.sh` passed, failed, or was not run.
+- **Caveats:** Remaining limitations, assumptions, or unfinished work.
+  Omit this section when there are none.
