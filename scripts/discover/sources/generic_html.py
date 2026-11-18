@@ -277,7 +277,7 @@ def discover_wuppertal_hr4you(source: SourceConfig, terms: list[str], timeout_se
             ),
         )
 
-    limitations = [] if raw_urls else ["No job links were found in the Stadt Wuppertal HR4YOU listing."]
+    limitations = [] if raw_urls else ["No recognizable job links were found in the Stadt Wuppertal HR4YOU listing."]
     return Coverage(
         source=source.source,
         source_url=source.url,
@@ -285,7 +285,7 @@ def discover_wuppertal_hr4you(source: SourceConfig, terms: list[str], timeout_se
         cadence_group=source.cadence_group,
         last_checked=source.last_checked,
         due_today=False,
-        status="complete",
+        status="partial" if limitations else "complete",
         listing_pages_scanned=1,
         search_terms_tried=terms,
         result_pages_scanned="wuppertal_hr4you_listing=1",

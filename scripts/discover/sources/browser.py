@@ -278,7 +278,7 @@ def discover_giz_jobs_api(source: SourceConfig, terms: list[str], timeout_second
 
     for term in terms:
         term_pages_scanned = 0
-        term_visible_total = 0
+        term_seen_urls: set[str] = set()
         term_declared_total: int | None = None
         term_page_signatures: set[tuple[str, ...]] = set()
         page_num = 1
@@ -289,9 +289,12 @@ def discover_giz_jobs_api(source: SourceConfig, terms: list[str], timeout_second
             items = raw_items if isinstance(raw_items, list) else []
             raw_total = search_result.get("SearchResultCountAll") if isinstance(search_result, dict) else None
             try:
-                term_declared_total = int(raw_total) if raw_total is not None else None
+                declared_total = int(raw_total)
             except (TypeError, ValueError):
-                term_declared_total = None
+                pass
+            else:
+                if declared_total >= 0:
+                    term_declared_total = max(term_declared_total or 0, declared_total)
 
             page_urls: list[str] = []
             parsed_items: list[tuple[dict[str, Any], str]] = []
@@ -314,7 +317,7 @@ def discover_giz_jobs_api(source: SourceConfig, terms: list[str], timeout_second
 
             term_pages_scanned += 1
             listing_pages_scanned += 1
-            term_visible_total += len(parsed_items)
+            term_seen_urls.update(page_urls)
             for descriptor, url in parsed_items:
                 raw_seen_ids.add(url)
                 matched_terms = sorted(set([term, *match_terms(join_text(descriptor), terms)]))
@@ -331,18 +334,26 @@ def discover_giz_jobs_api(source: SourceConfig, terms: list[str], timeout_second
                     ),
                 )
 
-            if not parsed_items or (term_declared_total is not None and term_visible_total >= term_declared_total):
+            if not parsed_items or (
+                term_declared_total is not None and page_num * GIZ_RESULTS_PAGE_SIZE >= term_declared_total
+            ):
                 break
             if page_num == MAX_BROWSER_PAGES:
                 limitations.append(
                     f"GIZ search API for '{term}' hit the page cap ({MAX_BROWSER_PAGES}) "
-                    f"after {term_visible_total} of {term_declared_total or 'unknown'} results"
+                    f"after {len(term_seen_urls)} of {term_declared_total or 'unknown'} results"
                 )
                 break
             page_num += 1
 
+        term_unique_total = len(term_seen_urls)
+        if term_declared_total is not None and term_unique_total < term_declared_total:
+            limitations.append(
+                f"GIZ search API returned {term_unique_total} unique vacancies for '{term}' "
+                f"out of {term_declared_total} reported"
+            )
         declared_label = term_declared_total if term_declared_total is not None else "unknown"
-        result_summaries.append(f"{term}={term_pages_scanned}page/{term_visible_total}of{declared_label}")
+        result_summaries.append(f"{term}={term_pages_scanned}page/{term_unique_total}of{declared_label}")
 
     detail_failures = 0
     missing_details = 0

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import json
+from urllib.parse import parse_qs, urlparse
+
+import pytest
+
 import discover_jobs
 from discover.sources import browser as browser_source
 
@@ -278,6 +283,69 @@ def test_discover_giz_jobs_uses_search_api_without_playwright(monkeypatch):
     assert "agricultural value-chain programmes" in candidate.description
     assert "Bookmark job ad" not in candidate.description
     assert "JavaScript is disabled" not in candidate.description
+
+
+@pytest.mark.parametrize(
+    ("last_page_ids", "last_page_total", "expected_status"),
+    [
+        pytest.param([81780], 11, "complete", id="all-vacancies"),
+        pytest.param([], 11, "partial", id="empty-last-page"),
+        pytest.param([81770], 11, "partial", id="duplicate-on-last-page"),
+        pytest.param([], None, "partial", id="missing-total-on-last-page"),
+        pytest.param([], 10, "partial", id="lower-total-on-last-page"),
+    ],
+)
+def test_discover_giz_jobs_reconciles_pagination_with_unique_vacancies(
+    monkeypatch, last_page_ids, last_page_total, expected_status
+):
+    source = discover_jobs.SourceConfig(
+        source="GIZ Career Opportunities",
+        url="https://www.giz.de/en/career/jobs",
+        discovery_mode="browser",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    first_page_ids = list(range(81770, 81780))
+    pages = {1: (first_page_ids, 11), 11: (last_page_ids, last_page_total)}
+    offsets = []
+    job_url_prefix = "https://jobs.giz.de/index.php?ac=jobad&id="
+
+    def fetch_search_page(url, timeout_seconds):
+        payload = json.loads(parse_qs(urlparse(url).query)["data"][0])
+        offset = payload["SearchParameters"]["FirstItem"]
+        offsets.append(offset)
+        job_ids, total = pages[offset]
+        result = {
+            "SearchResultCount": len(job_ids),
+            "SearchResultItems": [
+                {
+                    "MatchedObjectDescriptor": {
+                        "ID": str(job_id),
+                        "PositionTitle": f"Programme Advisor {job_id}",
+                        "PositionURI": f"{job_url_prefix}{job_id}",
+                    }
+                }
+                for job_id in job_ids
+            ],
+        }
+        if total is not None:
+            result["SearchResultCountAll"] = total
+        return {"SearchResult": result}
+
+    monkeypatch.setattr(browser_source.http, "fetch_json", fetch_search_page)
+    monkeypatch.setattr(browser_source.http, "fetch_text", lambda *_: "<main>Programme Advisor in Bonn</main>")
+
+    coverage = discover_jobs.discover_browser(source, ["programme"], 5)
+
+    expected_ids = [*first_page_ids, 81780] if expected_status == "complete" else first_page_ids
+    assert offsets == [1, 11]
+    assert coverage.listing_pages_scanned == 2
+    assert coverage.status == expected_status
+    assert coverage.enumerated_jobs == len(expected_ids)
+    assert {candidate.url for candidate in coverage.candidates} == {
+        f"{job_url_prefix}{job_id}" for job_id in expected_ids
+    }
+    assert bool(coverage.limitations) == (expected_status == "partial")
 
 
 def test_extract_meta_detail_sections_reads_role_details_from_detail_text():

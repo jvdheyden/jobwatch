@@ -495,6 +495,34 @@ def test_discover_wuppertal_uses_hr4you_listing_with_onclick_job_links(monkeypat
     assert coverage.candidates[0].matched_terms == ["Umweltplanung"]
 
 
+def test_discover_wuppertal_reports_partial_for_unrecognized_vacancy_links(monkeypatch):
+    source = discover_jobs.SourceConfig(
+        source="Stadt Wuppertal - Stellenangebote",
+        url=(
+            "https://www.wuppertal.de/rathaus-buergerservice/"
+            "ausbildung_stellen/stellenangebote/stellenangebote.php"
+        ),
+        discovery_mode="html",
+        last_checked=None,
+        cadence_group="every_3_runs",
+    )
+    listing_html = """
+    <main>
+      <h1>Stellenangebote</h1>
+      <a href="/job/view/4203?page_lang=">Wissenschaftliche*r Mitarbeiter*in für die Umweltplanung</a>
+    </main>
+    """
+    monkeypatch.setattr(discover_http, "fetch_text", lambda *_: listing_html)
+
+    coverage = discover_jobs.discover_html(source, ["Umweltplanung"], 5)
+
+    assert coverage.status == "partial"
+    assert coverage.listing_pages_scanned == 1
+    assert coverage.enumerated_jobs == 0
+    assert coverage.candidates == []
+    assert coverage.limitations
+
+
 def test_discover_knds_jobboard_uses_native_api_when_jobs_are_not_static(monkeypatch):
     source = discover_jobs.SourceConfig(
         source="KNDS",
