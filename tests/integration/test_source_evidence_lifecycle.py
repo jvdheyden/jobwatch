@@ -291,6 +291,55 @@ def test_older_unknown_review_requires_fresh_independent_evidence(tmp_path, monk
     assert (directory / 'source_state.json').read_bytes() == before
 
 
+@pytest.mark.parametrize('availability', ['live', 'expired'])
+def test_backdated_review_preserves_newer_unknown_review(tmp_path, monkeypatch, availability):
+    directory = configure(tmp_path)
+    today = '2026-11-18'
+    target = dict(root=tmp_path, track='applied_crypto', source_query='example_labs', evidence_id='desired_role')
+    update_source_canary.review_canary(
+        **target, today=today, observation={'availability': 'unknown', 'scope': 'unknown',
+            'evidence_url': URL, 'evidence_note': 'Official page unavailable; scope unclear.'},
+    )
+    state_path = directory / 'source_state.json'
+    before = state_path.read_bytes()
+    with pytest.raises(source_evidence.EvidenceError, match='predates'):
+        update_source_canary.review_canary(
+            **target, today=TODAY, observation={'availability': availability, 'scope': 'in_scope',
+                'evidence_url': URL, 'evidence_note': 'Earlier availability review.'},
+        )
+    assert state_path.read_bytes() == before
+
+    coverage = source()
+    coverage['candidates'][0]['url'] = URL
+    status, result = evaluate(tmp_path, monkeypatch, coverage, today=today)
+    assert status == 1
+    assert result['verification'] == 'inconclusive'
+    assert result['integration_ticket'] is None
+    assert result['canaries'][0]['availability'] == 'unknown'
+    assert result['canaries'][0]['scope'] == 'unknown'
+    assert result['canaries'][0]['checked_on'] == today
+
+
+def test_backdated_refresh_cannot_retire_canary_with_newer_evidence(tmp_path, monkeypatch):
+    directory = configure(tmp_path)
+    state_path = directory / 'source_state.json'
+    before = state_path.read_bytes()
+
+    def discover(root, track, name, today, output):
+        output.write_text(json.dumps({'sources': [source()]}))
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    monkeypatch.setattr(update_source_canary, 'run_discovery', discover)
+    monkeypatch.setattr(probe_career_source, 'fetch_http', lambda url, timeout: ('', url, 410, []))
+    monkeypatch.setattr(update_source_canary, 'probe', lambda *_a, **_k: {'candidate_canaries': []})
+    with pytest.raises(source_evidence.EvidenceError, match='predates'):
+        update_source_canary.refresh_canary(
+            root=tmp_path, track='applied_crypto', source_query='example_labs', today='2026-11-16',
+            discovery_output=tmp_path / 'refresh.json',
+        )
+    assert state_path.read_bytes() == before
+
+
 def test_multiple_canaries_require_every_applicable_identity():
     evidence = [canary(), dict(canary(), id='second_role', url='https://jobs.example.test/jobs/99')]
     result = validate_source_coverage(source(), canaries=evidence)
@@ -382,6 +431,42 @@ def test_reviewed_expiration_archives_but_inconclusive_review_preserves_evidence
     state = load_source_state(directory / 'source_state.json', 'applied_crypto')['example_labs']['integration']
     assert state['canaries'] == []
     assert state['canary_history'][0]['url'] == URL
+
+
+@pytest.mark.parametrize('legacy_checks', [False, True], ids=['current', 'legacy'])
+def test_registered_replacement_uses_its_own_evidence(tmp_path, monkeypatch, legacy_checks):
+    directory = configure(tmp_path)
+    state_path = directory / 'source_state.json'
+    target = dict(root=tmp_path, track='applied_crypto', source_query='example_labs')
+    closure = {'availability': 'expired', 'evidence_url': URL,
+               'evidence_note': 'Official page confirms applications closed.'}
+    update_source_canary.review_canary(
+        **target, evidence_id='desired_role', today=TODAY, observation=closure,
+    )
+    retired = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+    archive = retired['canary_history']
+    if legacy_checks:
+        def restore_retired_check(state):
+            integration = state['example_labs']['integration']
+            integration.setdefault('canary_checks', {})['desired_role'] = dict(canary(), **closure)
+        mutate_source_state(state_path, 'applied_crypto', ['example_labs'], restore_retired_check)
+
+    replacement_url = 'https://jobs.example.test/jobs/100'
+    replacement = dict(canary(), url=replacement_url, evidence_url=replacement_url)
+    update_source_canary.register_evidence(**target, payload={'canaries': [replacement]})
+    status, result = evaluate(tmp_path, monkeypatch, source())
+    assert status == 1
+    assert result['final_status'] == 'integration_needed'
+    assert result['verification'] == 'failed'
+    assert result['canaries'] == [replacement]
+    assert result['integration_ticket']['canary_results'][0]['status'] == 'fail'
+
+    active = load_source_state(state_path, 'applied_crypto')['example_labs']['integration']
+    assert 'desired_role' not in retired.get('canary_checks', {})
+    assert 'desired_role' not in active.get('canary_checks', {})
+    assert active['canary_history'] == archive
+    assert archive[0]['availability'] == 'expired'
+    assert archive[0]['url'] == URL
 
 
 def test_completed_integration_clears_stale_result_fields_but_preserves_curation_hints(tmp_path, monkeypatch):

@@ -158,6 +158,15 @@ def test_older_review_does_not_override_newer_canary_evidence():
     assert effective_canaries([canary], [canary], today='2026-11-17', checks=checks) == [canary]
 
 
+def test_legacy_retired_check_does_not_override_active_replacement():
+    from source_evidence import effective_canaries
+    original = normalize_canaries(pack(brief())['canaries'])[0]
+    replacement_url = 'https://jobs.example.test/jobs/100'
+    replacement = dict(original, url=replacement_url, evidence_url=replacement_url)
+    checks = {original['id']: dict(original, availability='expired')}
+    assert effective_canaries([replacement], [], today='2026-11-17', checks=checks) == [replacement]
+
+
 def test_selection_resolves_provisional_canary_source_without_losing_user_evidence():
     setup = brief()
     supplied = dict(pack(setup)['canaries'][0], source_id='provisional_employer')
