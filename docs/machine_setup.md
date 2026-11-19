@@ -100,24 +100,26 @@ refreshes the file. Jobwatch resolves the model in this order.
    provider and role in uppercase. For the setup coordinator, the older
    `JOB_AGENT_<PROVIDER>_SETUP_MODEL` keys still work. The scheduled, reviewer,
    and coder roles also honor an exported `ANTHROPIC_MODEL` or `GEMINI_MODEL`
-   for the corresponding provider when no Jobwatch model override is set. An
-   empty `GEMINI_MODEL` leaves tier selection in effect.
+   for the corresponding provider when no Jobwatch model override is set.
+   Empty native model variables leave tier selection in effect.
 2. Configured tier. Set `JOB_AGENT_<ROLE>_TIER` to select the same tier across
    providers for that role.
 3. The role's default tier from the table above.
 
 For example, `export JOB_AGENT_SCHEDULED_TIER=frontier-latest` applies to track
 runs across all providers. `export JOB_AGENT_CLAUDE_SCHEDULED_MODEL=sonnet`
-takes precedence on Claude runs.
+takes precedence on Claude runs. Model overrides can also use a Google Cloud
+model ID such as `claude-haiku-4-5@20251001`.
 
 Reasoning is independent of tier. The setup entry points accept `--reasoning`
 for Codex and Claude. It takes precedence over
 `JOB_AGENT_<PROVIDER>_<ROLE>_REASONING_EFFORT` and the role default. The legacy
 `JOB_AGENT_CODEX_SETUP_REASONING_EFFORT` remains a fallback for the coordinator.
 Codex accepts `none`, `low`, `medium`, `high`, and `xhigh` in Jobwatch.
-Claude accepts `low`, `medium`, `high`, `xhigh`, and `max`. Claude's native
-`CLAUDE_CODE_EFFORT_LEVEL` takes precedence over its `--effort` flag. Gemini
-thinking is controlled by its model settings and is logged as provider-managed.
+Claude accepts `low`, `medium`, `high`, `xhigh`, and `max`. A nonempty
+`CLAUDE_CODE_EFFORT_LEVEL` takes precedence over Claude's `--effort` flag.
+Gemini thinking is controlled by its model settings and is logged as
+provider-managed.
 
 Jobwatch logs the requested tier (or explicit override), model or alias, and
 reasoning effort at launch. Invalid tier names, malformed model IDs, and invalid
