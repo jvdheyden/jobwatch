@@ -26,7 +26,7 @@ DEFAULT_GEMINI_SETUP_APPROVAL_MODE = "auto_edit"
 DEFAULT_CLAUDE_SETUP_ALLOWED_TOOLS = "Read,Write,Edit,MultiEdit,Bash,Glob,Grep,LS,TodoWrite"
 DEFAULT_CLAUDE_SOURCE_DISCOVERY_ALLOWED_TOOLS = "WebSearch,WebFetch"
 DEFAULT_CLAUDE_PREVIEW_RANKER_ALLOWED_TOOLS = ""
-_MODEL_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
+_MODEL_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$")
 
 ROLE_MODEL_TIERS = {
     "setup_coordinator": "workhorse-latest",
@@ -85,7 +85,7 @@ def resolve_model_policy(
         model_keys.append(f"JOB_AGENT_{provider.upper()}_SETUP_MODEL")
     if role in {"scheduled", "reviewer", "coder"}:
         # These launches previously inherited explicit provider environment defaults.
-        if provider == "claude":
+        if provider == "claude" and values.get("ANTHROPIC_MODEL"):
             model_keys.append("ANTHROPIC_MODEL")
         elif provider == "gemini" and values.get("GEMINI_MODEL"):
             model_keys.append("GEMINI_MODEL")
@@ -116,7 +116,7 @@ def resolve_model_policy(
     if reasoning is None:
         reasoning_key = next((key for key in reasoning_keys if key in values), reasoning_keys[0])
         reasoning = values.get(reasoning_key)
-    if provider == "claude" and "CLAUDE_CODE_EFFORT_LEVEL" in values:
+    if provider == "claude" and values.get("CLAUDE_CODE_EFFORT_LEVEL"):
         # Claude applies its native environment override ahead of --effort.
         reasoning_key = "CLAUDE_CODE_EFFORT_LEVEL"
         reasoning = values[reasoning_key]

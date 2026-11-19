@@ -1059,7 +1059,28 @@ def test_run_track_resolves_codex_from_path(tmp_job_agent_root: Path, repo_root:
     assert (tmp_job_agent_root / "codex-prompt.txt").exists()
 
 
-def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: Path, repo_root: Path, run_cmd) -> None:
+@pytest.mark.parametrize(
+    ("overrides", "model", "tier", "effort"),
+    [
+        pytest.param({}, "sonnet", "workhorse-latest", "medium", id="defaults"),
+        pytest.param(
+            {"ANTHROPIC_MODEL": "", "JOB_AGENT_SCHEDULED_TIER": "cheapo-latest"},
+            "haiku", "cheapo-latest", "medium", id="empty-native-model",
+        ),
+        pytest.param(
+            {"CLAUDE_CODE_EFFORT_LEVEL": "", "JOB_AGENT_CLAUDE_SCHEDULED_REASONING_EFFORT": "low"},
+            "sonnet", "workhorse-latest", "low", id="empty-native-effort",
+        ),
+        pytest.param(
+            {"ANTHROPIC_MODEL": "claude-haiku-4-5@20251001"},
+            "claude-haiku-4-5@20251001", "explicit override", "medium", id="google-cloud-model",
+        ),
+    ],
+)
+def test_run_track_invokes_claude_provider_with_same_prompt(
+    tmp_job_agent_root: Path, repo_root: Path, run_cmd, overrides: dict[str, str],
+    model: str, tier: str, effort: str,
+) -> None:
     _bootstrap_runner_root(tmp_job_agent_root, _successful_discovery_script())
     _write_fake_caffeinate(tmp_job_agent_root)
 
@@ -1069,6 +1090,7 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
         "JOB_AGENT_PROVIDER": "claude",
         "JOB_AGENT_BIN": str(tmp_job_agent_root / "fake_claude.sh"),
         "PATH": f"{tmp_job_agent_root / 'bin'}:{os.environ['PATH']}",
+        **overrides,
     }
 
     result = run_cmd(
@@ -1084,24 +1106,24 @@ def test_run_track_invokes_claude_provider_with_same_prompt(tmp_job_agent_root: 
         cwd=repo_root,
     )
 
-    assert result.returncode == 0, result.stderr
+    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
+    assert result.returncode == 0, log_text
     args_text = (tmp_job_agent_root / "claude-args.txt").read_text()
     args = args_text.splitlines()
     prompt_text = (tmp_job_agent_root / "claude-prompt.txt").read_text()
-    log_text = (tmp_job_agent_root / "logs" / "demo-2030-01-15.log").read_text()
 
     assert "-p" in args_text
     assert "--output-format" in args_text
     assert "stream-json" in args_text
     assert "--verbose" in args_text
     assert "--allowedTools" in args_text
-    assert args[args.index("--model") + 1] == "sonnet"
-    assert args[args.index("--effort") + 1] == "medium"
+    assert args[args.index("--model") + 1] == model
+    assert args[args.index("--effort") + 1] == effort
     assert (tmp_job_agent_root / "claude-cwd.txt").read_text().strip() == str(tmp_job_agent_root)
     assert "Run today's demo workflow from the repository root in mode: track_run." in prompt_text
     assert "A discovery artifact for today's scheduled run has already been written" in prompt_text
     assert "Claude phase started" in log_text
-    assert "sonnet (tier=workhorse-latest, reasoning effort=medium)" in log_text
+    assert f"{model} (tier={tier}, reasoning effort={effort})" in log_text
     assert "Claude phase finished successfully" in log_text
 
 
