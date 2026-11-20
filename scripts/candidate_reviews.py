@@ -227,6 +227,17 @@ def record_history(path: Path, updates: dict) -> None:
             write_json_atomic(path, history)
 
 
+def valid_existing_digest(content: bytes | None, track: str, date: str) -> dict | None:
+    if content is None:
+        return None
+    try:
+        digest = json.loads(content.decode())
+        normalize_digest_payload(digest, expected_track=track, expected_date=date)
+    except (ValueError, AttributeError, OverflowError, RecursionError):
+        return None
+    return digest
+
+
 def commit(root: Path, track: str, date: str, run_id: str, expected_fingerprint: str) -> None:
     review_path, receipt_path = review_paths(root, track, run_id)
     review_bytes = review_path.read_bytes()
@@ -241,25 +252,28 @@ def commit(root: Path, track: str, date: str, run_id: str, expected_fingerprint:
     digest_path = digest_artifact_path(track, date, root)
     draft_path = review_path.with_suffix(".digest.json")
     with file_lock(digest_path):
-        current = file_fingerprint(digest_path)
+        try:
+            current_bytes = digest_path.read_bytes()
+        except FileNotFoundError:
+            current_bytes = None
+        current = sha256(current_bytes).hexdigest() if current_bytes is not None else None
         previous = review["previous_digest_fingerprint"]
+        existing = valid_existing_digest(current_bytes, track, date)
         if receipt["digest_unchanged"]:
-            if current is None or current != previous or draft_path.exists():
-                raise ValueError("Receipt requires an unchanged existing digest and no draft")
-            digest = read_json_payload(digest_path)
+            if existing is None or current != previous or draft_path.exists():
+                raise ValueError("Receipt requires a valid, unchanged digest and no draft")
         else:
             digest = read_json_payload(draft_path)
-            if current != previous and (current is None or digest != read_json_payload(digest_path)):
+            normalize_digest_payload(digest, expected_track=track, expected_date=date)
+            if current != previous and digest != existing:
                 raise ValueError("Daily digest changed during the scheduled attempt")
-
-        normalize_digest_payload(digest, expected_track=track, expected_date=date)
-        if not receipt["digest_unchanged"] and current == previous:
-            if current is not None:
-                existing_runs = read_json_payload(digest_path).get("runs")
+            if current == previous:
                 draft_runs = digest["runs"]
-                if not existing_runs or draft_runs[:-1] != existing_runs or draft_runs[-1]["kind"] != "update":
+                if existing is not None and (draft_runs[:-1] != existing["runs"] or draft_runs[-1]["kind"] != "update"):
                     raise ValueError("Same-day draft must preserve all existing runs and append one update")
-            write_json_atomic(digest_path, digest)
+                if file_fingerprint(digest_path) != current:
+                    raise ValueError("Daily digest changed during the scheduled attempt")
+                write_json_atomic(digest_path, digest)
         record_history(history_path(root, track), updates)
 
 
