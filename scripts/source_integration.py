@@ -991,7 +991,7 @@ def main() -> int:
     phase = "starting"
     active_artifact_path = artifact_path
     checking_detail_repair = False
-    description_targets: dict[str, dict[str, str]] = {}
+    description_targets: dict[tuple[str, str], dict[str, str]] = {}
     prior_postmortem: dict[str, Any] | None = None
 
     write_summary(
@@ -1054,7 +1054,8 @@ def main() -> int:
                     if description_status(candidate.get("description")) == "usable"
                 ]
                 unverified = [
-                    url for url, target in description_targets.items()
+                    target["url"] or target["posting_id"] or "(unknown posting)"
+                    for target in description_targets.values()
                     if not any(matches_posting(candidate, target) for candidate in usable_candidates)
                 ]
                 if unverified:
@@ -1091,11 +1092,9 @@ def main() -> int:
             attempts.append(attempt_record)
             break
 
-        if integration_ticket.get("failure_mode") == "missing_detail":
-            checking_detail_repair = True
-            description_targets.update({
-                item["url"]: item for item in integration_ticket.get("description_evidence", []) if item.get("url")
-            })
+        affected_postings = eval_payload["deterministic"]["description_coverage"]["affected_postings"]
+        checking_detail_repair |= bool(affected_postings) or integration_ticket.get("failure_mode") == "missing_detail"
+        description_targets.update({(item["posting_id"], item["url"]): item for item in affected_postings})
 
         if integration_ticket.get("needs_fresh_discovery"):
             attempts.append(attempt_record)

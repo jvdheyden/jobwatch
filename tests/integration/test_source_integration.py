@@ -932,3 +932,59 @@ def test_legacy_description_ticket_requires_current_discovery_before_coding(
     assert summary["integration_attempts_used"] == 0
     assert summary["attempts"][0]["rediscovery_invoked"]
     assert summary["final_eval"]["deterministic"]["description_coverage"]["usable"] == (expected_status == "pass")
+
+
+@pytest.mark.parametrize("keep_fourth", [False, True], ids=["drops-fourth", "retains-all"])
+def test_description_repair_requires_every_affected_posting_beyond_sample(
+    tmp_job_agent_root, run_cmd, repo_root, keep_fourth,
+):
+    root = tmp_job_agent_root
+    artifact = root / "discovery.json"
+    write_example_artifact(artifact)
+    payload = json.loads(artifact.read_text())
+    [source] = payload["sources"]
+    [example] = source["candidates"]
+    source["candidates"] = [
+        {**example, "title": f"Engineer {index}", "url": f"https://jobs.example.com/jobs/{index}",
+         "description": "", "notes": example["description"]}
+        for index in range(1, 5)
+    ]
+    artifact.write_text(json.dumps(payload))
+    provider = write_description_discovery_stub(root, repo_root, artifact)
+    provider.write_text("def populate_descriptions(candidates):\n    return candidates\n")
+    coder = root / "coder.sh"
+    repaired_candidates = "candidates" if keep_fourth else "candidates[:3]"
+    coder.write_text(
+        f"""#!/bin/bash
+set -eu
+cat > "$JOB_AGENT_ROOT/prompt.txt"
+cp "$JOB_AGENT_EVAL_ARTIFACT" "$JOB_AGENT_ROOT/before.json"
+cat > "$JOB_AGENT_ROOT/scripts/example_provider.py" <<'PROVIDER'
+from discover.helpers import set_candidate_description
+
+def populate_descriptions(candidates):
+    retained = {repaired_candidates}
+    for candidate in retained:
+        set_candidate_description(candidate, candidate.notes)
+    return retained
+PROVIDER
+"""
+    )
+    coder.chmod(0o755)
+
+    result = run_cmd(
+        *description_loop_command(root, repo_root, artifact, coder), "--max-attempts", "1", cwd=root,
+        env={**os.environ, "JOB_AGENT_ROOT": str(root)},
+    )
+    summary = json.loads((root / "summary.json").read_text())
+    before = json.loads((root / "before.json").read_text())
+    assert len(before["integration_ticket"]["description_evidence"]) == 3
+    detail = before["deterministic"]["description_coverage"]
+    assert detail["demonstrated_omissions"] == 4
+    assert {item["url"] for item in detail["affected_postings"]} == {
+        candidate["url"] for candidate in source["candidates"]
+    }
+    assert summary["final_status"] == ("pass" if keep_fourth else "inconclusive")
+    assert result.returncode == (0 if keep_fourth else 1)
+    if not keep_fourth:
+        assert source["candidates"][3]["url"] in summary["attempts"][-1]["error"]

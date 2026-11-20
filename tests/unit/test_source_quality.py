@@ -1094,3 +1094,35 @@ def test_missing_page_sampling_is_bounded_even_on_fetch_failures():
     result = source_quality.validate_source_coverage(source, raw_text_fetcher=unavailable)
     assert result["description_coverage"]["sampled_pages_unavailable"] == 3
     assert result["description_coverage"]["missing"] == 8
+
+
+@pytest.mark.parametrize(
+    "opening,notes",
+    [
+        ("", "Tasks: Coordinate security reviews with the engineering team."),
+        (
+            "About Example. ",
+            "Description: The role includes direct ownership of the authorization process...",
+        ),
+    ],
+    ids=["unrecognized-role-prose", "excerpt-already-in-saved-body"],
+)
+def test_uncertain_saved_prose_is_reviewed_without_an_omission(opening, notes):
+    source = _feed_source(
+        opening + "The role includes direct ownership of the authorization process. "
+        "What you need. Paid time off is offered to all employees."
+    )
+    [candidate] = source["candidates"]
+    candidate["notes"] = notes
+    result = source_quality.validate_source_coverage(
+        source, raw_text_fetcher=lambda *_: pytest.fail("Review should see the saved prose first"),
+    )
+    detail = result["description_coverage"]
+    assert detail["demonstrated_omissions"] == 0
+    assert detail["ambiguous_urls"] == [candidate["url"]]
+    assert detail["evidence"] == []
+    context = source_quality._build_reviewer_context(
+        Path("discovery.json"), source, "", "", 1, raw_text_fetcher=lambda *_: "",
+        ambiguous_description_urls=detail["ambiguous_urls"],
+    )
+    assert context["source"]["ambiguous_description_urls"] == [candidate["url"]]

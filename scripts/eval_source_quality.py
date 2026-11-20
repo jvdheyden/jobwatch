@@ -162,6 +162,7 @@ def main() -> int:
                 reviewer_bin=reviewer_bin,
                 timeout_seconds=args.timeout_seconds,
                 provider=reviewer_provider,
+                ambiguous_description_urls=deterministic["description_coverage"]["ambiguous_urls"],
             )
         else:
             reviewer = {

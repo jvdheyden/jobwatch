@@ -21,6 +21,9 @@ from discover.sources.generic_html import discover_html
 def quality_site():
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
+            if self.path == "/jobs/unavailable":
+                self.send_error(503)
+                return
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b'<h1>Security Engineer</h1>')
@@ -341,3 +344,37 @@ def test_eval_prioritizes_demonstrated_description_omissions(
     assert payload["deterministic"]["description_coverage"]["fraction"] == 1
     assert set(payload["integration_ticket"]["failing_checks"]) == secondary
     assert payload["integration_ticket"]["failure_mode"] != "missing_detail"
+
+
+@pytest.mark.parametrize("reviewer_mode", ["off", "auto"])
+def test_browser_eval_defers_acceptance_without_verifiable_descriptions(
+    tmp_path, monkeypatch, quality_site, reviewer_mode,
+):
+    source = {
+        "source": "Example", "source_url": f"{quality_site}/search", "discovery_mode": "browser",
+        "status": "complete", "enumerated_jobs": 1,
+        "candidates": [{
+            "employer": "Example", "title": "Security Engineer",
+            "url": f"{quality_site}/jobs/unavailable", "source_url": f"{quality_site}/search",
+            "location": "Berlin", "description": "", "notes": "",
+        }],
+    }
+    artifact = tmp_path / "discovery.json"
+    artifact.write_text(json.dumps({"sources": [source]}))
+    output = tmp_path / "eval.json"
+    reviewer = Mock(return_value={"status": "blocked", "defects": [], "error": "Timed out"})
+    monkeypatch.setenv("JOB_AGENT_ROOT", str(tmp_path))
+    monkeypatch.setattr(eval_source_quality, "review_source_with_llm", reviewer)
+    monkeypatch.setattr(sys, "argv", [
+        "eval_source_quality.py", "--track", "demo", "--source", "Example", "--today", "2026-11-20",
+        "--artifact-path", str(artifact), "--output", str(output), "--reviewer", reviewer_mode,
+    ])
+
+    assert eval_source_quality.main() == 1
+    payload = json.loads(output.read_text())
+    assert reviewer.call_count == (reviewer_mode == "auto")
+    assert payload["final_status"] == payload["verification"] == "inconclusive"
+    assert payload["integration_ticket"] is None
+    detail = payload["deterministic"]["description_coverage"]
+    assert detail["usable"] == detail["demonstrated_omissions"] == 0
+    assert detail["sampled_pages_unavailable"] == 1
