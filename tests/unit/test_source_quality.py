@@ -58,7 +58,7 @@ def test_validate_source_coverage_allows_same_title_for_different_locations():
                 "url": "https://jobs.example.com/jobs/berlin",
                 "source_url": "https://jobs.example.com/search",
                 "location": "Berlin",
-                "notes": "Tasks: Build applied cryptography prototypes for privacy-preserving systems. Profile: Python and MPC research background.",
+                "description": "Tasks: Build applied cryptography prototypes for privacy-preserving systems. Profile: Python and MPC research background.",
             },
             {
                 "employer": "Example Source",
@@ -66,7 +66,7 @@ def test_validate_source_coverage_allows_same_title_for_different_locations():
                 "url": "https://jobs.example.com/jobs/cologne",
                 "source_url": "https://jobs.example.com/search",
                 "location": "Cologne",
-                "notes": "Tasks: Build applied cryptography prototypes for privacy-preserving systems. Profile: Python and MPC research background.",
+                "description": "Tasks: Build applied cryptography prototypes for privacy-preserving systems. Profile: Python and MPC research background.",
             },
         ],
     }
@@ -144,6 +144,9 @@ def test_validate_source_coverage_fails_when_raw_pages_show_dropped_detail():
     check_by_name = {check["name"]: check for check in result["checks"]}
     assert check_by_name["detail_depth"]["status"] == "fail"
     assert result["confidence"] == "failed"
+    [evidence] = result["description_coverage"]["evidence"]
+    assert evidence["role_text_source"] == "official posting"
+    assert "build privacy-preserving systems" in evidence["role_text_excerpt"]
 
 
 def _feed_source(description: str) -> dict:
@@ -200,16 +203,10 @@ def test_validate_source_coverage_does_not_count_compensation_only_descriptions(
 
 
 @pytest.mark.parametrize("apostrophe", ["'", "\u2019", "\u2018", "\u02bc"])
-def test_detail_markers_match_typographic_apostrophes(apostrophe):
-    text = f"What you{apostrophe}ll do: own subscription pricing. What you{apostrophe}ll need: 5+ years in product."
-
-    assert source_quality._raw_detail_categories(text) == {"tasks", "qualifications"}
-
-
-def test_validate_source_coverage_counts_a_description_with_curly_apostrophe_sections():
+def test_validate_source_coverage_counts_description_with_apostrophe_sections(apostrophe):
     result = source_quality.validate_source_coverage(
-        _feed_source("About Nothing. What you\u2019ll do: own subscription pricing."),
-        raw_text_fetcher=lambda _url, _timeout: DETAIL_PAGE,
+        _feed_source(f"About Nothing. What you{apostrophe}ll do: own subscription pricing."),
+        raw_text_fetcher=lambda *_: pytest.fail("Stored detail should not need a refetch"),
     )
 
     check_by_name = {check["name"]: check for check in result["checks"]}
@@ -227,6 +224,11 @@ def test_validate_source_coverage_counts_a_description_with_curly_apostrophe_sec
         "About Nothing. Minimum qualifications include product experience.",
         "Ihre Aufgaben: Produktentwicklung begleiten.",
         "Anforderungen: Erfahrung in der Produktentwicklung.",
+        "You'll assess new designs for privacy and prototype safer alternatives.",
+        "Develop firmware for secure network equipment.",
+        "Sie entwickeln sichere Netzwerke für öffentliche Einrichtungen.",
+        "Experience with public-key infrastructure.",
+        "Qualifications: Doctorate in computer science and experience implementing secure...",
     ],
 )
 def test_validate_source_coverage_accepts_description_role_context(description):
@@ -283,11 +285,16 @@ def test_ambiguous_description_requires_review_even_with_other_job_detail(discov
 
 
 @pytest.mark.parametrize("detail_field", ["tasks", "notes"])
-def test_description_ambiguity_preserves_other_candidate_detail(detail_field):
+def test_description_ambiguity_is_not_resolved_by_other_candidate_fields(detail_field):
     source = _feed_source("We comply with security requirements to protect customer data.")
     source["candidates"][0][detail_field] = "Responsibilities: build secure software."
 
-    assert source_quality.validate_source_coverage(source)["confidence"] == "high"
+    result = source_quality.validate_source_coverage(source)
+    assert result["confidence"] == "low"
+    detail = result["description_coverage"]
+    assert detail["ambiguous"] == 1
+    assert detail["usable"] == 0
+    assert detail["ambiguous_urls"] == [source["candidates"][0]["url"]]
 
 
 def test_validate_source_coverage_still_fails_a_description_without_detail_sections():
@@ -491,7 +498,7 @@ def test_build_integration_ticket_distinguishes_config_native_filters_for_high_v
                 "url": f"https://jobs.example.com/jobs/{index}",
                 "source_url": "https://jobs.example.com/search",
                 "location": "Berlin",
-                "notes": "Tasks: Build applied privacy systems. Profile: security engineering.",
+                "description": "Tasks: Build applied privacy systems. Profile: security engineering.",
             }
             for index in range(source_quality.HIGH_VOLUME_CANDIDATE_THRESHOLD + 1)
         ],
@@ -531,7 +538,7 @@ def test_validate_source_coverage_allows_broad_api_enumeration_when_matches_are_
                 "url": "https://jobs.lever.co/example/security-engineer-berlin",
                 "source_url": "https://jobs.lever.co/example",
                 "location": "Berlin",
-                "notes": "Description: Responsibilities include building security review automation. Qualifications include Python and applied security experience.",
+                "description": "Responsibilities include building security review automation. Qualifications include Python and applied security experience.",
             },
             {
                 "employer": "Example Lever",
@@ -539,7 +546,7 @@ def test_validate_source_coverage_allows_broad_api_enumeration_when_matches_are_
                 "url": "https://jobs.lever.co/example/security-engineer-london",
                 "source_url": "https://jobs.lever.co/example",
                 "location": "London",
-                "notes": "Description: Responsibilities include hardening production systems. Qualifications include infrastructure security experience.",
+                "description": "Responsibilities include hardening production systems. Qualifications include infrastructure security experience.",
             },
         ],
     }
@@ -578,7 +585,7 @@ def test_build_integration_ticket_distinguishes_provider_filter_support_when_fil
                 "url": f"https://jobs.example.com/jobs/{index}",
                 "source_url": "https://jobs.example.com/search",
                 "location": "Berlin",
-                "notes": "Tasks: Build applied privacy systems. Profile: security engineering.",
+                "description": "Tasks: Build applied privacy systems. Profile: security engineering.",
             }
             for index in range(source_quality.HIGH_VOLUME_CANDIDATE_THRESHOLD + 1)
         ],
@@ -1026,3 +1033,64 @@ def test_build_integration_ticket_keeps_volume_routing_without_no_postings():
     assert ticket is not None
     assert ticket["failure_mode"] == "candidate_noise"
     assert ticket["suggested_strategy"] == "config_native_filters"
+
+
+@pytest.mark.parametrize("description", [
+    "", "Please log in to view this posting.", "Responsibilities: Qualifications: Deadline: 2027-01-29",
+    "Responsibilities. Requirements. Our benefits include paid leave and healthcare.",
+    "Careers Departments Locations Menu Apply Now",
+])
+def test_unavailable_posting_with_no_role_evidence_warns_without_detail_defect(description):
+    source = _feed_source(description)
+    source["candidates"][0]["notes"] = "Deadline: 29.01.2027; Requirements: unknown"
+    fetched = []
+
+    def unavailable(url, _timeout):
+        fetched.append(url)
+        raise OSError("page unavailable")
+
+    result = source_quality.validate_source_coverage(source, raw_text_fetcher=unavailable)
+    detail = result["description_coverage"]
+    assert (detail["usable"], detail["missing"], detail["ambiguous"]) == (0, 1, 0)
+    assert result["confidence"] == "low"
+    assert detail["sampled_pages_unavailable"] == len(fetched) == 1
+    assert not detail["evidence"]
+
+
+def test_missing_legacy_body_can_point_to_structured_role_evidence():
+    source = _feed_source("")
+    [candidate] = source["candidates"]
+    del candidate["description"]
+    candidate["qualifications"] = ["Experience building production databases"]
+    result = source_quality.validate_source_coverage(source)
+    ticket = source_quality.build_integration_ticket(
+        "test", source, result, {"status": "skipped"}, canary_title="", canary_url="",
+    )
+    assert ticket["needs_fresh_discovery"]
+    assert ticket["description_evidence"][0]["role_text_source"] == "qualifications"
+
+
+def test_zero_candidates_offer_no_description_coverage_even_with_floor():
+    source = _feed_source("")
+    source["candidates"] = []
+    result = source_quality.validate_source_coverage(source, minimum_detail_fraction=1)
+    checks = {check["name"]: check["status"] for check in result["checks"]}
+    assert checks["detail_depth"] == checks["detail_coverage"] == "skip"
+    assert result["description_coverage"]["fraction"] is None
+    assert result["confidence"] == "high"
+
+
+def test_missing_page_sampling_is_bounded_even_on_fetch_failures():
+    source = _feed_source("")
+    prototype = source["candidates"][0]
+    source["candidates"] = [
+        {**prototype, "title": f"Engineer {index}", "url": f"https://careers.kula.ai/jobs/{index}"}
+        for index in range(8)
+    ]
+
+    def unavailable(*_):
+        raise OSError("page unavailable")
+
+    result = source_quality.validate_source_coverage(source, raw_text_fetcher=unavailable)
+    assert result["description_coverage"]["sampled_pages_unavailable"] == 3
+    assert result["description_coverage"]["missing"] == 8

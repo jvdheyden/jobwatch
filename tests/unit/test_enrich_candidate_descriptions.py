@@ -338,3 +338,21 @@ def test_runner_enriches_descriptions_only_after_track_filtering(tmp_path, monke
     assert len(candidates) == 1
     assert candidates[0]["url"] == "https://example.com/jobs/keep"
     assert "JD body for the kept security engineer role." in candidates[0]["description"]
+
+
+def test_enrich_rejects_bundeswehr_loading_shell(monkeypatch):
+    monkeypatch.setattr(
+        http, "fetch_text", lambda *_: "<title>Onlinebewerbung</title><p>Das Bewerbungsportal wird geladen...</p>",
+    )
+    candidate = Candidate(
+        employer="Bundeswehr", title="IT Systems Engineer",
+        url="https://example.com/jobs?id=123", source_url="https://example.com/jobs",
+    )
+    coverage = _coverage([candidate])
+    coverage.discovery_mode = "bundeswehr_jobsuche"
+
+    enrich_candidate_descriptions(coverage, timeout_seconds=5)
+
+    assert coverage.candidates == [candidate]
+    assert candidate.description == ""
+    assert coverage.limitations == ["JD fetch failed for 1 candidate(s)"]

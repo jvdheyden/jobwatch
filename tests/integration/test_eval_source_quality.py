@@ -133,7 +133,7 @@ def test_eval_source_quality_runs_reviewer_and_writes_integration_ticket(tmp_job
 set -euo pipefail
 cat >/dev/null
 cat <<'JSON'
-{"defects":[{"type":"partial_description","severity":"major","source":"Example Source","candidate_url":"https://jobs.example.com/jobs/123","canary_title":"Security Engineer","observed":"No descriptive notes were extracted.","expected":"Tasks or profile summary from the posting page.","integration_hint":"Open the detail page and capture at least one short section summary.","repro_step":"Run discover_jobs.py for Example Source and inspect candidate.notes."}]}
+{"defects":[{"type":"partial_description","severity":"major","source":"Example Source","candidate_url":"https://jobs.example.com/jobs/123","canary_title":"Security Engineer","observed":"The description was empty.","expected":"The posting lists duties for maintaining secure systems.","integration_hint":"Open the detail page and capture at least one short section summary.","repro_step":"Run discover_jobs.py for Example Source and inspect candidate.description."}]}
 JSON
 """.replace("https://jobs.example.com", quality_site)
     )
@@ -172,13 +172,14 @@ JSON
     assert payload["reviewer"]["defects"][0]["type"] == "partial_description"
     assert payload["final_status"] == "integration_needed"
     assert payload["integration_ticket"]["status"] == "open"
-    assert payload["integration_ticket"]["summary"] == "No descriptive notes were extracted."
+    assert payload["integration_ticket"]["summary"] == "The description was empty."
     assert payload["integration_ticket"]["failure_mode"] == "missing_detail"
     assert payload["integration_ticket"]["suggested_strategy"] == "dedicated_provider_logic"
     assert payload["integration_ticket"]["target_outcome"].startswith("Fresh discovery artifact keeps the relevant candidates")
-    assert payload["integration_ticket"]["primary_evidence"] == [
-        "partial_description: No descriptive notes were extracted."
-    ]
+    [evidence] = payload["integration_ticket"]["primary_evidence"]
+    assert f"{quality_site}/jobs/123" in evidence
+    assert "The description was empty." in evidence
+    assert "maintaining secure systems" in evidence
 
 
 def test_eval_source_quality_keeps_pass_when_reviewer_times_out(tmp_job_agent_root: Path, run_cmd, quality_site):
@@ -270,3 +271,73 @@ sleep 30
     assert "timed out after 1" in payload["reviewer"]["error"]
     assert payload["final_status"] == "pass"
     assert payload["integration_ticket"] is None
+
+
+@pytest.mark.parametrize(
+    "name,mode,description,notes,corrected,status,secondary",
+    [
+        (
+            "Bundeswehr", "bundeswehr_jobsuche",
+            "Onlinebewerbung Das Bewerbungsportal wird geladen...",
+            "RefCode: TEST-001; Deadline: 29.01.2027; Job: Sichere Netze konfigurieren und Störungen beheben.",
+            "Aufgaben: Sichere Netze konfigurieren und Störungen beheben.",
+            "complete", {"result_volume"},
+        ),
+        (
+            "Meta", "browser", "",
+            "Meta browser search q='privacy' page=1; Qualifications: Experience designing distributed systems.",
+            "Minimum Qualifications: Experience designing distributed systems.",
+            "partial", {"result_volume", "execution_complete", "browser_fallback_quality"},
+        ),
+    ],
+)
+def test_eval_prioritizes_demonstrated_description_omissions(
+    tmp_path, monkeypatch, name, mode, description, notes, corrected, status, secondary,
+):
+    source_url = "https://jobs.example.org/search"
+    affected = {
+        "employer": name, "title": "Systems Engineer", "url": "https://jobs.example.org/jobs/one",
+        "source_url": source_url, "location": "Berlin", "description": description, "notes": notes,
+    }
+    healthy = {
+        **affected, "title": "Network Engineer", "url": "https://jobs.example.org/jobs/two", "notes": "",
+        "description": "Design network monitoring systems and investigate outages.",
+    }
+    source = {
+        "source": name, "source_url": source_url, "discovery_mode": mode, "status": status, "matched_jobs": 41,
+        "candidates": [healthy, affected],
+    }
+    artifact = tmp_path / "discovery.json"
+    output = tmp_path / "eval.json"
+    monkeypatch.setenv("JOB_AGENT_ROOT", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", [
+        "eval_source_quality.py", "--track", "demo", "--source", name, "--today", "2026-11-20",
+        "--artifact-path", str(artifact), "--output", str(output), "--reviewer", "off",
+        "--min-detail-fraction", "0.5",
+    ])
+
+    artifact.write_text(json.dumps({"sources": [source]}))
+    assert eval_source_quality.main() == 1
+    payload = json.loads(output.read_text())
+    ticket = payload["integration_ticket"]
+    assert payload["reviewer"]["status"] == "skipped"
+    assert payload["deterministic"]["description_coverage"]["fraction"] == 0.5
+    assert set(ticket["failing_checks"]) == {"detail_depth", *secondary}
+    assert ticket["failure_mode"] == "missing_detail"
+    assert ticket["suggested_strategy"] == "dedicated_provider_logic"
+    assert affected["title"] in ticket["summary"]
+    assert "set_candidate_description" in ticket["target_outcome"]
+    [evidence] = ticket["description_evidence"]
+    assert evidence["url"] == affected["url"]
+    assert evidence["description_excerpt"] == description
+    assert evidence["role_text_source"] == "notes"
+    assert corrected.split(": ", 1)[1] in evidence["role_text_excerpt"]
+    assert evidence["role_text_excerpt"] in ticket["primary_evidence"][0]
+
+    affected["description"] = corrected
+    artifact.write_text(json.dumps({"sources": [source]}))
+    assert eval_source_quality.main() == 1
+    payload = json.loads(output.read_text())
+    assert payload["deterministic"]["description_coverage"]["fraction"] == 1
+    assert set(payload["integration_ticket"]["failing_checks"]) == secondary
+    assert payload["integration_ticket"]["failure_mode"] != "missing_detail"

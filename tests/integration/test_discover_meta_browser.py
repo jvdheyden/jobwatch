@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
 import discover_jobs
+from discover.constants import JD_DESCRIPTION_CHAR_BUDGET
 from discover.sources import browser as browser_source
 from update_source_state import complete_source_ids
 
@@ -480,7 +482,7 @@ def test_enrich_meta_candidates_opens_detail_pages_and_enriches_notes():
     page = FakeEnrichmentPage(
         {
             candidate.url: (
-                "Responsibilities\n"
+                "Privacy Engineer Responsibilities\n"
                 "Lead privacy incident triage and mitigation across products.\n"
                 "Minimum Qualifications\n"
                 "2+ years in privacy or security engineering.\n"
@@ -501,3 +503,25 @@ def test_enrich_meta_candidates_opens_detail_pages_and_enriches_notes():
     assert candidate.matched_terms == ["privacy", "security"]
     assert "Tasks: Lead privacy incident triage and mitigation across products." in candidate.notes
     assert "Qualifications: 2+ years in privacy or security engineering." in candidate.notes
+    assert asdict(candidate)["description"] == (
+        "Responsibilities: Lead privacy incident triage and mitigation across products. "
+        "Qualifications: 2+ years in privacy or security engineering."
+    )
+
+
+def test_meta_qualification_only_description_survives_truncation():
+    candidate = discover_jobs.Candidate(
+        employer="Meta", title="Research Engineer",
+        url="https://www.metacareers.com/profile/job_details/1000000001",
+        source_url="https://www.metacareers.com/jobs",
+    )
+    longer_than_notes = "Experience designing reliable protocols for distributed services. " * 6
+    qualification = "Knowledge of reproducible systems benchmarking."
+    detail_body = longer_than_notes + qualification + " Experience with programming in C++." * 120
+
+    assert discover_jobs.apply_meta_detail_text(candidate, f"Minimum Qualifications\n{detail_body}", [])
+    serialized = asdict(candidate)
+    assert len(serialized["description"]) <= JD_DESCRIPTION_CHAR_BUDGET
+    assert serialized["description_truncated"]
+    assert qualification in serialized["description"]
+    assert qualification not in serialized["notes"]

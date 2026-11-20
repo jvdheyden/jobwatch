@@ -72,7 +72,7 @@ def main() -> int:
     parser.add_argument("--canary-expires-on", help="Canary review deadline; past deadlines trigger independent rechecking, not assumed closure")
     parser.add_argument("--min-candidates", type=int, help="Independently reviewed candidate floor for this configured search")
     parser.add_argument("--min-enumerated", type=int, help="Independently reviewed board enumeration floor")
-    parser.add_argument("--min-detail-fraction", type=float, help="Reviewed minimum fraction of candidates with substantive role detail (0 to 1)")
+    parser.add_argument("--min-detail-fraction", type=float, help="Reviewed minimum fraction of candidates with usable descriptions (0 to 1)")
     args = parser.parse_args()
     canary_review = None
     try:
@@ -234,7 +234,8 @@ def main() -> int:
     final_status = "inconclusive" if deterministic["verification"] == "inconclusive" else "pass"
     if integration_ticket:
         final_status = "integration_needed"
-    if deterministic["confidence"] == "failed" and reviewer.get("status") == "blocked":
+    if (deterministic["confidence"] == "failed" and reviewer.get("status") == "blocked"
+            and not deterministic["description_coverage"]["demonstrated_omissions"]):
         final_status = "blocked"
 
     payload = {

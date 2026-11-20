@@ -21,7 +21,7 @@ from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
 from agent_provider import build_reviewer_command, resolve_model_policy
-from discover.helpers import LinkCollector
+from discover.helpers import LinkCollector, is_bundeswehr_loading_shell
 
 
 USER_AGENT = "job-agent-source-quality/0.1"
@@ -53,93 +53,51 @@ NON_JOB_URL_MARKERS = (
     "/impressum",
     "mailto:",
 )
-DETAIL_FIELD_KEYS = (
-    "tasks",
-    "responsibilities",
-    "qualifications",
-    "requirements",
-    "profile",
-    "compensation",
-    "salary",
-    "salary_range",
-    "equity_range",
-)
-DETAIL_NOTE_MARKERS = (
-    "tasks:",
-    "task:",
-    "responsibilities",
-    "responsibility",
-    "requirements:",
-    "qualifications:",
-    "profile:",
-    "deadline:",
-    "bewerbungsfrist",
-    "minimum qualifications",
-    "preferred qualifications",
-    "what you'll do",
-    "what you will do",
-    "your profile",
-    "ihr profil",
-    "anforderungen",
-    "aufgaben",
-    "salary:",
-    "compensation:",
-    "pay range",
-    "salary range",
-)
+DETAIL_FIELD_KEYS = ("tasks", "responsibilities", "qualifications", "requirements", "profile", "JobDesc", "RequireDesc")
 HIGH_VOLUME_CANDIDATE_THRESHOLD = 40
-PROVENANCE_NOTE_MARKERS = (
-    "enumerated through",
-    "static html enumeration",
-    "browser search q=",
-    "meta browser search",
-    "hacker news jobs listing",
-    "posted:",
+DETAIL_SAMPLE_LIMIT = 3
+ROLE_HEADINGS = (
+    r"what you'll (?:do|need)|what you (?:will do|need)|your (?:tasks|profile)|"
+    r"ihre aufgaben|ihr profil|job description|(?:required|minimum|preferred) qualifications|"
+    r"responsibilit(?:y|ies)|requirements|qualifications|aufgaben|anforderungen|tasks|profile"
 )
-RAW_DETAIL_MARKERS = {
-    "tasks": (
-        "responsibilities",
-        "responsibility",
-        "what you'll do",
-        "what you will do",
-        "your tasks",
-        "aufgaben",
-        "ihre aufgaben",
-        "job description",
-    ),
-    "qualifications": (
-        "qualifications",
-        "required qualifications",
-        "minimum qualifications",
-        "preferred qualifications",
-        "requirements",
-        "your profile",
-        "ihr profil",
-        "anforderungen",
-        "what you'll need",
-        "what you need",
-    ),
-    "compensation": (
-        "salary",
-        "compensation",
-        "pay range",
-        "salary range",
-        "equity",
-        "vergutung",
-        "entgelt",
-        "besoldung",
-    ),
-}
-DESCRIPTION_DETAIL_CATEGORIES = {"tasks", "qualifications"}
-# Generic words such as "requirements" also occur in policy pages. Require
-# a role-specific phrase or a standalone heading before trusting description
-# keywords enough to skip review. Enrichment flattens HTML, so ambiguous text
-# still counts as stored detail; the reviewer decides whether it is a posting.
 DESCRIPTION_ROLE_CONTEXT_RE = re.compile(
-    r"\b(?:what you'll (?:do|need)|what you (?:will do|need)|your (?:tasks|profile)|"
-    r"ihre aufgaben|ihr profil|job description|(?:required|minimum|preferred) qualifications)\b"
-    r"|(?:^|[.!?;]\s+)(?:responsibilit(?:y|ies)|requirements|qualifications|aufgaben|anforderungen)\s*:\s*\S"
+    rf"(?:^|[.!?;\n]\s*)(?:{ROLE_HEADINGS})\b\s*:?\s*"
+    r"|\b(?:what you'll (?:do|need)|what you (?:will do|need)|your tasks|ihre aufgaben|ihr profil|"
+    r"(?:minimum|preferred) qualifications)\s*:?\s*",
+    re.MULTILINE,
 )
+ROLE_PROSE_RE = re.compile(
+    r"(?:^|[.!?;\n]\s*)(?:"
+    r"(?:in this role,? |as (?:an?|the) [^.!?;\n]{2,65},? )?(?:you(?:'ll| will)|the successful candidate will) |"
+    r"(?:design|develop|build|maintain|implement|manage|lead|analyse|analyze|conduct|coordinate|"
+    r"support|evaluate|write|monitor|operate|research|oversee|collaborate|review) |"
+    r"(?:sie (?:entwickeln|betreuen|leiten|analysieren|koordinieren|uberwachen|verantworten|"
+    r"planen|implementieren|bearbeiten|unterstutzen|sind verantwortlich)|du (?:entwickelst|betreust|leitest|analysierst)|"
+    r"(?:entwicklung|betreuung|wartung|implementierung|betrieb) (?:von|der|des|fur)) |"
+    r"(?:experience (?:with|in)|erfahrung (?:mit|in)|(?:a )?(?:bachelor|master|ph\.?d\.?)(?:'s)? (?:degree )?in|"
+    r"degree in|abgeschlossenes studium|abgeschlossene (?:berufs)?ausbildung|"
+    r"\d+\+? (?:years|jahre)(?: of experience| berufserfahrung)?)\b\s*)",
+    re.MULTILINE,
+)
+# Reject recognizable shells and common non-role sections. Unclassified prose
+# remains eligible for review.
+NO_BODY_RE = re.compile(
+    r"^\s*(?:"
+    r"(?:please wait[,. ]+)?loading\b|(?:bitte warten[,. ]+)?(?:wird )?geladen\b|"
+    r"(?:you(?:'re| are) )?not logged in\b|(?:please )?(?:log|sign) in\b|(?:bitte )?melden sie sich an\b|anmelden\b|"
+    r"enable javascript\b|access denied\b|verify (?:that )?you are human\b)"
+)
+NON_ROLE_TEXT_RE = re.compile(
+    r"^(?:about (?:us|\w+)[.!:]|uber uns\b|careers\b|"
+    r"(?:(?:our|your) )?benefits\b|(?:unsere |ihre )?vorteile\b|(?:competitive )?salary\b|compensation\b|"
+    r"(?:we offer|wir bieten|learn more|read more|find out more|apply now|jetzt bewerben|"
+    r"skip to|contact us|privacy policy|cookie policy|deadline|bewerbungsfrist|paid time off|"
+    r"home|menu|browse jobs|equal opportunity|be redirected|enjoy|be eligible|have access to|"
+    r"receive (?:an? )?(?:competitive|generous|health|paid|equity|salary|benefits))\b)"
+)
+HTML_BLOCK_RE = re.compile(r"</?(?:h[1-6]|p|div|li|ul|ol|section|br)\b[^>]*>", re.IGNORECASE)
+NOTE_SECTION_RE = re.compile(r"(?:^|[;\n]\s*)([\w ]+):\s*")
 
 
 @dataclass(frozen=True)
@@ -267,49 +225,141 @@ def _suspicious_candidate(candidate: dict[str, Any]) -> list[str]:
     return reasons
 
 
-def _has_meaningful_detail_value(value: Any) -> bool:
-    if value is None:
-        return False
+def _description_text(value: Any) -> str:
     if not isinstance(value, str):
-        return True
-    return normalize_whitespace(value).lower() not in {"", "unknown", "n/a"}
+        return ""
+    visible = SCRIPT_STYLE_RE.sub(" ", value)
+    visible = HTML_BLOCK_RE.sub("\n", visible)
+    visible = unescape(HTML_TAG_RE.sub(" ", visible))
+    return "\n".join(line for part in visible.splitlines() if (line := normalize_whitespace(part)))
 
 
-def _has_substantive_notes(candidate: dict[str, Any]) -> bool:
-    notes = normalize_whitespace(str(candidate.get("notes", "")))
-    if not notes:
+def _substantive_role_section(text: str) -> bool:
+    text = text.strip(" .:;-")
+    if not text or NO_BODY_RE.match(text) or NON_ROLE_TEXT_RE.match(text):
         return False
-    normalized = normalize_for_matching(notes)
-    if any(marker in normalized for marker in DETAIL_NOTE_MARKERS):
-        return True
-    if any(marker in normalized for marker in PROVENANCE_NOTE_MARKERS):
-        return False
-    return len(notes) >= 120 or len(notes.split()) >= 20
+    chunks = re.split(r"[;.!?]\s+|\n", text)
+    end = next((index for index, chunk in enumerate(chunks) if NON_ROLE_TEXT_RE.match(chunk)), len(chunks))
+    text = " ".join(chunks[:end])
+    # A section label needs actual content. Empty placeholders and other
+    # headings alone do not describe duties or qualifications.
+    text = re.sub(r"\b(?:include[sd]?|the following|unknown|not available|n/a)\b", "", text).strip()
+    text = re.sub(rf"\b(?:{ROLE_HEADINGS})\b", "", text).strip(" .:;-")
+    return not NON_ROLE_TEXT_RE.match(text) and len(re.findall(r"\b[a-z0-9]{2,}\b", text)) >= 2
 
 
-def _candidate_has_detail(candidate: dict[str, Any]) -> bool:
-    if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
-        return True
-    # Providers and description enrichment store the posting body in
-    # `description`; it counts when it carries role sections. Compensation
-    # markers alone do not count: enrichment also stores navigation and benefits
-    # text, where "salary" or "Diversity, Equity & Inclusion" are common. The
-    # listing-kind check keeps ambiguous description keywords eligible for review.
-    if _raw_detail_categories(str(candidate.get("description") or "")) & DESCRIPTION_DETAIL_CATEGORIES:
-        return True
-    return _has_substantive_notes(candidate)
+def _role_excerpt(text: str) -> str:
+    headings = list(DESCRIPTION_ROLE_CONTEXT_RE.finditer(text))
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        if _substantive_role_section(text[heading.end():end]):
+            return text[heading.start():end].lstrip(" .;!?:")
+    for match in ROLE_PROSE_RE.finditer(text):
+        if _substantive_role_section(text[match.end():]):
+            return text[match.start():].lstrip(" .;!?:")
+    return ""
 
 
-def _description_needs_review(candidate: dict[str, Any]) -> bool:
-    if any(_has_meaningful_detail_value(candidate.get(field)) for field in DETAIL_FIELD_KEYS):
-        return False
-    if _has_substantive_notes(candidate):
-        return False
-    description = str(candidate.get("description") or "")
-    if not (_raw_detail_categories(description) & DESCRIPTION_DETAIL_CATEGORIES):
-        return False
-    normalized = normalize_for_matching(strip_html_fragment(description))
-    return DESCRIPTION_ROLE_CONTEXT_RE.search(normalized) is None
+def description_status(value: Any) -> str:
+    text = normalize_for_matching(_description_text(value))
+    if text in {"", "unknown", "n/a", "none"} or NO_BODY_RE.match(text) or is_bundeswehr_loading_shell(text):
+        return "missing"
+    if _role_excerpt(text):
+        return "usable"
+    if DESCRIPTION_ROLE_CONTEXT_RE.search(text) or NON_ROLE_TEXT_RE.match(text):
+        return "missing"
+    return "ambiguous"
+
+
+def _detail_outside_description(candidate: dict[str, Any]) -> tuple[str, str] | None:
+    for field in DETAIL_FIELD_KEYS:
+        value = candidate.get(field)
+        if isinstance(value, list):
+            value = ". ".join(item for item in value if isinstance(item, str))
+        if _substantive_role_section(normalize_for_matching(_description_text(value))):
+            return field, value
+
+    notes = _description_text(candidate.get("notes"))
+    sections = list(NOTE_SECTION_RE.finditer(notes))
+    for index, section in enumerate(sections):
+        if not re.fullmatch(rf"{ROLE_HEADINGS}|job|description", section[1], re.IGNORECASE):
+            continue
+        end = sections[index + 1].start() if index + 1 < len(sections) else len(notes)
+        excerpt = notes[section.end():end].strip()
+        if _substantive_role_section(normalize_for_matching(excerpt)):
+            return "notes", excerpt
+    if not sections and description_status(notes) == "usable":
+        return "notes", notes
+    return None
+
+
+def _assess_descriptions(
+    candidates: list[dict[str, Any]],
+    source_url: str,
+    timeout_seconds: int,
+    fetcher: Callable[[str, int], str],
+) -> dict[str, Any]:
+    statuses = [description_status(candidate.get("description")) for candidate in candidates]
+    omissions = 0
+    evidence: list[dict[str, str]] = []
+    pending_samples: dict[str, dict[str, Any]] = {}
+    ambiguous_urls: list[str] = []
+    for candidate, status in zip(candidates, statuses):
+        if status == "usable":
+            continue
+        if status == "ambiguous":
+            if candidate.get("url") and len(ambiguous_urls) < REVIEWER_MAX_CANDIDATES:
+                ambiguous_urls.append(candidate["url"])
+            continue
+        outside_detail = _detail_outside_description(candidate)
+        if outside_detail:
+            omissions += 1
+            if len(evidence) < DETAIL_SAMPLE_LIMIT:
+                evidence.append(_description_omission(candidate, *outside_detail))
+        elif len(pending_samples) < DETAIL_SAMPLE_LIMIT and _candidate_has_direct_job_url(source_url, candidate):
+            url = normalize_url_without_fragment(candidate.get("url", ""))
+            if urlparse(url).scheme in {"http", "https"} and is_allowed_candidate_domain(source_url, url):
+                pending_samples.setdefault(url, candidate)
+
+    unavailable = 0
+    for url, candidate in pending_samples.items():
+        try:
+            raw_text = normalize_for_matching(_description_text(fetcher(url, timeout_seconds)))
+        except Exception:
+            unavailable += 1
+            continue
+        if NO_BODY_RE.match(raw_text) or is_bundeswehr_loading_shell(raw_text):
+            unavailable += 1
+            continue
+        if role_text := _role_excerpt(raw_text):
+            omissions += 1
+            if len(evidence) < DETAIL_SAMPLE_LIMIT:
+                evidence.append(_description_omission(candidate, "official posting", role_text))
+
+    usable = statuses.count("usable")
+    return {
+        "total": len(candidates),
+        "usable": usable,
+        "missing": statuses.count("missing"),
+        "ambiguous": statuses.count("ambiguous"),
+        "fraction": usable / len(candidates) if candidates else None,
+        "legacy_missing_field": sum("description" not in candidate for candidate in candidates),
+        "sampled_pages": len(pending_samples),
+        "sampled_pages_unavailable": unavailable,
+        "demonstrated_omissions": omissions,
+        "evidence": evidence,
+        "ambiguous_urls": ambiguous_urls,
+    }
+
+
+def _description_omission(candidate: dict[str, Any], origin: str, role_text: str) -> dict[str, str]:
+    return {
+        "title": candidate.get("title") or "",
+        "url": candidate.get("url") or "",
+        "description_excerpt": truncate_text(_description_text(candidate.get("description")), 140),
+        "role_text_source": origin,
+        "role_text_excerpt": truncate_text(role_text, 200),
+    }
 
 
 def _candidate_has_direct_job_url(source_url: str, candidate: dict[str, Any]) -> bool:
@@ -321,15 +371,6 @@ def _candidate_has_direct_job_url(source_url: str, candidate: dict[str, Any]) ->
     source_path = urlparse(normalized_source_url).path.rstrip("/")
     candidate_path = parsed.path.rstrip("/")
     return bool(candidate_path and candidate_path != source_path and candidate_path != "/")
-
-
-def _raw_detail_categories(raw_text: str) -> set[str]:
-    normalized = normalize_for_matching(strip_html_fragment(raw_text))
-    categories: set[str] = set()
-    for category, markers in RAW_DETAIL_MARKERS.items():
-        if any(marker in normalized for marker in markers):
-            categories.add(category)
-    return categories
 
 
 def _candidate_matches_canary(candidate: dict[str, Any], canary_title: str, canary_url: str) -> bool:
@@ -380,13 +421,20 @@ def validate_source_coverage(
     results: list[ValidatorResult] = []
     warnings: list[str] = []
 
+    if minimum_detail_fraction is not None and not 0 <= minimum_detail_fraction <= 1:
+        raise ValueError("Reviewed minimum detail fraction must be between 0 and 1")
+    detail = _assess_descriptions(candidates, source_url, timeout_seconds, raw_text_fetcher)
+    fraction = detail["fraction"]
+    detail_counts = (
+        f'{detail["usable"]}/{detail["total"]} candidates have usable duties or qualifications in description'
+        f' ({detail["missing"]} missing, {detail["ambiguous"]} ambiguous).'
+    )
     if minimum_detail_fraction is not None:
-        if not 0 <= minimum_detail_fraction <= 1:
-            raise ValueError("Reviewed minimum detail fraction must be between 0 and 1")
-        detailed = sum(_candidate_has_detail(candidate) for candidate in candidates)
-        fraction = detailed / len(candidates) if candidates else 0
-        results.append(ValidatorResult("detail_coverage", "pass" if fraction >= minimum_detail_fraction else "fail", "blocking",
-            f"{detailed}/{len(candidates)} candidates have substantive role detail; reviewed minimum fraction is {minimum_detail_fraction}."))
+        status = "skip" if fraction is None else "pass" if fraction >= minimum_detail_fraction else "fail"
+        results.append(ValidatorResult(
+            "detail_coverage", status, "blocking" if status == "fail" else "info",
+            f"{detail_counts} Reviewed minimum fraction is {minimum_detail_fraction}.",
+        ))
 
     if source.get("status") in {"partial", "failed"}:
         results.append(ValidatorResult("execution_complete", "fail", "blocking",
@@ -524,9 +572,7 @@ def validate_source_coverage(
         reasons = _suspicious_candidate(candidate)
         if reasons:
             suspicious.append(f"{candidate.get('title', 'unknown')}: {', '.join(reasons)}")
-    ambiguous_descriptions = [
-        candidate.get("url", "") for candidate in candidates if _description_needs_review(candidate)
-    ]
+    ambiguous_descriptions = detail["ambiguous_urls"]
     if suspicious and len(suspicious) == len(candidates):
         results.append(
             ValidatorResult(
@@ -547,13 +593,13 @@ def validate_source_coverage(
             )
         )
     elif ambiguous_descriptions:
-        warnings.append("Some descriptions have detail keywords without clear job context and need review.")
+        warnings.append("Some descriptions need review to establish whether they contain role text.")
         results.append(
             ValidatorResult(
                 "listing_kind",
                 "warn",
                 "major",
-                "Description keywords alone do not establish that these candidates are job postings: "
+                "Review the descriptions for these postings: "
                 + ", ".join(ambiguous_descriptions[:4]),
             )
         )
@@ -570,22 +616,22 @@ def validate_source_coverage(
         applicable = canary.get("availability") == "live" and canary.get("scope") == "in_scope"
         status = ("pass" if found else "fail") if applicable else "skip"
         if canary.get("availability") == "expired" or canary.get("scope") == "out_of_scope":
-            detail = "Confirmed expired or outside the intended search scope; not a recall failure."
+            canary_detail = "Confirmed expired or outside the intended search scope; not a recall failure."
             diagnosis = "not_applicable"
         elif not applicable:
-            detail = "Availability or intended scope is inconclusive; retain evidence and review independently."
+            canary_detail = "Availability or intended scope is inconclusive; retain evidence and review independently."
             diagnosis = "inconclusive"
         elif found:
-            detail = "Canary was found by posting identity; this is sampled evidence, not exhaustive coverage."
+            canary_detail = "Canary was found by posting identity; this is sampled evidence, not exhaustive coverage."
             diagnosis = "present"
         else:
             rejected = source.get("filter_rejections", [])
             rejected_match = next((r for r in rejected if matches_posting(r, canary)), None)
             diagnosis = "track_match_rules" if rejected_match else "enumeration_or_retrieval"
-            detail = "Available, in-scope canary was not found in the extracted candidates. "
-            detail += (f"Track rule {rejected_match['rule_id']} removed this posting." if rejected_match else
+            canary_detail = "Available, in-scope canary was not found in the extracted candidates. "
+            canary_detail += (f"Track rule {rejected_match['rule_id']} removed this posting." if rejected_match else
                        "Check enumeration/detail extraction, search terms and native filters; the artifact does not isolate the cause.")
-        results.append(ValidatorResult("canary_present", status, "blocking" if status == "fail" else "info", detail))
+        results.append(ValidatorResult("canary_present", status, "blocking" if status == "fail" else "info", canary_detail))
         canary_results.append({"id": canary.get("id"), "url": canary.get("url", ""),
                                "posting_id": canary.get("posting_id", ""), "evidence_url": canary.get("evidence_url", ""), "title": canary.get("title", ""), "provenance": canary.get("provenance", "legacy"),
                                "availability": canary.get("availability", "unknown"), "scope": canary.get("scope", "unknown"),
@@ -595,52 +641,20 @@ def validate_source_coverage(
 
     if not candidates:
         results.append(ValidatorResult("detail_depth", "skip", "info", "No candidates to evaluate for role-detail depth."))
-    elif any(_candidate_has_detail(candidate) for candidate in candidates):
-        results.append(
-            ValidatorResult(
-                "detail_depth",
-                "pass",
-                "info",
-                "At least one candidate carries substantive role detail beyond title-level metadata.",
-            )
-        )
+    elif detail["demonstrated_omissions"]:
+        affected = "; ".join(f'{item["title"]} ({item["url"]})' for item in detail["evidence"])
+        results.append(ValidatorResult(
+            "detail_depth", "fail", "blocking",
+            f'{detail_counts} Found duties or qualifications outside an unusable description for '
+            f'{detail["demonstrated_omissions"]} candidates, including {affected}.',
+        ))
+    elif detail["usable"] == detail["total"]:
+        results.append(ValidatorResult("detail_depth", "pass", "info", detail_counts))
     else:
-        sampled_pages: list[str] = []
-        seen_urls: set[str] = set()
-        for candidate in candidates:
-            normalized_url = normalize_url_without_fragment(candidate.get("url", ""))
-            if not normalized_url or normalized_url in seen_urls:
-                continue
-            seen_urls.add(normalized_url)
-            try:
-                raw_text = raw_text_fetcher(normalized_url, timeout_seconds)
-            except Exception:
-                continue
-            categories = sorted(_raw_detail_categories(raw_text))
-            if categories:
-                sampled_pages.append(f"{normalized_url} ({', '.join(categories)})")
-            if len(seen_urls) >= 3:
-                break
-        if sampled_pages:
-            results.append(
-                ValidatorResult(
-                    "detail_depth",
-                    "fail",
-                    "blocking",
-                    "Sampled job pages expose detail sections, but extracted candidates still lack substantive role detail: "
-                    + "; ".join(sampled_pages[:3]),
-                )
-            )
-        else:
-            warnings.append("Candidates only contain title/card-level metadata without substantive role detail.")
-            results.append(
-                ValidatorResult(
-                    "detail_depth",
-                    "warn",
-                    "major",
-                    "Candidates only contain title/card-level metadata; no tasks, qualifications, compensation, or substantive notes were extracted.",
-                )
-            )
+        unavailable = detail["sampled_pages_unavailable"]
+        message = f"{detail_counts} No omission confirmed. {unavailable} sampled posting pages unavailable."
+        warnings.append(message)
+        results.append(ValidatorResult("detail_depth", "warn", "major", message))
 
     sparse_optional = [
         candidate
@@ -706,12 +720,12 @@ def validate_source_coverage(
                 browser_problems.append("canary coverage is not proven")
         if not any(_candidate_has_direct_job_url(source_url, candidate) for candidate in candidates):
             browser_problems.append("no direct job-detail URLs were extracted")
-        if not any(_candidate_has_detail(candidate) for candidate in candidates):
-            browser_problems.append("candidates lack substantive detail")
         if len(candidates) >= 10 and not any(marker in result_pages_scanned for marker in ("page", "pagination", "declared", "visible")):
             browser_problems.append("pagination evidence is missing for multi-result browser output")
         if any(marker in limitations_text for marker in ("blocked", "captcha", "timeout", "unstable", "failed")):
             browser_problems.append("limitations indicate unstable browser coverage")
+        if not detail["usable"] and (browser_problems or detail["demonstrated_omissions"]):
+            browser_problems.append("no candidates have usable descriptions")
         if browser_problems:
             results.append(
                 ValidatorResult(
@@ -721,13 +735,18 @@ def validate_source_coverage(
                     "Browser fallback is not accepted yet: " + "; ".join(browser_problems),
                 )
             )
+        elif not detail["usable"]:
+            results.append(ValidatorResult(
+                "browser_fallback_quality", "warn", "major",
+                "Browser detail acceptance needs review of usable posting descriptions.",
+            ))
         else:
             results.append(
                 ValidatorResult(
                     "browser_fallback_quality",
                     "pass",
                     "info",
-                    "Browser fallback has complete status, direct URLs, and substantive candidate detail.",
+                    "Browser fallback has complete status, direct URLs, and usable candidate descriptions.",
                 )
             )
     elif "browser" in discovery_mode:
@@ -763,6 +782,7 @@ def validate_source_coverage(
         "verification": verification,
         "quality_level": "independently_verified" if verification == "independently_verified" else "configured" if blocking else "basic_support",
         "canary_results": canary_results,
+        "description_coverage": detail,
         "checks": [result.__dict__ for result in results],
         "warnings": warnings,
     }
@@ -777,8 +797,12 @@ def _build_reviewer_context(
     raw_text_fetcher: Callable[[str, int], str] = fetch_text,
 ) -> dict[str, Any]:
     candidates = list(source.get("candidates", []))
+    def review_priority(candidate: dict[str, Any]) -> int:
+        return {"ambiguous": 0, "missing": 1, "usable": 2}[description_status(candidate.get("description"))]
+
+    prioritized = sorted(candidates, key=review_priority)
     reviewer_candidates = _select_reviewer_candidates(
-        candidates,
+        prioritized if len(candidates) > REVIEWER_MAX_CANDIDATES else candidates,
         canary_title=canary_title,
         canary_url=canary_url,
     )
@@ -791,7 +815,8 @@ def _build_reviewer_context(
         sample_urls.append((source["source_url"], "listing_page"))
     if canary_url:
         sample_urls.append((canary_url, "canary"))
-    sample_urls.extend((candidate.get("url", ""), "candidate") for candidate in reviewer_candidates[:3])
+    sample_candidates = sorted(reviewer_candidates, key=review_priority)
+    sample_urls.extend((candidate.get("url", ""), "candidate") for candidate in sample_candidates[:DETAIL_SAMPLE_LIMIT])
 
     seen_urls: set[str] = set()
     for url, kind in sample_urls:
@@ -825,6 +850,10 @@ def _build_reviewer_context(
             "result_pages_scanned": source.get("result_pages_scanned", ""),
             "direct_job_pages_opened": source.get("direct_job_pages_opened", 0),
             "candidates": reviewer_candidates,
+            "ambiguous_description_urls": [
+                candidate.get("url", "") for candidate in reviewer_candidates
+                if description_status(candidate.get("description")) == "ambiguous"
+            ],
         },
         "canary": {"title": canary_title, "url": canary_url},
         "raw_samples": samples,
@@ -907,6 +936,13 @@ def review_source_with_llm(
         "Return exactly: {\"defects\": [...]}.\n"
         "If no issues, return {\"defects\": []}.\n\n"
         + canary_instruction
+        + "Judge usable role detail in candidate.description. Duties or qualifications alone can suffice, "
+          "including substantive truncated excerpts. Compare ambiguous descriptions with the official posting samples. "
+          "Report partial_description with the affected candidate_url and paired excerpts when duties or qualifications "
+          "are present in notes, provider fields, or the official posting and missing from an unusable description. "
+          "Put the saved description excerpt in observed and the available role excerpt and its origin in expected. "
+          "Headings, deadlines, benefits, navigation and loading or login messages alone are insufficient. "
+          "Treat failed fetches or listing metadata alone as uncertainty. Keep other extraction defects separate.\n"
         + json.dumps(context, ensure_ascii=False, indent=2)
     )
     print(policy.describe(), file=sys.stderr)
@@ -1098,6 +1134,7 @@ def _failure_mode_from_check(check: dict[str, Any]) -> str:
         "browser_fallback_quality": "browser_fallback_unaccepted",
         "canary_present": "missing_canary",
         "detail_depth": "missing_detail",
+        "detail_coverage": "missing_detail",
         "duplicate_jobs": "duplication",
         "listing_kind": "candidate_noise",
         "result_volume": "candidate_noise",
@@ -1175,6 +1212,9 @@ def _collect_primary_evidence(failing_checks: list[dict[str, Any]], blocking_def
             evidence.append(f"{check.get('name', 'validator')}: {details}")
     for defect in blocking_defects[:3]:
         details = truncate_text(_reviewer_defect_text(defect), 180)
+        if defect.get("type") == "partial_description" and defect.get("candidate_url"):
+            role_excerpt = truncate_text(defect.get("expected", ""), 200)
+            details = f'{defect["candidate_url"]}. Saved description: {details}. Available role text: {role_excerpt}'
         if details:
             evidence.append(f"{defect.get('type', 'other')}: {details}")
 
@@ -1190,7 +1230,11 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
     if failure_mode == "candidate_noise":
         return "Fresh discovery artifact removes implausible candidates for this source while keeping only plausible track matches." + canary_clause
     if failure_mode == "missing_detail":
-        return "Fresh discovery artifact keeps the relevant candidates and adds substantive extracted role detail in notes or detail fields." + canary_clause
+        return (
+            "Fresh discovery artifact keeps the relevant candidates and stores usable duties or qualifications in "
+            "candidate.description. Pass the retrieved role text to set_candidate_description before shortening note excerpts."
+            + canary_clause
+        )
     if failure_mode == "missing_canary":
         return "Fresh discovery artifact includes the canary by posting ID or normalized URL; use title only without stronger identity."
     if failure_mode == "bad_url":
@@ -1198,7 +1242,7 @@ def _build_target_outcome(failure_mode: str, *, canary_title: str, canary_url: s
     if failure_mode == "duplication":
         return "Fresh discovery artifact contains each job at most once after source-specific deduplication and merge handling." + canary_clause
     if failure_mode == "browser_fallback_unaccepted":
-        return "Fresh discovery artifact proves the browser fallback is usable: complete status, direct job URLs, substantive detail, stable pagination behavior, and canary coverage." + canary_clause
+        return "Fresh discovery artifact proves the browser fallback is usable: complete status, direct job URLs, usable descriptions, stable pagination behavior, and canary coverage." + canary_clause
     if failure_mode == "validator_failure":
         return "Fresh discovery artifact satisfies the failing deterministic validator for this source." + canary_clause
     if failure_mode == "no_postings":
@@ -1348,6 +1392,8 @@ def _suggested_strategy(
     search_terms_tried = source.get("search_terms_tried") if isinstance(source.get("search_terms_tried"), list) else []
     if failure_mode in {"bad_url", "url_allowlist"} and _url_correction_suggestion(source):
         return "config_url_correction"
+    if failure_mode == "missing_detail":
+        return "dedicated_provider_logic"
     if failure_mode == "no_postings":
         # Filters cannot narrow a page that lists no postings.
         return "dedicated_provider_logic"
@@ -1418,6 +1464,15 @@ def build_integration_ticket(
     if not failing_checks and not blocking_defects:
         return None
 
+    detail = deterministic.get("description_coverage", {})
+    description_evidence = detail.get("evidence", [])
+    if description_evidence:
+        # Keep independent failures ahead of the symptoms of missing detail.
+        priority = {
+            "detail_depth": 1, "detail_coverage": 2, "execution_complete": 2,
+            "result_volume": 2, "browser_fallback_quality": 2,
+        }
+        failing_checks.sort(key=lambda check: priority.get(check["name"], 0))
     failure_mode = _determine_failure_mode(failing_checks, blocking_defects)
     suggested_strategy = _suggested_strategy(
         failure_mode,
@@ -1435,6 +1490,12 @@ def build_integration_ticket(
     if any(r.get("diagnosis") == "track_match_rules" for r in deterministic.get("canary_results", [])):
         suggested_strategy = "config_match_rules"
     primary_evidence = _collect_primary_evidence(failing_checks, blocking_defects)
+    if failure_mode == "missing_detail" and description_evidence:
+        primary_evidence = [
+            f'{item["title"]} ({item["url"]}): description={item["description_excerpt"] or "(empty)"}; '
+            f'{item["role_text_source"]}={item["role_text_excerpt"]}'
+            for item in description_evidence
+        ]
     summary = ""
     defect_types: list[str] = []
     no_postings_defect = _no_postings_defect(blocking_defects)
@@ -1484,13 +1545,19 @@ def build_integration_ticket(
         "reviewer_defects": blocking_defects,
         "failure_mode": failure_mode,
         "primary_evidence": primary_evidence,
+        "description_evidence": description_evidence,
+        "needs_fresh_discovery": failure_mode == "missing_detail" and bool(detail.get("legacy_missing_field")),
         "target_outcome": _build_target_outcome(
             failure_mode,
             canary_title=canary_title,
             canary_url=canary_url,
         ),
         "suggested_strategy": suggested_strategy,
-        "suggested_strategy_label": _strategy_label(suggested_strategy),
+        "suggested_strategy_label": (
+            "store retrieved duties or qualifications in candidate.description"
+            if failure_mode == "missing_detail" and suggested_strategy == "dedicated_provider_logic"
+            else _strategy_label(suggested_strategy)
+        ),
         "config_suggestion": _config_suggestion(source, suggested_strategy, canary_title),
         "test_hint": infer_integration_test_hint(source),
         "likely_file": infer_integration_likely_file(source),

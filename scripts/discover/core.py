@@ -223,6 +223,9 @@ def enrich_candidate_descriptions(
         except Exception:
             failures += 1
             continue
+        if coverage.discovery_mode == "bundeswehr_jobsuche" and helpers.is_bundeswehr_loading_shell(text):
+            failures += 1
+            continue
         helpers.set_candidate_description(candidate, text, char_budget=char_budget)
     if failures:
         coverage.limitations.append(f"JD fetch failed for {failures} candidate(s)")
