@@ -16,7 +16,15 @@ from typing import Any
 from agent_provider import build_coder_command, resolve_agent_bin, resolve_agent_provider, resolve_model_policy
 from runtime_env import RuntimeEnvError, apply_runtime_env
 from source_config import SourceConfigError, load_sources_config
-from source_quality import DEFAULT_REVIEW_TIMEOUT_SECONDS, generated_at, source_slug, truncate_text
+from source_evidence import matches_posting
+from source_quality import (
+    DEFAULT_REVIEW_TIMEOUT_SECONDS,
+    description_status,
+    generated_at,
+    load_source_coverage,
+    source_slug,
+    truncate_text,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -601,6 +609,7 @@ def run_eval(
     reviewer: str,
     reviewer_bin: str | None,
     timeout_seconds: int,
+    min_detail_fraction: float | None = None,
 ) -> tuple[int, dict[str, Any]]:
     command = [
         resolve_repo_python(),
@@ -626,6 +635,8 @@ def run_eval(
         command.extend(["--canary-url", canary_url])
     if reviewer_bin:
         command.extend(["--reviewer-bin", reviewer_bin])
+    if min_detail_fraction is not None:
+        command.extend(["--min-detail-fraction", str(min_detail_fraction)])
 
     completed = subprocess.run(
         command,
@@ -723,6 +734,7 @@ def build_coder_prompt(
         "page_evidence": integration_ticket.get("page_evidence", {}),
         "reviewer_defects": integration_ticket.get("reviewer_defects", []),
         "primary_evidence": integration_ticket.get("primary_evidence", []),
+        "failing_checks": integration_ticket.get("failing_checks", []),
     }
     if likely_file == "scripts/discover_jobs.py":
         missing_path_guidance = (
@@ -829,7 +841,12 @@ def build_coder_prompt(
     else:
         lines.append("- No focused test target was inferred. If you need a test, choose the closest existing source-family test file and explain that choice in a handoff if unsure.")
     if failure_mode == "missing_detail":
-        lines.append("- This ticket is detail-oriented. Prefer enriching already-kept candidates with substantive role detail before considering broader filtering changes.")
+        lines.append(
+            "- Keep the affected postings and their retrieval scope. Trace the paired excerpts in the ticket to the "
+            "existing provider and pass the full retrieved duties or qualifications to set_candidate_description before "
+            "shortening note excerpts. Add a focused test on serialized candidate.description and candidate retention. "
+            "Address the description repair first and leave independent coverage failures visible for re-evaluation."
+        )
     else:
         lines.append("- Do not add detail enrichment unless the ticket's target outcome explicitly requires it.")
     return "\n".join(lines) + "\n"
@@ -942,7 +959,10 @@ def main() -> int:
     parser.add_argument("--integration-timeout-seconds", type=int, default=600, help="Timeout for each coding integration run")
     parser.add_argument("--idle-timeout-seconds", type=int, default=90, help="Abort a coding integration attempt if it produces no new output for this many seconds")
     parser.add_argument("--max-attempts", type=int, default=2, help="Maximum coding integration attempts")
+    parser.add_argument("--min-detail-fraction", type=float, help="Reviewed minimum fraction of candidates with usable descriptions (0 to 1)")
     args = parser.parse_args()
+    if args.min_detail_fraction is not None and not 0 <= args.min_detail_fraction <= 1:
+        parser.error("minimum detail fraction must be between 0 and 1")
 
     try:
         apply_runtime_env(load_secrets=False)
@@ -970,6 +990,8 @@ def main() -> int:
     final_eval: dict[str, Any] | None = None
     phase = "starting"
     active_artifact_path = artifact_path
+    checking_detail_repair = False
+    description_targets: dict[str, dict[str, str]] = {}
     prior_postmortem: dict[str, Any] | None = None
 
     write_summary(
@@ -1003,6 +1025,7 @@ def main() -> int:
             reviewer=args.reviewer,
             reviewer_bin=args.reviewer_bin,
             timeout_seconds=args.timeout_seconds,
+            min_detail_fraction=args.min_detail_fraction,
         )
         final_eval = eval_payload
         attempt_record: dict[str, Any] = {
@@ -1021,6 +1044,25 @@ def main() -> int:
         status = eval_payload.get("final_status", "blocked")
         if status == "pass":
             final_status = "pass"
+            if checking_detail_repair and not eval_payload["deterministic"]["description_coverage"]["total"]:
+                final_status = "inconclusive"
+                attempt_record["error"] = "Rediscovery produced no candidates to verify the description repair."
+            elif description_targets:
+                _, fresh_source = load_source_coverage(active_artifact_path, args.source)
+                usable_candidates = [
+                    candidate for candidate in fresh_source["candidates"]
+                    if description_status(candidate.get("description")) == "usable"
+                ]
+                unverified = [
+                    url for url, target in description_targets.items()
+                    if not any(matches_posting(candidate, target) for candidate in usable_candidates)
+                ]
+                if unverified:
+                    final_status = "inconclusive"
+                    attempt_record["error"] = (
+                        "Rediscovery did not verify usable descriptions for affected postings: "
+                        + ", ".join(unverified[:3])
+                    )
             attempts.append(attempt_record)
             break
         if status in {"blocked", "inconclusive"}:
@@ -1036,12 +1078,6 @@ def main() -> int:
             final_status = "retry_limit"
             attempts.append(attempt_record)
             break
-        if coder_bin is None or not coder_bin.exists():
-            final_status = "blocked"
-            attempt_record["error"] = "No coding binary available for source integration."
-            attempts.append(attempt_record)
-            break
-
         integration_ticket = eval_payload.get("integration_ticket") or {}
         if not integration_ticket:
             final_status = "blocked"
@@ -1052,6 +1088,42 @@ def main() -> int:
         if integration_ticket.get("suggested_strategy") == "config_match_rules":
             final_status = "blocked"
             attempt_record["error"] = "Track match-rule changes require preference review before provider implementation."
+            attempts.append(attempt_record)
+            break
+
+        if integration_ticket.get("failure_mode") == "missing_detail":
+            checking_detail_repair = True
+            description_targets.update({
+                item["url"]: item for item in integration_ticket.get("description_evidence", []) if item.get("url")
+            })
+
+        if integration_ticket.get("needs_fresh_discovery"):
+            attempts.append(attempt_record)
+            if active_artifact_path == fresh_artifact_path:
+                final_status = "inconclusive"
+                attempt_record["error"] = "Fresh artifact still lacks the description field."
+                break
+            rediscovery = run_discovery(
+                track=args.track,
+                source=args.source,
+                today=args.today,
+                artifact_path=fresh_artifact_path,
+                timeout_seconds=args.timeout_seconds,
+            )
+            attempt_record["rediscovery_invoked"] = True
+            attempt_record["rediscovery_exit_code"] = rediscovery.returncode
+            attempt_record["rediscovery_artifact"] = str(fresh_artifact_path)
+            if rediscovery.returncode != 0:
+                final_status = "blocked"
+                attempt_record["error"] = "Rediscovery failed while checking legacy description evidence."
+                attempt_record["rediscovery_stderr"] = truncate_text(rediscovery.stderr, 2000)
+                break
+            active_artifact_path = fresh_artifact_path
+            continue
+
+        if coder_bin is None or not coder_bin.exists():
+            final_status = "blocked"
+            attempt_record["error"] = "No coding binary available for source integration."
             attempts.append(attempt_record)
             break
 

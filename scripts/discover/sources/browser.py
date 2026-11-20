@@ -422,17 +422,19 @@ def extract_visible_text_section(text: str, headings: tuple[str, ...], stop_head
     )
 
 
-def extract_meta_detail_sections(detail_text: str) -> dict[str, str]:
-    tasks = extract_visible_text_section(detail_text, META_TASK_HEADINGS, META_DETAIL_STOP_HEADINGS)
+def extract_meta_detail_sections(detail_text: str, *, title: str = "") -> dict[str, str]:
+    task_headings = (*META_TASK_HEADINGS, f"{title} Responsibilities") if title else META_TASK_HEADINGS
+    stop_headings = (*META_DETAIL_STOP_HEADINGS, f"{title} Responsibilities") if title else META_DETAIL_STOP_HEADINGS
+    tasks = extract_visible_text_section(detail_text, task_headings, stop_headings)
     minimum_qualifications = extract_visible_text_section(
         detail_text,
         META_MINIMUM_QUALIFICATION_HEADINGS,
-        META_DETAIL_STOP_HEADINGS,
+        stop_headings,
     )
     preferred_qualifications = extract_visible_text_section(
         detail_text,
         META_PREFERRED_QUALIFICATION_HEADINGS,
-        META_DETAIL_STOP_HEADINGS,
+        stop_headings,
     )
     qualifications = "; ".join(part for part in [minimum_qualifications, preferred_qualifications] if part)
     return {
@@ -442,11 +444,17 @@ def extract_meta_detail_sections(detail_text: str) -> dict[str, str]:
 
 
 def apply_meta_detail_text(candidate: Candidate, detail_text: str, terms: list[str]) -> bool:
-    sections = extract_meta_detail_sections(detail_text)
+    sections = extract_meta_detail_sections(detail_text, title=candidate.title)
     detail_text_for_matching = " ".join(part for part in sections.values() if part)
     original_terms = list(candidate.matched_terms)
+    original_description = candidate.description
     if detail_text_for_matching:
         candidate.matched_terms = sorted(set(candidate.matched_terms + match_terms(detail_text_for_matching, terms)))
+        helpers.set_candidate_description(candidate, " ".join(
+            f"{label}: {sections[key]}"
+            for label, key in (("Responsibilities", "tasks"), ("Qualifications", "qualifications"))
+            if sections[key]
+        ))
 
     original_notes = candidate.notes
     note_parts = [candidate.notes] if candidate.notes else []

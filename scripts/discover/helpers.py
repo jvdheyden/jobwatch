@@ -322,6 +322,11 @@ def visible_text_from_html(html: str) -> str:
     return normalize_whitespace(" ".join(parser.parts))
 
 
+def is_bundeswehr_loading_shell(text: str) -> bool:
+    body = normalize_whitespace(text).casefold().removeprefix("onlinebewerbung").lstrip()
+    return body.startswith(("das bewerbungsportal wird geladen", "bewerbungsportal wird geladen"))
+
+
 def set_candidate_description(
     candidate: Candidate,
     text: str,

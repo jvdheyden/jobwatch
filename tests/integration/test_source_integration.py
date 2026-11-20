@@ -7,6 +7,8 @@ import subprocess
 import time
 from pathlib import Path
 
+import pytest
+
 
 GENERIC_HTML_PROVIDER = "scripts/discover/sources/generic_html.py"
 
@@ -72,7 +74,7 @@ def main() -> int:
                         "location": "Berlin",
                         "remote": "unknown",
                         "matched_terms": ["security"],
-                        "notes": "Tasks: Build secure systems for public-sector services. Profile: security engineering background.",
+                        "description": "Tasks: Build secure systems for public-sector services. Profile: security engineering background.",
                     }
                 ],
             }
@@ -124,7 +126,7 @@ def write_example_artifact(path: Path) -> None:
                                 "location": "Berlin",
                                 "remote": "unknown",
                                 "matched_terms": ["security"],
-                                "notes": "Tasks: Build secure systems for public-sector services. Profile: security engineering background.",
+                                "description": "Tasks: Build secure systems for public-sector services. Profile: security engineering background.",
                             }
                         ],
                     }
@@ -783,3 +785,150 @@ touch "$JOB_AGENT_ROOT/fixed.marker"
         if process.poll() is None:
             process.kill()
             process.wait(timeout=5)
+
+
+def write_description_discovery_stub(root: Path, repo_root: Path, artifact: Path) -> Path:
+    """Keep discovery inputs fixed while coder doubles edit the provider module."""
+    scripts = root / "scripts"
+    scripts.mkdir()
+    provider = scripts / "example_provider.py"
+    (scripts / "discover_jobs.py").write_text(
+        f"""import json
+import sys
+from dataclasses import asdict
+from pathlib import Path
+
+sys.path.insert(0, {str(repo_root / 'scripts')!r})
+from discover.core import Candidate
+from example_provider import populate_descriptions
+
+payload = json.loads(Path({str(artifact)!r}).read_text())
+source = payload["sources"][0]
+candidates = [Candidate(**item) for item in source["candidates"]]
+source["candidates"] = [asdict(item) for item in populate_descriptions(candidates)]
+output = Path(sys.argv[sys.argv.index("--output") + 1])
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_text(json.dumps(payload))
+"""
+    )
+    return provider
+
+
+def description_loop_command(root: Path, repo_root: Path, artifact: Path, coder: Path) -> list[str]:
+    return [
+        "python3", str(repo_root / "scripts" / "source_integration.py"),
+        "--track", "public_service", "--source", "Example Source", "--today", "2026-04-02",
+        "--artifact-path", str(artifact), "--reviewer", "off", "--coder-bin", str(coder),
+        "--summary-output", str(root / "summary.json"), "--timeout-seconds", "1",
+    ]
+
+
+def test_description_loop_reevaluates_provider_edit_and_preserves_floor(
+    tmp_job_agent_root, run_cmd, repo_root,
+):
+    root = tmp_job_agent_root
+    artifact = root / "discovery.json"
+    write_example_artifact(artifact)
+    payload = json.loads(artifact.read_text())
+    [source] = payload["sources"]
+    [candidate] = source["candidates"]
+    body = candidate["description"]
+    candidate.update(description="", notes=body)
+    source["candidates"].append({
+        **candidate, "title": "Systems Engineer", "url": "https://jobs.example.com/jobs/456", "notes": "",
+    })
+    artifact.write_text(json.dumps(payload))
+    provider = write_description_discovery_stub(root, repo_root, artifact)
+    provider.write_text("def populate_descriptions(candidates):\n    return candidates\n")
+    coder = root / "coder.sh"
+    coder.write_text(
+        """#!/bin/bash
+set -eu
+cat > "$JOB_AGENT_ROOT/prompt.txt"
+cd "$JOB_AGENT_ROOT"
+if [[ ! -e first-attempt ]]; then
+    touch first-attempt
+    cat > scripts/example_provider.py <<'PROVIDER'
+def populate_descriptions(candidates):
+    candidates[0].notes += " Maintains systems for three offices."
+    return candidates
+PROVIDER
+elif [[ ! -e second-attempt ]]; then
+    touch second-attempt
+    cat > scripts/example_provider.py <<'PROVIDER'
+from discover.helpers import set_candidate_description
+
+def populate_descriptions(candidates):
+    set_candidate_description(candidates[0], candidates[0].notes)
+    return candidates
+PROVIDER
+else
+    cat > scripts/example_provider.py <<'PROVIDER'
+from discover.helpers import set_candidate_description
+
+def populate_descriptions(candidates):
+    set_candidate_description(candidates[0], candidates[0].notes)
+    set_candidate_description(candidates[1], "Develop secure data pipelines for public infrastructure.")
+    return candidates
+PROVIDER
+fi
+"""
+    )
+    coder.chmod(0o755)
+    command = description_loop_command(root, repo_root, artifact, coder)
+    result = run_cmd(
+        *command, "--max-attempts", "3", "--min-detail-fraction", "1", cwd=root,
+        env={**os.environ, "JOB_AGENT_ROOT": str(root)},
+    )
+    assert result.returncode == 0, result.stderr
+    summary = json.loads((root / "summary.json").read_text())
+    attempts = summary["attempts"]
+    assert [attempt["eval_final_status"] for attempt in attempts] == ["integration_needed"] * 3 + ["pass"]
+    assert "outside an unusable description" in attempts[1]["integration_ticket_summary"]
+    assert "Reviewed minimum fraction is 1.0" in attempts[2]["integration_ticket_summary"]
+    assert "set_candidate_description" in (root / "prompt.txt").read_text()
+    [fresh_source] = json.loads(Path(summary["active_artifact_path"]).read_text())["sources"]
+    assert [item["url"] for item in fresh_source["candidates"]] == [item["url"] for item in source["candidates"]]
+    assert all(item["description"] for item in fresh_source["candidates"])
+
+
+@pytest.mark.parametrize(
+    "provider_body,expected_status",
+    [
+        ("set_candidate_description(candidates[0], candidates[0].notes)", "pass"),
+        ('candidates[0].notes = ""', "inconclusive"),
+        ("candidates.clear()", "inconclusive"),
+    ],
+    ids=["current-body", "notes-cleared", "empty-rediscovery"],
+)
+def test_legacy_description_ticket_requires_current_discovery_before_coding(
+    tmp_job_agent_root, run_cmd, repo_root, provider_body, expected_status,
+):
+    root = tmp_job_agent_root
+    artifact = root / "legacy.json"
+    write_example_artifact(artifact)
+    payload = json.loads(artifact.read_text())
+    [candidate] = payload["sources"][0]["candidates"]
+    candidate["notes"] = candidate.pop("description")
+    artifact.write_text(json.dumps(payload))
+    provider = write_description_discovery_stub(root, repo_root, artifact)
+    provider.write_text(
+        "from discover.helpers import set_candidate_description\n\n"
+        "def populate_descriptions(candidates):\n"
+        f"    {provider_body}\n"
+        "    return candidates\n"
+    )
+    coder = root / "coder.sh"
+    coder.write_text("#!/bin/bash\nexit 99\n")
+    coder.chmod(0o755)
+
+    result = run_cmd(
+        *description_loop_command(root, repo_root, artifact, coder), cwd=root,
+        env={**os.environ, "JOB_AGENT_ROOT": str(root)},
+    )
+    assert result.returncode == (0 if expected_status == "pass" else 1), result.stderr
+    summary = json.loads((root / "summary.json").read_text())
+    assert summary["final_status"] == expected_status
+    assert summary["integration_attempts_used"] == 0
+    assert summary["attempts"][0]["rediscovery_invoked"]
+    assert summary["final_eval"]["deterministic"]["description_coverage"]["usable"] == (expected_status == "pass")

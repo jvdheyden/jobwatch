@@ -71,7 +71,7 @@ def test_one_good_description_does_not_hide_widespread_loss(floor, status):
         ])
     ]
     result = validate_source_coverage(coverage, minimum_detail_fraction=floor,
-        raw_text_fetcher=lambda *_: pytest.fail('Stored role detail needs no fetch'))
+        raw_text_fetcher=lambda *_: '<h1>Job title</h1>')
     check = next(c for c in result['checks'] if c['name'] == 'detail_coverage')
     assert check['status'] == status
     assert '1/3' in check['details']

@@ -143,7 +143,7 @@ def test_eval_source_quality_cli_loads_runtime_env_before_reviewer_resolution(
                                 "location": "Remote",
                                 "remote": "remote",
                                 "matched_terms": ["security"],
-                                "notes": "Responsibilities: Build security systems and cryptography services for production.",
+                                "description": "Responsibilities: Build security systems and cryptography services for production.",
                             }
                         ],
                     }

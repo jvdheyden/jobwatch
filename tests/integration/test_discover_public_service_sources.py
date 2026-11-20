@@ -7,6 +7,8 @@ from urllib.parse import parse_qs, urlparse
 
 import discover_jobs
 from discover import http as discover_http
+from discover.core import enrich_candidate_descriptions
+from discover.runner import coverage_to_dict
 from discover.sources import bundeswehr as bundeswehr_provider
 
 
@@ -780,7 +782,11 @@ def test_discover_bundeswehr_jobsuche_uses_sap_odata_with_full_pagination(monkey
     details_by_guid = {
         "GUID-IT": {
             "PinstGuid": "GUID-IT",
-            "JobDesc": "Sie gestalten IT-Grundschutz und sichere Informationstechnik.",
+            "JobDesc": (
+                "Sie gestalten IT-Grundschutz und sichere Informationstechnik. "
+                + "Sie koordinieren die technische Dokumentation der betreuten IT-Netze. " * 6
+                + "Sie erstellen Wiederanlaufpläne für den IT-Betrieb."
+            ),
             "RequireDesc": "Erfahrung in IT-Sicherheit ist wuenschenswert.",
             "ContactDesc": "Kontakt ueber das Karrierecenter.",
         },
@@ -852,6 +858,13 @@ def test_discover_bundeswehr_jobsuche_uses_sap_odata_with_full_pagination(monkey
     assert "RefCode: SE-IT-1" in candidate.notes
     assert "Job: Sie gestalten IT-Grundschutz" in candidate.notes
     assert "Requirements: Erfahrung in IT-Sicherheit" in candidate.notes
+    assert "Wiederanlaufpläne" not in candidate.notes
+
+    enrich_candidate_descriptions(coverage, 5)
+    serialized = next(row for row in coverage_to_dict(coverage)["candidates"] if row["url"] == candidate.url)
+    assert "Sie erstellen Wiederanlaufpläne für den IT-Betrieb." in serialized["description"]
+    assert "Erfahrung in IT-Sicherheit ist wuenschenswert." in serialized["description"]
+    assert coverage.limitations == []
 
 
 def test_discover_bundeswehr_jobsuche_marks_partial_when_odata_detail_fails(monkeypatch):
@@ -1075,6 +1088,11 @@ def test_discover_bundeswehr_jobsuche_falls_back_to_profile_catalog_when_odata_f
     assert "Tasks: Betreiben sicherer IT-Systeme." in candidate.notes
     assert "Qualifications: Interesse an Informationstechnik" in candidate.notes
     assert "Compensation: Besoldung nach dem Soldatengesetz" in candidate.notes
+    enrich_candidate_descriptions(coverage, 5)
+    [serialized] = coverage_to_dict(coverage)["candidates"]
+    assert "Betreiben sicherer IT-Systeme." in serialized["description"]
+    assert "Interesse an Informationstechnik" in serialized["description"]
+    assert not any("JD fetch failed" in message for message in coverage.limitations)
 
 
 def test_discover_bundeswehr_profile_fallback_keeps_allowlisted_portal_url_when_detail_fetch_fails(monkeypatch):

@@ -166,6 +166,14 @@ def apply_bundeswehr_detail_text(candidate: Candidate, detail_html: str, terms: 
         candidate.matched_terms = sorted(set(candidate.matched_terms + helpers.match_terms(detail_text_for_matching, terms)))
 
     original_notes = candidate.notes
+    original_description = candidate.description
+    description = " ".join(
+        f"{label}: {sections[key]}"
+        for label, key in (("Aufgaben", "tasks"), ("Anforderungen", "qualifications"), ("Vergütung", "compensation"))
+        if sections[key]
+    )
+    if sections["tasks"] or sections["qualifications"]:
+        helpers.set_candidate_description(candidate, description)
     note_parts = [candidate.notes] if candidate.notes else []
     for label, key in (
         ("Tasks", "tasks"),
@@ -179,7 +187,8 @@ def apply_bundeswehr_detail_text(candidate: Candidate, detail_html: str, terms: 
         if detail_note not in note_parts:
             note_parts.append(detail_note)
     candidate.notes = "; ".join(dict.fromkeys(part for part in note_parts if part))
-    return candidate.notes != original_notes or candidate.matched_terms != original_terms
+    return (candidate.notes != original_notes or candidate.matched_terms != original_terms
+            or candidate.description != original_description)
 
 
 def bundeswehr_odata_filter_for_category(category: str) -> str:
@@ -291,6 +300,17 @@ def apply_bundeswehr_odata_detail(candidate: Candidate, detail: dict[str, Any], 
     if detail_text_for_matching:
         candidate.matched_terms = sorted(set(candidate.matched_terms + helpers.match_terms(detail_text_for_matching, terms)))
 
+    sections = {
+        field: clean_bundeswehr_odata_value(detail.get(field))
+        for field in ("JobDesc", "RequireDesc", "RemarcDesc", "CompanyDesc", "ContactDesc")
+    }
+    original_description = candidate.description
+    if sections["JobDesc"] or sections["RequireDesc"]:
+        helpers.set_candidate_description(candidate, " ".join(
+            f"{label}: {sections[field]}"
+            for label, field in (("Aufgaben", "JobDesc"), ("Anforderungen", "RequireDesc"), ("Hinweise", "RemarcDesc"))
+            if sections[field]
+        ))
     note_parts = [candidate.notes] if candidate.notes else []
     for label, field in (
         ("Job", "JobDesc"),
@@ -299,11 +319,11 @@ def apply_bundeswehr_odata_detail(candidate: Candidate, detail: dict[str, Any], 
         ("Employer", "CompanyDesc"),
         ("Contact", "ContactDesc"),
     ):
-        value = clean_bundeswehr_odata_value(detail.get(field))
-        if value:
+        if value := sections[field]:
             note_parts.append(f"{label}: {helpers.truncate_text(value, 260)}")
     candidate.notes = "; ".join(dict.fromkeys(part for part in note_parts if part))
-    return candidate.notes != original_notes or candidate.matched_terms != original_terms
+    return (candidate.notes != original_notes or candidate.matched_terms != original_terms
+            or candidate.description != original_description)
 
 
 def candidate_searchable_text(candidate: Candidate) -> str:
