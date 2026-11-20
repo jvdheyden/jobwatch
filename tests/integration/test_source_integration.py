@@ -814,11 +814,13 @@ output.write_text(json.dumps(payload))
     return provider
 
 
-def description_loop_command(root: Path, repo_root: Path, artifact: Path, coder: Path) -> list[str]:
+def description_loop_command(
+    root: Path, repo_root: Path, artifact: Path, coder: Path, *, reviewer: str = "off",
+) -> list[str]:
     return [
         "python3", str(repo_root / "scripts" / "source_integration.py"),
         "--track", "public_service", "--source", "Example Source", "--today", "2026-04-02",
-        "--artifact-path", str(artifact), "--reviewer", "off", "--coder-bin", str(coder),
+        "--artifact-path", str(artifact), "--reviewer", reviewer, "--coder-bin", str(coder),
         "--summary-output", str(root / "summary.json"), "--timeout-seconds", "1",
     ]
 
@@ -988,3 +990,78 @@ PROVIDER
     assert result.returncode == (0 if keep_fourth else 1)
     if not keep_fourth:
         assert source["candidates"][3]["url"] in summary["attempts"][-1]["error"]
+
+
+@pytest.mark.parametrize("keep_flagged", [False, True], ids=["drops-flagged", "repairs-flagged"])
+def test_description_repair_verifies_reviewer_flagged_posting(
+    tmp_job_agent_root, run_cmd, repo_root, keep_flagged,
+):
+    root = tmp_job_agent_root
+    artifact = root / "discovery.json"
+    write_example_artifact(artifact)
+    payload = json.loads(artifact.read_text())
+    [source] = payload["sources"]
+    [healthy] = source["candidates"]
+    flagged = {
+        **healthy, "title": "Network Engineer", "url": "https://jobs.example.com/jobs/456",
+        "alternate_url": "https://jobs.example.com/apply/456", "description": "",
+    }
+    source.update(candidates=[flagged, healthy], enumerated_jobs=2, matched_jobs=2)
+    artifact.write_text(json.dumps(payload))
+    provider = write_description_discovery_stub(root, repo_root, artifact)
+    provider.write_text("def populate_descriptions(candidates):\n    return candidates\n")
+
+    reviewer = root / "reviewer.sh"
+    reviewer.write_text(
+        """#!/bin/bash
+set -eu
+cat >/dev/null
+if [[ -e repaired.marker ]]; then
+    echo '{"defects":[]}'
+else
+    cat <<'JSON'
+{"defects":[
+  {"type":"partial_description","severity":"major","candidate_url":"https://jobs.example.com/apply/456/?utm_source=review#details","observed":"The saved description is empty.","expected":"The official posting describes maintaining network infrastructure."},
+  {"type":"partial_description","severity":"blocking","candidate_url":"https://jobs.example.com/jobs/999","observed":"Unmatched URL."}
+]}
+JSON
+fi
+"""
+    )
+    reviewer.chmod(0o755)
+    coder = root / "coder.sh"
+    repaired_candidates = "candidates" if keep_flagged else "candidates[1:]"
+    coder.write_text(
+        f"""#!/bin/bash
+set -eu
+cat >/dev/null
+cp "$JOB_AGENT_EVAL_ARTIFACT" "$JOB_AGENT_ROOT/before.json"
+touch "$JOB_AGENT_ROOT/repaired.marker"
+cat > "$JOB_AGENT_ROOT/scripts/example_provider.py" <<'PROVIDER'
+from discover.helpers import set_candidate_description
+
+def populate_descriptions(candidates):
+    set_candidate_description(candidates[0], "Maintain network infrastructure across regional offices.")
+    return {repaired_candidates}
+PROVIDER
+"""
+    )
+    coder.chmod(0o755)
+
+    result = run_cmd(
+        *description_loop_command(root, repo_root, artifact, coder, reviewer="force"),
+        "--reviewer-bin", str(reviewer), "--max-attempts", "1", cwd=root,
+        env={**os.environ, "JOB_AGENT_ROOT": str(root)},
+    )
+    before = json.loads((root / "before.json").read_text())
+    assert before["integration_ticket"]["failure_mode"] == "missing_detail"
+    assert before["deterministic"]["description_coverage"]["affected_postings"] == []
+    summary = json.loads((root / "summary.json").read_text())
+    assert summary["final_status"] == ("pass" if keep_flagged else "inconclusive")
+    assert result.returncode == (0 if keep_flagged else 1)
+    [fresh_source] = json.loads(Path(summary["active_artifact_path"]).read_text())["sources"]
+    assert {item["url"] for item in fresh_source["candidates"]} == (
+        {flagged["url"], healthy["url"]} if keep_flagged else {healthy["url"]}
+    )
+    if not keep_flagged:
+        assert summary["attempts"][-1]["error"].endswith(flagged["url"])

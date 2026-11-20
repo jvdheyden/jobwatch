@@ -929,6 +929,30 @@ def run_coder(
     return process
 
 
+def reviewer_description_targets(
+    artifact_path: Path, source: str, ticket: dict[str, Any],
+) -> list[dict[str, str]]:
+    # The ticket already limits reviewer defects to major or blocking findings.
+    urls = {
+        defect["candidate_url"] for defect in ticket.get("reviewer_defects", [])
+        if defect.get("type") == "partial_description" and defect.get("candidate_url")
+    }
+    if not urls:
+        return []
+
+    _, coverage = load_source_coverage(artifact_path, source)
+    targets = []
+    for url in sorted(urls):
+        try:
+            candidate = next((item for item in coverage["candidates"] if matches_posting(item, {"url": url})), None)
+        except ValueError:
+            continue
+        if candidate is not None:
+            posting_id = candidate.get("posting_id") or candidate.get("job_id") or candidate.get("requisition_id")
+            targets.append({"posting_id": str(posting_id or ""), "url": candidate.get("url") or ""})
+    return targets
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--track", required=True, help="Track slug, e.g. core_crypto")
@@ -1092,7 +1116,10 @@ def main() -> int:
             attempts.append(attempt_record)
             break
 
-        affected_postings = eval_payload["deterministic"]["description_coverage"]["affected_postings"]
+        affected_postings = [
+            *eval_payload["deterministic"]["description_coverage"]["affected_postings"],
+            *reviewer_description_targets(active_artifact_path, args.source, integration_ticket),
+        ]
         checking_detail_repair |= bool(affected_postings) or integration_ticket.get("failure_mode") == "missing_detail"
         description_targets.update({(item["posting_id"], item["url"]): item for item in affected_postings})
 
