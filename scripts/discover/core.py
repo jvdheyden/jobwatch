@@ -201,9 +201,13 @@ def enrich_candidate_descriptions(
         def fetch_description(url: str, timeout: int) -> str:
             return fetch_notion_description(url, timeout, deadline=deadline)
     else:
+        if coverage.discovery_mode in {"thales_html", "thales_browser"}:
+            from discover.sources.thales import thales_description as extract_description
+        else:
+            extract_description = helpers.visible_text_from_html
 
         def fetch_description(url: str, timeout: int) -> str:
-            return helpers.visible_text_from_html(http.fetch_text(url, timeout))
+            return extract_description(http.fetch_text(url, timeout))
 
     for candidate in coverage.candidates:
         if candidate.description:

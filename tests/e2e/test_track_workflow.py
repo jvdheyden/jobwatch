@@ -229,6 +229,32 @@ def test_delivery_failure_preserves_local_results_and_retry_is_idempotent(workfl
     assert len(read(root, 'tracks/demo/seen_jobs.json')['jobs']) == 2
 
 
+@pytest.mark.parametrize('behavior', ['replace_history', 'rewrite_history'])
+def test_same_day_draft_cannot_replace_previously_reported_roles(workflow, behavior):
+    root, board, run = workflow
+    board['jobs'] = [1]
+    result, log = run(deliver=False)
+    assert result.returncode == 0, log
+    digest = root / 'artifacts/digests/demo/2030-01-15.json'
+    history = root / 'tracks/demo/candidate_review_history.json'
+    original_digest = digest.read_bytes()
+    original_history = history.read_bytes()
+
+    board['jobs'].append(2)
+    result, log = run(behavior=behavior, deliver=False)
+    assert result.returncode != 0, log
+    assert digest.read_bytes() == original_digest
+    assert history.read_bytes() == original_history
+
+    result, log = run(deliver=False)
+    assert result.returncode == 0, log
+    assert [c['title'] for c in review_input(root)['sources'][0]['candidates']] == ['Cryptography Engineer 2']
+    initial, update = json.loads(digest.read_bytes())['runs']
+    assert initial == json.loads(original_digest)['runs'][0]
+    assert update['kind'] == 'update'
+    assert [role['title'] for role in update['top_matches']] == ['Cryptography Engineer 2']
+
+
 def test_retry_cannot_reuse_stale_agent_output(workflow):
     root, board, run = workflow
     assert run()[0].returncode == 0

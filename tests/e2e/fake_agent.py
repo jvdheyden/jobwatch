@@ -92,8 +92,10 @@ if review_path and behavior != 'missing_receipt':
     artifact.with_suffix('.receipt.json').write_text(json.dumps(receipt))
 if unchanged:
     raise SystemExit(0)
-if previous:
+if previous and behavior != 'replace_history':
     payload['runs'][0]['kind'] = 'update'
+    if behavior == 'rewrite_history':
+        previous['runs'][0]['top_matches'] = []
     payload['runs'] = previous['runs'] + payload['runs']
 if behavior == 'invalid_schema':
     payload['schema_version'] = 999

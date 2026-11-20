@@ -35,6 +35,10 @@ THALES_JSON_LD_RE = re.compile(
     r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(?P<payload>.*?)</script>',
     flags=re.IGNORECASE | re.DOTALL,
 )
+THALES_PAGE_TOKEN_RE = re.compile(
+    r"""<div\b[^>]*\s+id\s*=\s*(['"])csrfToken\1[^>]*>\s*[0-9a-f]{32}\s*</div\s*>""",
+    flags=re.IGNORECASE,
+)
 THALES_TASK_HEADINGS = (
     "Responsibilities",
     "Responsibility",
@@ -230,6 +234,11 @@ def thales_detail_text(content: str) -> str:
     return "\n".join(helpers.extract_visible_text_lines_from_html(content))
 
 
+def thales_description(content: str) -> str:
+    # The careers site puts a rotating CSRF token in a hidden div after the page.
+    return helpers.visible_text_from_html(THALES_PAGE_TOKEN_RE.sub("", content))
+
+
 def extract_thales_detail_sections(content: str) -> dict[str, str]:
     job_posting = _thales_json_ld_jobposting(content)
     detail_text = thales_detail_text(content)
@@ -343,7 +352,7 @@ def enrich_thales_candidate_details(
         direct_job_pages_opened += 1
         if not apply_thales_detail_text(candidate, detail_html, terms):
             missing_detail_urls.append(candidate.url)
-        helpers.set_candidate_description(candidate, helpers.visible_text_from_html(detail_html))
+        helpers.set_candidate_description(candidate, thales_description(detail_html))
 
     if failed_urls:
         limitations.append(f"Thales detail page fetch errored for {len(failed_urls)} matched roles")
