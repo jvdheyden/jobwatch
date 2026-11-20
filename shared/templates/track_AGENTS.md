@@ -33,8 +33,8 @@ Read these files in order before starting:
 6. `./sources.md`
 7. `./seen_jobs.json`
 8. `../../shared/digest_schema.md`
-9. `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`, if it exists for today
-10. `../../artifacts/discovery/{track_slug}/latest.json`, if it exists and was generated today
+9. The run-specific candidate review artifact named by the scheduled runner, when supplied
+10. Today's `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json` or fresh `latest.json` when no review artifact was supplied
 11. `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` for today, if it already exists
 12. `./digests/YYYY-MM-DD.md` for today, if it already exists
 
@@ -63,12 +63,12 @@ Use `./prefs.md` and `../../profile/prefs_global.md` as the source of truth for 
 During a normal scheduled run:
 
 - read only the track inputs above plus today's digest, if it already exists
-- write only today's structured digest artifact in `../../artifacts/digests/{track_slug}/` and today's rendered digest in `./digests/`
+- write the structured digest and separate receipt to the paths supplied by the runner. With no review artifact, write the digest to its usual path in `../../artifacts/digests/{track_slug}/`. The runner renders the digest and updates review history
 - do not edit `./sources.md`, `./sources.json`, or `./source_state.json` during a normal run
 - do not edit preferences, track instructions, or match rules, or launch maintenance workers; report plausible retrieval gaps in coverage limitations for user-triggered maintenance
 - do not inspect `./logs` or downstream publication targets such as the configured Logseq graph
 - do not debug the runner unless explicitly asked to investigate the job infrastructure
-- if today's discovery artifact exists in `../../artifacts/discovery/{track_slug}/`, consume it directly instead of rerunning `../../scripts/discover_jobs.py`
+- use the supplied candidate review artifact for coverage and queued listings. With no review artifact, use today's discovery artifact if fresh and usable
 
 ## Source Cadence
 
@@ -87,7 +87,7 @@ For each run:
 
 1. Read the context files, including source definitions in `./sources.json` and `last_checked` values in `./source_state.json`.
 2. Determine which sources are due based on the cadence rules in `./sources.json` and `./source_state.json`.
-3. Look for today's discovery artifact at `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json`. If it is missing, check `../../artifacts/discovery/{track_slug}/latest.json`.
+3. Use the review artifact named by the runner for this attempt. With no review artifact, check `../../artifacts/discovery/{track_slug}/YYYY-MM-DD.json` first and fresh `latest.json` second.
 4. During a normal scheduled run, treat the fresh artifact as the default discovery input for due-source coverage and candidate enumeration.
 5. Do not rerun `../../scripts/discover_jobs.py` yourself during a normal scheduled pass unless the artifact is missing, stale, inconsistent with the due-source set, or you were explicitly asked to debug discovery.
 6. Search only the due sources from `./sources.json`.
@@ -96,8 +96,8 @@ For each run:
 9. Treat a source as fully checked only if the coverage notes include status, listing pages scanned, search terms tried, result pages scanned, direct job pages opened, and limitations.
 10. Judge execution against the source's configured retrieval and provider strategy: inherit `track_terms`, append source terms, or replace them for `search_terms.mode: override`; trim and deduplicate case-insensitively. Do not derive additional required terms from preferences, track instructions, or the CV. Complete execution can return zero matches. Preserve genuine execution limitations and separately name unfinished candidate review or missing fit evidence.
 11. Use the project skill `rank-jobs` to score and prioritize them.
-12. Create or update today's structured digest artifact at `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` using `../../shared/digest_schema.md` as the source-of-truth schema.
-13. Leave source-state updates, markdown rendering, ranked-overview rebuilds, and seen-jobs updates to the runner. Do not edit `./source_state.json` or `./seen_jobs.json` yourself.
+12. Build today's structured digest using `../../shared/digest_schema.md`. Read the existing daily digest in `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` when present, and use the runner's output path for a scheduled review.
+13. For a scheduled review artifact, write the requested JSON receipt with complete or partial source acknowledgments and explicitly deferred IDs. Leave review history, source state, markdown rendering, ranked-overview rebuilds, and seen-jobs updates to the runner.
 
 ## Same-Day Reruns
 
@@ -114,7 +114,7 @@ If today's digest JSON artifact already exists:
 - do not rewrite or remove earlier same-day runs
 - the runner rerenders `./digests/YYYY-MM-DD.md` after the agent finishes
 
-If no new roles are found on a later run the same day, leave today's digest unchanged.
+If no new roles are found on a later run the same day, leave today's digest unchanged. For review runs, still write the receipt and set `digest_unchanged` to `true`.
 
 ## Output Standard
 
@@ -132,7 +132,7 @@ If required coverage evidence is missing, mark the source partial and say why. L
 
 Use `find-jobs` to report concrete possible retrieval gaps as `Search-quality observation:` entries in the existing `runs[].source_notes[].limitations` field. Name the requested role/domain, relevant configuration, and potential omission. Missing preference keywords or zero matches alone do not prove a gap. Keep successful execution complete; these observations recommend user-triggered `existing-source-curation` maintenance and do not authorize configuration changes or automatic workers.
 
-For scheduled runs, the artifact paths in `../../artifacts/discovery/{track_slug}/` are the source of truth for discovery. Use `YYYY-MM-DD.json` first and `latest.json` second.
+For scheduled reviews, use the supplied artifact's source coverage, original match counts, and `review_counts` to account for queued, skipped, and deferred candidates.
 
 For digest generation, `../../artifacts/digests/{track_slug}/YYYY-MM-DD.json` is the source of truth. `./digests/YYYY-MM-DD.md` is derived output rendered by `../../scripts/render_digest.py`.
 

@@ -115,6 +115,7 @@ def discover_lifeatspotify_jobs(source: SourceConfig, terms: list[str], timeout_
             employer=source.source,
             title=title,
             url=f"{LIFEATSPOTIFY_DETAIL_ROOT}/{job_id}",
+            posting_id=job_id,
             source_url=source.url,
             location=_job_location(job),
             matched_terms=matched_terms,

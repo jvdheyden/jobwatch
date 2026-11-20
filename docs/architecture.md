@@ -166,12 +166,14 @@ sequenceDiagram
   Sched->>Track: run_track.sh --track <slug> [--delivery ...]
   Track->>Disc: discover_jobs.py --track <slug> --today <date>
   Disc-->>Track: artifacts/discovery/<track>/<date>.json
-  Track->>Agent: invoke with prompt + tracks/<track>/AGENTS.md
+  Track->>Track: prepare review artifact from discovery and track review history
+  Track->>Agent: invoke with review artifact and tracks/<track>/AGENTS.md
   Agent->>Agent: find-jobs (role/domain/constraint admission, dedupe)
   Agent->>Agent: rank-jobs (holistic score and recommendation)
-  Agent-->>Track: artifacts/digests/<track>/<date>.json
-  Track->>Post: update_source_state.py
+  Agent-->>Track: structured digest and run-specific review receipt
+  Track->>Track: validate digest and receipt, then record acknowledgments
   Track->>Post: render_digest.py (markdown)
+  Track->>Post: update_source_state.py
   Track->>Post: update_seen_jobs.py
   Track->>Post: update_ranked_overview.py
   alt --delivery logseq
@@ -243,6 +245,8 @@ flowchart LR
 | `tracks/T/seen_jobs.json` | Previously reported jobs | `find-jobs` deduplication; updated from the digest by scripts |
 
 `tracks/T/sources.md` is generated from `sources.json`; it is not another source of truth. Discovery writes `artifacts/discovery/T/YYYY-MM-DD.json`; the agent produces `artifacts/digests/T/YYYY-MM-DD.json`. The runner renders `tracks/T/digests/YYYY-MM-DD.md` and updates `tracks/T/ranked_overview.md` and `shared/ranked_jobs/T.json`.
+
+For scheduled runs with a fresh discovery snapshot, the runner supplies `artifacts/reviews/T/<run-id>.json` to the agent. It retains source coverage and match counts while supplying listing bodies for new candidates and candidates with changed posting evidence or fit criteria. The agent writes a run-specific receipt and drafts any new or updated digest alongside it. After validating both outputs, the runner installs the digest and records reviewed and deferred versions in `tracks/T/candidate_review_history.json`. `seen_jobs.json` continues to control repeat reporting. Fallback runs use the existing discovery workflow and leave review history untouched.
 
 **Recall boundary:** A restrictive retrieval term, native filter, or match rule can exclude a job *before* `find-jobs` sees it. A successful scrape therefore proves execution of the configured search, not that the configuration covers every desired role. See [Retrieval maintenance and coverage](#retrieval-maintenance-and-coverage) for the separate audit and reconciliation workflow.
 

@@ -125,6 +125,7 @@ def discover_workable_api(source: SourceConfig, terms: list[str], timeout_second
                 employer=source.source,
                 title=title,
                 url=build_workable_job_url(source.url, board_slug, shortcode),
+                posting_id=shortcode,
                 source_url=source.url,
                 location=location,
                 remote=remote,

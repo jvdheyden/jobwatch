@@ -125,6 +125,7 @@ def discover_smartrecruiters_api(source: SourceConfig, terms: list[str], timeout
                 employer=source.source,
                 title=title,
                 url=build_smartrecruiters_job_url(company_id, posting_id, title),
+                posting_id=posting_id,
                 source_url=source.url,
                 location=location,
                 remote=remote,

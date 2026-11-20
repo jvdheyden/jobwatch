@@ -98,6 +98,7 @@ def discover_enbw_phenom(source: SourceConfig, terms: list[str], timeout_seconds
                         employer=employer,
                         title=title,
                         url=job_url,
+                        posting_id=job_id,
                         source_url=source.url,
                         alternate_url=apply_url if apply_url and apply_url != job_url else "",
                         location=location,

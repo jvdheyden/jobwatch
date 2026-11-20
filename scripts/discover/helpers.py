@@ -279,6 +279,8 @@ def merge_candidate(candidates_by_url: dict[str, Candidate], candidate: Candidat
     if not existing:
         candidates_by_url[candidate.url] = candidate
         return
+    if existing.posting_id and candidate.posting_id and existing.posting_id != candidate.posting_id:
+        existing.identity_ambiguous = True
     existing.matched_terms = sorted(set(existing.matched_terms + candidate.matched_terms))
     if existing.location == "unknown" and candidate.location != "unknown":
         existing.location = candidate.location

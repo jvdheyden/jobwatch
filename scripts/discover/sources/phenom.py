@@ -214,6 +214,7 @@ def discover_phenom_html(source: SourceConfig, terms: list[str], timeout_seconds
                         employer=source.source,
                         title=title,
                         url=build_phenom_job_url(source.url, job_id, title),
+                        posting_id=job_id,
                         source_url=source.url,
                         location=location,
                         matched_terms=matched_terms,

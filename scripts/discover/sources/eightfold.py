@@ -347,6 +347,7 @@ def discover_eightfold_api(source: SourceConfig, terms: list[str], timeout_secon
                         employer=source.source,
                         title=title,
                         url=url or source.url,
+                        posting_id=job_id,
                         source_url=source.url,
                         location=location,
                         remote=remote,

@@ -251,6 +251,7 @@ def discover_notion_site(source: SourceConfig, terms: list[str], timeout_seconds
                 employer=source.source,
                 title=title,
                 url=f"{parsed.scheme or 'https'}://{parsed.netloc}/{row_id.replace('-', '')}",
+                posting_id=row_id,
                 source_url=source.url,
                 location=location,
                 remote=helpers.infer_remote_status(location),

@@ -48,6 +48,7 @@ tracks/*
 !tracks/test_workflow/sources.json
 !tracks/test_workflow/source_state.json
 tracks/*/digests/
+tracks/*/candidate_review_history.json*
 
 # Generated artifacts and digests
 artifacts/

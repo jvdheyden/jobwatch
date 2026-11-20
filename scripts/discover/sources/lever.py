@@ -87,6 +87,7 @@ def discover_lever_json(source: SourceConfig, terms: list[str], timeout_seconds:
             location=location,
             matched_terms=matched,
             notes=_posting_notes(posting),
+            posting_id=posting.get("id") or "",
         )
         helpers.set_candidate_description(candidate, _posting_detail_text(posting))
         helpers.merge_candidate(candidates_by_url, candidate)

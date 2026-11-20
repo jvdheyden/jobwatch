@@ -244,6 +244,7 @@ def discover_bamboohr_jobs(source: SourceConfig, terms: list[str], timeout_secon
             employer=source.source,
             title=title,
             url=share_url,
+            posting_id=job_id,
             source_url=source.url,
             location=location,
             matched_terms=matched_terms,

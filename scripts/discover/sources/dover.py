@@ -91,6 +91,7 @@ def discover_dover_jobs(source: SourceConfig, terms: list[str], timeout_seconds:
                 employer=source.source,
                 title=title,
                 url=f"{DOVER_DETAIL_ROOT}/{careers_id}/{job_id}",
+                posting_id=job_id,
                 source_url=source.url,
                 location=location,
                 matched_terms=matched_terms,

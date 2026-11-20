@@ -513,17 +513,37 @@ stop_helper "$DISCOVERY_WATCHDOG_PID"
 stop_helper "$DISCOVERY_HEARTBEAT_PID"
 
 DISCOVERY_PROMPT_BLOCK=""
-if [[ $DISCOVERY_STATUS -eq 0 ]]; then
+REVIEW_RUN_ID=""
+if [[ $DISCOVERY_STATUS -eq 0 && ! -f "$DISCOVERY_TIMEOUT_FLAG" ]]; then
   log "Discovery phase finished successfully"
   if [[ -f "$DISCOVERY_ARTIFACT" ]]; then
     log "Wrote discovery artifact to $DISCOVERY_ARTIFACT"
   fi
-  DISCOVERY_PROMPT_BLOCK=$(cat <<EOF
-A discovery artifact for today's scheduled run has already been written to ./artifacts/discovery/$TRACK/$TODAY.json and ./artifacts/discovery/$TRACK/latest.json.
-Use those artifact files directly as the primary discovery input.
-Do not rerun ./scripts/discover_jobs.py during this scheduled pass unless the artifact is missing, stale, or inconsistent with today's due sources.
+  if REVIEW_PREPARATION="$("$PYTHON_BIN" "$ROOT/scripts/candidate_reviews.py" \
+      --root "$ROOT" --track "$TRACK" --date "$TODAY" prepare \
+      --discovery "$DISCOVERY_ARTIFACT" --after "$PROMPT_FILE")"; then
+    read -r REVIEW_RUN_ID REVIEW_FINGERPRINT <<< "$REVIEW_PREPARATION"
+    REVIEW_PATH="artifacts/reviews/$TRACK/$REVIEW_RUN_ID.json"
+    REVIEW_RECEIPT="artifacts/reviews/$TRACK/$REVIEW_RUN_ID.receipt.json"
+    REVIEW_DIGEST="artifacts/reviews/$TRACK/$REVIEW_RUN_ID.digest.json"
+    log "Wrote candidate review artifact to $REVIEW_PATH"
+    DISCOVERY_PROMPT_BLOCK=$(cat <<EOF
+Use ./$REVIEW_PATH as the sole discovery input for this attempt, including source coverage and original match counts. It contains only queued listing bodies. Report review limitations and use review_counts for queued, skipped, and deferred totals. Use this input in place of any discovery artifact paths listed in the track instructions. Do not open the full discovery snapshot or rerun discovery.
+Use seen_jobs.json as usual to exclude previously reported roles, even if their evidence changed and they are queued again.
+Besides the structured digest, write a JSON receipt to ./$REVIEW_RECEIPT with this structure:
+{"run_id":"$REVIEW_RUN_ID","digest_unchanged":false,"batches":[{"source_id":"example","complete":true}]}
+Use source_id from the artifact. A complete batch covers every queued candidate for that source except IDs in the optional deferred array. For a partial batch set complete to false and put only the candidate IDs actually reviewed in the reviewed array. Use deferred for IDs whose descriptions were inspected and found unusable. Omit unattempted batches and leave any unreviewed IDs out. A review can result in zero reportable roles. Use an empty batches array when there are no acknowledgments.
+Read the existing digest at ./artifacts/digests/$TRACK/$TODAY.json if present. On a same-day rerun with a valid existing digest and no newly reportable roles, skip writing a digest and set digest_unchanged to true. Otherwise write the complete structured digest for today to ./$REVIEW_DIGEST and set digest_unchanged to false. Use that output path in place of the digest output path in the track instructions. The runner installs the validated digest and records review history. Keep the receipt out of the digest.
 EOF
 )
+  else
+    log "Candidate review input unavailable; continuing with the original discovery workflow"
+    DISCOVERY_PROMPT_BLOCK=$(cat <<EOF
+A discovery artifact for today's scheduled run has already been written to ./artifacts/discovery/$TRACK/$TODAY.json and ./artifacts/discovery/$TRACK/latest.json.
+Use the full discovery artifact if it is usable for today's due sources; otherwise fall back to live discovery as needed.
+EOF
+)
+  fi
 elif [[ -f "$DISCOVERY_TIMEOUT_FLAG" ]]; then
   log "Discovery phase timed out after ${DISCOVERY_TIMEOUT_SECS}s; $AGENT_LABEL will fall back to live discovery as needed"
   if [[ -f "$DISCOVERY_ARTIFACT" ]]; then
@@ -666,31 +686,37 @@ fi
 
 log "$AGENT_LABEL phase finished successfully"
 
-# macOS Bash compares file times at whole-second precision. Agents can finish
-# within that second; use the filesystem's full precision to reject stale output.
-if "$PYTHON_BIN" - "$STRUCTURED_DIGEST" "$PROMPT_FILE" <<'PY'
+if [[ -n "$REVIEW_RUN_ID" ]]; then
+  "$PYTHON_BIN" "$ROOT/scripts/candidate_reviews.py" --root "$ROOT" --track "$TRACK" --date "$TODAY" \
+    commit --run-id "$REVIEW_RUN_ID" --fingerprint "$REVIEW_FINGERPRINT"
+  log "Validated candidate review receipt and recorded acknowledgments"
+else
+  # macOS Bash compares file times at whole-second precision. Use Python for
+  # the fallback workflow's fresh-digest check.
+  if ! "$PYTHON_BIN" - "$STRUCTURED_DIGEST" "$PROMPT_FILE" <<'PY'
 from pathlib import Path
 import sys
 
 digest, prompt = map(Path, sys.argv[1:])
 sys.exit(0 if digest.is_file() and digest.stat().st_mtime_ns > prompt.stat().st_mtime_ns else 1)
 PY
-then
-  log "Rendering markdown digest from $STRUCTURED_DIGEST"
-  if "$PYTHON_BIN" "$ROOT/scripts/render_digest.py" --track "$TRACK" --date "$TODAY"; then
-    log "Markdown digest rendered successfully"
-  else
-    render_status=$?
-    log "Markdown digest rendering failed with status $render_status"
-    exit "$render_status"
+  then
+    log "Missing or stale structured digest at $STRUCTURED_DIGEST after successful agent exit"
+    exit 1
   fi
+fi
+
+log "Rendering markdown digest from $STRUCTURED_DIGEST"
+if "$PYTHON_BIN" "$ROOT/scripts/render_digest.py" --track "$TRACK" --date "$TODAY"; then
+  log "Markdown digest rendered successfully"
 else
-  log "Missing or stale structured digest at $STRUCTURED_DIGEST after successful agent exit"
-  exit 1
+  render_status=$?
+  log "Markdown digest rendering failed with status $render_status"
+  exit "$render_status"
 fi
 
 # Validation/rendering must succeed before advancing cadence or seen state.
-if [[ $DISCOVERY_STATUS -eq 0 && -f "$DISCOVERY_ARTIFACT" ]]; then
+if [[ $DISCOVERY_STATUS -eq 0 && ! -f "$DISCOVERY_TIMEOUT_FLAG" && -f "$DISCOVERY_ARTIFACT" ]]; then
   log "Source state update started"
   if "$PYTHON_BIN" "$ROOT/scripts/update_source_state.py" --track "$TRACK" --date "$TODAY" --artifact "$DISCOVERY_ARTIFACT"; then
     log "Source state update finished successfully"

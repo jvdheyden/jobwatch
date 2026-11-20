@@ -37,6 +37,8 @@ class Candidate:
     notes: str = ""
     description: str = ""
     description_truncated: bool = False
+    posting_id: str = ""
+    identity_ambiguous: bool = False
 
 
 @dataclass
