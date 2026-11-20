@@ -266,7 +266,7 @@ def description_status(value: Any) -> str:
         return "missing"
     if _role_excerpt(text):
         return "usable"
-    if DESCRIPTION_ROLE_CONTEXT_RE.search(text) or NON_ROLE_TEXT_RE.match(text):
+    if DESCRIPTION_ROLE_CONTEXT_RE.match(text) or NON_ROLE_TEXT_RE.match(text):
         return "missing"
     return "ambiguous"
 
@@ -300,29 +300,39 @@ def _assess_descriptions(
     fetcher: Callable[[str, int], str],
 ) -> dict[str, Any]:
     statuses = [description_status(candidate.get("description")) for candidate in candidates]
-    omissions = 0
+    affected_postings: list[dict[str, str]] = []
     evidence: list[dict[str, str]] = []
-    pending_samples: dict[str, dict[str, Any]] = {}
-    ambiguous_urls: list[str] = []
-    for candidate, status in zip(candidates, statuses):
-        if status == "usable":
-            continue
-        if status == "ambiguous":
-            if candidate.get("url") and len(ambiguous_urls) < REVIEWER_MAX_CANDIDATES:
-                ambiguous_urls.append(candidate["url"])
+    pending_samples: dict[str, int] = {}
+
+    def record_role_evidence(index: int, origin: str, role_text: str) -> None:
+        candidate = candidates[index]
+        role_excerpt = truncate_text(role_text, 200)
+        excerpt = normalize_whitespace(normalize_for_matching(role_excerpt)).rstrip(" .")
+        if heading := DESCRIPTION_ROLE_CONTEXT_RE.match(excerpt):
+            excerpt = excerpt[heading.end():]
+        body = normalize_whitespace(normalize_for_matching(_description_text(candidate.get("description"))))
+        if excerpt and re.search(rf"(?<!\w){re.escape(excerpt)}(?!\w)", body):
+            # The outside text is already stored. The body still needs semantic review.
+            statuses[index] = "ambiguous"
+            return
+        posting_id = candidate.get("posting_id") or candidate.get("job_id") or candidate.get("requisition_id")
+        affected_postings.append({"posting_id": str(posting_id or ""), "url": candidate.get("url") or ""})
+        if len(evidence) < DETAIL_SAMPLE_LIMIT:
+            evidence.append(_description_omission(candidate, origin, role_excerpt))
+
+    for index, (candidate, status) in enumerate(zip(candidates, statuses)):
+        if status != "missing":
             continue
         outside_detail = _detail_outside_description(candidate)
         if outside_detail:
-            omissions += 1
-            if len(evidence) < DETAIL_SAMPLE_LIMIT:
-                evidence.append(_description_omission(candidate, *outside_detail))
+            record_role_evidence(index, *outside_detail)
         elif len(pending_samples) < DETAIL_SAMPLE_LIMIT and _candidate_has_direct_job_url(source_url, candidate):
             url = normalize_url_without_fragment(candidate.get("url", ""))
             if urlparse(url).scheme in {"http", "https"} and is_allowed_candidate_domain(source_url, url):
-                pending_samples.setdefault(url, candidate)
+                pending_samples.setdefault(url, index)
 
     unavailable = 0
-    for url, candidate in pending_samples.items():
+    for url, index in pending_samples.items():
         try:
             raw_text = normalize_for_matching(_description_text(fetcher(url, timeout_seconds)))
         except Exception:
@@ -332,9 +342,7 @@ def _assess_descriptions(
             unavailable += 1
             continue
         if role_text := _role_excerpt(raw_text):
-            omissions += 1
-            if len(evidence) < DETAIL_SAMPLE_LIMIT:
-                evidence.append(_description_omission(candidate, "official posting", role_text))
+            record_role_evidence(index, "official posting", role_text)
 
     usable = statuses.count("usable")
     return {
@@ -346,19 +354,23 @@ def _assess_descriptions(
         "legacy_missing_field": sum("description" not in candidate for candidate in candidates),
         "sampled_pages": len(pending_samples),
         "sampled_pages_unavailable": unavailable,
-        "demonstrated_omissions": omissions,
+        "demonstrated_omissions": len(affected_postings),
+        "affected_postings": affected_postings,
         "evidence": evidence,
-        "ambiguous_urls": ambiguous_urls,
+        "ambiguous_urls": [
+            candidate["url"] for candidate, status in zip(candidates, statuses)
+            if status == "ambiguous" and candidate.get("url")
+        ][:REVIEWER_MAX_CANDIDATES],
     }
 
 
-def _description_omission(candidate: dict[str, Any], origin: str, role_text: str) -> dict[str, str]:
+def _description_omission(candidate: dict[str, Any], origin: str, role_excerpt: str) -> dict[str, str]:
     return {
         "title": candidate.get("title") or "",
         "url": candidate.get("url") or "",
         "description_excerpt": truncate_text(_description_text(candidate.get("description")), 140),
         "role_text_source": origin,
-        "role_text_excerpt": truncate_text(role_text, 200),
+        "role_text_excerpt": role_excerpt,
     }
 
 
@@ -709,6 +721,7 @@ def validate_source_coverage(
         results.append(ValidatorResult("result_volume", "pass", "info", "Source output volume is within the normal review range."))
 
     discovery_mode = normalize_whitespace(str(source.get("discovery_mode", ""))).lower()
+    browser_detail_inconclusive = False
     if "browser" in discovery_mode and candidates:
         browser_problems: list[str] = []
         result_pages_scanned = normalize_for_matching(str(source.get("result_pages_scanned", "")))
@@ -736,9 +749,10 @@ def validate_source_coverage(
                 )
             )
         elif not detail["usable"]:
+            browser_detail_inconclusive = True
             results.append(ValidatorResult(
                 "browser_fallback_quality", "warn", "major",
-                "Browser detail acceptance needs review of usable posting descriptions.",
+                "Browser acceptance is inconclusive because no usable posting description could be verified.",
             ))
         else:
             results.append(
@@ -771,16 +785,19 @@ def validate_source_coverage(
     verification = "unverified"
     if any(r["status"] == "fail" for r in canary_results):
         verification = "failed"
-    elif any(r["diagnosis"] == "inconclusive" for r in canary_results):
+    elif (browser_detail_inconclusive and not blocking) or any(r["diagnosis"] == "inconclusive" for r in canary_results):
         verification = "inconclusive"
     elif any(r["status"] == "pass" and r["provenance"] in INDEPENDENT_PROVENANCES for r in canary_results):
         verification = "independently_verified" if not blocking else "failed"
     elif any(r["status"] == "pass" for r in canary_results):
         verification = "regression_only"
+    quality_level = "configured" if blocking or browser_detail_inconclusive else "basic_support"
+    if verification == "independently_verified":
+        quality_level = "independently_verified"
     return {
         "confidence": confidence,
         "verification": verification,
-        "quality_level": "independently_verified" if verification == "independently_verified" else "configured" if blocking else "basic_support",
+        "quality_level": quality_level,
         "canary_results": canary_results,
         "description_coverage": detail,
         "checks": [result.__dict__ for result in results],
@@ -795,9 +812,15 @@ def _build_reviewer_context(
     canary_url: str,
     timeout_seconds: int,
     raw_text_fetcher: Callable[[str, int], str] = fetch_text,
+    *,
+    ambiguous_description_urls: list[str] | None = None,
 ) -> dict[str, Any]:
     candidates = list(source.get("candidates", []))
+    ambiguous_urls = set(ambiguous_description_urls or [])
+
     def review_priority(candidate: dict[str, Any]) -> int:
+        if candidate.get("url") in ambiguous_urls:
+            return 0
         return {"ambiguous": 0, "missing": 1, "usable": 2}[description_status(candidate.get("description"))]
 
     prioritized = sorted(candidates, key=review_priority)
@@ -852,7 +875,7 @@ def _build_reviewer_context(
             "candidates": reviewer_candidates,
             "ambiguous_description_urls": [
                 candidate.get("url", "") for candidate in reviewer_candidates
-                if description_status(candidate.get("description")) == "ambiguous"
+                if review_priority(candidate) == 0
             ],
         },
         "canary": {"title": canary_title, "url": canary_url},
@@ -900,6 +923,7 @@ def review_source_with_llm(
     reviewer_bin: Path | None,
     timeout_seconds: int,
     provider: str | None = None,
+    ambiguous_description_urls: list[str] | None = None,
 ) -> dict[str, Any]:
     if reviewer_bin is None or not reviewer_bin.exists():
         return {
@@ -915,7 +939,10 @@ def review_source_with_llm(
         print(f"source-quality reviewer: {exc}", file=sys.stderr)
         return {"status": "blocked", "defects": [], "error": str(exc)}
 
-    context = _build_reviewer_context(artifact_path, source, canary_title, canary_url, timeout_seconds)
+    context = _build_reviewer_context(
+        artifact_path, source, canary_title, canary_url, timeout_seconds,
+        ambiguous_description_urls=ambiguous_description_urls,
+    )
     canary_instruction = (
         "If canary.title and canary.url are both empty, treat the canary as not provided and do not emit canary_missing.\n"
         "A raw_samples entry with kind listing_page is the source's listing page, sampled because generic html "
@@ -940,6 +967,7 @@ def review_source_with_llm(
           "including substantive truncated excerpts. Compare ambiguous descriptions with the official posting samples. "
           "Report partial_description with the affected candidate_url and paired excerpts when duties or qualifications "
           "are present in notes, provider fields, or the official posting and missing from an unusable description. "
+          "Check that the cited role text is absent from the saved description, accounting for formatting and truncation. "
           "Put the saved description excerpt in observed and the available role excerpt and its origin in expected. "
           "Headings, deadlines, benefits, navigation and loading or login messages alone are insufficient. "
           "Treat failed fetches or listing metadata alone as uncertainty. Keep other extraction defects separate.\n"
