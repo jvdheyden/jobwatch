@@ -284,6 +284,7 @@ def discover_personio_page(source: SourceConfig, terms: list[str], timeout_secon
             employer=source.source,
             title=title,
             url=job_url,
+            posting_id=_personio_job_identity(job)[0],
             source_url=source.url,
             location=location,
             remote=helpers.infer_remote_status(location, searchable_text),

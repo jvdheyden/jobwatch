@@ -256,6 +256,7 @@ def discover_ashby_api(source: SourceConfig, terms: list[str], timeout_seconds: 
                 remote=posting.get("workplaceType") or "unknown",
                 matched_terms=matched_terms,
                 notes="Enumerated through Ashby non-user GraphQL API",
+                posting_id=posting_id,
             ),
         )
         if posting_id and candidate_url not in posting_ids_by_url:

@@ -167,6 +167,7 @@ def discover_getro_api(source: SourceConfig, terms: list[str], timeout_seconds: 
                     employer=employer,
                     title=title,
                     url=job_url,
+                    posting_id=str(job.get("id") or ""),
                     source_url=source.url,
                     location=location,
                     remote=helpers.infer_remote_status(location, work_mode, title),

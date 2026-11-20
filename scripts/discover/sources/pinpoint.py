@@ -83,6 +83,7 @@ def discover_pinpoint_api(source: SourceConfig, terms: list[str], timeout_second
             employer=source.source,
             title=title,
             url=helpers.normalize_url_without_fragment(url),
+            posting_id=str(posting.get("id") or ""),
             source_url=source.url,
             location=location,
             remote=helpers.infer_remote_status(location, workplace),

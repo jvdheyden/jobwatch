@@ -68,6 +68,7 @@ def discover_hibob_api(source: SourceConfig, terms: list[str], timeout_seconds: 
             employer=source.source,
             title=title,
             url=f"{base}/jobs/{job_id}",
+            posting_id=job_id,
             source_url=source.url,
             location=location,
             remote=job.get("workspaceType") or "unknown",

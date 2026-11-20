@@ -20,7 +20,9 @@ Read those files before searching. Read `reference_jobs.json` when present for d
 
 If the current track provides `source_state.json`, honor the track's cadence rules and treat `last_checked` as track-owned source state. Do not update source state yourself during a normal scheduled run; the runner updates it from the discovery artifact.
 
-If the track instructions name a discovery artifact path, look for that artifact first.
+When the scheduled runner supplies a run-specific candidate review artifact, use it as the primary input for coverage and candidate extraction. It preserves the full source coverage records and original match counts. The `candidates` arrays contain queued listing bodies only. `review_counts` shows queued, previously reviewed (`skipped`), and previously deferred candidates for each source and for the whole run. Use these counts to report review coverage without reopening the full discovery snapshot.
+
+Without a review artifact, use the track's discovery artifact order below.
 
 For this repo:
 - treat the scheduled JSON artifact as the default discovery input
@@ -68,6 +70,8 @@ Compare the fresh artifact's reported work with that source's configuration and 
 Preserve genuine partial or failed execution and identify any missing configured work. Zero matches for one or all applied terms can still be complete. A source override does not have to apply the global terms it replaces. A source not due this run is not an execution gap.
 
 Keep candidate-review limitations explicit too: name unreviewed candidates or missing descriptions that prevent admission, even when deterministic retrieval completed. Do not describe the whole review as finished just because the scraper finished.
+
+When the runner requests a receipt, acknowledge a source batch as complete only after accounting for every queued candidate. Review includes roles that were rejected or already reported. For partial batches, acknowledge only the candidate IDs actually reviewed. Explicitly defer candidates whose descriptions were inspected and found unusable, and leave untouched candidates unacknowledged. Follow the runner's receipt format even when the digest has no new roles. Use `seen_jobs.json` for repeat reporting regardless of review counts.
 
 ## Search-quality observations
 

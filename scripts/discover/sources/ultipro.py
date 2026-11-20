@@ -155,6 +155,7 @@ def discover_ultipro_jobs(source: SourceConfig, terms: list[str], timeout_second
                     employer=source.source,
                     title=title,
                     url=detail_url,
+                    posting_id=job_id,
                     source_url=source.url,
                     location=location,
                     remote=helpers.infer_remote_status(title, location, brief),

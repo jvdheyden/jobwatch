@@ -437,6 +437,7 @@ def discover_thales_html(source: SourceConfig, terms: list[str], timeout_seconds
                         employer=source.source,
                         title=title,
                         url=job_url,
+                        posting_id=str(req_id),
                         source_url=source.url,
                         location=location,
                         matched_terms=matched_terms,

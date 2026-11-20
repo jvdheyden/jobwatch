@@ -174,6 +174,7 @@ def discover_greenhouse_api(source: SourceConfig, terms: list[str], timeout_seco
             location=location,
             matched_terms=matched,
             notes=build_greenhouse_candidate_notes(content_html),
+            posting_id=str(job.get("id") or ""),
         )
         helpers.set_candidate_description(candidate, greenhouse_content_text(content_html))
         helpers.merge_candidate(candidates_by_url, candidate)

@@ -11,14 +11,15 @@ import pytest
 
 @pytest.fixture
 def workflow(tmp_path, repo_root, run_cmd):
-    board = {'jobs': [1, 2], 'status': 200}
+    board = {'jobs': [1, 2], 'status': 200, 'descriptions': {}}
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path == '/careers':
                 body = ''.join(f'<a href="/jobs/{i}">Cryptography Engineer {i}</a>' for i in board['jobs'])
                 status = board['status']
             else:
-                body = '<main><h2>Responsibilities</h2>Build cryptography libraries in Rust.</main>'
+                details = board['descriptions'].get(self.path, 'Build cryptography libraries in Rust.')
+                body = f'<main><h2>Responsibilities</h2>{details}</main>' if details else ''
                 status = 200
             content = body.encode()
             self.send_response(status)
@@ -59,6 +60,10 @@ def workflow(tmp_path, repo_root, run_cmd):
 
 def read(root, path):
     return json.loads((root / path).read_text())
+
+
+def review_input(root):
+    return read(root, (root / 'agent-review-input.txt').read_text())
 
 
 @pytest.mark.parametrize('provider', ['codex', 'claude', 'gemini'])
@@ -114,7 +119,9 @@ def test_empty_run_renders_and_delivers_empty_digest(workflow):
     assert (root / 'graph/pages/Demo Job Digest 2030-01-15.md').exists()
 
 
-@pytest.mark.parametrize('behavior', ['malformed', 'invalid_schema', 'missing', 'failure', 'timeout'])
+@pytest.mark.parametrize('behavior', [
+    'malformed', 'invalid_schema', 'missing', 'failure', 'timeout', 'stale_receipt', 'unknown_id', 'missing_receipt',
+])
 def test_unsuccessful_agent_output_cannot_advance_state_or_deliver(workflow, behavior):
     root, board, run = workflow
     result, log = run(behavior=behavior)
@@ -124,7 +131,89 @@ def test_unsuccessful_agent_output_cannot_advance_state_or_deliver(workflow, beh
         assert result.returncode == 124, log
     assert not (root / 'tracks/demo/source_state.json').exists(), log
     assert not (root / 'tracks/demo/seen_jobs.json').exists()
+    assert not (root / 'tracks/demo/candidate_review_history.json').exists()
+    assert not (root / 'artifacts/digests/demo/2030-01-15.json').exists()
     assert not (root / 'graph/pages').exists()
+    result, log = run(deliver=False)
+    assert result.returncode == 0, log
+    assert [c['title'] for c in review_input(root)['sources'][0]['candidates']] == [
+        'Cryptography Engineer 1', 'Cryptography Engineer 2',
+    ]
+    digest = read(root, 'artifacts/digests/demo/2030-01-15.json')
+    assert len(digest['runs']) == 1
+    assert len(digest['runs'][0]['top_matches']) == 2
+
+
+def test_review_input_keeps_coverage_and_sends_only_new_or_changed_bodies(workflow):
+    root, board, run = workflow
+    board['jobs'] = list(range(1, 101))
+    result, log = run(behavior='no_reports', deliver=False)
+    assert result.returncode == 0, log
+    first = review_input(root)
+    assert len(first['sources'][0]['candidates']) == 100
+    assert all(c['description'] for c in first['sources'][0]['candidates'])
+    assert read(root, 'tracks/demo/seen_jobs.json')['jobs'] == []
+
+    result, log = run('2030-01-16', behavior='no_reports', deliver=False)
+    assert result.returncode == 0, log
+    second = review_input(root)
+    assert second['run_id'] != first['run_id']
+    assert second['review_counts'] == {'queued': 0, 'skipped': 100, 'deferred': 0}
+    assert second['sources'][0]['candidates'] == []
+    full = read(root, 'artifacts/discovery/demo/2030-01-16.json')['sources'][0]
+    assert len(full['candidates']) == 100
+    assert {k: v for k, v in second['sources'][0].items() if k not in {'candidates', 'review_counts'}} == {
+        k: v for k, v in full.items() if k != 'candidates'
+    }
+    note = read(root, 'artifacts/digests/demo/2030-01-16.json')['runs'][0]['source_notes'][0]
+    assert note['note'] == '100 original matches'
+
+    board['jobs'] += [101, 102]
+    board['descriptions']['/jobs/3'] = 'Build cryptography libraries in Rust and Go.'
+    result, log = run('2030-01-17', behavior='no_reports', deliver=False)
+    assert result.returncode == 0, log
+    third = review_input(root)
+    assert third['review_counts'] == {'queued': 3, 'skipped': 99, 'deferred': 0}
+    assert [c['title'] for c in third['sources'][0]['candidates']] == [
+        f'Cryptography Engineer {index}' for index in (3, 101, 102)
+    ]
+    assert 'Rust and Go' in third['sources'][0]['candidates'][0]['description']
+
+
+def test_partial_review_deferral_and_same_day_receipt_without_digest_update(workflow):
+    root, board, run = workflow
+    board['jobs'] = [1, 2, 3]
+    board['descriptions']['/jobs/2'] = ''
+    result, log = run(behavior='partial', deliver=False)
+    assert result.returncode == 0, log
+    digest = root / 'artifacts/digests/demo/2030-01-15.json'
+    first = digest.read_bytes()
+
+    result, log = run(behavior='unknown_id', deliver=False)
+    assert result.returncode != 0, log
+    assert digest.read_bytes() == first
+
+    # A subsequent attempt handles the remaining candidates, but neither is
+    # reportable on this attempt. The earlier digest stays byte-for-byte intact.
+    result, log = run(behavior='no_reports', deliver=False)
+    assert result.returncode == 0, log
+    assert digest.read_bytes() == first
+    assert [c['title'] for c in review_input(root)['sources'][0]['candidates']] == [
+        'Cryptography Engineer 2', 'Cryptography Engineer 3',
+    ]
+    result, log = run(deliver=False)
+    assert result.returncode == 0, log
+    assert review_input(root)['review_counts'] == {'queued': 0, 'skipped': 2, 'deferred': 1}
+    assert digest.read_bytes() == first
+
+    board['descriptions'].update({'/jobs/1': 'Now using Go.', '/jobs/2': 'Build cryptography services.'})
+    result, log = run('2030-01-16', deliver=False)
+    assert result.returncode == 0, log
+    assert [c['title'] for c in review_input(root)['sources'][0]['candidates']] == [
+        'Cryptography Engineer 1', 'Cryptography Engineer 2',
+    ]
+    roles = read(root, 'artifacts/digests/demo/2030-01-16.json')['runs'][0]['top_matches']
+    assert [role['title'] for role in roles] == ['Cryptography Engineer 2']
 
 
 def test_delivery_failure_preserves_local_results_and_retry_is_idempotent(workflow):
@@ -147,6 +236,22 @@ def test_retry_cannot_reuse_stale_agent_output(workflow):
     result, log = run(behavior='missing')
     assert result.returncode != 0, log
     assert (root / 'tracks/demo/seen_jobs.json').read_bytes() == previous
+
+
+def test_discovery_fallback_leaves_review_history_untouched(workflow):
+    root, board, run = workflow
+    result, log = run(behavior='no_reports', deliver=False)
+    assert result.returncode == 0, log
+    history_path = root / 'tracks/demo/candidate_review_history.json'
+    previous = history_path.read_bytes()
+    (root / 'scripts/discover_jobs.py').write_text('raise SystemExit(1)\n')
+
+    # Exercise the same-day fallback to the existing discovery snapshot.
+    result, log = run(deliver=False)
+    assert result.returncode == 0, log
+    assert 'will fall back to live discovery as needed' in log
+    assert len(list((root / 'artifacts/reviews/demo').glob('*.receipt.json'))) == 1
+    assert history_path.read_bytes() == previous
 
 
 def test_standalone_workflow_smoke_uses_same_agent_boundary(repo_root, tmp_path, run_cmd):
