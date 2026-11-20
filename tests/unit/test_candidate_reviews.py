@@ -1,8 +1,12 @@
 import json
+from dataclasses import asdict
 
 import pytest
 
 from candidate_reviews import commit, prepare, review_paths
+from discover import http
+from discover.core import SourceConfig
+from discover.sources.thales import discover_thales_html
 from source_config import write_json_atomic
 
 
@@ -92,6 +96,42 @@ def test_whitespace_and_diagnostics_do_not_reopen_review(tmp_path):
                                                  matched_terms=["new term"], updated_at="2030-01-16")])
     assert queued(second) == []
     assert second["review_counts"]["skipped"] == 1
+
+
+def test_thales_page_token_is_ignored_but_role_edits_reopen_review(tmp_path, monkeypatch, read_text_fixture):
+    source = SourceConfig("Thales", "https://careers.thalesgroup.com/global/en/search-results", "thales_html",
+                          None, "every_run")
+    listing = read_text_fixture("sources/thales_html/response.html")
+    legitimate_hex = "a13ef47d6df64c1ebae13efb26fc781b"
+
+    def discover(description, token):
+        def fetch(url, timeout_seconds):
+            if "/search-results" in url:
+                return listing
+            return (f"<html><body><h2>Responsibilities</h2><p>{description}</p>"
+                    f"<p>Project reference {legitimate_hex}</p></body></html>"
+                    f"<div id='csrfToken' style='display:none'>{token}</div>")
+
+        monkeypatch.setattr(http, "fetch_text", fetch)
+        coverage = discover_thales_html(source, ["security"], timeout_seconds=5)
+        [candidate] = coverage.candidates
+        assert candidate.title == "Security Engineer"
+        assert f"Project reference {legitimate_hex}" in candidate.description
+        return asdict(candidate)
+
+    first_token = "0e1c4f27f012441cbc64068c51ecf4bb"
+    next_token = "82d0493428bc47b08fcaa555de97c060"
+    first, fingerprint = prepare_review(tmp_path, [discover("Build secure libraries.", first_token)])
+    acknowledge(tmp_path, first, fingerprint)
+
+    second, _ = prepare_review(tmp_path, [discover("Build secure libraries.", next_token)])
+    assert queued(second) == []
+
+    third, _ = prepare_review(tmp_path, [discover("Build secure applications.", next_token)])
+    [edited] = queued(third)
+    assert edited["candidate_id"] == queued(first)[0]["candidate_id"]
+    assert "Build secure applications." in edited["description"]
+    assert next_token not in edited["description"]
 
 
 @pytest.mark.parametrize("context_path", [

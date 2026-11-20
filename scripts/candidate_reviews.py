@@ -254,6 +254,11 @@ def commit(root: Path, track: str, date: str, run_id: str, expected_fingerprint:
 
         normalize_digest_payload(digest, expected_track=track, expected_date=date)
         if not receipt["digest_unchanged"] and current == previous:
+            if current is not None:
+                existing_runs = read_json_payload(digest_path).get("runs")
+                draft_runs = digest["runs"]
+                if not existing_runs or draft_runs[:-1] != existing_runs or draft_runs[-1]["kind"] != "update":
+                    raise ValueError("Same-day draft must preserve all existing runs and append one update")
             write_json_atomic(digest_path, digest)
         record_history(history_path(root, track), updates)
 

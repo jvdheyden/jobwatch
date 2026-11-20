@@ -73,6 +73,21 @@ def test_enrich_skips_candidates_that_already_have_description(monkeypatch):
     assert candidate.description == "Already fetched JD body."
 
 
+def test_thales_browser_detail_fallback_excludes_page_token(monkeypatch):
+    html = ('<html><body><p>Build cryptography systems.</p></body></html>'
+            '<div style="display:none" id="csrfToken">82d0493428bc47b08fcaa555de97c060</div>')
+    monkeypatch.setattr(http, "fetch_text", lambda url, timeout_seconds: html)
+    board_url = "https://careers.thalesgroup.com/global/en/search-results"
+    candidate = Candidate("Thales", "Security Engineer", "https://careers.thalesgroup.com/global/en/job/123/Engineer",
+                          board_url)
+    coverage = _coverage([candidate])
+    coverage.discovery_mode = "thales_browser"
+
+    enrich_candidate_descriptions(coverage, timeout_seconds=5)
+
+    assert candidate.description == "Build cryptography systems."
+
+
 def test_enrich_removes_script_and_style_bodies_before_truncating(monkeypatch):
     script = 'const config = "<div>not a job</div>"; ' * 200
     stylesheet = '.hidden::before { content: "not a requirement"; } ' * 200
