@@ -4,6 +4,7 @@ from dataclasses import asdict
 import pytest
 
 from candidate_reviews import commit, prepare, review_paths
+from digest_json import digest_artifact_path
 from discover import http
 from discover.core import SourceConfig
 from discover.sources.thales import discover_thales_html
@@ -169,3 +170,17 @@ def test_late_receipt_keeps_newer_evidence_and_merges_other_acknowledgments(tmp_
 
     following, _ = prepare_review(tmp_path, [revised, new_only, old_only])
     assert following["review_counts"] == {"queued": 0, "skipped": 3, "deferred": 0}
+
+
+def test_repair_cannot_overwrite_a_digest_changed_after_preparation(tmp_path):
+    daily_digest = digest_artifact_path("demo", DATE, tmp_path)
+    daily_digest.parent.mkdir(parents=True)
+    daily_digest.write_text("{first failed write")
+    review, fingerprint = prepare_review(tmp_path, [posting()])
+
+    daily_digest.write_text("{later failed write")
+    with pytest.raises(ValueError, match="Daily digest changed"):
+        acknowledge(tmp_path, review, fingerprint)
+    assert daily_digest.read_text() == "{later failed write"
+    retry, _ = prepare_review(tmp_path, [posting()])
+    assert retry["review_counts"] == {"queued": 1, "skipped": 0, "deferred": 0}

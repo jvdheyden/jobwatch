@@ -280,6 +280,35 @@ def test_discovery_fallback_leaves_review_history_untouched(workflow):
     assert history_path.read_bytes() == previous
 
 
+@pytest.mark.parametrize('behavior', ['malformed', 'invalid_schema'])
+def test_same_day_retry_repairs_invalid_digest_from_discovery_fallback(workflow, behavior):
+    root, board, run = workflow
+    board['jobs'] = [1]
+    # Produce today's discovery artifact without publishing a digest.
+    result, log = run(behavior='missing', deliver=False)
+    assert result.returncode != 0, log
+    discovery = root / 'scripts/discover_jobs.py'
+    original_script = discovery.read_bytes()
+    discovery.write_text('raise SystemExit(1)\n')
+
+    result, log = run(behavior=behavior, deliver=False)
+    assert result.returncode != 0, log
+    assert 'will fall back to live discovery as needed' in log
+    digest_path = root / 'artifacts/digests/demo/2030-01-15.json'
+    assert digest_path.is_file()
+    history = root / 'tracks/demo/candidate_review_history.json'
+    assert not history.exists()
+
+    discovery.write_bytes(original_script)
+    result, log = run(deliver=False)
+    assert result.returncode == 0, log
+    [initial] = json.loads(digest_path.read_bytes())['runs']
+    assert initial['kind'] == 'initial'
+    assert [role['title'] for role in initial['top_matches']] == ['Cryptography Engineer 1']
+    [reviewed] = json.loads(history.read_bytes())['candidates'].values()
+    assert reviewed['status'] == 'reviewed'
+
+
 def test_standalone_workflow_smoke_uses_same_agent_boundary(repo_root, tmp_path, run_cmd):
     result = run_cmd('bash', str(repo_root / 'scripts/test_track_workflow.sh'), cwd=repo_root,
         env=os.environ | {'TEST_WORKFLOW_DIR': str(tmp_path / 'smoke'), 'JOB_AGENT_TODAY': '2030-01-15',
